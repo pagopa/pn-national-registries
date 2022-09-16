@@ -1,0 +1,88 @@
+openapi: 3.0.0
+info:
+  title: PN-ExternalRegistries REST APIs
+  description: |-
+    Nell’ambito del progetto Piattaforme Notifiche, il componente PN-ExternalRegistries si occuperà di recuperare i dati dalle banche dati esterne previste. Tali banche dati esporranno delle interfacce web verso il componente PN-External Registries, accessibili tramite piattaforma di interoperabilità.
+  version: 1.0.0
+servers:
+- url: http://127.0.0.1
+tags:
+- name: checkCodiceFiscale
+  description: Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
+paths:
+  /checkCodiceFiscale:
+    post:
+      tags:
+      - checkCodiceFiscale
+      summary: 'Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response'
+      description: 'Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response'
+      operationId: checkCodiceFiscale
+      requestBody:
+        description: Effettua la ricerca di un codice fiscale
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckCodiceFiscaleRequestBody'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckCodiceFiscaleOK'
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckCodiceFiscaleError'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckCodiceFiscaleError'
+components:
+  schemas:
+    CheckCodiceFiscaleRequestBody:
+      type: object
+      properties:
+        filter:
+          type: object
+          properties:
+            codiceFiscale:
+              type: string
+    CheckCodiceFiscaleOK:
+      type: object
+      properties:
+        codiceFiscale:
+          type: string
+        valido:
+          type: string
+        messaggio:
+          type: string
+    CheckCodiceFiscaleError:
+      type: object
+      properties:
+        status:
+          type: integer
+        title:
+          type: string
+        detail:
+          type: string
+        traceId:
+          type: string
+        timestamp:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              element:
+                type: string
+              detail:
+                type: string
