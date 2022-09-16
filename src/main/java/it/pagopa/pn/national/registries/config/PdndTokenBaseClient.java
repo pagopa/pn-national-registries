@@ -4,6 +4,8 @@ package it.pagopa.pn.national.registries.config;
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
+import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
+import lombok.SneakyThrows;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -15,12 +17,16 @@ import reactor.netty.http.client.HttpClient;
 
 import java.util.concurrent.TimeUnit;
 
+
 public abstract class PdndTokenBaseClient extends CommonBaseClient{
 
     private final String purposeId;
 
-    protected PdndTokenBaseClient(String purposeId){
+    protected final AccessTokenExpiringMap accessTokenExpiringMap;
+
+    protected PdndTokenBaseClient(String purposeId, AccessTokenExpiringMap accessTokenExpiringMap){
         this.purposeId = purposeId;
+        this.accessTokenExpiringMap = accessTokenExpiringMap;
     }
 
     protected WebClient initWebClient(WebClient.Builder builder){
@@ -38,28 +44,30 @@ public abstract class PdndTokenBaseClient extends CommonBaseClient{
     }
 
 
+    @SneakyThrows
     private Mono<ClientRequest> bearerAuthFilter(ClientRequest request) {
-        //TODO: RETURN TOKEN FROM CACHE
-        return Mono.empty();
-        /*return accessTokenCacheService.getToken(this.purposeId,false)
+        return accessTokenExpiringMap.getToken(this.purposeId)
                 .map(token -> ClientRequest.from(request)
                         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                        .build());*/
+                        .build());
     }
 
     private ExchangeFilterFunction renewTokenFilter() {
-        //TODO: RENEW TOKEN
         return (request, next) -> next.exchange(request).flatMap(response -> {
             if (response.statusCode().value() == HttpStatus.UNAUTHORIZED.value()) {
-                return response.releaseBody()
-                       // .then(accessTokenCacheService.getToken(this.purposeId, true))
-                        .flatMap(token -> {
-                            ClientRequest newRequest = ClientRequest.from(request)
-                                    .headers(headers -> headers.remove(HttpHeaders.AUTHORIZATION))
-                                    .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-                                    .build();
-                            return next.exchange(newRequest);
-                        });
+                try {
+                    return response.releaseBody()
+                            .then(accessTokenExpiringMap.getToken(this.purposeId))
+                            .flatMap(token -> {
+                                ClientRequest newRequest = ClientRequest.from(request)
+                                        .headers(headers -> headers.remove(HttpHeaders.AUTHORIZATION))
+                                        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
+                                        .build();
+                                return next.exchange(newRequest);
+                            });
+                } catch (Exception e) {
+                    throw new RuntimeException(e);
+                }
             } else {
                 return Mono.just(response);
             }
