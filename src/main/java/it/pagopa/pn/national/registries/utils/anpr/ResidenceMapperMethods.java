@@ -2,7 +2,6 @@ package it.pagopa.pn.national.registries.utils.anpr;
 
 import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.*;
-import reactor.core.publisher.Mono;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,12 +11,12 @@ public class ResidenceMapperMethods {
     private ResidenceMapperMethods() {
     }
 
-    public static RichiestaE002Dto convertToRichiestaE002(ConsultaResidenzaANPRRequestBodyDto requestDto) {
-        RichiestaE002Dto richiestaE002Dto = new RichiestaE002Dto();
-        return richiestaE002Dto;
+    public static RichiestaE002Dto convertToRichiestaE002(ConsultaResidenzaANPRRequestBodyDto richiestaE002Dto) {
+        RichiestaE002Dto request = new RichiestaE002Dto();
+        return request;
     }
 
-    public static Mono<ConsultaResidenzaANPROKDto> mapToResponseOk(RispostaE002OKDto rispostaE002OKDto) {
+    public static ConsultaResidenzaANPROKDto mapToResponseOk(RispostaE002OKDto rispostaE002OKDto) {
         ConsultaResidenzaANPROKDto response = new ConsultaResidenzaANPROKDto();
         if (rispostaE002OKDto.getListaSoggetti() != null
                 && rispostaE002OKDto.getListaSoggetti().getDatiSoggetto() != null
@@ -25,7 +24,7 @@ public class ResidenceMapperMethods {
                 && rispostaE002OKDto.getListaSoggetti().getDatiSoggetto().get(0) != null) {
             response.setResidenza(mapToConsultaResidenzaANPR(rispostaE002OKDto.getListaSoggetti().getDatiSoggetto().get(0).getResidenza()));
         }
-        return Mono.just(response);
+        return response;
     }
 
     private static List<ResidenzaInnerDto> mapToConsultaResidenzaANPR(List<TipoResidenzaDto> residenza) {

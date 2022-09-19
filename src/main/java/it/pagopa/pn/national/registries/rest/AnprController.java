@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.api.ConsultaResidenzaAnprApi;
-import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.ConsultaResidenzaANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.ConsultaResidenzaANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AnprService;
 import lombok.extern.slf4j.Slf4j;
@@ -32,8 +31,8 @@ public class AnprController implements ConsultaResidenzaAnprApi {
      * or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<ConsultaResidenzaANPROKDto>> consultaResidenzaANPR
-    (Mono<ConsultaResidenzaANPRRequestBodyDto> consultaResidenzaANPRRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Object>> consultaResidenzaANPR
+    (Mono<ConsultaResidenzaANPRRequestBodyDto> consultaResidenzaANPRRequestBodyDto, final ServerWebExchange exchange){
         return anprService.getResidence(consultaResidenzaANPRRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t));
     }

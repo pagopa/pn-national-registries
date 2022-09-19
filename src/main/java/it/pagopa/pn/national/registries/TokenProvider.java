@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries;
 
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;
+import it.pagopa.pn.national.registries.exceptions.PdndTokenGeneratorException;
 import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.api.AuthApi;
 import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto.ClientCredentialsResponseDto;
@@ -24,7 +25,6 @@ import static it.pagopa.pn.national.registries.utils.TokenProviderUtils.convertT
 @Component
 public class TokenProvider {
 
-    private final String pdndUrl;
     private final String clientAssertionType;
     private final String grantType;
 
@@ -40,7 +40,6 @@ public class TokenProvider {
     ) {
         this.assertionGenerator = assertionGenerator;
         this.secretManagerService = secretManagerService;
-        this.pdndUrl = pdndUrl;
         this.clientAssertionType = clientAssertionType;
         this.grantType = grantType;
 
@@ -58,17 +57,25 @@ public class TokenProvider {
         authApi = new AuthApi(newApiClient);
     }
 
-    public Mono<ClientCredentialsResponseDto> getToken(String purposeId) throws Exception {
+    public Mono<ClientCredentialsResponseDto> getToken(String purposeId){
         Optional<GetSecretValueResponse> getSecretValueResponse = secretManagerService.getSecretValue(purposeId);
         if(getSecretValueResponse.isEmpty()){
-            //TODO: GESTIONE ECCEZIONI
             log.info("secret value not found");
             return Mono.empty();
         }
         SecretValue secretValue = convertToSecretValueObject(getSecretValueResponse.get().secretString());
         String clientAssertion = assertionGenerator.generateClientAssertion(secretValue);
 
-        return authApi.createToken(clientAssertion,clientAssertionType,grantType,secretValue.getClientId());
+        try {
+            Mono<ClientCredentialsResponseDto> resp = authApi.createToken(clientAssertion, clientAssertionType, grantType, secretValue.getClientId());
+            return resp.map(clientCredentialsResponseDto -> {
+                log.info("token: {}", clientCredentialsResponseDto.getAccessToken());
+                return clientCredentialsResponseDto;
+            });
+        }catch (Exception e){
+            log.error("error during getToken from PDND --> ",e);
+            throw new PdndTokenGeneratorException(e);
+        }
     }
 
 

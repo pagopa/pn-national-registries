@@ -26,8 +26,8 @@ public class CheckCfController implements CheckCodiceFiscaleApi {
      *
      * @param checkCodiceFiscaleRequestBodyDto Effettua la ricerca di un codice fiscale (required)
      * @return OK (status code 200)
-     * or Bad request (status code 400)
-     * or Internal server error (status code 500)
+     *         or Bad request (status code 400)
+     *         or Internal server error (status code 500)
      */
     @Override
     public Mono<ResponseEntity<CheckCodiceFiscaleOKDto>> checkCodiceFiscale(Mono<CheckCodiceFiscaleRequestBodyDto> checkCodiceFiscaleRequestBodyDto, final ServerWebExchange exchange) {

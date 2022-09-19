@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.national.registries.exceptions.AssertionGeneratorException;
 import it.pagopa.pn.national.registries.model.SecretValue;
 import it.pagopa.pn.national.registries.utils.TokenProviderUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +18,6 @@ import java.nio.charset.StandardCharsets;
 import static it.pagopa.pn.national.registries.utils.TokenProviderUtils.bytesToUrlSafeBase64String;
 import static it.pagopa.pn.national.registries.utils.TokenProviderUtils.jsonObjectToUrlSafeBase64String;
 
-
 @Slf4j
 @Component
 public class PdndAssertionGenerator {
@@ -28,9 +28,8 @@ public class PdndAssertionGenerator {
         this.kmsClient = kmsClient;
     }
 
-    public String generateClientAssertion(SecretValue jwtCfg) throws Exception {
+    public String generateClientAssertion(SecretValue jwtCfg){
         try {
-
             TokenProviderUtils.TokenHeader th = new TokenProviderUtils.TokenHeader(jwtCfg.getJwtConfig());
             TokenProviderUtils.TokenPayload tp = new TokenProviderUtils.TokenPayload(jwtCfg.getJwtConfig());
             log.debug("jwtTokenObject header={} payload={}", th, tp);
@@ -57,14 +56,9 @@ public class PdndAssertionGenerator {
             log.info("Sign result OK - jwt={}", result);
             return result;
 
-
-        } catch (Exception exc) {
-            //TODO: GESTIONE ECCEZIONI
-            log.error("Error creating client_assertion: -> ", exc);
-            throw new Exception(exc);
+        } catch (Exception e) {
+            log.error("Error creating client_assertion -> ", e);
+            throw new AssertionGeneratorException(e);
         }
     }
-
-
-
 }

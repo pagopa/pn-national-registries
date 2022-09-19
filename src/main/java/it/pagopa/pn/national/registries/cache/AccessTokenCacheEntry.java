@@ -1,14 +1,11 @@
 package it.pagopa.pn.national.registries.cache;
 
-import it.pagopa.pn.external.registries.generated.openapi.pdnd.client.v1.dto.ClientCredentialsResponseDto;
-import it.pagopa.pn.external.registries.generated.openapi.pdnd.client.v1.dto.TokenTypeDto;
-import lombok.Getter;
-import lombok.Setter;
+import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto.ClientCredentialsResponseDto;
+import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto.TokenTypeDto;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
-
-@Getter
-@Setter
+@Data
 @Slf4j
 public class AccessTokenCacheEntry {
     private String accessToken;

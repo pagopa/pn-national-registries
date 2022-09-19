@@ -18,7 +18,4 @@ public class JwtConfig {
     private String kid;
     private String purposeId;
 
-    private Integer clientAssertionTtl;
-
-
 }
