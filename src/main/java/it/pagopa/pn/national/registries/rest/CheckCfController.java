@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.api.CheckCodiceFiscaleApi;
-import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckCodiceFiscaleOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckCodiceFiscaleRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.api.CheckTaxIdApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckTaxIdOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.service.CheckCfService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
@@ -12,7 +12,7 @@ import reactor.core.publisher.Mono;
 
 @RestController
 @Slf4j
-public class CheckCfController implements CheckCodiceFiscaleApi {
+public class CheckCfController implements CheckTaxIdApi {
 
     private final CheckCfService checkCfService;
 
@@ -21,18 +21,18 @@ public class CheckCfController implements CheckCodiceFiscaleApi {
     }
 
     /**
-     * POST /checkCodiceFiscale : Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
+     * POST /checkTaxId : Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
      * Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
      *
-     * @param checkCodiceFiscaleRequestBodyDto Effettua la ricerca di un codice fiscale (required)
+     * @param checkTaxIdRequestBodyDto Effettua la ricerca di un codice fiscale (required)
      * @return OK (status code 200)
      *         or Bad request (status code 400)
      *         or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<CheckCodiceFiscaleOKDto>> checkCodiceFiscale(Mono<CheckCodiceFiscaleRequestBodyDto> checkCodiceFiscaleRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
         log.info("start call checkCodiceFiscale");
-        return checkCfService.getCfStatus(checkCodiceFiscaleRequestBodyDto)
+        return checkCfService.getCfStatus(checkTaxIdRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t));
     }
 }

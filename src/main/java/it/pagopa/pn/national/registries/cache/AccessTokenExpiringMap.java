@@ -6,6 +6,7 @@ import net.jodah.expiringmap.ExpiringMap;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
+import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
 
 
@@ -16,7 +17,7 @@ public class AccessTokenExpiringMap {
     private final TokenProvider tokenProvider;
 
     protected ExpiringMap<String, AccessTokenCacheEntry> expiringMap = ExpiringMap.builder()
-            .expiration(5, TimeUnit.MINUTES)
+            .expiration(5, TimeUnit.MINUTES) //TODO: CAPIRE TEMPI DA UTILIZZARE
             .build();
 
 
@@ -29,8 +30,14 @@ public class AccessTokenExpiringMap {
         if (expiringMap.isEmpty() || !expiringMap.containsKey(purposeId)) {
             return requireNewAccessToken(purposeId);
         } else {
-            log.info("Existing Access Token Required with PurposeId: " + purposeId);
-            return Mono.just(expiringMap.get(purposeId));
+            long expiration = expiringMap.getExpectedExpiration(purposeId);
+            if(expiration <= 120000) { //TODO: CAPIRE TEMPI DA UTILIZZARE
+                return requireNewAccessToken(purposeId);
+            }
+            else {
+                log.info("Existing Access Token Required with PurposeId: " + purposeId);
+                return Mono.just(expiringMap.get(purposeId));
+            }
         }
     }
 

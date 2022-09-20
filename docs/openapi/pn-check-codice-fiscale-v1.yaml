@@ -7,22 +7,22 @@ info:
 servers:
 - url: http://127.0.0.1
 tags:
-- name: checkCodiceFiscale
+- name: checkTaxId
   description: Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
 paths:
-  /checkCodiceFiscale:
+  /checkTaxId:
     post:
       tags:
-      - checkCodiceFiscale
+      - checkTaxId
       summary: 'Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response'
       description: 'Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response'
-      operationId: checkCodiceFiscale
+      operationId: checkTaxId
       requestBody:
         description: Effettua la ricerca di un codice fiscale
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CheckCodiceFiscaleRequestBody'
+              $ref: '#/components/schemas/CheckTaxIdRequestBody'
         required: true
       responses:
         "200":
@@ -30,39 +30,51 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckCodiceFiscaleOK'
+                $ref: '#/components/schemas/CheckTaxIdOK'
         "400":
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckCodiceFiscaleError'
+                $ref: '#/components/schemas/CheckTaxIdError'
         "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CheckCodiceFiscaleError'
+                $ref: '#/components/schemas/CheckTaxIdError'
 components:
   schemas:
-    CheckCodiceFiscaleRequestBody:
+    CheckTaxIdRequestBody:
       type: object
       properties:
         filter:
           type: object
           properties:
-            codiceFiscale:
+            taxId:
               type: string
-    CheckCodiceFiscaleOK:
+    CheckTaxIdOK:
       type: object
       properties:
-        codiceFiscale:
+        taxId:
           type: string
-        valido:
-          type: string
-        messaggio:
-          type: string
-    CheckCodiceFiscaleError:
+        isValid:
+          type: boolean
+        errorCode:
+            type: string
+            enum: [B001_CHECK_TAX_ID_ERR01, B001_CHECK_TAX_ID_ERR02, B001_CHECK_TAX_ID_ERR03]
+            description: >
+              Error codes:
+              
+              
+              _'B001_CHECK_TAX_ID_ERR01'_: CODICE FISCALE VALIDO NON UTILIZZABILE
+              
+              
+              _'B001_CHECK_TAX_ID_ERR02'_: CODICE FISCALE NON VALIDO AGGIORNATO IN ALTRO
+              
+              
+              _'B001_CHECK_TAX_ID_ERR03'_: CODICE FISCALE NON VALIDO
+    CheckTaxIdError:
       type: object
       properties:
         status:
