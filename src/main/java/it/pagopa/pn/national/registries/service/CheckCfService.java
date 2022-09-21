@@ -1,40 +1,58 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.client.CheckCfClient;
-import it.pagopa.pn.national.registries.generated.openapi.agenzia_entrate.client.v1.api.VerificheApi;
-import it.pagopa.pn.national.registries.generated.openapi.agenzia_entrate.client.v1.dto.VerificaCodiceFiscale;
+import it.pagopa.pn.national.registries.client.checkcf.CheckCfClient;
+import it.pagopa.pn.national.registries.generated.openapi.agenzia_entrate.client.v1.dto.Richiesta;
 import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckTaxIdRequestBodyDto;
-import it.pagopa.pn.national.registries.utils.taxcode.CheckCfUtils;
+import it.pagopa.pn.national.registries.converter.CheckCfConverter;
+import it.pagopa.pn.national.registries.client.checkcf.VerificheApiCustom;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
-
-import static it.pagopa.pn.national.registries.utils.taxcode.CheckCfUtils.createRequest;
+import reactor.util.retry.Retry;
 
 @Component
 @Slf4j
-public class CheckCfService extends CheckCfClient {
+public class CheckCfService {
 
-    public CheckCfService(AccessTokenExpiringMap accessTokenExpiringMap,
-                          @Value("${pdnd.b001.purpose-id}") String purposeId,
-                          @Value("${pdnd.agenzia-entrate.base-path}") String anprBasePath) {
-        super(accessTokenExpiringMap, purposeId, anprBasePath);
+    private final CheckCfConverter checkCfConverter;
+    private final VerificheApiCustom verificheApiCustom;
+    private final CheckCfClient checkCfClient;
+
+    public CheckCfService(CheckCfConverter checkCfConverter,
+                          CheckCfClient checkCfClient,
+                          VerificheApiCustom verificheApiCustom) {
+        this.verificheApiCustom = verificheApiCustom;
+        this.checkCfClient = checkCfClient;
+        this.checkCfConverter = checkCfConverter;
     }
 
-    public Mono<CheckTaxIdOKDto> getCfStatus(Mono<CheckTaxIdRequestBodyDto> request) {
-        return super.getApiClient().flatMap(apiClient -> {
-            VerificheApi verificheApi = new VerificheApi(apiClient);
-            return callEService(verificheApi, request).map(CheckCfUtils::mapToCfStatusDto);
-        });
+    public Mono<CheckTaxIdOKDto> getCfStatus(CheckTaxIdRequestBodyDto request) {
+        return checkCfClient.getApiClient().flatMap(client -> {
+            verificheApiCustom.setApiClient(client);
+            return callEService(verificheApiCustom,request);
+        }).retryWhen(Retry.max(1).filter(this::checkExceptionType));
     }
 
-    private Mono<VerificaCodiceFiscale> callEService(VerificheApi verificheApi, Mono<CheckTaxIdRequestBodyDto> request) {
-        return request.flatMap(item -> {
-            log.info("call PostVerificaCodiceFiscale with cf: {}", item.getFilter().getTaxId());
-            return (verificheApi.postVerificaCodiceFiscale(createRequest(item)));
-        });
+    private Mono<CheckTaxIdOKDto> callEService(VerificheApiCustom verificheApiCustom, CheckTaxIdRequestBodyDto request) {
+        log.info("call method postVerificaCodiceFiscale with cf: {}", request.getFilter().getTaxId());
+        return verificheApiCustom.postVerificaCodiceFiscale(createRequest(request))
+                .map(checkCfConverter::convertToCfStatusDto);
+    }
+
+    private boolean checkExceptionType(Throwable throwable) {
+        if (throwable instanceof WebClientResponseException) {
+            WebClientResponseException exception = (WebClientResponseException) throwable;
+            return exception.getStatusCode().equals(HttpStatus.UNAUTHORIZED);
+        }
+        return false;
+    }
+
+    private Richiesta createRequest(CheckTaxIdRequestBodyDto taxCodeRequestDto) {
+        Richiesta richiesta = new Richiesta();
+        richiesta.setCodiceFiscale(taxCodeRequestDto.getFilter().getTaxId());
+        return richiesta;
     }
 }

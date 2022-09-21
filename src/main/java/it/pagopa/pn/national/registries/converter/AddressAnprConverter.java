@@ -1,17 +1,19 @@
-package it.pagopa.pn.national.registries.utils.anpr;
+package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.*;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class AddressAnprUtils {
+@Component
+public class AddressAnprConverter {
 
-    private AddressAnprUtils() {
+    private AddressAnprConverter() {
     }
 
-    public static GetAddressANPROKDto mapToResponseOk(RispostaE002OKDto rispostaE002OKDto, String cf) {
+    public GetAddressANPROKDto convertToGetAddressANPROKDto(RispostaE002OKDto rispostaE002OKDto, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
         if (rispostaE002OKDto != null && rispostaE002OKDto.getListaSoggetti() != null
                 && rispostaE002OKDto.getListaSoggetti().getDatiSoggetto() != null) {
@@ -20,14 +22,14 @@ public class AddressAnprUtils {
                         && item.getGeneralita().getCodiceFiscale().getCodFiscale() != null
                         && item.getGeneralita().getCodiceFiscale().getCodFiscale().equalsIgnoreCase(cf)
                         && item.getResidenza() != null) {
-                    response.setResidentialAddresses(ConvertToGetAddressANPROKDto(item.getResidenza()));
+                    response.setResidentialAddresses(convertResidence(item.getResidenza()));
                 }
             }
         }
         return response;
     }
 
-    private static List<GetAddressANPROKResidentialAddressesInnerDto> ConvertToGetAddressANPROKDto(List<TipoResidenzaDto> residenza) {
+    private List<GetAddressANPROKResidentialAddressesInnerDto> convertResidence(List<TipoResidenzaDto> residenza) {
         List<GetAddressANPROKResidentialAddressesInnerDto> list = new ArrayList<>();
         for (TipoResidenzaDto dto : residenza) {
             GetAddressANPROKResidentialAddressesInnerDto innerDto = new GetAddressANPROKResidentialAddressesInnerDto();
@@ -56,7 +58,7 @@ public class AddressAnprUtils {
         return list;
     }
 
-    private static String createAddressString(TipoIndirizzoDto indirizzo) {
+    private String createAddressString(TipoIndirizzoDto indirizzo) {
         //TODO: CAPIRE COME COSTRUIRE LA STRINGA CORRETTAMENTE
         if (indirizzo.getToponimo() != null && indirizzo.getNumeroCivico() != null) {
             return indirizzo.getToponimo().getSpecie() + " " + indirizzo.getToponimo().getDenominazioneToponimo() + " "
@@ -64,11 +66,5 @@ public class AddressAnprUtils {
         } else {
             return "";
         }
-    }
-
-    public static RichiestaE002Dto createRequest(GetAddressANPRRequestBodyDto request) {
-        RichiestaE002Dto richiesta = new RichiestaE002Dto();
-        richiesta.getCriteriRicerca().codiceFiscale(request.getFilter().getTaxId());
-        return richiesta;
     }
 }

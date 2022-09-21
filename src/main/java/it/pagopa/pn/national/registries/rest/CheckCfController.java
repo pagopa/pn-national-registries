@@ -9,6 +9,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
+
 
 @RestController
 @Slf4j
@@ -30,9 +32,9 @@ public class CheckCfController implements CheckTaxIdApi {
      *         or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        log.info("start call checkCodiceFiscale");
+    public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
+        log.info("start method checkTaxId");
         return checkCfService.getCfStatus(checkTaxIdRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t));
+                    .map(t -> ResponseEntity.ok().body(t)).publishOn(Schedulers.boundedElastic());
     }
 }

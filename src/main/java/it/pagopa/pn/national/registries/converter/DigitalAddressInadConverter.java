@@ -23,7 +23,7 @@ public class DigitalAddressInadConverter {
 
             for (ElementDigitalAddressDto item : elementDigitalAddressDto.getDigitalAddress()) { //TODO - Capire se la gestione sia corretta
                 if (item.getDigitalAddress() != null && item.getPracticedProfession() != null) {
-                    response.addDigitalAddressItem(ConvertToGetDigitalAddressINADOKDigitalAddressInnerDto(elementDigitalAddressDto.getDigitalAddress().get(counter)));
+                    response.addDigitalAddressItem(convertToGetDigitalAddressINADOKDigitalAddressInnerDto(elementDigitalAddressDto.getDigitalAddress().get(counter)));
                 }
                 counter++;
             }
@@ -31,7 +31,7 @@ public class DigitalAddressInadConverter {
         return response;
     }
 
-    private static GetDigitalAddressINADOKDigitalAddressInnerDto ConvertToGetDigitalAddressINADOKDigitalAddressInnerDto(ElementDigitalAddressDto item) {
+    private static GetDigitalAddressINADOKDigitalAddressInnerDto convertToGetDigitalAddressINADOKDigitalAddressInnerDto(ElementDigitalAddressDto item) {
         GetDigitalAddressINADOKDigitalAddressInnerDto digitalAddress = new GetDigitalAddressINADOKDigitalAddressInnerDto();
 
         if (item.getDigitalAddress() != null) {

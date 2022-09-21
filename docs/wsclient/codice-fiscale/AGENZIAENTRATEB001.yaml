@@ -23,7 +23,7 @@ x-commons:
 security:
   - IBM-Client-Secret: []
     IBM-Client-Id: []
-    
+    bearerAuth: []
 openapi: 3.0.0
 info:
   version: "1.0.0"
@@ -260,7 +260,11 @@ components:
         description: ''
         name: X-IBM-Client-Id
         in: header
-
+      bearerAuth:
+        type: http
+        description: 'A bearer token in the format of a JWS and conformed to the specifications included in [RFC8725](https://tools.ietf.org/html/RFC8725).'
+        scheme: bearer
+        bearerFormat: JWT
   headers:
     Retry-After:
       description: |-

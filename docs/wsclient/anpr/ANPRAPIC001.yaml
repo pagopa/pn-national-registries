@@ -1,7 +1,12 @@
 openapi: 3.0.3
 info:
   title: Consultazione ANPR API C001
-  description: Servizio per la notifica di un avviso
+  description: |-
+    Servizio per la notifica di un avviso
+    Pattern Model applicati:
+    - [ID_AUTH_CHANNEL_02] Direct Trust Mutual Transport-Level Security
+    - [BLOCK_REST] Blocking REST
+    - [INTEGRITY_REST_01] Integrità del payload messaggio REST
   version: '1.0.0'
   contact:
     name: API Support
@@ -17,7 +22,24 @@ tags:
   description: Manage consultazione enti
 security:
   - bearerAuth: []
+    Agid-JWT-Signature: []
 paths:
+  /status:
+    get:
+      summary: Returns the application status
+      description: |
+        Returns the application status. For testing purposes, it might randomly reply with an error.
+      operationId: get_status
+      tags:
+        - health
+      responses:
+        '200':
+          description: |
+            This is the valid status from the server.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/RispostaKO'
   /anpr-service-e002:
     post:
       tags:
@@ -409,6 +431,7 @@ components:
         - schedaAnagraficaRichiesta
         - dataRiferimentoRichiesta
         - casoUso
+        - motivoRichiesta
       properties:
         schedaAnagraficaRichiesta:
           type: string
@@ -420,12 +443,12 @@ components:
           example: '2021-11-15'
         datiAnagraficiRichiesti:
           type: array
-          description: futuri utilizzi (es. 1)
+          description: futuri utilizzi (es. ["1"])
           items:
             type: string
         motivoRichiesta:
           type: string
-          description: descrizione del motivo della richiesta
+          description: campo per l’indicazione obbligatoria del numero di riferimento della pratica per quale è effettuata l’interrogazione (es. numero di protocollo, fascicolo, verbale, etc.)
         casoUso:
           type: string
           description: caso d'uso (es. C001)
@@ -1233,3 +1256,11 @@ components:
       description: 'A bearer token in the format of a JWS and conformed to the specifications included in [RFC8725](https://tools.ietf.org/html/RFC8725).'
       scheme: bearer
       bearerFormat: JWT          
+    Agid-JWT-Signature:
+      type: apiKey
+      in: header
+      name: Agid-JWT-Signature
+      description: |-
+        Header della firma di JWS.
+        Il valore di questo header è una firma JWS.
+        Vedere Modi  [integrity_rest_01] Integrità del payload del messaggio REST

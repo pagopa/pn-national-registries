@@ -1,11 +1,13 @@
-package it.pagopa.pn.national.registries;
+package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.exceptions.AssertionGeneratorException;
 import it.pagopa.pn.national.registries.model.SecretValue;
-import it.pagopa.pn.national.registries.utils.TokenProviderUtils;
+import it.pagopa.pn.national.registries.model.TokenHeader;
+import it.pagopa.pn.national.registries.model.TokenPayload;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Base64Utils;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.MessageType;
@@ -14,9 +16,6 @@ import software.amazon.awssdk.services.kms.model.SignResponse;
 import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 
 import java.nio.charset.StandardCharsets;
-
-import static it.pagopa.pn.national.registries.utils.TokenProviderUtils.bytesToUrlSafeBase64String;
-import static it.pagopa.pn.national.registries.utils.TokenProviderUtils.jsonObjectToUrlSafeBase64String;
 
 @Slf4j
 @Component
@@ -30,8 +29,8 @@ public class PdndAssertionGenerator {
 
     public String generateClientAssertion(SecretValue jwtCfg){
         try {
-            TokenProviderUtils.TokenHeader th = new TokenProviderUtils.TokenHeader(jwtCfg.getJwtConfig());
-            TokenProviderUtils.TokenPayload tp = new TokenProviderUtils.TokenPayload(jwtCfg.getJwtConfig());
+            TokenHeader th = new TokenHeader(jwtCfg.getJwtConfig());
+            TokenPayload tp = new TokenPayload(jwtCfg.getJwtConfig());
             log.debug("jwtTokenObject header={} payload={}", th, tp);
             ObjectMapper mapper = new ObjectMapper();
 
@@ -60,5 +59,20 @@ public class PdndAssertionGenerator {
             log.error("Error creating client_assertion -> ", e);
             throw new AssertionGeneratorException(e);
         }
+    }
+
+    private String stringToUrlSafeBase64String(String inString) {
+        byte[] jsonBytes = inString.getBytes(StandardCharsets.UTF_8);
+        return bytesToUrlSafeBase64String(jsonBytes);
+    }
+
+    private String bytesToUrlSafeBase64String(byte[] bytes) {
+        byte[] base64JsonBytes = Base64Utils.encodeUrlSafe(bytes);
+        return new String(base64JsonBytes, StandardCharsets.UTF_8)
+                .replaceFirst("=+$", "");
+    }
+
+    private String jsonObjectToUrlSafeBase64String(String jsonString) {
+        return stringToUrlSafeBase64String(jsonString);
     }
 }

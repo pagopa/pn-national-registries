@@ -167,6 +167,7 @@
                             <modelNameSuffix>Dto</modelNameSuffix>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
+                            <templateDirectory>src/main/resources/openapi-templates</templateDirectory>
                             <configOptions>
                                 <basePackage>
                                     it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1
@@ -199,6 +200,7 @@
                         </goals>
                         <configuration>
                             <inputSpec>${project.basedir}/docs/openapi/pn-anpr-residence-v1.yaml</inputSpec>
+                            <templateDirectory>src/main/resources/openapi-templates</templateDirectory>
                             <generatorName>spring</generatorName>
                             <library>spring-boot</library>
                             <modelNameSuffix>Dto</modelNameSuffix>
