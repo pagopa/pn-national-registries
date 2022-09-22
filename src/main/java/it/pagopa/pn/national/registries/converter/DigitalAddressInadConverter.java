@@ -12,19 +12,15 @@ public class DigitalAddressInadConverter {
 
     public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddressDto elementDigitalAddressDto) {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
-        if (elementDigitalAddressDto != null //TODO - Capire se la gestione sia corretta
-                && elementDigitalAddressDto.getDigitalAddress() != null
-                && elementDigitalAddressDto.getCodiceFiscale() != null
-                && elementDigitalAddressDto.getSince() != null) {
+
+        if (elementDigitalAddressDto != null) {
 
             int counter = 0;
             response.setSince(elementDigitalAddressDto.getSince());
             response.setTaxId(elementDigitalAddressDto.getCodiceFiscale());
 
-            for (ElementDigitalAddressDto item : elementDigitalAddressDto.getDigitalAddress()) { //TODO - Capire se la gestione sia corretta
-                if (item.getDigitalAddress() != null && item.getPracticedProfession() != null) {
-                    response.addDigitalAddressItem(convertToGetDigitalAddressINADOKDigitalAddressInnerDto(elementDigitalAddressDto.getDigitalAddress().get(counter)));
-                }
+            for (ElementDigitalAddressDto item : elementDigitalAddressDto.getDigitalAddress()) {
+                response.addDigitalAddressItem(convertToGetDigitalAddressINADOKDigitalAddressInnerDto(elementDigitalAddressDto.getDigitalAddress().get(counter)));
                 counter++;
             }
         }
@@ -34,19 +30,17 @@ public class DigitalAddressInadConverter {
     private static GetDigitalAddressINADOKDigitalAddressInnerDto convertToGetDigitalAddressINADOKDigitalAddressInnerDto(ElementDigitalAddressDto item) {
         GetDigitalAddressINADOKDigitalAddressInnerDto digitalAddress = new GetDigitalAddressINADOKDigitalAddressInnerDto();
 
-        if (item.getDigitalAddress() != null) {
-            digitalAddress.setDigitalAddress(item.getDigitalAddress());
-        }
+        digitalAddress.setDigitalAddress(item.getDigitalAddress());
 
         if (item.getPracticedProfession() != null) {
             digitalAddress.setPracticedProfession(item.getPracticedProfession());
         }
 
-        if (item.getUsageInfo() != null
-                && item.getUsageInfo().getMotivazione() != null
-                && item.getUsageInfo().getDateEndValidity() != null) {
-            digitalAddress.getUsageInfo().setMotivation(item.getUsageInfo().getMotivazione().getValue());
+        if (digitalAddress.getUsageInfo().getMotivation() != null
+            && digitalAddress.getUsageInfo().getDateEndValidity() != null) {
+            digitalAddress.setUsageInfo(digitalAddress.getUsageInfo());
         }
+
         return digitalAddress;
     }
 

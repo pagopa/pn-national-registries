@@ -102,6 +102,7 @@ components:
                 properties:
                   motivation:
                     type: string
+                    enum: [CESSAZIONE_UFFICIO, CESSAZIONE_VOLONTARIA]
                   dateEndValidity:
                     type: string
                     format: date-time
