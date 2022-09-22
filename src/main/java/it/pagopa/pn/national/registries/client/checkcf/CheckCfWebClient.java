@@ -13,13 +13,15 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class CheckCfWebClient extends CommonBaseClient {
 
+    private static final Integer TIMEOUT = 10000;
+
     public CheckCfWebClient() {
         initWebClient();
     }
 
-    protected WebClient initWebClient() {
-        HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
-                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(10000, TimeUnit.MILLISECONDS)));
+    protected final WebClient initWebClient() {
+        HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, TIMEOUT)
+                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(TIMEOUT, TimeUnit.MILLISECONDS)));
 
         return super.enrichBuilder(WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient))).build();
     }

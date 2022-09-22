@@ -14,10 +14,12 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class AccessTokenExpiringMap {
 
+    private static final Integer DEADLINE = 120000;
+
     private final TokenProvider tokenProvider;
 
     protected ExpiringMap<String, AccessTokenCacheEntry> expiringMap = ExpiringMap.builder()
-            .asyncExpirationListener((purposeId, accessTokenEntry) -> log.info("token for: {} is expired",purposeId))
+            .asyncExpirationListener((purposeId, accessTokenEntry) -> log.info("token for {} has expired",purposeId))
             .variableExpiration()
             .build();
 
@@ -32,7 +34,7 @@ public class AccessTokenExpiringMap {
             return requireNewAccessToken(purposeId);
         } else {
             long expiration = expiringMap.getExpectedExpiration(purposeId);
-            if(expiration <= 120000) {
+            if(expiration <= DEADLINE) {
                 return requireNewAccessToken(purposeId);
             }
             else {

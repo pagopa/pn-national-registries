@@ -1,7 +1,11 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.RispostaE002OKDto;
+import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.TipoDatiSoggettiEnteDto;
+import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.TipoIndirizzoDto;
+import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.TipoResidenzaDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.GetAddressANPROKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.GetAddressANPROKResidentialAddressesInnerDto;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -9,9 +13,6 @@ import java.util.List;
 
 @Component
 public class AddressAnprConverter {
-
-    private AddressAnprConverter() {
-    }
 
     public GetAddressANPROKDto convertToGetAddressANPROKDto(RispostaE002OKDto rispostaE002OKDto, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
@@ -59,7 +60,6 @@ public class AddressAnprConverter {
     }
 
     private String createAddressString(TipoIndirizzoDto indirizzo) {
-        //TODO: CAPIRE COME COSTRUIRE LA STRINGA CORRETTAMENTE
         if (indirizzo.getToponimo() != null && indirizzo.getNumeroCivico() != null) {
             return indirizzo.getToponimo().getSpecie() + " " + indirizzo.getToponimo().getDenominazioneToponimo() + " "
                     + indirizzo.getNumeroCivico().getNumero() + indirizzo.getNumeroCivico().getLettera();

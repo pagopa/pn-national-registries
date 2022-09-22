@@ -13,14 +13,16 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class AnprWebClient extends CommonBaseClient {
 
+    private static final Integer TIMEOUT = 10000;
+
     public AnprWebClient() {
         initWebClient();
     }
 
-    protected WebClient initWebClient() {
-        HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 10000)
+    protected final WebClient initWebClient() {
+        HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, TIMEOUT)
                 //  .secure(sslContextSpec -> sslContextSpec.sslContext(Objects.requireNonNull(getSSLContext())))
-                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(10000, TimeUnit.MILLISECONDS)));
+                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(TIMEOUT, TimeUnit.MILLISECONDS)));
 
         return super.enrichBuilder(WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient))).build();
     }

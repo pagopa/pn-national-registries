@@ -16,11 +16,13 @@ import software.amazon.awssdk.services.kms.model.SignResponse;
 import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 
 import java.nio.charset.StandardCharsets;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Component
 public class PdndAssertionGenerator {
 
+    private static final Pattern myRegex = Pattern.compile("=+$");
     private final KmsClient kmsClient;
 
     public PdndAssertionGenerator(KmsClient kmsClient) {
@@ -69,7 +71,7 @@ public class PdndAssertionGenerator {
     private String bytesToUrlSafeBase64String(byte[] bytes) {
         byte[] base64JsonBytes = Base64Utils.encodeUrlSafe(bytes);
         return new String(base64JsonBytes, StandardCharsets.UTF_8)
-                .replaceFirst("=+$", "");
+                .replaceFirst(String.valueOf(myRegex), "");
     }
 
     private String jsonObjectToUrlSafeBase64String(String jsonString) {

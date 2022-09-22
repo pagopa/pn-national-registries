@@ -54,7 +54,7 @@ public class AnprService{
     private boolean checkExceptionType(Throwable throwable){
         if(throwable instanceof WebClientResponseException){
             WebClientResponseException exception = (WebClientResponseException) throwable;
-            return exception.getStatusCode().equals(HttpStatus.UNAUTHORIZED);
+            return exception.getStatusCode()==HttpStatus.UNAUTHORIZED;
         }
         return false;
     }

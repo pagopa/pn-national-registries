@@ -1,12 +1,10 @@
 package it.pagopa.pn.national.registries.exceptions;
 
-
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
-import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.model.WebClientResponseProblemDto;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -22,6 +20,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.NonNull;
+
+import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 
 @Configuration
@@ -62,7 +62,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
             dataBuffer = bufferFactory.wrap(objectMapper.writeValueAsBytes(problem));
         } catch (JsonProcessingException e) {
             log.error("cannot output problem", e);
-            dataBuffer = bufferFactory.wrap(exceptionHelper.generateFallbackProblem().getBytes());
+            dataBuffer = bufferFactory.wrap(exceptionHelper.generateFallbackProblem().getBytes(StandardCharsets.UTF_8));
         }
         serverWebExchange.getResponse().getHeaders().setContentType(MediaType.APPLICATION_JSON);
         return serverWebExchange.getResponse().writeWith(Mono.just(dataBuffer));
