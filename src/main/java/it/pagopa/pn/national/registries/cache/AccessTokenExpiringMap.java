@@ -14,7 +14,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class AccessTokenExpiringMap {
 
-    private static final Integer DEADLINE = 120000;
+    private static final Integer DEADLINE = 120000; //TODO: SET IN PARAMETER STORE ???
 
     private final TokenProvider tokenProvider;
 

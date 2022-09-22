@@ -38,6 +38,9 @@ public class TokenProvider {
         this.authApiCustom = authApiCustom;
     }
 
+    @Value("${pdnd.base-path}")
+    private String pdndBasePath;
+
     public Mono<ClientCredentialsResponseDto> getToken(String purposeId) {
         Optional<GetSecretValueResponse> getSecretValueResponse = secretManagerService.getSecretValue(purposeId);
         if (getSecretValueResponse.isEmpty()) {
@@ -46,7 +49,7 @@ public class TokenProvider {
         }
         SecretValue secretValue = convertToSecretValueObject(getSecretValueResponse.get().secretString());
         String clientAssertion = assertionGenerator.generateClientAssertion(secretValue);
-
+        authApiCustom.getApiClient().setBasePath(pdndBasePath);
         Mono<ClientCredentialsResponseDto> resp = authApiCustom.createToken(clientAssertion, clientAssertionType, grantType, secretValue.getClientId());
         return resp.map(clientCredentialsResponseDto -> {
             log.info("token: {}", clientCredentialsResponseDto.getAccessToken());

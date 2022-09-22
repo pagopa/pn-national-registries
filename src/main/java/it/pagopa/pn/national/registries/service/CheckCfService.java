@@ -33,7 +33,7 @@ public class CheckCfService {
         return checkCfClient.getApiClient().flatMap(client -> {
             verificheApiCustom.setApiClient(client);
             return callEService(verificheApiCustom,request);
-        }).retryWhen(Retry.max(1).filter(this::checkExceptionType));
+        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)); //TODO: quanti retry?
     }
 
     private Mono<CheckTaxIdOKDto> callEService(VerificheApiCustom verificheApiCustom, CheckTaxIdRequestBodyDto request) {
