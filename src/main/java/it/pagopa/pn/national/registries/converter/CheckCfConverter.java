@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.generated.openapi.agenzia_entrate.client.v1.dto.VerificaCodiceFiscale;
-import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckTaxIdOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import org.springframework.stereotype.Component;
 
 @Component

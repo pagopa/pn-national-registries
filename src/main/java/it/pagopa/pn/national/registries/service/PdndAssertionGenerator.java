@@ -33,29 +33,26 @@ public class PdndAssertionGenerator {
         try {
             TokenHeader th = new TokenHeader(jwtCfg.getJwtConfig());
             TokenPayload tp = new TokenPayload(jwtCfg.getJwtConfig());
-            log.debug("jwtTokenObject header={} payload={}", th, tp);
+             log.debug("jwtTokenObject header={} payload={}", th, tp);
             ObjectMapper mapper = new ObjectMapper();
 
             String headerBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(th));
             String payloadBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(tp));
             String jwtContent = headerBase64String + "." + payloadBase64String;
-            log.info("jwtContent={}", jwtContent);
 
             SdkBytes awsBytesJwtContent = SdkBytes.fromByteArray(jwtContent.getBytes(StandardCharsets.UTF_8));
             SignRequest signRequest = SignRequest.builder()
                     .message(awsBytesJwtContent)
                     .messageType(MessageType.RAW)
                     .signingAlgorithm(SigningAlgorithmSpec.RSASSA_PKCS1_V1_5_SHA_256)
-                    .keyId(jwtCfg.getKeyId()) //KeyId dal secret
+                    .keyId(jwtCfg.getKeyId())
                     .build();
 
             SignResponse signResult = kmsClient.sign(signRequest);
 
             byte[] signature = signResult.signature().asByteArray();
             String signatureString = bytesToUrlSafeBase64String(signature);
-            String result = jwtContent + "." + signatureString;
-            log.info("Sign result OK - jwt={}", result);
-            return result;
+            return jwtContent + "." + signatureString;
 
         } catch (Exception e) {
             log.error("Error creating client_assertion -> ", e);

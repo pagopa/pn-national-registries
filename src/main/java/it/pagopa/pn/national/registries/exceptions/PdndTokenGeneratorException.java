@@ -7,7 +7,7 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesEx
 public class PdndTokenGeneratorException extends PnInternalException {
 
     public PdndTokenGeneratorException(Throwable err){
-        super("Errore durante la generazione del token da PDND", ERROR_CODE_CHECK_CF, err);
+        super("Errore durante la generazione del token da PDND", ERROR_CODE_PDND_TOKEN, err);
     }
 }
 

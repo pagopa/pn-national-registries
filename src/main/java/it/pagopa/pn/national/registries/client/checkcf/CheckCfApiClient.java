@@ -7,6 +7,6 @@ import org.springframework.stereotype.Component;
 public class CheckCfApiClient extends ApiClient {
 
     public CheckCfApiClient(CheckCfWebClient webClient) {
-        super(webClient.initWebClient());
+        super(webClient.init());
     }
 }

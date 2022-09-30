@@ -1,15 +1,16 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.api.GetAddressAnprApi;
-import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.GetAddressANPROKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.GetAddressANPRRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.GetAddressAnprApi;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AnprService;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
+import reactor.core.scheduler.Scheduler;
 
 @RestController
 @Slf4j
@@ -17,8 +18,12 @@ public class AnprController implements GetAddressAnprApi {
 
     private final AnprService anprService;
 
-    public AnprController(AnprService anprServicee) {
-        this.anprService = anprServicee;
+    @Qualifier("nationalRegistriesScheduler")
+    private final Scheduler scheduler;
+
+    public AnprController(AnprService anprService, Scheduler scheduler) {
+        this.anprService = anprService;
+        this.scheduler = scheduler;
     }
 
     /**
@@ -33,8 +38,7 @@ public class AnprController implements GetAddressAnprApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> getAddressANPR(GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
-        log.info("start method getAddressANPR");
         return anprService.getAddressANPR(getAddressANPRRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(Schedulers.boundedElastic());
+                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 }

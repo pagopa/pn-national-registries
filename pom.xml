@@ -140,8 +140,11 @@
             <version>0.5.10</version>
             <scope>compile</scope>
         </dependency>
-
-
+        <dependency>
+            <groupId>com.auth0</groupId>
+            <artifactId>java-jwt</artifactId>
+            <version>4.0.0</version>
+        </dependency>
     </dependencies>
 
     <build>
@@ -161,7 +164,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/docs/openapi/pn-check-codice-fiscale-v1.yaml</inputSpec>
+                            <inputSpec>${project.basedir}/docs/openapi/pn-api-rest-v1.yaml</inputSpec>
                             <generatorName>spring</generatorName>
                             <library>spring-boot</library>
                             <modelNameSuffix>Dto</modelNameSuffix>
@@ -170,92 +173,16 @@
                             <templateDirectory>src/main/resources/openapi-templates</templateDirectory>
                             <configOptions>
                                 <basePackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1
+                                    it.pagopa.pn.national.registries.generated.openapi.rest.v1
                                 </basePackage>
                                 <modelPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto
+                                    it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto
                                 </modelPackage>
                                 <apiPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.api
+                                    it.pagopa.pn.national.registries.generated.openapi.rest.v1.api
                                 </apiPackage>
                                 <configPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.config
-                                </configPackage>
-                                <dateLibrary>java11</dateLibrary>
-                                <delegatePattern>true</delegatePattern>
-                                <interfaceOnly>true</interfaceOnly>
-                                <annotationLibrary>none</annotationLibrary>
-                                <documentationProvider>source</documentationProvider>
-                                <openApiNullable>false</openApiNullable>
-                                <reactive>true</reactive>
-                                <skipDefaultInterface>false</skipDefaultInterface>
-                                <useTags>true</useTags>
-                            </configOptions>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>pn-national-registries-anpr-residence-server</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/docs/openapi/pn-anpr-residence-v1.yaml</inputSpec>
-                            <templateDirectory>src/main/resources/openapi-templates</templateDirectory>
-                            <generatorName>spring</generatorName>
-                            <library>spring-boot</library>
-                            <modelNameSuffix>Dto</modelNameSuffix>
-                            <generateApiTests>false</generateApiTests>
-                            <generateModelTests>false</generateModelTests>
-                            <configOptions>
-                                <basePackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1
-                                </basePackage>
-                                <modelPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto
-                                </modelPackage>
-                                <apiPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.api
-                                </apiPackage>
-                                <configPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.config
-                                </configPackage>
-                                <dateLibrary>java11</dateLibrary>
-                                <delegatePattern>true</delegatePattern>
-                                <interfaceOnly>true</interfaceOnly>
-                                <annotationLibrary>none</annotationLibrary>
-                                <documentationProvider>source</documentationProvider>
-                                <openApiNullable>false</openApiNullable>
-                                <reactive>true</reactive>
-                                <skipDefaultInterface>false</skipDefaultInterface>
-                                <useTags>true</useTags>
-                            </configOptions>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>pn-national-registries-inad-extract-cf-server</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <configuration>
-                            <inputSpec>${project.basedir}/docs/openapi/pn-inad-extract-codice-fiscale-v1.yaml</inputSpec>
-                            <templateDirectory>src/main/resources/openapi-templates</templateDirectory>
-                            <generatorName>spring</generatorName>
-                            <library>spring-boot</library>
-                            <modelNameSuffix>Dto</modelNameSuffix>
-                            <generateApiTests>false</generateApiTests>
-                            <generateModelTests>false</generateModelTests>
-                            <configOptions>
-                                <basePackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.inad.extract.cf.v1
-                                </basePackage>
-                                <modelPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.inad.extract.cf.v1.dto
-                                </modelPackage>
-                                <apiPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.inad.extract.cf.v1.api
-                                </apiPackage>
-                                <configPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.server.inad.extract.cf.v1.config
+                                    it.pagopa.pn.national.registries.generated.openapi.rest.v1.config
                                 </configPackage>
                                 <dateLibrary>java11</dateLibrary>
                                 <delegatePattern>true</delegatePattern>

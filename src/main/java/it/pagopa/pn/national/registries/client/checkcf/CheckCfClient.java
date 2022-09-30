@@ -25,7 +25,6 @@ public class CheckCfClient {
 
     public Mono<ApiClient> getApiClient(){
         return accessTokenExpiringMap.getToken(purposeId).flatMap(accessTokenCacheEntry -> {
-            log.info(accessTokenCacheEntry.getAccessToken());
             checkCfApiClient.setBearerToken(accessTokenCacheEntry.getAccessToken());
             return Mono.just(checkCfApiClient);
         });

@@ -25,7 +25,6 @@ public class InadClient {
 
     public Mono<ApiClient> getApiClient(){
         return accessTokenExpiringMap.getToken(purposeId).flatMap(accessTokenCacheEntry -> {
-            log.info(accessTokenCacheEntry.getAccessToken());
             inadApiClient.setBearerToken(accessTokenCacheEntry.getAccessToken());
             return Mono.just(inadApiClient);
         });

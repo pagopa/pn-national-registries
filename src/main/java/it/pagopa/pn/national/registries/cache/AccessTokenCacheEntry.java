@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class AccessTokenCacheEntry {
+
     private String accessToken;
     private TokenTypeDto tokenType;
     private final String purposeId;

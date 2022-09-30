@@ -15,7 +15,7 @@ info:
   x-api-id: C001
   x-summary: Servizio di notifica
 servers:
-  - url: 'https://modipa-val.anpr.interno.it/govway/rest/in/MinInternoPortaANPR/C001–servizioNotifica/v1'
+  - url: 'https://modipa-val.anpr.interno.it/govway/rest/in/MinInternoPortaANPR/C001-servizioNotifica/v1'
     description: This service is the Consultazione Enti C001
 tags:
 - name: E002 service
@@ -49,6 +49,7 @@ paths:
       operationId: e002
       security:
         - bearerAuth: []
+          Agid-JWT-Signature: []
       requestBody:
         required: true
         description: Richiesta da consultare

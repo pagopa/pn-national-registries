@@ -2,8 +2,8 @@ package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.generated.openapi.inad.client.v1.dto.ElementDigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.inad.client.v1.dto.ResponseRequestDigitalAddressDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.inad.extract.cf.v1.dto.GetDigitalAddressINADOKDigitalAddressInnerDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.inad.extract.cf.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.DigitalAddressDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADOKDto;
 
 
 public class DigitalAddressInadConverter {
@@ -27,8 +27,8 @@ public class DigitalAddressInadConverter {
         return response;
     }
 
-    private static GetDigitalAddressINADOKDigitalAddressInnerDto convertToGetDigitalAddressINADOKDigitalAddressInnerDto(ElementDigitalAddressDto item) {
-        GetDigitalAddressINADOKDigitalAddressInnerDto digitalAddress = new GetDigitalAddressINADOKDigitalAddressInnerDto();
+    private static DigitalAddressDto convertToGetDigitalAddressINADOKDigitalAddressInnerDto(ElementDigitalAddressDto item) {
+        DigitalAddressDto digitalAddress = new DigitalAddressDto();
 
         digitalAddress.setDigitalAddress(item.getDigitalAddress());
 

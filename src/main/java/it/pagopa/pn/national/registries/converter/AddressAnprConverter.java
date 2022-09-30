@@ -4,8 +4,8 @@ import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.Ris
 import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.TipoDatiSoggettiEnteDto;
 import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.TipoIndirizzoDto;
 import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.TipoResidenzaDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.GetAddressANPROKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.anpr.residence.v1.dto.GetAddressANPROKResidentialAddressesInnerDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ResidentialAddressDto;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -30,10 +30,10 @@ public class AddressAnprConverter {
         return response;
     }
 
-    private List<GetAddressANPROKResidentialAddressesInnerDto> convertResidence(List<TipoResidenzaDto> residenza) {
-        List<GetAddressANPROKResidentialAddressesInnerDto> list = new ArrayList<>();
+    private List<ResidentialAddressDto> convertResidence(List<TipoResidenzaDto> residenza) {
+        List<ResidentialAddressDto> list = new ArrayList<>();
         for (TipoResidenzaDto dto : residenza) {
-            GetAddressANPROKResidentialAddressesInnerDto innerDto = new GetAddressANPROKResidentialAddressesInnerDto();
+            ResidentialAddressDto innerDto = new ResidentialAddressDto();
 
             if (dto.getIndirizzo() != null) {
                 innerDto.setAddress(createAddressString(dto.getIndirizzo()));

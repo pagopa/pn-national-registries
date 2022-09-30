@@ -9,7 +9,6 @@ import reactor.core.publisher.Mono;
 
 import java.util.concurrent.TimeUnit;
 
-
 @Slf4j
 @Component
 public class AccessTokenExpiringMap {
@@ -27,7 +26,6 @@ public class AccessTokenExpiringMap {
     public AccessTokenExpiringMap(TokenProvider tokenProvider) {
         this.tokenProvider = tokenProvider;
     }
-
 
     public Mono<AccessTokenCacheEntry> getToken(String purposeId) {
         if (expiringMap.isEmpty() || !expiringMap.containsKey(purposeId)) {

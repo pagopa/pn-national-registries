@@ -7,6 +7,6 @@ import org.springframework.stereotype.Component;
 public class AnprApiClient extends ApiClient {
 
     public AnprApiClient(AnprWebClient webClient) {
-        super(webClient.initWebClient());
+        super(webClient.init());
     }
 }

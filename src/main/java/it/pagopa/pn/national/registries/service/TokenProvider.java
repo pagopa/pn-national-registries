@@ -51,10 +51,7 @@ public class TokenProvider {
         String clientAssertion = assertionGenerator.generateClientAssertion(secretValue);
         authApiCustom.getApiClient().setBasePath(pdndBasePath);
         Mono<ClientCredentialsResponseDto> resp = authApiCustom.createToken(clientAssertion, clientAssertionType, grantType, secretValue.getClientId());
-        return resp.map(clientCredentialsResponseDto -> {
-            log.info("token: {}", clientCredentialsResponseDto.getAccessToken());
-            return clientCredentialsResponseDto;
-        });
+        return resp.map(clientCredentialsResponseDto -> clientCredentialsResponseDto);
 
     }
 

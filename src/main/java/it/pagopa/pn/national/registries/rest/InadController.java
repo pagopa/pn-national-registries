@@ -1,20 +1,22 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.server.inad.extract.cf.v1.api.GetDigitalAddressInadApi;
-import it.pagopa.pn.national.registries.generated.openapi.server.inad.extract.cf.v1.dto.GetDigitalAddressINADOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.inad.extract.cf.v1.dto.GetDigitalAddressINADRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.GetDigitalAddressInadApi;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.service.InadService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-
+import reactor.core.scheduler.Scheduler;
 
 public class InadController implements GetDigitalAddressInadApi {
 
     private final InadService inadService;
+    private final Scheduler scheduler;
 
-    public InadController(InadService inadServicee) {
+    public InadController(InadService inadServicee,Scheduler scheduler) {
         this.inadService = inadServicee;
+        this.scheduler = scheduler;
     }
 
     /**
@@ -27,6 +29,6 @@ public class InadController implements GetDigitalAddressInadApi {
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> getDigitalAddressINAD(GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
-        return inadService.getDigitalAddress(extractDigitalAddressINADRequestBodyDto).map(t -> ResponseEntity.ok().body(t));
+        return inadService.getDigitalAddress(extractDigitalAddressINADRequestBodyDto).map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 }

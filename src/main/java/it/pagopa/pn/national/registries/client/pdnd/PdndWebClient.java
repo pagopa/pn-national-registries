@@ -1,28 +1,43 @@
 package it.pagopa.pn.national.registries.client.pdnd;
 
-import io.netty.channel.ChannelOption;
-import io.netty.handler.timeout.ReadTimeoutHandler;
-import it.pagopa.pn.commons.pnclients.CommonBaseClient;
-import org.springframework.http.client.reactive.ReactorClientHttpConnector;
+import it.pagopa.pn.national.registries.client.CommonWebClient;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
-
-import java.util.concurrent.TimeUnit;
+import reactor.netty.resources.ConnectionProvider;
+import java.time.Duration;
 
 @Component
-public class PdndWebClient extends CommonBaseClient {
+@Slf4j
+public class PdndWebClient extends CommonWebClient {
 
-    private static final Integer TIMEOUT = 10000;
+    private final Integer tcpMaxPoolSize;
+    private final Integer tcpMaxQueuedConnections;
+    private final Integer tcpPendingAcquireTimeout;
+    private final Integer tcpPoolIdleTimeout;
 
-    public PdndWebClient() {
-        initWebClient();
+    public PdndWebClient(@Value("${webclient.pdnd.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                         @Value("${webclient.pdnd.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                         @Value("${webclient.pdnd.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                         @Value("${webclient.pdnd.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout) {
+        this.tcpMaxPoolSize = tcpMaxPoolSize;
+        this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
+        this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
+        this.tcpPoolIdleTimeout = tcpPoolIdleTimeout;
     }
 
     protected final WebClient initWebClient() {
-        HttpClient httpClient = HttpClient.create().option(ChannelOption.CONNECT_TIMEOUT_MILLIS, TIMEOUT)
-                .doOnConnected(connection -> connection.addHandlerLast(new ReadTimeoutHandler(TIMEOUT, TimeUnit.MILLISECONDS)));
 
-        return super.enrichBuilder(WebClient.builder().clientConnector(new ReactorClientHttpConnector(httpClient))).build();
+        ConnectionProvider connectionProvider = ConnectionProvider.builder("fixed")
+                .maxConnections(tcpMaxPoolSize)
+                .pendingAcquireMaxCount(tcpMaxQueuedConnections)
+                .pendingAcquireTimeout(Duration.ofMillis(tcpPendingAcquireTimeout))
+                .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout)).build();
+
+        HttpClient httpClient = HttpClient.create(connectionProvider);
+
+        return super.initWebClient(httpClient);
     }
 }

@@ -1,25 +1,27 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.api.CheckTaxIdApi;
-import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckTaxIdOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckTaxIdRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.CheckTaxIdApi;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.service.CheckCfService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
-
+import reactor.core.scheduler.Scheduler;
 
 @RestController
 @Slf4j
 public class CheckCfController implements CheckTaxIdApi {
 
     private final CheckCfService checkCfService;
+    private final Scheduler scheduler;
 
-    public CheckCfController(CheckCfService checkCfService) {
+
+    public CheckCfController(CheckCfService checkCfService, Scheduler scheduler) {
         this.checkCfService = checkCfService;
+        this.scheduler = scheduler;
     }
 
     /**
@@ -35,6 +37,6 @@ public class CheckCfController implements CheckTaxIdApi {
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
         log.info("start method checkTaxId");
         return checkCfService.getCfStatus(checkTaxIdRequestBodyDto)
-                    .map(t -> ResponseEntity.ok().body(t)).publishOn(Schedulers.boundedElastic());
+                    .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 }

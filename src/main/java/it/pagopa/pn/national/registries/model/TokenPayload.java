@@ -17,8 +17,7 @@ public class TokenPayload {
 
     public TokenPayload(JwtConfig jwtCfg) {
         long nowSeconds = System.currentTimeMillis() / 1000L;
-        long ttlSeconds = System.currentTimeMillis() * 1000L;
-        long expireSeconds = nowSeconds + ttlSeconds;
+        long expireSeconds = nowSeconds + 5000L;
 
         iss = jwtCfg.getIssuer();
         sub = jwtCfg.getSubject();

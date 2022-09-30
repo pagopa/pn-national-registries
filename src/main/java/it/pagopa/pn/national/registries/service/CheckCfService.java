@@ -1,11 +1,12 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.checkcf.CheckCfClient;
+import it.pagopa.pn.national.registries.exceptions.CheckCfException;
 import it.pagopa.pn.national.registries.generated.openapi.agenzia_entrate.client.v1.dto.Richiesta;
-import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckTaxIdOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.check.cf.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.converter.CheckCfConverter;
 import it.pagopa.pn.national.registries.client.checkcf.VerificheApiCustom;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -33,11 +34,11 @@ public class CheckCfService {
         return checkCfClient.getApiClient().flatMap(client -> {
             verificheApiCustom.setApiClient(client);
             return callEService(verificheApiCustom,request);
-        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)); //TODO: quanti retry?
+        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> new CheckCfException(retrySignal.failure())));
     }
 
     private Mono<CheckTaxIdOKDto> callEService(VerificheApiCustom verificheApiCustom, CheckTaxIdRequestBodyDto request) {
-        log.info("call method postVerificaCodiceFiscale with cf: {}", request.getFilter().getTaxId());
         return verificheApiCustom.postVerificaCodiceFiscale(createRequest(request))
                 .map(checkCfConverter::convertToCfStatusDto);
     }
