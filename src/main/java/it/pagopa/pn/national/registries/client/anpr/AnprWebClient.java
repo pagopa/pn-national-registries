@@ -42,6 +42,9 @@ public class AnprWebClient extends CommonWebClient {
     @Value("${webclient.anpr.tcp-pool-idle-timeout}")
     Integer tcpPoolIdleTimeout;
 
+    @Value("${pdnd.anpr.base-path}")
+    String basePath;
+
     @Autowired
     ObjectMapper objectMapper;
 
@@ -57,11 +60,10 @@ public class AnprWebClient extends CommonWebClient {
 
         HttpClient httpClient = HttpClient.create(connectionProvider).secure(t -> t.sslContext(buildSSLHttpClient()));
 
-        return super.initWebClient(httpClient);
+        return super.initWebClient(httpClient,basePath);
     }
 
     public SslContext buildSSLHttpClient() {
-
         try {
             Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretName);
             if (opt.isEmpty()) {
@@ -75,7 +77,6 @@ public class AnprWebClient extends CommonWebClient {
             return getSslContext(sslContext,sslData);
 
         } catch (IOException e) {
-            log.error("");
             throw new AnprException(e);
         }
     }

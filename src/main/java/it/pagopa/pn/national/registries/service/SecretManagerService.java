@@ -29,7 +29,6 @@ public class SecretManagerService {
         try {
             return Optional.of(secretsManagerClient.getSecretValue(secretValueRequest));
         } catch (Exception e) {
-            log.error("GetSecretValue: Exception ->", e);
             throw new PdndTokenGeneratorException(e);
         }
     }

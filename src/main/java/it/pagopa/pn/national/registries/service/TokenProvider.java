@@ -20,7 +20,6 @@ public class TokenProvider {
 
     private final String clientAssertionType;
     private final String grantType;
-
     private final PdndAssertionGenerator assertionGenerator;
     private final SecretManagerService secretManagerService;
     private final AuthApiCustom authApiCustom;
@@ -52,7 +51,6 @@ public class TokenProvider {
         authApiCustom.getApiClient().setBasePath(pdndBasePath);
         Mono<ClientCredentialsResponseDto> resp = authApiCustom.createToken(clientAssertion, clientAssertionType, grantType, secretValue.getClientId());
         return resp.map(clientCredentialsResponseDto -> clientCredentialsResponseDto);
-
     }
 
     private SecretValue convertToSecretValueObject(String value) {
@@ -61,11 +59,8 @@ public class TokenProvider {
         try {
             secretValue = mapper.readValue(value, SecretValue.class);
         } catch (JsonProcessingException e) {
-            log.error("convertToSecretValueObjectException -> ", e);
             throw new PdndTokenGeneratorException(e);
         }
         return secretValue;
     }
-
-
 }
