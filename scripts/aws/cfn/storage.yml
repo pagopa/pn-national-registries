@@ -1,0 +1,50 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Some storage with input and output
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: Nome dell'ambiente destinazione
+
+  # Unused but required by CD pipeline
+  MicroserviceNumber:
+    Type: Number
+    Description: An unique number that identify the microservice inside the ECS cluster.
+
+  # Unused but required by CD pipeline
+  TemplateBucketBaseUrl:
+    Type: String
+    Description: URL da cui caricare i frammenti di template di infrastruttura
+  
+  Version:
+    Type: String
+    Description: 'keep track of used projects commitIds'
+
+Conditions:
+  Never: !Equals [ 'true', 'false' ]
+
+
+Resources:
+  OptInSentTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-OptInSent'
+      AttributeDefinitions:
+        - AttributeName: "pk"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "pk"
+          KeyType: "HASH"
+      BillingMode: "PAY_PER_REQUEST"
+
+Outputs:
+
+  # Table parameters
+  OptInSentTableName:
+    Description: Dynamo Name used by application to access the key-value store
+    Value: !Ref OptInSentTable
+  OptInSentTableArn:
+    Description: ARM Dynamo Name used by application to access the key-value store
+    Value: !Sub '${OptInSentTable.Arn}'
+
+
