@@ -35,8 +35,7 @@ public class CheckCfController implements CheckTaxIdApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        log.info("start method checkTaxId");
-        return checkCfService.getCfStatus(checkTaxIdRequestBodyDto)
+        return checkCfService.callEService(checkTaxIdRequestBodyDto)
                     .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 }

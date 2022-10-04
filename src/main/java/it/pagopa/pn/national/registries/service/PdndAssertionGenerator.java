@@ -33,7 +33,6 @@ public class PdndAssertionGenerator {
         try {
             TokenHeader th = new TokenHeader(jwtCfg.getJwtConfig());
             TokenPayload tp = new TokenPayload(jwtCfg.getJwtConfig());
-             log.debug("jwtTokenObject header={} payload={}", th, tp);
             ObjectMapper mapper = new ObjectMapper();
 
             String headerBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(th));
@@ -55,7 +54,6 @@ public class PdndAssertionGenerator {
             return jwtContent + "." + signatureString;
 
         } catch (Exception e) {
-            log.error("Error creating client_assertion -> ", e);
             throw new AssertionGeneratorException(e);
         }
     }

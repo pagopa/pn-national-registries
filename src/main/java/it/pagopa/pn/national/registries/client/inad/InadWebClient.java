@@ -25,6 +25,9 @@ public class InadWebClient extends CommonWebClient {
     @Value("${webclient.inad.tcp-pool-idle-timeout}")
     Integer tcpPoolIdleTimeout;
 
+    @Value("${pdnd.inad.base-path}")
+    String basePath;
+
     protected final WebClient initWebClient() {
         ConnectionProvider provider = ConnectionProvider.builder("fixed")
                 .maxConnections(tcpMaxPoolSize)
@@ -34,6 +37,6 @@ public class InadWebClient extends CommonWebClient {
 
         HttpClient httpClient = HttpClient.create(provider);
 
-        return super.initWebClient(httpClient);
+        return super.initWebClient(httpClient,basePath);
     }
 }

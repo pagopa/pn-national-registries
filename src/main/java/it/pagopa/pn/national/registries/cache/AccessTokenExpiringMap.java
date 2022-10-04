@@ -1,9 +1,10 @@
 package it.pagopa.pn.national.registries.cache;
 
-import it.pagopa.pn.national.registries.service.TokenProvider;
 import it.pagopa.pn.national.registries.exceptions.PdndTokenGeneratorException;
+import it.pagopa.pn.national.registries.service.TokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpiringMap;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -13,12 +14,14 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class AccessTokenExpiringMap {
 
-    private static final Integer DEADLINE = 120000; //TODO: SET IN PARAMETER STORE ???
+    @Value("${pn.national-registries.pdnd.token.deadline}")
+    Integer deadline;
 
     private final TokenProvider tokenProvider;
 
     protected ExpiringMap<String, AccessTokenCacheEntry> expiringMap = ExpiringMap.builder()
-            .asyncExpirationListener((purposeId, accessTokenEntry) -> log.info("token for {} has expired",purposeId))
+            .asyncExpirationListener((purposeId, accessTokenEntry) ->
+                    log.info("token for {} has expired",purposeId))
             .variableExpiration()
             .build();
 
@@ -32,7 +35,7 @@ public class AccessTokenExpiringMap {
             return requireNewAccessToken(purposeId);
         } else {
             long expiration = expiringMap.getExpectedExpiration(purposeId);
-            if(expiration <= DEADLINE) {
+            if(expiration <= deadline) {
                 return requireNewAccessToken(purposeId);
             }
             else {
@@ -54,7 +57,6 @@ public class AccessTokenExpiringMap {
                         return tok;
                     });
         } catch (Exception e) {
-            log.error("error during retrieve PDND Token -> ",e);
             throw new PdndTokenGeneratorException(e);
         }
     }

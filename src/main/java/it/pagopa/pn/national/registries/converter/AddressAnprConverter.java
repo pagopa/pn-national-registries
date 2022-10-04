@@ -1,11 +1,11 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.RispostaE002OKDto;
-import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.TipoDatiSoggettiEnteDto;
-import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.TipoIndirizzoDto;
-import it.pagopa.pn.national.registries.generated.openapi.anpr.client.v1.dto.TipoResidenzaDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ResidentialAddressDto;
+import it.pagopa.pn.national.registries.model.anpr.RispostaE002OKDto;
+import it.pagopa.pn.national.registries.model.anpr.TipoDatiSoggettiEnteDto;
+import it.pagopa.pn.national.registries.model.anpr.TipoIndirizzoDto;
+import it.pagopa.pn.national.registries.model.anpr.TipoResidenzaDto;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -33,6 +33,7 @@ public class AddressAnprConverter {
     private List<ResidentialAddressDto> convertResidence(List<TipoResidenzaDto> residenza) {
         List<ResidentialAddressDto> list = new ArrayList<>();
         for (TipoResidenzaDto dto : residenza) {
+
             ResidentialAddressDto innerDto = new ResidentialAddressDto();
 
             if (dto.getIndirizzo() != null) {

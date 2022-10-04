@@ -2,6 +2,9 @@ package it.pagopa.pn.national.registries.log;
 
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
+import org.reactivestreams.Publisher;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.client.reactive.ClientHttpRequestDecorator;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ClientRequest;
 import org.springframework.web.reactive.function.client.ClientResponse;
@@ -9,26 +12,53 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.ExchangeFunction;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Objects;
 
 @Slf4j
 @Component
 public class ResponseExchangeFilter implements ExchangeFilterFunction {
 
-    private static final String METRICS_WEBCLIENT_START_TIME = ResponseExchangeFilter.class.getName() + ".START_TIME";
-
     @Override
-    public Mono<ClientResponse> filter(@NotNull ClientRequest request, ExchangeFunction next) {
-        return next.exchange(request).doOnEach(signal -> {
-            if (!signal.isOnComplete()) {
-                Long startTime = signal.getContextView().get(METRICS_WEBCLIENT_START_TIME);
-                long duration = System.currentTimeMillis() - startTime;
-                log.info("Response HTTP from {} {} {} - timelapse: {}ms",
-                        request.url(),
-                        Objects.requireNonNull(signal.get()).statusCode().value(),
-                        Objects.requireNonNull(signal.get()).statusCode().name(),
-                        duration);
-            }
-        }).contextWrite(ctx -> ctx.put(METRICS_WEBCLIENT_START_TIME, System.currentTimeMillis()));
+    public @NotNull Mono<ClientResponse> filter(@NotNull ClientRequest request, ExchangeFunction next) {
+        long start = System.currentTimeMillis();
+        return next.exchange(interceptBody(request))
+                .map(response -> interceptBody(start, response, request));
+    }
+
+    private ClientResponse interceptBody(long startTime, ClientResponse response, ClientRequest request) {
+        return response.mutate()
+                .body(data -> data
+                        .doOnNext(dataBuffer ->
+                                logResponseBody(startTime, dataBuffer, response, request)))
+                .build();
+    }
+
+    private void logResponseBody(long startTime, DataBuffer dataBuffer, ClientResponse response, ClientRequest request) {
+        long duration = System.currentTimeMillis() - startTime;
+        log.info("Response HTTP from {} {} {} - body: {} - timelapse: {}ms",
+                request.url(),
+                response.statusCode().value(),
+                Objects.requireNonNull(response.statusCode().name()),
+                dataBuffer.toString(StandardCharsets.UTF_8),
+                duration);
+    }
+
+    private ClientRequest interceptBody(ClientRequest request) {
+        return ClientRequest.from(request)
+                .body((outputMessage, context) -> request.body().insert(new ClientHttpRequestDecorator(outputMessage) {
+                    @Override public @NotNull Mono<Void> writeWith(@NotNull Publisher<? extends DataBuffer> body) {
+                        return super.writeWith(Mono.from(body)
+                                .doOnNext(dataBuffer -> logRequestBody(dataBuffer, request)));
+                    }
+                }, context))
+                .build();
+    }
+
+    private void logRequestBody(DataBuffer dataBuffer, ClientRequest request) {
+        log.info("Request HTTP {} to: {} - body: {}",
+                request.method().name(),
+                request.url(),
+                dataBuffer.toString(StandardCharsets.UTF_8));
     }
 }

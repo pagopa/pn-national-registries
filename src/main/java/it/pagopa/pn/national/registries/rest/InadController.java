@@ -29,6 +29,7 @@ public class InadController implements GetDigitalAddressInadApi {
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> getDigitalAddressINAD(GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
-        return inadService.getDigitalAddress(extractDigitalAddressINADRequestBodyDto).map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+        return inadService.callEService(extractDigitalAddressINADRequestBodyDto)
+                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 }
