@@ -31,21 +31,5 @@ class AnprServiceTest {
         // Assert
         // TODO: Add assertions on result
     }
-
-    /**
-     * Method under test: {@link AnprService#createRequest(GetAddressANPRRequestBodyDto)}
-     */
-    @Test
-    void testCreateRequest() {
-        // Arrange
-        // TODO: Populate arranged inputs
-        GetAddressANPRRequestBodyDto request = null;
-
-        // Act
-        RichiestaE002Dto actualCreateRequestResult = this.anprService.createRequest(request);
-
-        // Assert
-        // TODO: Add assertions on result
-    }
 }
 
