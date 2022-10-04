@@ -25,7 +25,7 @@ import java.nio.charset.StandardCharsets;
 public class RequestResponseLoggingFilter implements WebFilter {
 
     @Override
-    public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
+    public @NotNull Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest httpRequest = exchange.getRequest();
         final String httpUrl = httpRequest.getURI().toString();
         ServerHttpRequestDecorator loggingServerHttpRequestDecorator = new ServerHttpRequestDecorator(exchange.getRequest()) {
@@ -37,9 +37,9 @@ public class RequestResponseLoggingFilter implements WebFilter {
                     try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
                         Channels.newChannel(byteArrayOutputStream).write(dataBuffer.asByteBuffer().asReadOnlyBuffer());
                         requestBody = byteArrayOutputStream.toString(StandardCharsets.UTF_8);
-                        log.info("Request HTTP {} to {} with payload: {}", exchange.getRequest().getMethod(), httpUrl, requestBody);
+                        log.info("Request HTTP {} to {} - body: {}", exchange.getRequest().getMethod(), httpUrl, requestBody);
                     } catch (IOException e) {
-                        log.info("Request HTTP {} to {} with payload: {}", exchange.getRequest().getMethod(), httpUrl, requestBody);
+                        log.info("Request HTTP {} to {} - body: {}", exchange.getRequest().getMethod(), httpUrl, requestBody);
                     }
                 });
             }
@@ -54,9 +54,9 @@ public class RequestResponseLoggingFilter implements WebFilter {
                     try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
                         Channels.newChannel(byteArrayOutputStream).write(dataBuffer.asByteBuffer().asReadOnlyBuffer());
                         responseBody = byteArrayOutputStream.toString(StandardCharsets.UTF_8);
-                        log.info("Response from {} with payload: {}", httpUrl, responseBody);
+                        log.info("Response from {} - body: {}", httpUrl, responseBody);
                     } catch (Exception e) {
-                        log.info("Response from {} with payload: {}", httpUrl, responseBody);
+                        log.info("Response from {} - body: {}", httpUrl, responseBody);
                     }
                 }));
             }

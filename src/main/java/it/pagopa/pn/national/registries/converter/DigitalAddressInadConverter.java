@@ -1,9 +1,9 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.generated.openapi.inad.client.v1.dto.ElementDigitalAddressDto;
-import it.pagopa.pn.national.registries.generated.openapi.inad.client.v1.dto.ResponseRequestDigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.model.inad.ElementDigitalAddressDto;
+import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 
 
 public class DigitalAddressInadConverter {

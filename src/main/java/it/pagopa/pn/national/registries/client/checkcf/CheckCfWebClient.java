@@ -28,6 +28,9 @@ public class CheckCfWebClient extends CommonWebClient {
     @Value("${webclient.check-cf.tcp-pool-idle-timeout}")
     Integer tcpPoolIdleTimeout;
 
+    @Value("${pdnd.agenzia-entrate.base-path}")
+    String basePath;
+
     protected final WebClient init() {
         ConnectionProvider provider = ConnectionProvider.builder("fixed")
                 .maxConnections(tcpMaxPoolSize)
@@ -37,6 +40,6 @@ public class CheckCfWebClient extends CommonWebClient {
 
         HttpClient httpClient = HttpClient.create(provider).wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);;
 
-        return super.initWebClient(httpClient);
+        return super.initWebClient(httpClient,basePath);
     }
 }

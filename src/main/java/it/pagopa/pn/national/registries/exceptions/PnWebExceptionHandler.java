@@ -50,9 +50,10 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         try {
             if (throwable instanceof WebClientResponseException) {
                 WebClientResponseException exception = (WebClientResponseException) throwable;
-                log.error("Exception - statusCode: {}, message: {}",exception.getStatusCode().value(),exception.getMessage());
+                log.error("Error -> statusCode: {}, message: {}",exception.getStatusCode().value(),exception.getMessage());
                 problem = createProblem(exception);
             } else {
+                log.error("Error -> {}",throwable.getMessage());
                 problem = exceptionHelper.handleException(throwable);
             }
             problem.setTraceId(MDC.get("trace_id").replace("trace_id",""));
