@@ -24,7 +24,7 @@ import java.util.Base64;
 
 @Service
 @Slf4j
-public class AnprService{
+public class AnprService {
 
     private final AddressAnprConverter addressAnprConverter;
     private final AnprClient anprClient;
@@ -45,17 +45,17 @@ public class AnprService{
         RichiestaE002Dto richiestaE002Dto = createRequest(request);
         return anprClient.getApiClient(createDigestFromPayload(richiestaE002Dto)).flatMap(apiClient -> {
             e002ServiceApiCustom.setApiClient(apiClient);
-            return callEService(e002ServiceApiCustom,richiestaE002Dto);
+            return callEService(e002ServiceApiCustom, richiestaE002Dto);
         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> new AnprException(retrySignal.failure())));
     }
 
-    private String createDigestFromPayload(RichiestaE002Dto request)  {
+    private String createDigestFromPayload(RichiestaE002Dto request) {
         try {
             MessageDigest md = MessageDigest.getInstance("SHA-256");
             String requestBody = mapper.writeValueAsString(request);
             byte[] digestByte = md.digest(requestBody.getBytes(StandardCharsets.UTF_8));
-            return "SHA-256="+Base64.getEncoder().encodeToString(digestByte);
+            return "SHA-256=" + Base64.getEncoder().encodeToString(digestByte);
         } catch (JsonProcessingException | NoSuchAlgorithmException e) {
             log.error("");
             throw new AnprException(e);
@@ -75,10 +75,10 @@ public class AnprService{
         return richiesta;
     }
 
-    private boolean checkExceptionType(Throwable throwable){
-        if(throwable instanceof WebClientResponseException){
+    private boolean checkExceptionType(Throwable throwable) {
+        if (throwable instanceof WebClientResponseException) {
             WebClientResponseException exception = (WebClientResponseException) throwable;
-            return exception.getStatusCode()==HttpStatus.UNAUTHORIZED;
+            return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;
     }
