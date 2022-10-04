@@ -1,0 +1,190 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: 'Example microservice deploy'
+
+Transform:
+  - UpdateDeploymentTransform
+
+Parameters:
+  ProjectName:
+    Type: String
+    Description: 'Usually pn can be pnXYZ where XYZ are the feature number, useful to create
+      experimental environments without crash official development environment'
+  
+  AlarmSNSTopicArn:
+    Type: String
+    Description: ARN of alarm topic
+
+  ApiDnsName:
+    Type: String
+    Description: 'The DNS name used for B2B rest API.'
+
+  WebApiDnsName:
+    Type: String
+    Description: 'The DNS name used for WEB rest API.'
+  
+  CorsAllowedDomains:
+    Type: String
+    Description: 'Comma separated list of domains allowed to make cross origin request'
+
+  CheckoutApiBaseUrl:
+    Type: String
+    Description: 'Checkout endpoint base url'
+
+  CheckoutSiteUrl:
+   Type: String
+   Description: 'Checkout site url'
+
+  SelfcareUsergroupBaseUrl:
+    Type: String
+    Description: 'Selfcare endpoint base url'
+
+  SelfcareUsergroupPnProductId:
+    Type: String
+    Description: 'Selfcare product id'
+
+  ContainerImageUri:
+    Type: String
+    Description: 'Exact container image URI with full repository and image digest'
+
+  MicroserviceNumber:
+    Type: Number
+    Description: 'Disambiguation useful for load balancer rules'
+
+  TemplateBucketBaseUrl:
+    Type: String
+    Description: 'The S3 bucket from which to fetch the templates used by this stack.'
+
+  ECSClusterName:
+    Type: String
+    Description: 'The name of the ECS cluster where the microservice is going to be deployed'
+
+  SubnetsIds:
+    Type: String
+    Description: 'subnets ids comma separated list. Where to deploy the microservice'
+
+  VpcId:
+    Type: String
+    Description: 'VpcId where the microservice is going to be deployed'
+  
+  EcsDefaultSecurityGroup:
+    Type: String
+    Description: 'Default security group required by infrastructure'
+
+  ApplicationLoadBalancerListenerArn:
+    Type: String
+    Description: 'Load balancer listener where HTTP endpoints is going to be registered'
+
+  ApplicationLoadBalancerDomain:
+    Type: String
+    Description: 'Base URL of the load balancer where the service is going to be reachable'
+
+  NetworkLoadBalancerLink:
+    Type: String
+    Description: 'network load balancer link for API-GW'
+  
+  Version:
+    Type: String
+    Description: 'keep track of used projects commitIds'
+
+  OptInSentTableName:
+    Type: String
+    Description: 'Name of dynamodb table containing OptInSent information'
+
+  OptInSentTableArn:
+    Type: String
+    Description: 'ARN of dynamodb table containing OptInSent information'
+
+  PortalUrl:
+    Type: String
+    Description: 'Url del portale della da inserire negli avvisi a IO'
+
+  DeliveryPushInputsQueueName:
+    Type: String
+    Description: 'Queue to pull for inputs event'
+
+  DeliveryPushInputsQueueARN:
+    Type: String
+    Description: 'Queue to pull for inputs event'
+
+Resources:
+
+  # PN-External-Registry microservice
+  ExternalRegistryMicroservice:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/ecs-service.yaml"
+      Parameters:
+        MicroServiceUniqueName: !Sub '${ProjectName}-ExternalRegistry'
+        CpuValue: 1024
+        MemoryAmount: 2GB
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        ContainerImageURI: !Sub '${ContainerImageUri}'
+        ContainerEnvEntry1: !Sub 'AWS_REGIONCODE=${AWS::Region}'
+        ContainerEnvEntry2: !Sub 'CORS_ALLOWED_DOMAINS=${CorsAllowedDomains}'
+        ContainerEnvEntry3: !Sub 'PN_EXTERNAL_REGISTRY_CHECKOUT_API_BASE_URL=${CheckoutApiBaseUrl}'
+        ContainerEnvEntry4: !Sub 'PN_EXTERNAL_REGISTRY_CHECKOUT_SITE_URL=${CheckoutSiteUrl}'
+        ContainerEnvEntry5: !Sub 'PN_EXTERNAL_REGISTRY_CHECKOUT_API_KEY={{resolve:secretsmanager:${ProjectName}-ExternalRegistries-Secrets:SecretString:CheckoutApiKey}}'
+        ContainerEnvEntry6: !Sub 'PN_EXTERNAL_REGISTRY_IO_API_KEY={{resolve:secretsmanager:${ProjectName}-ExternalRegistries-Secrets:SecretString:IoApiKey}}'
+        ContainerEnvEntry7: !Sub 'PN_EXTERNAL_REGISTRY_IOACT_API_KEY={{resolve:secretsmanager:${ProjectName}-ExternalRegistries-Secrets:SecretString:IoActApiKey}}'
+
+        MappedPaths: '/external-registry/*'
+        ECSClusterName: !Ref ECSClusterName
+        Subnets: !Ref SubnetsIds
+        VpcId: !Ref VpcId
+        EcsDefaultSecurityGroup: !Ref EcsDefaultSecurityGroup
+        LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
+        LoadbalancerRulePriority: !Ref MicroserviceNumber
+
+
+
+  ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI M2M DI PDND    ###
+  ###   La chiave viene impiegata per firmare il client assertion che serve          ###
+  ###   per richedere a PDND il JWT da utilizzare per invocare i servizi M2M di PDND ###
+  ######################################################################################
+  PDNDSessionTokenSigningKey:
+    Type: 'AWS::KMS::Key'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: RSA-2048 key to generate session token
+      KeySpec: RSA_2048
+      KeyUsage: SIGN_VERIFY
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+
+
+  # Application use this alias to access the public/private key pair
+  PDNDSessionTokenSigningKeyAlias:
+    Type: 'AWS::KMS::Alias'
+    Properties:
+      AliasName: !Sub 'alias/${ProjectName}-pdnd-authentication-token-key'
+      TargetKeyId: !Ref PDNDSessionTokenSigningKey
+
+  ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI ANPR DI PDND    ###
+  ###   La chiave viene impiegata per firmare il client assertion che serve           ###
+  ###   per richedere a PDND il JWT da utilizzare per invocare i servizi di ANPR      ###
+  #######################################################################################
+  PdndAnprSessionTokenSigningKey:
+    Type: 'AWS::KMS::Key'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: RSA-2048 key to generate session token
+      KeySpec: RSA_2048
+      KeyUsage: SIGN_VERIFY
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
