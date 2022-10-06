@@ -16,20 +16,23 @@ import java.time.Duration;
 @Slf4j
 public class CheckCfWebClient extends CommonWebClient {
 
-    @Value("${webclient.check-cf.tcp-max-poolsize}")
-    Integer tcpMaxPoolSize;
+    private final Integer tcpMaxPoolSize;
+    private final Integer tcpMaxQueuedConnections;
+    private final Integer tcpPendingAcquireTimeout;
+    private final Integer tcpPoolIdleTimeout;
+    private final String basePath;
 
-    @Value("${webclient.check-cf.tcp-max-queued-connections}")
-    Integer tcpMaxQueuedConnections;
-
-    @Value("${webclient.check-cf.tcp-pending-acquired-timeout}")
-    Integer tcpPendingAcquireTimeout;
-
-    @Value("${webclient.check-cf.tcp-pool-idle-timeout}")
-    Integer tcpPoolIdleTimeout;
-
-    @Value("${pdnd.agenzia-entrate.base-path}")
-    String basePath;
+    public CheckCfWebClient(@Value("${webclient.check-cf.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                         @Value("${webclient.check-cf.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                         @Value("${webclient.check-cf.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                         @Value("${webclient.check-cf.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
+                         @Value("${pdnd.agenzia-entrate.base-path}") String basePath) {
+        this.tcpMaxPoolSize = tcpMaxPoolSize;
+        this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
+        this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
+        this.tcpPoolIdleTimeout = tcpPoolIdleTimeout;
+        this.basePath = basePath;
+    }
 
     protected WebClient init() {
         ConnectionProvider provider = ConnectionProvider.builder("fixed")
@@ -38,7 +41,7 @@ public class CheckCfWebClient extends CommonWebClient {
                 .pendingAcquireTimeout(Duration.ofMillis(tcpPendingAcquireTimeout))
                 .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout)).build();
 
-        HttpClient httpClient = HttpClient.create(provider).wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);;
+        HttpClient httpClient = HttpClient.create(provider).wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
 
         return super.initWebClient(httpClient,basePath);
     }

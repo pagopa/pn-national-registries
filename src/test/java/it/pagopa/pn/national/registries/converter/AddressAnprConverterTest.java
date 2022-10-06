@@ -11,15 +11,16 @@ import java.util.List;
 import org.apache.velocity.util.ArrayListWrapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ContextConfiguration(classes = {AddressAnprConverter.class})
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class AddressAnprConverterTest {
 
-    @Autowired
+    @InjectMocks
     private AddressAnprConverter addressAnprConverter;
 
     /**

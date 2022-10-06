@@ -12,6 +12,7 @@ import it.pagopa.pn.national.registries.model.anpr.TipoResidenzaDto;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -25,7 +26,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 @Slf4j
 class AnprServiceTest {
 
@@ -62,10 +63,13 @@ class AnprServiceTest {
         listaSoggettiDto.setDatiSoggetto(listDatiSoggetto);
         response.setListaSoggetti(listaSoggettiDto);
 
-        when(anprClient.callEService(any())).thenReturn(Mono.just(response));
-        when(addressAnprConverter.convertToGetAddressANPROKDto(any(), anyString())).thenReturn(new GetAddressANPROKDto());
+        GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
+        getAddressANPROKDto.setResidentialAddresses(new ArrayList<>());
 
-        StepVerifier.create(anprService.getAddressANPR(request)).expectNext(new GetAddressANPROKDto()).expectComplete().verify();
+        when(anprClient.callEService(any())).thenReturn(Mono.just(response));
+        when(addressAnprConverter.convertToGetAddressANPROKDto(any(), anyString())).thenReturn(getAddressANPROKDto);
+
+        StepVerifier.create(anprService.getAddressANPR(request)).expectNext(getAddressANPROKDto).expectComplete().verify();
     }
 }
 

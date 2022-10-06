@@ -33,11 +33,6 @@ public class DigitalAddressInadConverter {
         if (item.getPracticedProfession() != null) {
             digitalAddress.setPracticedProfession(item.getPracticedProfession());
         }
-/*
-        if (digitalAddress.getUsageInfo().getMotivation() != null
-            && digitalAddress.getUsageInfo().getDateEndValidity() != null) {
-            digitalAddress.setUsageInfo(digitalAddress.getUsageInfo());
-        }*/
 
         return digitalAddress;
     }

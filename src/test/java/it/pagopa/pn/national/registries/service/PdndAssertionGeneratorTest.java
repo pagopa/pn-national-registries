@@ -8,27 +8,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import it.pagopa.pn.national.registries.exceptions.AssertionGeneratorException;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.SecretValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.kms.KmsClient;
-import software.amazon.awssdk.services.kms.model.SignRequest;
 
-@ContextConfiguration(classes = {PdndAssertionGenerator.class})
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class PdndAssertionGeneratorTest {
-    @MockBean
+    @Mock
     private KmsClient kmsClient;
 
-    @Autowired
+    @InjectMocks
     private PdndAssertionGenerator pdndAssertionGenerator;
 
     /**
@@ -36,7 +33,6 @@ class PdndAssertionGeneratorTest {
      */
     @Test
     void testGenerateClientAssertion() throws AwsServiceException, SdkClientException {
-        when(kmsClient.sign((SignRequest) any())).thenReturn(null);
 
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("Audience");
@@ -52,7 +48,7 @@ class PdndAssertionGeneratorTest {
         jwtConfig1.setPurposeId("42");
         jwtConfig1.setSubject("Hello from the Dreaming Spires");
         SecretValue secretValue = mock(SecretValue.class);
-        when(secretValue.getKeyId()).thenThrow(new AssertionGeneratorException(new Throwable()));
+        when(secretValue.getKeyId()).thenThrow(new PnInternalException("","",new Throwable()));
         when(secretValue.getJwtConfig()).thenReturn(jwtConfig1);
         doNothing().when(secretValue).setClientId(any());
         doNothing().when(secretValue).setJwtConfig(any());
@@ -60,7 +56,7 @@ class PdndAssertionGeneratorTest {
         secretValue.setClientId("42");
         secretValue.setJwtConfig(jwtConfig);
         secretValue.setKeyId("42");
-        assertThrows(AssertionGeneratorException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
+        assertThrows(PnInternalException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
         verify(secretValue, atLeast(1)).getJwtConfig();
         verify(secretValue).getKeyId();
         verify(secretValue).setClientId(any());
@@ -73,8 +69,6 @@ class PdndAssertionGeneratorTest {
      */
     @Test
     void testGenerateClientAssertion2() throws AwsServiceException, SdkClientException {
-        when(kmsClient.sign((SignRequest) any())).thenReturn(null);
-
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("Audience");
         jwtConfig.setIssuer("Issuer");
@@ -98,7 +92,7 @@ class PdndAssertionGeneratorTest {
         jwtConfig1.setPurposeId("42");
         jwtConfig1.setSubject("Hello from the Dreaming Spires");
         SecretValue secretValue = mock(SecretValue.class);
-        when(secretValue.getKeyId()).thenThrow(new AssertionGeneratorException(new Throwable()));
+        when(secretValue.getKeyId()).thenThrow(new PnInternalException("","",new Throwable()));
         when(secretValue.getJwtConfig()).thenReturn(jwtConfig1);
         doNothing().when(secretValue).setClientId(any());
         doNothing().when(secretValue).setJwtConfig(any());
@@ -106,7 +100,7 @@ class PdndAssertionGeneratorTest {
         secretValue.setClientId("42");
         secretValue.setJwtConfig(jwtConfig);
         secretValue.setKeyId("42");
-        assertThrows(AssertionGeneratorException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
+        assertThrows(PnInternalException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
         verify(secretValue, atLeast(1)).getJwtConfig();
         verify(secretValue).getKeyId();
         verify(secretValue).setClientId(any());
@@ -129,8 +123,6 @@ class PdndAssertionGeneratorTest {
      */
     @Test
     void testGenerateClientAssertion3() throws AwsServiceException, SdkClientException {
-        when(kmsClient.sign((SignRequest) any())).thenReturn(null);
-
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("Audience");
         jwtConfig.setIssuer("Issuer");
@@ -154,7 +146,7 @@ class PdndAssertionGeneratorTest {
         jwtConfig1.setPurposeId("42");
         jwtConfig1.setSubject("Hello from the Dreaming Spires");
         SecretValue secretValue = mock(SecretValue.class);
-        when(secretValue.getKeyId()).thenThrow(new AssertionGeneratorException(new Throwable()));
+        when(secretValue.getKeyId()).thenThrow(new PnInternalException("","",new Throwable()));
         when(secretValue.getJwtConfig()).thenReturn(jwtConfig1);
         doNothing().when(secretValue).setClientId(any());
         doNothing().when(secretValue).setJwtConfig(any());
@@ -162,7 +154,7 @@ class PdndAssertionGeneratorTest {
         secretValue.setClientId("42");
         secretValue.setJwtConfig(jwtConfig);
         secretValue.setKeyId("42");
-        assertThrows(AssertionGeneratorException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
+        assertThrows(PnInternalException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
         verify(secretValue, atLeast(1)).getJwtConfig();
         verify(secretValue).getKeyId();
         verify(secretValue).setClientId(any());
@@ -185,7 +177,6 @@ class PdndAssertionGeneratorTest {
      */
     @Test
     void testGenerateClientAssertion4() throws AwsServiceException, SdkClientException {
-        when(kmsClient.sign((SignRequest) any())).thenReturn(null);
 
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("Audience");
@@ -210,7 +201,7 @@ class PdndAssertionGeneratorTest {
         jwtConfig1.setPurposeId("42");
         jwtConfig1.setSubject("Hello from the Dreaming Spires");
         SecretValue secretValue = mock(SecretValue.class);
-        when(secretValue.getKeyId()).thenThrow(new AssertionGeneratorException(new Throwable()));
+        when(secretValue.getKeyId()).thenThrow(new PnInternalException("","",new Throwable()));
         when(secretValue.getJwtConfig()).thenReturn(jwtConfig1);
         doNothing().when(secretValue).setClientId(any());
         doNothing().when(secretValue).setJwtConfig(any());
@@ -218,7 +209,7 @@ class PdndAssertionGeneratorTest {
         secretValue.setClientId("42");
         secretValue.setJwtConfig(jwtConfig);
         secretValue.setKeyId("42");
-        assertThrows(AssertionGeneratorException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
+        assertThrows(PnInternalException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
         verify(secretValue, atLeast(1)).getJwtConfig();
         verify(secretValue).getKeyId();
         verify(secretValue).setClientId(any());
@@ -241,7 +232,6 @@ class PdndAssertionGeneratorTest {
      */
     @Test
     void testGenerateClientAssertion5() throws AwsServiceException, SdkClientException {
-        when(kmsClient.sign((SignRequest) any())).thenReturn(null);
 
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("Audience");
@@ -266,7 +256,7 @@ class PdndAssertionGeneratorTest {
         jwtConfig1.setPurposeId("42");
         jwtConfig1.setSubject("Hello from the Dreaming Spires");
         SecretValue secretValue = mock(SecretValue.class);
-        when(secretValue.getKeyId()).thenThrow(new AssertionGeneratorException(new Throwable()));
+        when(secretValue.getKeyId()).thenThrow(new PnInternalException("","",new Throwable()));
         when(secretValue.getJwtConfig()).thenReturn(jwtConfig1);
         doNothing().when(secretValue).setClientId(any());
         doNothing().when(secretValue).setJwtConfig(any());
@@ -274,7 +264,7 @@ class PdndAssertionGeneratorTest {
         secretValue.setClientId("42");
         secretValue.setJwtConfig(jwtConfig);
         secretValue.setKeyId("42");
-        assertThrows(AssertionGeneratorException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
+        assertThrows(PnInternalException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
         verify(secretValue, atLeast(1)).getJwtConfig();
         verify(secretValue).getKeyId();
         verify(secretValue).setClientId(any());
@@ -297,7 +287,6 @@ class PdndAssertionGeneratorTest {
      */
     @Test
     void testGenerateClientAssertion6() throws AwsServiceException, SdkClientException {
-        when(kmsClient.sign((SignRequest) any())).thenReturn(null);
 
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("Audience");
@@ -322,7 +311,7 @@ class PdndAssertionGeneratorTest {
         jwtConfig1.setPurposeId("42");
         jwtConfig1.setSubject("Hello from the Dreaming Spires");
         SecretValue secretValue = mock(SecretValue.class);
-        when(secretValue.getKeyId()).thenThrow(new AssertionGeneratorException(new Throwable()));
+        when(secretValue.getKeyId()).thenThrow(new PnInternalException("","",new Throwable()));
         when(secretValue.getJwtConfig()).thenReturn(jwtConfig1);
         doNothing().when(secretValue).setClientId(any());
         doNothing().when(secretValue).setJwtConfig(any());
@@ -330,7 +319,7 @@ class PdndAssertionGeneratorTest {
         secretValue.setClientId("42");
         secretValue.setJwtConfig(jwtConfig);
         secretValue.setKeyId("42");
-        assertThrows(AssertionGeneratorException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
+        assertThrows(PnInternalException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
         verify(secretValue, atLeast(1)).getJwtConfig();
         verify(secretValue).getKeyId();
         verify(secretValue).setClientId(any());
@@ -353,7 +342,6 @@ class PdndAssertionGeneratorTest {
      */
     @Test
     void testGenerateClientAssertion7() throws AwsServiceException, SdkClientException {
-        when(kmsClient.sign((SignRequest) any())).thenReturn(null);
 
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("Audience");
@@ -378,7 +366,7 @@ class PdndAssertionGeneratorTest {
         jwtConfig1.setPurposeId("42");
         jwtConfig1.setSubject("Hello from the Dreaming Spires");
         SecretValue secretValue = mock(SecretValue.class);
-        when(secretValue.getKeyId()).thenThrow(new AssertionGeneratorException(new Throwable()));
+        when(secretValue.getKeyId()).thenThrow(new PnInternalException("","",new Throwable()));
         when(secretValue.getJwtConfig()).thenReturn(jwtConfig1);
         doNothing().when(secretValue).setClientId(any());
         doNothing().when(secretValue).setJwtConfig(any());
@@ -386,7 +374,7 @@ class PdndAssertionGeneratorTest {
         secretValue.setClientId("42");
         secretValue.setJwtConfig(jwtConfig);
         secretValue.setKeyId("42");
-        assertThrows(AssertionGeneratorException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
+        assertThrows(PnInternalException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
         verify(secretValue, atLeast(1)).getJwtConfig();
         verify(secretValue).getKeyId();
         verify(secretValue).setClientId(any());
@@ -409,7 +397,6 @@ class PdndAssertionGeneratorTest {
      */
     @Test
     void testGenerateClientAssertion8() throws AwsServiceException, SdkClientException {
-        when(kmsClient.sign((SignRequest) any())).thenReturn(null);
 
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("Audience");
@@ -434,7 +421,7 @@ class PdndAssertionGeneratorTest {
         jwtConfig1.setPurposeId("42");
         jwtConfig1.setSubject("Hello from the Dreaming Spires");
         SecretValue secretValue = mock(SecretValue.class);
-        when(secretValue.getKeyId()).thenThrow(new AssertionGeneratorException(new Throwable()));
+        when(secretValue.getKeyId()).thenThrow(new PnInternalException("","",new Throwable()));
         when(secretValue.getJwtConfig()).thenReturn(jwtConfig1);
         doNothing().when(secretValue).setClientId(any());
         doNothing().when(secretValue).setJwtConfig(any());
@@ -442,7 +429,7 @@ class PdndAssertionGeneratorTest {
         secretValue.setClientId("42");
         secretValue.setJwtConfig(jwtConfig);
         secretValue.setKeyId("42");
-        assertThrows(AssertionGeneratorException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
+        assertThrows(PnInternalException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
         verify(secretValue, atLeast(1)).getJwtConfig();
         verify(secretValue).getKeyId();
         verify(secretValue).setClientId(any());
@@ -465,7 +452,6 @@ class PdndAssertionGeneratorTest {
      */
     @Test
     void testGenerateClientAssertion9() throws AwsServiceException, SdkClientException {
-        when(kmsClient.sign((SignRequest) any())).thenReturn(null);
 
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("Audience");
@@ -490,7 +476,7 @@ class PdndAssertionGeneratorTest {
         jwtConfig1.setPurposeId("42");
         jwtConfig1.setSubject("Hello from the Dreaming Spires");
         SecretValue secretValue = mock(SecretValue.class);
-        when(secretValue.getKeyId()).thenThrow(new AssertionGeneratorException(new Throwable()));
+        when(secretValue.getKeyId()).thenThrow(new PnInternalException("","",new Throwable()));
         when(secretValue.getJwtConfig()).thenReturn(jwtConfig1);
         doNothing().when(secretValue).setClientId(any());
         doNothing().when(secretValue).setJwtConfig(any());
@@ -498,7 +484,7 @@ class PdndAssertionGeneratorTest {
         secretValue.setClientId("42");
         secretValue.setJwtConfig(jwtConfig);
         secretValue.setKeyId("42");
-        assertThrows(AssertionGeneratorException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
+        assertThrows(PnInternalException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
         verify(secretValue, atLeast(1)).getJwtConfig();
         verify(secretValue).getKeyId();
         verify(secretValue).setClientId(any());
@@ -521,8 +507,6 @@ class PdndAssertionGeneratorTest {
      */
     @Test
     void testGenerateClientAssertion10() throws AwsServiceException, SdkClientException {
-        when(kmsClient.sign((SignRequest) any())).thenReturn(null);
-
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("Audience");
         jwtConfig.setIssuer("Issuer");
@@ -546,7 +530,7 @@ class PdndAssertionGeneratorTest {
         jwtConfig1.setPurposeId("42");
         jwtConfig1.setSubject("Hello from the Dreaming Spires");
         SecretValue secretValue = mock(SecretValue.class);
-        when(secretValue.getKeyId()).thenThrow(new AssertionGeneratorException(new Throwable()));
+        when(secretValue.getKeyId()).thenThrow(new PnInternalException("","",new Throwable()));
         when(secretValue.getJwtConfig()).thenReturn(jwtConfig1);
         doNothing().when(secretValue).setClientId(any());
         doNothing().when(secretValue).setJwtConfig(any());
@@ -554,7 +538,7 @@ class PdndAssertionGeneratorTest {
         secretValue.setClientId("42");
         secretValue.setJwtConfig(jwtConfig);
         secretValue.setKeyId("42");
-        assertThrows(AssertionGeneratorException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
+        assertThrows(PnInternalException.class, () -> pdndAssertionGenerator.generateClientAssertion(secretValue));
         verify(secretValue, atLeast(1)).getJwtConfig();
         verify(secretValue).getKeyId();
         verify(secretValue).setClientId(any());

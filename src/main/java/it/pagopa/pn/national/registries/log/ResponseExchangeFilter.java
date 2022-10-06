@@ -34,7 +34,7 @@ public class ResponseExchangeFilter implements ExchangeFilterFunction {
                 .build();
     }
 
-    private void logResponseBody(long startTime, DataBuffer dataBuffer, ClientResponse response, ClientRequest request) {
+    public void logResponseBody(long startTime, DataBuffer dataBuffer, ClientResponse response, ClientRequest request) {
         long duration = System.currentTimeMillis() - startTime;
         log.info("Response HTTP from {} {} {} - body: {} - timelapse: {}ms",
                 request.url(),
@@ -55,7 +55,7 @@ public class ResponseExchangeFilter implements ExchangeFilterFunction {
                 .build();
     }
 
-    private void logRequestBody(DataBuffer dataBuffer, ClientRequest request) {
+    public void logRequestBody(DataBuffer dataBuffer, ClientRequest request) {
         log.info("Request HTTP {} to: {} - body: {}",
                 request.method().name(),
                 request.url(),

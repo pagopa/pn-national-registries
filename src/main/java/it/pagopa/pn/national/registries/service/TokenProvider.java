@@ -2,8 +2,8 @@ package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.client.pdnd.AuthApiCustom;
-import it.pagopa.pn.national.registries.exceptions.PdndTokenGeneratorException;
 import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.SecretValue;
 import lombok.extern.slf4j.Slf4j;
@@ -13,6 +13,8 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
 import java.util.Optional;
+
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
 
 @Slf4j
 @Component
@@ -59,7 +61,7 @@ public class TokenProvider {
         try {
             secretValue = mapper.readValue(value, SecretValue.class);
         } catch (JsonProcessingException e) {
-            throw new PdndTokenGeneratorException(e);
+                throw new PnInternalException(ERROR_MESSAGE_PDND_TOKEN, ERROR_CODE_PDND_TOKEN,e);
         }
         return secretValue;
     }

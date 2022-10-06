@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.exceptions.PdndTokenGeneratorException;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,13 +29,13 @@ class SecretManagerServiceTest {
     void getSecretValue() {
         GetSecretValueResponse response = GetSecretValueResponse.builder().secretString("test").build();
         when(secretsManagerClient.getSecretValue((GetSecretValueRequest) any())).thenReturn(response);
-        Assertions.assertEquals("test", secretManagerService.getSecretValue("test").get().secretString());
+        Assertions.assertEquals(Optional.of(response), secretManagerService.getSecretValue("test"));
     }
 
     @Test
     void getSecretValueThrow() {
         when(secretsManagerClient.getSecretValue((GetSecretValueRequest) any())).thenThrow(ResourceNotFoundException.class);
-        Assertions.assertThrows(PdndTokenGeneratorException.class,() -> secretManagerService.getSecretValue("test"));
+        Assertions.assertThrows(PnInternalException.class,() -> secretManagerService.getSecretValue("test"));
     }
 
     @Test

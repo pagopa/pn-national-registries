@@ -23,40 +23,4 @@ class AccessTokenCacheEntryTest {
         Assertions.assertEquals("purposeId",accessTokenCacheEntry.getPurposeId());
         Assertions.assertEquals("Bearer",accessTokenCacheEntry.getTokenType().getValue());
     }
-
-    @Test
-    void getAccessToken() {
-    }
-
-    @Test
-    void getTokenType() {
-    }
-
-    @Test
-    void getPurposeId() {
-    }
-
-    @Test
-    void setAccessToken() {
-    }
-
-    @Test
-    void setTokenType() {
-    }
-
-    @Test
-    void testEquals() {
-    }
-
-    @Test
-    void canEqual() {
-    }
-
-    @Test
-    void testHashCode() {
-    }
-
-    @Test
-    void testToString() {
-    }
 }

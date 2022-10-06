@@ -2,50 +2,22 @@ package it.pagopa.pn.national.registries.converter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.model.checkcf.VerificaCodiceFiscale;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-@ContextConfiguration(classes = {CheckCfConverter.class})
-@ExtendWith(SpringExtension.class)
+import java.util.ArrayList;
+import java.util.List;
+
+@ExtendWith(MockitoExtension.class)
 class CheckCfConverterTest {
-    @Autowired
+    @InjectMocks
     private CheckCfConverter checkCfConverter;
 
-    /**
-     * Method under test: {@link CheckCfConverter#convertToCfStatusDto(VerificaCodiceFiscale)}
-     */
-    @Test
-    void testConvertToCfStatusDto() {
-        VerificaCodiceFiscale verificaCodiceFiscale = new VerificaCodiceFiscale();
-        verificaCodiceFiscale.setCodiceFiscale("Codice Fiscale");
-        verificaCodiceFiscale.setMessaggio("Messaggio");
-        verificaCodiceFiscale.setValido(true);
-        CheckTaxIdOKDto actualConvertToCfStatusDtoResult = checkCfConverter.convertToCfStatusDto(verificaCodiceFiscale);
-        assertNull(actualConvertToCfStatusDtoResult.getErrorCode());
-        assertEquals("Codice Fiscale", actualConvertToCfStatusDtoResult.getTaxId());
-        assertTrue(actualConvertToCfStatusDtoResult.getIsValid());
-    }
-
-    /**
-     * Method under test: {@link CheckCfConverter#convertToCfStatusDto(VerificaCodiceFiscale)}
-     */
-    @Test
-    void testConvertToCfStatusDto2() {
-        VerificaCodiceFiscale verificaCodiceFiscale = new VerificaCodiceFiscale();
-        verificaCodiceFiscale.setCodiceFiscale("Codice Fiscale");
-        verificaCodiceFiscale.setMessaggio(null);
-        verificaCodiceFiscale.setValido(true);
-        CheckTaxIdOKDto actualConvertToCfStatusDtoResult = checkCfConverter.convertToCfStatusDto(verificaCodiceFiscale);
-        assertEquals("Codice Fiscale", actualConvertToCfStatusDtoResult.getTaxId());
-        assertTrue(actualConvertToCfStatusDtoResult.getIsValid());
-    }
 
     /**
      * Method under test: {@link CheckCfConverter#convertToCfStatusDto(VerificaCodiceFiscale)}
@@ -54,39 +26,20 @@ class CheckCfConverterTest {
     void testConvertToCfStatusDto3() {
         VerificaCodiceFiscale verificaCodiceFiscale = new VerificaCodiceFiscale();
         verificaCodiceFiscale.setCodiceFiscale("Codice Fiscale");
-        verificaCodiceFiscale.setMessaggio("Codice fiscale non valido");
-        verificaCodiceFiscale.setValido(true);
+        List<String> list = new ArrayList<>();
+        list.add("messaggio errato");
+        list.add("Codice fiscale non valido");
+        list.add("Codice fiscale non utilizzabile in quanto aggiornato in altro codice fiscale");
+        list.add("Codice fiscale valido, non più utilizzabile in quanto aggiornato in altro codice fiscale");
+        for(String s: list){
+            verificaCodiceFiscale.setMessaggio(s);
+            CheckTaxIdOKDto actualConvertToCfStatusDtoResult = checkCfConverter.convertToCfStatusDto(verificaCodiceFiscale);
+            assertEquals("Codice Fiscale", actualConvertToCfStatusDtoResult.getTaxId());
+        }
+        verificaCodiceFiscale.setMessaggio(null);
         CheckTaxIdOKDto actualConvertToCfStatusDtoResult = checkCfConverter.convertToCfStatusDto(verificaCodiceFiscale);
         assertEquals("Codice Fiscale", actualConvertToCfStatusDtoResult.getTaxId());
-        assertTrue(actualConvertToCfStatusDtoResult.getIsValid());
-    }
-
-    /**
-     * Method under test: {@link CheckCfConverter#convertToCfStatusDto(VerificaCodiceFiscale)}
-     */
-    @Test
-    void testConvertToCfStatusDto4() {
-        VerificaCodiceFiscale verificaCodiceFiscale = new VerificaCodiceFiscale();
-        verificaCodiceFiscale.setCodiceFiscale("Codice Fiscale");
-        verificaCodiceFiscale.setMessaggio("Codice fiscale non utilizzabile in quanto aggiornato in altro codice fiscale");
-        verificaCodiceFiscale.setValido(true);
-        CheckTaxIdOKDto actualConvertToCfStatusDtoResult = checkCfConverter.convertToCfStatusDto(verificaCodiceFiscale);
-        assertEquals("Codice Fiscale", actualConvertToCfStatusDtoResult.getTaxId());
-        assertTrue(actualConvertToCfStatusDtoResult.getIsValid());
-    }
-
-    /**
-     * Method under test: {@link CheckCfConverter#convertToCfStatusDto(VerificaCodiceFiscale)}
-     */
-    @Test
-    void testConvertToCfStatusDto5() {
-        VerificaCodiceFiscale verificaCodiceFiscale = new VerificaCodiceFiscale();
-        verificaCodiceFiscale.setCodiceFiscale("Codice Fiscale");
-        verificaCodiceFiscale.setMessaggio("Codice fiscale valido, non più utilizzabile in quanto aggiornato in altro codice fiscale");
-        verificaCodiceFiscale.setValido(true);
-        CheckTaxIdOKDto actualConvertToCfStatusDtoResult = checkCfConverter.convertToCfStatusDto(verificaCodiceFiscale);
-        assertEquals("Codice Fiscale", actualConvertToCfStatusDtoResult.getTaxId());
-        assertTrue(actualConvertToCfStatusDtoResult.getIsValid());
+        assertNull(actualConvertToCfStatusDtoResult.getErrorCode());
     }
 
     /**

@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.cache;
 
-import it.pagopa.pn.national.registries.exceptions.PdndTokenGeneratorException;
 import it.pagopa.pn.national.registries.service.TokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpiringMap;
@@ -14,8 +13,7 @@ import java.util.concurrent.TimeUnit;
 @Component
 public class AccessTokenExpiringMap {
 
-    @Value("${pn.national-registries.pdnd.token.deadline}")
-    Integer deadline;
+    private final Integer deadline;
 
     private final TokenProvider tokenProvider;
 
@@ -26,8 +24,9 @@ public class AccessTokenExpiringMap {
             .build();
 
 
-    public AccessTokenExpiringMap(TokenProvider tokenProvider) {
+    public AccessTokenExpiringMap(TokenProvider tokenProvider, @Value("${pn.national-registries.pdnd.token.deadline}")Integer deadline) {
         this.tokenProvider = tokenProvider;
+        this.deadline = deadline;
     }
 
     public Mono<AccessTokenCacheEntry> getToken(String purposeId) {

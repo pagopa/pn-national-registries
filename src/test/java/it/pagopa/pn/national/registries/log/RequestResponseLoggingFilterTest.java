@@ -3,7 +3,6 @@ package it.pagopa.pn.national.registries.log;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -13,11 +12,14 @@ import java.util.function.Function;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.codec.support.DefaultServerCodecConfigurer;
 import org.springframework.http.server.reactive.ChannelSendOperator;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.mock.http.server.reactive.MockServerHttpResponse;
 import org.springframework.test.context.ContextConfiguration;
@@ -30,10 +32,10 @@ import org.springframework.web.server.i18n.AcceptHeaderLocaleContextResolver;
 import org.springframework.web.server.session.WebSessionManager;
 import reactor.core.publisher.Mono;
 
-@ContextConfiguration(classes = {RequestResponseLoggingFilter.class})
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class RequestResponseLoggingFilterTest {
-    @Autowired
+
+    @InjectMocks
     private RequestResponseLoggingFilter requestResponseLoggingFilter;
 
     /**
@@ -100,9 +102,6 @@ class RequestResponseLoggingFilterTest {
         when(defaultServerWebExchange.getResponse()).thenReturn(new MockServerHttpResponse());
         when(defaultServerWebExchange.getRequest()).thenReturn(serverHttpRequestDecorator1);
         WebFilterChain webFilterChain = mock(WebFilterChain.class);
-        when(webFilterChain.filter(any()))
-                .thenReturn(new ChannelSendOperator<>((Publisher<Object>) mock(Publisher.class),
-                        (Function<Publisher<Object>, Publisher<Void>>) mock(Function.class)));
         assertThrows(IllegalStateException.class,
                 () -> requestResponseLoggingFilter.filter(defaultServerWebExchange, webFilterChain));
     }
