@@ -30,11 +30,12 @@ public class CheckCfClient {
 
     protected CheckCfClient(AccessTokenExpiringMap accessTokenExpiringMap,
                             CheckCfWebClient checkCfWebClient,
-                            @Value("${pdnd.c001.purpose-id}") String purposeId) {
+                            @Value("${pdnd.c001.purpose-id}") String purposeId,
+                            ObjectMapper objectMapper) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.purposeId = purposeId;
         webClient = checkCfWebClient.init();
-        mapper = new ObjectMapper();
+        this.mapper = objectMapper;
     }
 
     public Mono<VerificaCodiceFiscale> callEService(Richiesta richiesta) {
