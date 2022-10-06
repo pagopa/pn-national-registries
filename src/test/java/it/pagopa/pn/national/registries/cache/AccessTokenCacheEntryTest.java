@@ -11,17 +11,16 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class AccessTokenCacheEntryTest {
 
-    @InjectMocks
-    AccessTokenCacheEntry accessTokenCacheEntry;
-
     @Test
     void setClientCredentials() {
+        AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         TokenTypeDto tokenTypeDto = TokenTypeDto.BEARER;
         ClientCredentialsResponseDto client = new ClientCredentialsResponseDto();
         client.setAccessToken("test");
         client.setTokenType(tokenTypeDto);
         accessTokenCacheEntry.setClientCredentials(client);
         Assertions.assertEquals("test",accessTokenCacheEntry.getAccessToken());
+        Assertions.assertEquals("purposeId",accessTokenCacheEntry.getPurposeId());
         Assertions.assertEquals("Bearer",accessTokenCacheEntry.getTokenType().getValue());
     }
 

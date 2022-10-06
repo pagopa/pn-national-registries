@@ -26,26 +26,24 @@ public class InadClient {
                          @Value("${pdnd.c001.purpose-id}") String purposeId) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.purposeId = purposeId;
-        this.webClient = inadWebClient.initWebClient();
+        this.webClient = inadWebClient.init();
     }
 
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
-        return accessTokenExpiringMap.getToken(purposeId).flatMap(accessTokenCacheEntry -> {
-            return webClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .queryParam("practicalReference",practicalReference)
-                            .path("/extract/{codice_fiscale}")
-                            .build(taxId))
-                    .headers(httpHeaders -> {
-                        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                        httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                    })
-                    .retrieve()
-                    .bodyToMono(ResponseRequestDigitalAddressDto.class)
-                    .retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                            .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> new CheckCfException(retrySignal.failure())));
-
-        });
+        return accessTokenExpiringMap.getToken(purposeId).flatMap(accessTokenCacheEntry ->
+                webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .queryParam("practicalReference",practicalReference)
+                        .path("/extract/{codice_fiscale}")
+                        .build(taxId))
+                .headers(httpHeaders -> {
+                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                })
+                .retrieve()
+                .bodyToMono(ResponseRequestDigitalAddressDto.class)
+                .retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> new CheckCfException(retrySignal.failure()))));
     }
 
     private boolean checkExceptionType(Throwable throwable) {

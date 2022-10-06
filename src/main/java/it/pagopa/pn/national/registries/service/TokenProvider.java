@@ -23,22 +23,22 @@ public class TokenProvider {
     private final PdndAssertionGenerator assertionGenerator;
     private final SecretManagerService secretManagerService;
     private final AuthApiCustom authApiCustom;
+    private final String pdndBasePath;
 
     public TokenProvider(PdndAssertionGenerator assertionGenerator,
                          SecretManagerService secretManagerService,
                          AuthApiCustom authApiCustom,
                          @Value("${pn.national-registries.pdnd.client-assertion-type}") String clientAssertionType,
-                         @Value("${pn.national-registries.pdnd.grant-type}") String grantType
+                         @Value("${pn.national-registries.pdnd.grant-type}") String grantType,
+                         @Value("${pdnd.base-path}") String pdndBasePath
     ) {
         this.assertionGenerator = assertionGenerator;
         this.secretManagerService = secretManagerService;
         this.clientAssertionType = clientAssertionType;
         this.grantType = grantType;
         this.authApiCustom = authApiCustom;
+        this.pdndBasePath = pdndBasePath;
     }
-
-    @Value("${pdnd.base-path}")
-    private String pdndBasePath;
 
     public Mono<ClientCredentialsResponseDto> getToken(String purposeId) {
         Optional<GetSecretValueResponse> getSecretValueResponse = secretManagerService.getSecretValue(purposeId);

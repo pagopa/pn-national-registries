@@ -31,7 +31,7 @@ public class InadWebClient extends CommonWebClient {
         this.basePath = basePath;
     }
 
-    protected final WebClient initWebClient() {
+    public WebClient init() {
         ConnectionProvider provider = ConnectionProvider.builder("fixed")
                 .maxConnections(tcpMaxPoolSize)
                 .pendingAcquireMaxCount(tcpMaxQueuedConnections)

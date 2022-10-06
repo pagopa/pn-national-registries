@@ -33,7 +33,7 @@ public class AnprService {
                 .map(rispostaE002OKDto -> addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, richiestaE002Dto.getCriteriRicerca().getCodiceFiscale()));
     }
 
-    public RichiestaE002Dto createRequest(GetAddressANPRRequestBodyDto request) {
+    private RichiestaE002Dto createRequest(GetAddressANPRRequestBodyDto request) {
         RichiestaE002Dto richiesta = new RichiestaE002Dto();
         TipoCriteriRicercaE002Dto criteriRicercaE002Dto = new TipoCriteriRicercaE002Dto();
         criteriRicercaE002Dto.setCodiceFiscale(request.getFilter().getTaxId());

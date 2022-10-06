@@ -21,7 +21,7 @@ public class AccessTokenExpiringMap {
 
     protected ExpiringMap<String, AccessTokenCacheEntry> expiringMap = ExpiringMap.builder()
             .asyncExpirationListener((purposeId, accessTokenEntry) ->
-                    log.info("token for {} has expired",purposeId))
+                    log.info("token for {} has expired", purposeId))
             .variableExpiration()
             .build();
 
@@ -35,10 +35,9 @@ public class AccessTokenExpiringMap {
             return requireNewAccessToken(purposeId);
         } else {
             long expiration = expiringMap.getExpectedExpiration(purposeId);
-            if(expiration <= deadline) {
+            if (expiration <= deadline) {
                 return requireNewAccessToken(purposeId);
-            }
-            else {
+            } else {
                 log.info("Existing Access Token Required with PurposeId: " + purposeId);
                 return Mono.just(expiringMap.get(purposeId));
             }
@@ -47,17 +46,13 @@ public class AccessTokenExpiringMap {
 
     private Mono<AccessTokenCacheEntry> requireNewAccessToken(String purposeId) {
         log.info("New Access Token Required with PurposeId: " + purposeId);
-        try {
-            return tokenProvider.getToken(purposeId)
-                    .map(clientCredentialsResponseDto -> {
-                        AccessTokenCacheEntry tok = new AccessTokenCacheEntry(purposeId);
-                        tok.setClientCredentials(clientCredentialsResponseDto);
-                        expiringMap.put(purposeId, tok);
-                        expiringMap.setExpiration(purposeId,clientCredentialsResponseDto.getExpiresIn(), TimeUnit.SECONDS);
-                        return tok;
-                    });
-        } catch (Exception e) {
-            throw new PdndTokenGeneratorException(e);
-        }
+        return tokenProvider.getToken(purposeId)
+                .map(clientCredentialsResponseDto -> {
+                    AccessTokenCacheEntry tok = new AccessTokenCacheEntry(purposeId);
+                    tok.setClientCredentials(clientCredentialsResponseDto);
+                    expiringMap.put(purposeId, tok);
+                    expiringMap.setExpiration(purposeId, clientCredentialsResponseDto.getExpiresIn(), TimeUnit.SECONDS);
+                    return tok;
+                });
     }
 }

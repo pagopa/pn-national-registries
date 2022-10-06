@@ -31,7 +31,7 @@ public class CheckCfWebClient extends CommonWebClient {
     @Value("${pdnd.agenzia-entrate.base-path}")
     String basePath;
 
-    protected final WebClient init() {
+    protected WebClient init() {
         ConnectionProvider provider = ConnectionProvider.builder("fixed")
                 .maxConnections(tcpMaxPoolSize)
                 .pendingAcquireMaxCount(tcpMaxQueuedConnections)

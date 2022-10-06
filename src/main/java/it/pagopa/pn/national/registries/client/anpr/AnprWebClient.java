@@ -27,29 +27,32 @@ import java.util.*;
 @Slf4j
 public class AnprWebClient extends CommonWebClient {
 
-    @Value("${pdnd.anpr.secret}")
-    String secretName;
+    private final ObjectMapper objectMapper;
+    private final SecretManagerService secretManagerService;
 
-    @Value("${webclient.anpr.tcp-max-poolsize}")
-    Integer tcpMaxPoolSize;
+    private final Integer tcpMaxPoolSize;
+    private final Integer tcpMaxQueuedConnections;
+    private final Integer tcpPendingAcquireTimeout;
+    private final Integer tcpPoolIdleTimeout;
+    private final String basePath;
+    private final String secretName;
 
-    @Value("${webclient.anpr.tcp-max-queued-connections}")
-    Integer tcpMaxQueuedConnections;
-
-    @Value("${webclient.anpr.tcp-pending-acquired-timeout}")
-    Integer tcpPendingAcquireTimeout;
-
-    @Value("${webclient.anpr.tcp-pool-idle-timeout}")
-    Integer tcpPoolIdleTimeout;
-
-    @Value("${pdnd.anpr.base-path}")
-    String basePath;
-
-    @Autowired
-    ObjectMapper objectMapper;
-
-    @Autowired
-    SecretManagerService secretManagerService;
+    public AnprWebClient(@Value("${webclient.anpr.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                         @Value("${webclient.anpr.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                         @Value("${webclient.anpr.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                         @Value("${webclient.anpr.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
+                         @Value("${pdnd.anpr.base-path}") String basePath,
+                         @Value("${pdnd.anpr.secret}") String secretName,
+                         SecretManagerService secretsManagerService) {
+        this.tcpMaxPoolSize = tcpMaxPoolSize;
+        this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
+        this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
+        this.tcpPoolIdleTimeout = tcpPoolIdleTimeout;
+        this.basePath = basePath;
+        this.secretManagerService = secretsManagerService;
+        this.objectMapper = new ObjectMapper();
+        this.secretName = secretName;
+    }
 
     public WebClient init() {
         ConnectionProvider connectionProvider = ConnectionProvider.builder("fixed")
