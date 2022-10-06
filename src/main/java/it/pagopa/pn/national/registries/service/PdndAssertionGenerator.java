@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.national.registries.exceptions.AssertionGeneratorException;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.SecretValue;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
@@ -17,6 +17,8 @@ import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
+
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
 
 @Slf4j
 @Component
@@ -54,7 +56,7 @@ public class PdndAssertionGenerator {
             return jwtContent + "." + signatureString;
 
         } catch (Exception e) {
-            throw new AssertionGeneratorException(e);
+            throw new PnInternalException(ERROR_MESSAGE_CLIENTASSERTION, ERROR_CODE_CLIENTASSERTION,e);
         }
     }
 

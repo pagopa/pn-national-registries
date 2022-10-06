@@ -5,12 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.client.CommonWebClient;
-import it.pagopa.pn.national.registries.exceptions.AnprException;
 import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -23,33 +22,39 @@ import java.io.*;
 import java.time.Duration;
 import java.util.*;
 
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
+
 @Component
 @Slf4j
 public class AnprWebClient extends CommonWebClient {
 
-    @Value("${pdnd.anpr.secret}")
-    String secretName;
+    private final ObjectMapper objectMapper;
+    private final SecretManagerService secretManagerService;
 
-    @Value("${webclient.anpr.tcp-max-poolsize}")
-    Integer tcpMaxPoolSize;
+    private final Integer tcpMaxPoolSize;
+    private final Integer tcpMaxQueuedConnections;
+    private final Integer tcpPendingAcquireTimeout;
+    private final Integer tcpPoolIdleTimeout;
+    private final String basePath;
+    private final String secretName;
 
-    @Value("${webclient.anpr.tcp-max-queued-connections}")
-    Integer tcpMaxQueuedConnections;
-
-    @Value("${webclient.anpr.tcp-pending-acquired-timeout}")
-    Integer tcpPendingAcquireTimeout;
-
-    @Value("${webclient.anpr.tcp-pool-idle-timeout}")
-    Integer tcpPoolIdleTimeout;
-
-    @Value("${pdnd.anpr.base-path}")
-    String basePath;
-
-    @Autowired
-    ObjectMapper objectMapper;
-
-    @Autowired
-    SecretManagerService secretManagerService;
+    public AnprWebClient(@Value("${webclient.anpr.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                         @Value("${webclient.anpr.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                         @Value("${webclient.anpr.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                         @Value("${webclient.anpr.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
+                         @Value("${pdnd.anpr.base-path}") String basePath,
+                         @Value("${pdnd.anpr.secret}") String secretName,
+                         SecretManagerService secretsManagerService) {
+        this.tcpMaxPoolSize = tcpMaxPoolSize;
+        this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
+        this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
+        this.tcpPoolIdleTimeout = tcpPoolIdleTimeout;
+        this.basePath = basePath;
+        this.secretManagerService = secretsManagerService;
+        this.objectMapper = new ObjectMapper();
+        this.secretName = secretName;
+    }
 
     public WebClient init() {
         ConnectionProvider connectionProvider = ConnectionProvider.builder("fixed")
@@ -77,18 +82,18 @@ public class AnprWebClient extends CommonWebClient {
             return getSslContext(sslContext,sslData);
 
         } catch (IOException e) {
-            throw new AnprException(e);
+            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
         }
     }
 
-    private SslContext getSslContext(SslContextBuilder sslContextBuilder, SSLData sslData) throws SSLException {
+    public SslContext getSslContext(SslContextBuilder sslContextBuilder, SSLData sslData) throws SSLException {
         if(StringUtils.isNullOrEmpty(sslData.getTrust())){
             return sslContextBuilder.trustManager(InsecureTrustManagerFactory.INSTANCE).build();
         }
         return sslContextBuilder.trustManager(getTrustCertInputStream(sslData.getTrust())).build();
     }
 
-    private InputStream getTrustCertInputStream(String clientKeyPem) {
+    public InputStream getTrustCertInputStream(String clientKeyPem) {
         return new ByteArrayInputStream(Base64.getDecoder().decode(clientKeyPem));
     }
 

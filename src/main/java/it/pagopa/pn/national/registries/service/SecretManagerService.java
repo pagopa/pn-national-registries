@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.exceptions.PdndTokenGeneratorException;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -9,6 +9,9 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueReques
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
 import java.util.Optional;
+
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_PDND_TOKEN;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_PDND_TOKEN;
 
 @Slf4j
 @Service
@@ -29,7 +32,7 @@ public class SecretManagerService {
         try {
             return Optional.of(secretsManagerClient.getSecretValue(secretValueRequest));
         } catch (Exception e) {
-            throw new PdndTokenGeneratorException(e);
+            throw new PnInternalException(ERROR_MESSAGE_PDND_TOKEN, ERROR_CODE_PDND_TOKEN,e);
         }
     }
 

@@ -13,22 +13,25 @@ import java.time.Duration;
 @Slf4j
 public class InadWebClient extends CommonWebClient {
 
-    @Value("${webclient.inad.tcp-max-poolsize}")
-    Integer tcpMaxPoolSize;
+    private final Integer tcpMaxPoolSize;
+    private final Integer tcpMaxQueuedConnections;
+    private final Integer tcpPendingAcquireTimeout;
+    private final Integer tcpPoolIdleTimeout;
+    private final String basePath;
 
-    @Value("${webclient.inad.tcp-max-queued-connections}")
-    Integer tcpMaxQueuedConnections;
+    public InadWebClient(@Value("${webclient.inad.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                         @Value("${webclient.inad.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                         @Value("${webclient.inad.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                         @Value("${webclient.inad.tcp-pool-idle-timeout}")Integer tcpPoolIdleTimeout,
+                         @Value("${pdnd.inad.base-path}")String basePath) {
+        this.tcpMaxPoolSize = tcpMaxPoolSize;
+        this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
+        this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
+        this.tcpPoolIdleTimeout = tcpPoolIdleTimeout;
+        this.basePath = basePath;
+    }
 
-    @Value("${webclient.inad.tcp-pending-acquired-timeout}")
-    Integer tcpPendingAcquireTimeout;
-
-    @Value("${webclient.inad.tcp-pool-idle-timeout}")
-    Integer tcpPoolIdleTimeout;
-
-    @Value("${pdnd.inad.base-path}")
-    String basePath;
-
-    protected final WebClient initWebClient() {
+    public WebClient init() {
         ConnectionProvider provider = ConnectionProvider.builder("fixed")
                 .maxConnections(tcpMaxPoolSize)
                 .pendingAcquireMaxCount(tcpMaxQueuedConnections)

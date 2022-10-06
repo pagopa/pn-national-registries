@@ -5,7 +5,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.RegisteredClaims;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.national.registries.exceptions.AnprException;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.model.TokenHeader;
@@ -27,6 +27,9 @@ import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
+
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
 
 @Component
 @Slf4j
@@ -62,7 +65,7 @@ public class AgidJwtSignature {
             return JWT.create().withHeader(createHeaderMap(th, sslData)).withPayload(createClaimMap(digest, tp))
                     .sign(Algorithm.RSA256(getPublicKey(sslData.getPub()), getPrivateKey(sslData.getKey())));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
-            throw new AnprException(e);
+            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
         }
     }
 
@@ -102,14 +105,14 @@ public class AgidJwtSignature {
     }
 
 
-    private RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+    protected RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
         InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(pub));
         X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(is.readAllBytes());
         KeyFactory kf = KeyFactory.getInstance("RSA");
         return (RSAPublicKey) kf.generatePublic(encodedKeySpec);
     }
 
-    private RSAPrivateKey getPrivateKey(String key) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
+    protected RSAPrivateKey getPrivateKey(String key) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
         InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(key));
         PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(is.readAllBytes());
         KeyFactory kf = KeyFactory.getInstance("RSA");
