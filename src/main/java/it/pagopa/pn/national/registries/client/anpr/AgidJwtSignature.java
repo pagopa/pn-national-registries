@@ -105,14 +105,14 @@ public class AgidJwtSignature {
     }
 
 
-    private RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+    protected RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
         InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(pub));
         X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(is.readAllBytes());
         KeyFactory kf = KeyFactory.getInstance("RSA");
         return (RSAPublicKey) kf.generatePublic(encodedKeySpec);
     }
 
-    private RSAPrivateKey getPrivateKey(String key) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
+    protected RSAPrivateKey getPrivateKey(String key) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
         InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(key));
         PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(is.readAllBytes());
         KeyFactory kf = KeyFactory.getInstance("RSA");

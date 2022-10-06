@@ -10,9 +10,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
+import java.security.spec.InvalidKeySpecException;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +44,33 @@ class AgidJwtSignatureTest {
         when(secretManagerService.getSecretValue("secret2")).thenReturn(Optional.of(response2));
         String digest = "digest";
         Assertions.assertThrows(PnInternalException.class,()->agidJwtSignature.createAgidJwt(digest));
+    }
+
+    @Test
+    void testCreateAgidJWT2() {
+        GetSecretValueResponse response1 = GetSecretValueResponse.builder().secretString("{\n" +
+                "\"cert\":\"cert\",\n" +
+                "\"key\":\"key\",\n" +
+                "\"pub\":\"pub\",\n" +
+                "\"trust\":\"dGVzdA==\"\n" +
+                "}").build();
+        AgidJwtSignature agidJwtSignature = new AgidJwtSignature("secret1",
+                "secret2",
+                secretManagerService,
+                new ObjectMapper());
+        when(secretManagerService.getSecretValue("secret1")).thenReturn(Optional.of(response1));
+        when(secretManagerService.getSecretValue("secret2")).thenReturn(Optional.empty());
+        String digest = "digest";
+        Assertions.assertNull(agidJwtSignature.createAgidJwt(digest));
+    }
+
+    @Test
+    void testgetPrivateKey() {
+        AgidJwtSignature agidJwtSignature = new AgidJwtSignature("secret1",
+                "secret2",
+                secretManagerService,
+                new ObjectMapper());
+        Assertions.assertThrows(InvalidKeySpecException.class,()->agidJwtSignature.getPrivateKey("dGVzdA=="));
     }
 
 }

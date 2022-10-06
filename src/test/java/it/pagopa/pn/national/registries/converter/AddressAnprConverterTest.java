@@ -8,14 +8,10 @@ import it.pagopa.pn.national.registries.model.anpr.*;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.velocity.util.ArrayListWrapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 @ExtendWith(MockitoExtension.class)
 class AddressAnprConverterTest {
@@ -34,6 +30,13 @@ class AddressAnprConverterTest {
         RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
         rispostaE002OKDto.setListaAnomalie(new ArrayList<>());
         rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
+        rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
+        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+    }
+
+    @Test
+    void testConvertToGetAddressANPROKDto5() {
+        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
         rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
         assertNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
     }
@@ -102,6 +105,72 @@ class AddressAnprConverterTest {
         rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
         rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
         assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+    }
+
+    @Test
+    void testConvertToGetAddressANPROKDto6() {
+        TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
+        tipoCodiceFiscaleDto.setCodFiscale("Cf");
+        tipoCodiceFiscaleDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        tipoCodiceFiscaleDto.setValiditaCF("Validita CF");
+
+        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
+        tipoGeneralitaDto.setCodiceFiscale(tipoCodiceFiscaleDto);
+
+        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
+        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+
+        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
+        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+
+        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
+        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+
+        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
+        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
+        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+    }
+
+    @Test
+    void testConvertToGetAddressANPROKDto7() {
+        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
+
+        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
+        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+
+        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
+        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+
+        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
+        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+
+        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
+        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
+        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+    }
+
+    @Test
+    void testConvertToGetAddressANPROKDto8() {
+        TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
+        tipoCodiceFiscaleDto.setCodFiscale("Cf");
+        tipoCodiceFiscaleDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        tipoCodiceFiscaleDto.setValiditaCF("Validita CF");
+
+        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
+        tipoGeneralitaDto.setCodiceFiscale(tipoCodiceFiscaleDto);
+
+        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
+        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+
+        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
+        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+
+        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
+        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+
+        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
+        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
+        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "cf2").getResidentialAddresses());
     }
 
     /**
