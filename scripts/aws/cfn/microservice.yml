@@ -127,14 +127,13 @@ Resources:
         ContainerEnvEntry6: !Sub 'PN_EXTERNAL_REGISTRY_IO_API_KEY={{resolve:secretsmanager:${ProjectName}-ExternalRegistries-Secrets:SecretString:IoApiKey}}'
         ContainerEnvEntry7: !Sub 'PN_EXTERNAL_REGISTRY_IOACT_API_KEY={{resolve:secretsmanager:${ProjectName}-ExternalRegistries-Secrets:SecretString:IoActApiKey}}'
 
-        MappedPaths: '/external-registry/*'
+        MappedPaths: '/external-registry-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
         VpcId: !Ref VpcId
         EcsDefaultSecurityGroup: !Ref EcsDefaultSecurityGroup
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
-
 
 
   ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI M2M DI PDND    ###
@@ -159,6 +158,19 @@ Resources:
             Action: 'kms:*'
             Resource: '*'
 
+  SecretManager:
+    Type: 'AWS::SecretsManager::ResourcePolicy'
+    Properties:
+      ResourcePolicy:
+        Version: 2012-10-17
+        Statement:
+            - Sid: Enable IAM User Permissions
+              Effect: Allow
+              Principal:
+                AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+              Action: 'secretsmanager:GetSecretValue'
+              Resource: '*'
+      SecretId: arn:aws:secretsmanager:eu-south-1:558518206506:secret:pdnd-anpr-ssl-FfkGOL
 
   # Application use this alias to access the public/private key pair
   PDNDSessionTokenSigningKeyAlias:

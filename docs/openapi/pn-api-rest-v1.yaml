@@ -14,7 +14,7 @@ tags:
 - name: checkTaxId
   description: Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
 paths:
-  /external-registry-private/addressANPR:
+ /external-registry-private/addressANPR:
     post:
       tags:
       - addressANPR
