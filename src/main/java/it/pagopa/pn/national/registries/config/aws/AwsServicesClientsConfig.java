@@ -12,8 +12,11 @@ import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 @Slf4j
 public class AwsServicesClientsConfig {
 
-    @Value("${aws.region}")
-    private String region;
+    private final String region;
+
+    public AwsServicesClientsConfig(@Value("${aws.region}") String region) {
+        this.region = region;
+    }
 
     @Bean
     public KmsClient kmsClient(){

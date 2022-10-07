@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.client.inad;
 
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.exceptions.CheckCfException;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,6 +12,8 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
+
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
 
 @Component
 @Slf4j
@@ -26,29 +28,28 @@ public class InadClient {
                          @Value("${pdnd.c001.purpose-id}") String purposeId) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.purposeId = purposeId;
-        this.webClient = inadWebClient.initWebClient();
+        this.webClient = inadWebClient.init();
     }
 
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
-        return accessTokenExpiringMap.getToken(purposeId).flatMap(accessTokenCacheEntry -> {
-            return webClient.get()
-                    .uri(uriBuilder -> uriBuilder
-                            .queryParam("practicalReference",practicalReference)
-                            .path("/extract/{codice_fiscale}")
-                            .build(taxId))
-                    .headers(httpHeaders -> {
-                        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                        httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                    })
-                    .retrieve()
-                    .bodyToMono(ResponseRequestDigitalAddressDto.class)
-                    .retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                            .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> new CheckCfException(retrySignal.failure())));
-
-        });
+        return accessTokenExpiringMap.getToken(purposeId).flatMap(accessTokenCacheEntry ->
+                webClient.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .queryParam("practicalReference", practicalReference)
+                                .path("/extract/{codice_fiscale}")
+                                .build(taxId))
+                        .headers(httpHeaders -> {
+                            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                        })
+                        .retrieve()
+                        .bodyToMono(ResponseRequestDigitalAddressDto.class)
+                        .retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                        new PnInternalException(ERROR_MESSAGE_INAD, ERROR_CODE_INAD, retrySignal.failure()))));
     }
 
-    private boolean checkExceptionType(Throwable throwable) {
+    protected boolean checkExceptionType(Throwable throwable) {
         if (throwable instanceof WebClientResponseException) {
             WebClientResponseException exception = (WebClientResponseException) throwable;
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;

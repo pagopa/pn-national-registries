@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;
 import lombok.extern.slf4j.Slf4j;
@@ -14,13 +13,7 @@ import reactor.netty.http.client.HttpClient;
 public abstract class CommonWebClient extends CommonBaseClient {
 
     @Autowired
-    ObjectMapper mapper;
-
-    @Autowired
     ResponseExchangeFilter responseExchangeFilter;
-
-    protected CommonWebClient() {
-    }
 
     protected final WebClient initWebClient(HttpClient httpClient,String baseUrl) {
 

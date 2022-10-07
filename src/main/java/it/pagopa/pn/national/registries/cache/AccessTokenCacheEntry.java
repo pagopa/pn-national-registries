@@ -11,7 +11,7 @@ public class AccessTokenCacheEntry {
 
     private String accessToken;
     private TokenTypeDto tokenType;
-    private final String purposeId;
+    private String purposeId;
 
     public AccessTokenCacheEntry(String purposeId) {
         this.purposeId = purposeId;

@@ -15,13 +15,11 @@ public class DigitalAddressInadConverter {
 
         if (elementDigitalAddressDto != null) {
 
-            int counter = 0;
             response.setSince(elementDigitalAddressDto.getSince());
             response.setTaxId(elementDigitalAddressDto.getCodiceFiscale());
 
             for (ElementDigitalAddressDto item : elementDigitalAddressDto.getDigitalAddress()) {
-                response.addDigitalAddressItem(convertToGetDigitalAddressINADOKDigitalAddressInnerDto(elementDigitalAddressDto.getDigitalAddress().get(counter)));
-                counter++;
+                response.addDigitalAddressItem(convertToGetDigitalAddressINADOKDigitalAddressInnerDto(item));
             }
         }
         return response;
@@ -34,11 +32,6 @@ public class DigitalAddressInadConverter {
 
         if (item.getPracticedProfession() != null) {
             digitalAddress.setPracticedProfession(item.getPracticedProfession());
-        }
-
-        if (digitalAddress.getUsageInfo().getMotivation() != null
-            && digitalAddress.getUsageInfo().getDateEndValidity() != null) {
-            digitalAddress.setUsageInfo(digitalAddress.getUsageInfo());
         }
 
         return digitalAddress;
