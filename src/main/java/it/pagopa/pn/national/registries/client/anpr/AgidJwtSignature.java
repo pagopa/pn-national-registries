@@ -40,8 +40,8 @@ public class AgidJwtSignature {
     private final SecretManagerService secretManagerService;
     private final ObjectMapper mapper;
 
-    public AgidJwtSignature(@Value("${pdnd.anpr.secret.integrity}") String secretIntegrity,
-                            @Value("${pdnd.anpr.secret.agid-jwt-signature}") String secret,
+    public AgidJwtSignature(@Value("${pn.national.registries.pdnd.anpr.secret.integrity}") String secretIntegrity,
+                            @Value("${pn.national.registries.pdnd.anpr.secret.agid-jwt-signature}") String secret,
                             SecretManagerService secretManagerService,
                             ObjectMapper mapper) {
         this.secret = secret;

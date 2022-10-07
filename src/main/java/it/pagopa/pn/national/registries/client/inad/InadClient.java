@@ -25,7 +25,7 @@ public class InadClient {
 
     protected InadClient(AccessTokenExpiringMap accessTokenExpiringMap,
                          InadWebClient inadWebClient,
-                         @Value("${pdnd.c001.purpose-id}") String purposeId) {
+                         @Value("${pn.national.registries.pdnd.c001.purpose-id}") String purposeId) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.purposeId = purposeId;
         this.webClient = inadWebClient.init();

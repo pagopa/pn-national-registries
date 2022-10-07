@@ -39,7 +39,7 @@ public class AnprClient {
                          ObjectMapper mapper,
                          AgidJwtSignature agidJwtSignature,
                          AnprWebClient anprWebClient,
-                         @Value("${pdnd.c001.purpose-id}") String purposeId) {
+                         @Value("${pn.national.registries.pdnd.anpr.purpose-id}") String purposeId) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.agidJwtSignature = agidJwtSignature;
         this.purposeId = purposeId;

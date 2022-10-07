@@ -39,12 +39,12 @@ public class AnprWebClient extends CommonWebClient {
     private final String basePath;
     private final String secretName;
 
-    public AnprWebClient(@Value("${webclient.anpr.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                         @Value("${webclient.anpr.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                         @Value("${webclient.anpr.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
-                         @Value("${webclient.anpr.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                         @Value("${pdnd.anpr.base-path}") String basePath,
-                         @Value("${pdnd.anpr.secret}") String secretName,
+    public AnprWebClient(@Value("${pn.national.registries.webclient.anpr.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                         @Value("${pn.national.registries.webclient.anpr.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                         @Value("${pn.national.registries.webclient.anpr.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                         @Value("${pn.national.registries.webclient.anpr.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
+                         @Value("${pn.national.registries.pdnd.anpr.base-path}") String basePath,
+                         @Value("${pn.national.registries.pdnd.anpr.secret}") String secretName,
                          SecretManagerService secretsManagerService) {
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
