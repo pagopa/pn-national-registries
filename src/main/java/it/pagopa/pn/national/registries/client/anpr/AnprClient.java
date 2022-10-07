@@ -23,6 +23,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
+import static javax.xml.crypto.dsig.DigestMethod.SHA256;
 
 @Component
 @Slf4j
@@ -49,27 +50,25 @@ public class AnprClient {
 
     public Mono<RispostaE002OKDto> callEService(RichiestaE002Dto richiestaE002Dto){
         return accessTokenExpiringMap.getToken(purposeId).flatMap(accessTokenCacheEntry -> {
-            String s = convertToJson(richiestaE002Dto);
-            String digest = createDigestFromPayload(s);
-            return webClient.post()
-                    .uri("/anpr-service-e002")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .headers(httpHeaders -> {
-                        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                        httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                        httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
-                        httpHeaders.add("Content-Encoding", "UTF-8");
-                        httpHeaders.add("Digest", digest);
-                        httpHeaders.add("bearerAuth", accessTokenCacheEntry.getAccessToken());
-                    })
-                    .bodyValue(s)
-                    .retrieve()
-                    .bodyToMono(RispostaE002OKDto.class)
-                    .retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                            .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                    new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,retrySignal.failure())));
-        });
-
+                    String s = convertToJson(richiestaE002Dto);
+                    String digest = createDigestFromPayload(s);
+                    return webClient.post()
+                            .uri("/anpr-service-e002")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .headers(httpHeaders -> {
+                                httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                                httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                                httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
+                                httpHeaders.add("Content-Encoding", "UTF-8");
+                                httpHeaders.add("Digest", digest);
+                                httpHeaders.add("bearerAuth", accessTokenCacheEntry.getAccessToken());
+                            })
+                            .bodyValue(s)
+                            .retrieve()
+                            .bodyToMono(RispostaE002OKDto.class);
+                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                    .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                            new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, retrySignal.failure())));
     }
 
     private String convertToJson(RichiestaE002Dto richiestaE002Dto) {
@@ -82,7 +81,7 @@ public class AnprClient {
 
     private String createDigestFromPayload(String request) {
         try {
-            byte[] hash = MessageDigest.getInstance("SHA-256").digest(request.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = MessageDigest.getInstance(SHA256).digest(request.getBytes(StandardCharsets.UTF_8));
             return "SHA-256="+Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);

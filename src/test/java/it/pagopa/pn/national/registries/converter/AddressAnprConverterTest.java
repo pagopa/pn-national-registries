@@ -45,6 +45,45 @@ class AddressAnprConverterTest {
      * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(RispostaE002OKDto, String)}
      */
     @Test
+    void testConvertToGetAddressANPROKDto10() {
+        TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
+        tipoCodiceFiscaleDto.setCodFiscale("Cf");
+        tipoCodiceFiscaleDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        tipoCodiceFiscaleDto.setValiditaCF("Validita CF");
+
+        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
+        tipoGeneralitaDto.setCodiceFiscale(tipoCodiceFiscaleDto);
+
+        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
+        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+
+        List<TipoResidenzaDto> tipoResidenzaDtoList = new ArrayList<>();
+        TipoResidenzaDto tipoResidenzaDto = new TipoResidenzaDto();
+
+        tipoResidenzaDto.setPresso("presso");
+        tipoResidenzaDto.setTipoIndirizzo("4");
+
+        tipoResidenzaDtoList.add(tipoResidenzaDto);
+        tipoDatiSoggettiEnteDto.setResidenza(tipoResidenzaDtoList);
+
+        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
+        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+
+        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
+        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+
+        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
+        rispostaE002OKDto.setListaAnomalie(new ArrayList<>());
+        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
+        rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
+        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+    }
+
+
+    /**
+     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(RispostaE002OKDto, String)}
+     */
+    @Test
     void testConvertToGetAddressANPROKDto2() {
         TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
         tipoCodiceFiscaleDto.setCodFiscale("Cf");
