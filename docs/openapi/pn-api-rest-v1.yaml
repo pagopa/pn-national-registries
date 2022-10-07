@@ -14,10 +14,10 @@ tags:
 - name: checkTaxId
   description: Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
 paths:
-  /getAddressANPR:
+  /external-registry-private/addressANPR:
     post:
       tags:
-      - getAddressANPR
+      - addressANPR
       summary: 'Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta'
       description: 'Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta'
       operationId: getAddressANPR
@@ -53,7 +53,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponseError'        
-  /checkTaxId:
+  /external-registry-private/checkTaxId:
     post:
       tags:
       - checkTaxId
@@ -86,7 +86,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResponseError'
-  /getDigitalAddressINAD:
+  /external-registry-private/digitalAddressINAD:
     post:
       tags:
         - getDigitalAddressINAD
