@@ -19,11 +19,11 @@ public class InadWebClient extends CommonWebClient {
     private final Integer tcpPoolIdleTimeout;
     private final String basePath;
 
-    public InadWebClient(@Value("${webclient.inad.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                         @Value("${webclient.inad.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                         @Value("${webclient.inad.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
-                         @Value("${webclient.inad.tcp-pool-idle-timeout}")Integer tcpPoolIdleTimeout,
-                         @Value("${pdnd.inad.base-path}")String basePath) {
+    public InadWebClient(@Value("${pn.national.registries.webclient.inad.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                         @Value("${pn.national.registries.webclient.inad.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                         @Value("${pn.national.registries.webclient.inad.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                         @Value("${pn.national.registries.webclient.inad.tcp-pool-idle-timeout}")Integer tcpPoolIdleTimeout,
+                         @Value("${pn.national.registries.pdnd.inad.base-path}")String basePath) {
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;

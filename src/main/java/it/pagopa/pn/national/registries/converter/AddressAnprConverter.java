@@ -2,10 +2,7 @@ package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ResidentialAddressDto;
-import it.pagopa.pn.national.registries.model.anpr.RispostaE002OKDto;
-import it.pagopa.pn.national.registries.model.anpr.TipoDatiSoggettiEnteDto;
-import it.pagopa.pn.national.registries.model.anpr.TipoIndirizzoDto;
-import it.pagopa.pn.national.registries.model.anpr.TipoResidenzaDto;
+import it.pagopa.pn.national.registries.model.anpr.*;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -33,31 +30,54 @@ public class AddressAnprConverter {
     private List<ResidentialAddressDto> convertResidence(List<TipoResidenzaDto> residenza) {
         List<ResidentialAddressDto> list = new ArrayList<>();
         for (TipoResidenzaDto dto : residenza) {
-
             ResidentialAddressDto innerDto = new ResidentialAddressDto();
-
-            if (dto.getIndirizzo() != null) {
-                innerDto.setAddress(createAddressString(dto.getIndirizzo()));
-                innerDto.setZip(dto.getIndirizzo().getCap());
-                innerDto.setMunicipalityDetails(dto.getIndirizzo().getFrazione());
-            }
-
-            if (dto.getIndirizzo() != null && dto.getIndirizzo().getComune() != null) {
-                innerDto.setMunicipality(dto.getIndirizzo().getComune().getNomeComune());
-                innerDto.setProvince(dto.getIndirizzo().getComune().getSiglaProvinciaIstat());
-            }
-
-            if (dto.getLocalitaEstera() != null && dto.getLocalitaEstera().getIndirizzoEstero() != null
-                    && dto.getLocalitaEstera().getIndirizzoEstero().getLocalita() != null) {
-                innerDto.setForeignState(dto.getLocalitaEstera().getIndirizzoEstero().getLocalita().getDescrizioneLocalita());
-            }
-
             innerDto.setAt(dto.getPresso());
             innerDto.setDescription(dto.getTipoIndirizzo());
+            if (dto.getIndirizzo() != null) {
+                mapToResidence(dto.getIndirizzo(),innerDto);
+                if (dto.getLocalitaEstera() != null && dto.getLocalitaEstera().getIndirizzoEstero() != null
+                        && dto.getLocalitaEstera().getIndirizzoEstero().getLocalita() != null) {
+                    innerDto.setForeignState(dto.getLocalitaEstera().getIndirizzoEstero().getLocalita().getDescrizioneStato());
+                }
 
+            } else if(dto.getLocalitaEstera()!=null){
+                mapToForeignResidence(dto.getLocalitaEstera(),innerDto);
+            }
             list.add(innerDto);
         }
         return list;
+    }
+
+    private void mapToResidence(TipoIndirizzoDto indirizzo, ResidentialAddressDto innerDto) {
+        innerDto.setAddress(createAddressString(indirizzo));
+        innerDto.setZip(indirizzo.getCap());
+        innerDto.setMunicipalityDetails(indirizzo.getFrazione());
+
+        if (indirizzo.getComune() != null) {
+            innerDto.setMunicipality(indirizzo.getComune().getNomeComune());
+            innerDto.setProvince(indirizzo.getComune().getSiglaProvinciaIstat());
+        }
+
+
+    }
+
+    private void mapToForeignResidence(TipoLocalitaEstera1Dto localitaEstera, ResidentialAddressDto innerDto) {
+        if (localitaEstera.getIndirizzoEstero() != null) {
+            innerDto.setZip(localitaEstera.getIndirizzoEstero().getCap());
+            if (localitaEstera.getIndirizzoEstero().getToponimo() != null) {
+                innerDto.setAddress(createForeignAddressString(localitaEstera.getIndirizzoEstero().getToponimo()));
+            }
+        }
+        if (localitaEstera.getIndirizzoEstero() != null
+                && localitaEstera.getIndirizzoEstero().getLocalita() != null) {
+            innerDto.setForeignState(localitaEstera.getIndirizzoEstero().getLocalita().getDescrizioneStato());
+            innerDto.setMunicipality(localitaEstera.getIndirizzoEstero().getLocalita().getDescrizioneLocalita());
+            innerDto.setProvince(localitaEstera.getIndirizzoEstero().getLocalita().getProvinciaContea());
+        }
+    }
+
+    private String createForeignAddressString(TipoToponimoEsteroDto toponimo) {
+        return toponimo.getDenominazione() + "," + toponimo.getNumeroCivico();
     }
 
     private String createAddressString(TipoIndirizzoDto indirizzo) {

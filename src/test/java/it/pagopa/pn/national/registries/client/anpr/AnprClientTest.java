@@ -1,9 +1,10 @@
 package it.pagopa.pn.national.registries.client.anpr;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto.TokenTypeDto;
+import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.anpr.RichiestaE002Dto;
 import it.pagopa.pn.national.registries.model.anpr.RispostaE002OKDto;
 import it.pagopa.pn.national.registries.model.anpr.TipoCriteriRicercaE002Dto;
@@ -110,7 +111,7 @@ class AnprClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(RispostaE002OKDto.class)).thenReturn(Mono.just(rispostaE002OKDto));
 
-        StepVerifier.create(anprClient.callEService(richiestaE002Dto)).expectNext(rispostaE002OKDto).verifyComplete();
+        StepVerifier.create(anprClient.callEService(richiestaE002Dto)).expectError(PnInternalException.class);
 
     }
 }

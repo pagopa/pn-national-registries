@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.cache;
 
-import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto.ClientCredentialsResponseDto;
-import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto.TokenTypeDto;
+import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
+import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 

@@ -3,8 +3,8 @@ package it.pagopa.pn.national.registries.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.client.pdnd.AuthApiCustom;
-import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto.ClientCredentialsResponseDto;
+import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
+import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.SecretValue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -24,22 +24,19 @@ public class TokenProvider {
     private final String grantType;
     private final PdndAssertionGenerator assertionGenerator;
     private final SecretManagerService secretManagerService;
-    private final AuthApiCustom authApiCustom;
-    private final String pdndBasePath;
+    private final PdndClient pdndClient;
 
     public TokenProvider(PdndAssertionGenerator assertionGenerator,
                          SecretManagerService secretManagerService,
-                         AuthApiCustom authApiCustom,
+                         PdndClient pdndClient,
                          @Value("${pn.national-registries.pdnd.client-assertion-type}") String clientAssertionType,
-                         @Value("${pn.national-registries.pdnd.grant-type}") String grantType,
-                         @Value("${pdnd.base-path}") String pdndBasePath
+                         @Value("${pn.national-registries.pdnd.grant-type}") String grantType
     ) {
         this.assertionGenerator = assertionGenerator;
         this.secretManagerService = secretManagerService;
         this.clientAssertionType = clientAssertionType;
         this.grantType = grantType;
-        this.authApiCustom = authApiCustom;
-        this.pdndBasePath = pdndBasePath;
+        this.pdndClient = pdndClient;
     }
 
     public Mono<ClientCredentialsResponseDto> getToken(String purposeId) {
@@ -50,9 +47,8 @@ public class TokenProvider {
         }
         SecretValue secretValue = convertToSecretValueObject(getSecretValueResponse.get().secretString());
         String clientAssertion = assertionGenerator.generateClientAssertion(secretValue);
-        authApiCustom.getApiClient().setBasePath(pdndBasePath);
-        Mono<ClientCredentialsResponseDto> resp = authApiCustom.createToken(clientAssertion, clientAssertionType, grantType, secretValue.getClientId());
-        return resp.map(clientCredentialsResponseDto -> clientCredentialsResponseDto);
+        return pdndClient.createToken(clientAssertion, clientAssertionType, grantType, secretValue.getClientId())
+                .map(clientCredentialsResponseDto -> clientCredentialsResponseDto);
     }
 
     private SecretValue convertToSecretValueObject(String value) {
@@ -61,7 +57,7 @@ public class TokenProvider {
         try {
             secretValue = mapper.readValue(value, SecretValue.class);
         } catch (JsonProcessingException e) {
-                throw new PnInternalException(ERROR_MESSAGE_PDND_TOKEN, ERROR_CODE_PDND_TOKEN,e);
+            throw new PnInternalException(ERROR_MESSAGE_PDND_TOKEN, ERROR_CODE_PDND_TOKEN, e);
         }
         return secretValue;
     }
