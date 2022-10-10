@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.client.inad;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
+import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,17 +23,20 @@ public class InadClient {
     private final AccessTokenExpiringMap accessTokenExpiringMap;
     private final String purposeId;
     private final WebClient webClient;
+    private final InadSecretConfig inadSecretConfig;
 
     protected InadClient(AccessTokenExpiringMap accessTokenExpiringMap,
                          InadWebClient inadWebClient,
-                         @Value("${pn.national.registries.pdnd.c001.purpose-id}") String purposeId) {
+                         @Value("${pn.national.registries.pdnd.inad.purpose-id}") String purposeId,
+                         InadSecretConfig inadSecretConfig) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.purposeId = purposeId;
         this.webClient = inadWebClient.init();
+        this.inadSecretConfig = inadSecretConfig;
     }
 
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
-        return accessTokenExpiringMap.getToken(purposeId).flatMap(accessTokenCacheEntry ->
+        return accessTokenExpiringMap.getToken(purposeId, inadSecretConfig.getInadSecretValue()).flatMap(accessTokenCacheEntry ->
                 webClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .queryParam("practicalReference", practicalReference)

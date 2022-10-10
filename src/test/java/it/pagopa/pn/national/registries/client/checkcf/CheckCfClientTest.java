@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
+import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
+import it.pagopa.pn.national.registries.model.SecretValue;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.checkcf.Richiesta;
 import it.pagopa.pn.national.registries.model.checkcf.VerificaCodiceFiscale;
@@ -42,11 +44,14 @@ class CheckCfClientTest {
     @MockBean
     ObjectMapper objectMapper;
 
+    @MockBean
+    CheckCfSecretConfig checkCfSecretConfig;
+
     @Test
     void callEService() throws JsonProcessingException {
         when(checkCfWebClient.init()).thenReturn(webClient);
         CheckCfClient checkCfClient = new CheckCfClient(
-                accessTokenExpiringMap,checkCfWebClient,"purposeId",objectMapper
+                accessTokenExpiringMap,checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
         );
         Richiesta richiesta = new Richiesta();
         richiesta.setCodiceFiscale("cf");
@@ -69,7 +74,7 @@ class CheckCfClientTest {
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
 
-        when(accessTokenExpiringMap.getToken("purposeId")).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getToken("purposeId", new SecretValue())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/verifica")).thenReturn(requestBodySpec);
@@ -86,7 +91,7 @@ class CheckCfClientTest {
     void callEServiceThrowsJsonProcessingException() throws JsonProcessingException {
         when(checkCfWebClient.init()).thenReturn(webClient);
         CheckCfClient checkCfClient = new CheckCfClient(
-                accessTokenExpiringMap,checkCfWebClient,"purposeId",objectMapper
+                accessTokenExpiringMap,checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
         );
         Richiesta richiesta = new Richiesta();
         Mockito.when( objectMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("") {});
@@ -96,7 +101,7 @@ class CheckCfClientTest {
         accessTokenCacheEntry.setAccessToken("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
-        when(accessTokenExpiringMap.getToken("purposeId")).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getToken("purposeId", new SecretValue())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         StepVerifier.create(checkCfClient.callEService(richiesta)).expectError(PnInternalException.class).verify();
 
@@ -111,7 +116,8 @@ class CheckCfClientTest {
                         accessTokenExpiringMap,
                         checkCfWebClient,
                         "purposeId",
-                        objectMapper);
+                        objectMapper,
+                        checkCfSecretConfig);
         assertFalse(checkCfClient.checkExceptionType(new Exception()));
     }
 
@@ -124,7 +130,8 @@ class CheckCfClientTest {
                         accessTokenExpiringMap,
                         checkCfWebClient,
                         "purposeId",
-                        objectMapper);
+                        objectMapper,
+                        checkCfSecretConfig);
         WebClientResponseException webClientResponseException =
                 new WebClientResponseException(
                         "message",

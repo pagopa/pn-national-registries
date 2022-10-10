@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.client.anpr;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
+import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import org.junit.jupiter.api.Assertions;
@@ -32,6 +33,9 @@ class AnprWebClientTest {
 
     @Mock
     ObjectMapper objectMapper;
+
+    @Mock
+    AnprSecretConfig anprSecretConfig;
 
     @Test
     @DisplayName("Should return sslcontext with trustmanager when trust is not empty")
@@ -87,7 +91,7 @@ class AnprWebClientTest {
     @DisplayName("Should return a web client when the secret value is found")
     void initWhenSecretValueIsFoundThenReturnWebClient() {
         AnprWebClient anprWebClient = new AnprWebClient(100, 100, 100,
-                100, "", "", secretManagerService);
+                100, "", anprSecretConfig);
         SSLData sslData = new SSLData();
         sslData.setCert("cert");
         sslData.setKey("key");
