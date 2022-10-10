@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
+import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.anpr.RichiestaE002Dto;
 import it.pagopa.pn.national.registries.model.anpr.RispostaE002OKDto;
 import lombok.extern.slf4j.Slf4j;
@@ -34,22 +35,25 @@ public class AnprClient {
     private final WebClient webClient;
     private final AgidJwtSignature agidJwtSignature;
     private final ObjectMapper mapper;
+    private final AnprSecretConfig anprSecretConfig;
 
     protected AnprClient(AccessTokenExpiringMap accessTokenExpiringMap,
                          ObjectMapper mapper,
                          AgidJwtSignature agidJwtSignature,
                          AnprWebClient anprWebClient,
-                         @Value("${pn.national.registries.pdnd.anpr.purpose-id}") String purposeId) {
+                         @Value("${pn.national.registries.pdnd.anpr.purpose-id}") String purposeId,
+                         AnprSecretConfig anprSecretConfig) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.agidJwtSignature = agidJwtSignature;
         this.purposeId = purposeId;
         this.mapper = mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        this.anprSecretConfig = anprSecretConfig;
         webClient = anprWebClient.init();
     }
 
 
     public Mono<RispostaE002OKDto> callEService(RichiestaE002Dto richiestaE002Dto){
-        return accessTokenExpiringMap.getToken(purposeId).flatMap(accessTokenCacheEntry -> {
+        return accessTokenExpiringMap.getToken(purposeId,anprSecretConfig.getAnprSecretValue()).flatMap(accessTokenCacheEntry -> {
                     String s = convertToJson(richiestaE002Dto);
                     String digest = createDigestFromPayload(s);
                     return webClient.post()
@@ -81,7 +85,7 @@ public class AnprClient {
 
     private String createDigestFromPayload(String request) {
         try {
-            byte[] hash = MessageDigest.getInstance(SHA256).digest(request.getBytes(StandardCharsets.UTF_8));
+            byte[] hash = MessageDigest.getInstance("SHA-256").digest(request.getBytes(StandardCharsets.UTF_8));
             return "SHA-256="+Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
             throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);

@@ -4,17 +4,15 @@ import com.auth0.jwt.HeaderParams;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.RegisteredClaims;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
-import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -35,31 +33,19 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesEx
 @Slf4j
 public class AgidJwtSignature {
 
-    private final String secret;
-    private final String secretIntegrity;
-    private final SecretManagerService secretManagerService;
-    private final ObjectMapper mapper;
+    private final String aud;
+    private final AnprSecretConfig anprSecretConfig;
 
-    public AgidJwtSignature(@Value("${pn.national.registries.pdnd.anpr.secret.integrity}") String secretIntegrity,
-                            @Value("${pn.national.registries.pdnd.anpr.secret.agid-jwt-signature}") String secret,
-                            SecretManagerService secretManagerService,
-                            ObjectMapper mapper) {
-        this.secret = secret;
-        this.secretIntegrity = secretIntegrity;
-        this.secretManagerService = secretManagerService;
-        this.mapper = mapper;
+    public AgidJwtSignature(@Value("${pn.national.registries.pdnd.anpr.base-path}") String aud,
+                            AnprSecretConfig anprSecretConfig) {
+        this.aud = aud;
+        this.anprSecretConfig = anprSecretConfig;
     }
 
     public String createAgidJwt(String digest) {
-        Optional<GetSecretValueResponse> optJwtConfig = secretManagerService.getSecretValue(secret);
-        Optional<GetSecretValueResponse> optSslData = secretManagerService.getSecretValue(secretIntegrity);
-        if (optJwtConfig.isEmpty() || optSslData.isEmpty()) {
-            log.info("secret value not found");
-            return null;
-        }
         try {
-            JwtConfig jwtConfig = mapper.readValue(optJwtConfig.get().secretString(), JwtConfig.class);
-            SSLData sslData = mapper.readValue(optSslData.get().secretString(), SSLData.class);
+            JwtConfig jwtConfig = anprSecretConfig.getAnprSecretValue().getJwtConfig();
+            SSLData sslData = anprSecretConfig.getAnprIntegritySecret();
             TokenHeader th = new TokenHeader(jwtConfig);
             TokenPayload tp = new TokenPayload(jwtConfig);
             return JWT.create().withHeader(createHeaderMap(th, sslData)).withPayload(createClaimMap(digest, tp))
@@ -82,7 +68,7 @@ public class AgidJwtSignature {
         map.put(RegisteredClaims.ISSUER, tp.getIss());
         map.put(RegisteredClaims.SUBJECT, tp.getSub());
         map.put(RegisteredClaims.EXPIRES_AT, tp.getExp());
-        map.put(RegisteredClaims.AUDIENCE, tp.getAud());
+        map.put(RegisteredClaims.AUDIENCE, aud);
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
         map.put(RegisteredClaims.JWT_ID, tp.getJti());
         map.put("signed_headers", createSignedHeaders(digest));

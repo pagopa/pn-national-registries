@@ -3,6 +3,8 @@ package it.pagopa.pn.national.registries.client.inad;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.client.anpr.AgidJwtSignature;
+import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
+import it.pagopa.pn.national.registries.model.SecretValue;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 import org.junit.jupiter.api.DisplayName;
@@ -40,11 +42,14 @@ class InadClientTest {
     @MockBean
     InadWebClient inadWebClient;
 
+    @MockBean
+    InadSecretConfig inadSecretConfig;
+
     @Test
     void callEService() {
         when(inadWebClient.init()).thenReturn(webClient);
         InadClient inadClient = new InadClient(
-                accessTokenExpiringMap,inadWebClient,"purposeId"
+                accessTokenExpiringMap,inadWebClient,"purposeId", inadSecretConfig
         );
 
         ResponseRequestDigitalAddressDto response = new ResponseRequestDigitalAddressDto();
@@ -59,7 +64,7 @@ class InadClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken("purposeId")).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getToken("purposeId", new SecretValue())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
         //when(requestHeadersUriSpec.uri().thenReturn(requestHeadersSpec));
@@ -78,7 +83,8 @@ class InadClientTest {
                 new InadClient(
                         accessTokenExpiringMap,
                         inadWebClient,
-                        "purposeId");
+                        "purposeId",
+                        inadSecretConfig);
         assertFalse(inadClient.checkExceptionType(new Exception()));
     }
 
@@ -90,7 +96,8 @@ class InadClientTest {
                 new InadClient(
                         accessTokenExpiringMap,
                         inadWebClient,
-                        "purposeId");
+                        "purposeId",
+                        inadSecretConfig);
         WebClientResponseException webClientResponseException =
                 new WebClientResponseException(
                         "message",
