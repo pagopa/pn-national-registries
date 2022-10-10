@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.GetDigitalAddressInadApi;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.DigitalAddressInadApi;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.service.InadService;
@@ -9,7 +9,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
-public class InadController implements GetDigitalAddressInadApi {
+public class InadController implements DigitalAddressInadApi {
 
     private final InadService inadService;
     private final Scheduler scheduler;
@@ -28,7 +28,7 @@ public class InadController implements GetDigitalAddressInadApi {
      *         or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> getDigitalAddressINAD(GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
         return inadService.callEService(extractDigitalAddressINADRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }

@@ -44,10 +44,13 @@ public class AgidJwtSignature {
 
     public String createAgidJwt(String digest) {
         try {
+            log.info("start to createAgidJwt with digest: {}",digest);
             JwtConfig jwtConfig = anprSecretConfig.getAnprSecretValue().getJwtConfig();
             SSLData sslData = anprSecretConfig.getAnprIntegritySecret();
             TokenHeader th = new TokenHeader(jwtConfig);
+            log.debug("tokenHeader: {}",th);
             TokenPayload tp = new TokenPayload(jwtConfig);
+            log.debug("tokenPayload: {}",th);
             return JWT.create().withHeader(createHeaderMap(th, sslData)).withPayload(createClaimMap(digest, tp))
                     .sign(Algorithm.RSA256(getPublicKey(sslData.getPub()), getPrivateKey(sslData.getKey())));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
@@ -60,6 +63,7 @@ public class AgidJwtSignature {
         map.put(HeaderParams.TYPE, th.getTyp());
         map.put(HeaderParams.ALGORITHM, th.getAlg());
         map.put("x5c", List.of(sslData.getCert()));
+        log.debug("HeaderMap: {}",map);
         return map;
     }
 
@@ -72,6 +76,7 @@ public class AgidJwtSignature {
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
         map.put(RegisteredClaims.JWT_ID, tp.getJti());
         map.put("signed_headers", createSignedHeaders(digest));
+        log.debug("ClaimMap: {}",map);
         return map;
     }
 
@@ -92,6 +97,7 @@ public class AgidJwtSignature {
 
 
     protected RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+        log.debug("start getPublicKey");
         InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(pub));
         X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(is.readAllBytes());
         KeyFactory kf = KeyFactory.getInstance("RSA");
@@ -99,6 +105,7 @@ public class AgidJwtSignature {
     }
 
     protected RSAPrivateKey getPrivateKey(String key) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
+        log.debug("start getPrivateKey");
         InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(key));
         PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(is.readAllBytes());
         KeyFactory kf = KeyFactory.getInstance("RSA");

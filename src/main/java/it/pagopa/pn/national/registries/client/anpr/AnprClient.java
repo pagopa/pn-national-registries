@@ -24,7 +24,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
-import static javax.xml.crypto.dsig.DigestMethod.SHA256;
 
 @Component
 @Slf4j
@@ -56,6 +55,7 @@ public class AnprClient {
         return accessTokenExpiringMap.getToken(purposeId,anprSecretConfig.getAnprSecretValue()).flatMap(accessTokenCacheEntry -> {
                     String s = convertToJson(richiestaE002Dto);
                     String digest = createDigestFromPayload(s);
+                    log.debug("digest: {}",digest);
                     return webClient.post()
                             .uri("/anpr-service-e002")
                             .contentType(MediaType.APPLICATION_JSON)
@@ -70,8 +70,10 @@ public class AnprClient {
                             .bodyValue(s)
                             .retrieve()
                             .bodyToMono(RispostaE002OKDto.class);
-                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                    .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                }).retryWhen(Retry.max(1).filter(throwable -> {
+                    log.debug("Try Retry call to ANPR");
+                    return checkExceptionType(throwable);
+                }).onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                             new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, retrySignal.failure())));
     }
 

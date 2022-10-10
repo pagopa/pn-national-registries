@@ -34,7 +34,9 @@ public class PdndAssertionGenerator {
     public String generateClientAssertion(SecretValue jwtCfg){
         try {
             TokenHeader th = new TokenHeader(jwtCfg.getJwtConfig());
+            log.debug("TokenHeader: {}",th);
             TokenPayload tp = new TokenPayload(jwtCfg.getJwtConfig());
+            log.debug("TokenPayload: {}",tp);
             ObjectMapper mapper = new ObjectMapper();
 
             String headerBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(th));
@@ -48,6 +50,8 @@ public class PdndAssertionGenerator {
                     .signingAlgorithm(SigningAlgorithmSpec.RSASSA_PKCS1_V1_5_SHA_256)
                     .keyId(jwtCfg.getKeyId())
                     .build();
+
+            log.debug("SignRequest for KMS: {}", signRequest);
 
             SignResponse signResult = kmsClient.sign(signRequest);
 
