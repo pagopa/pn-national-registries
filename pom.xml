@@ -20,7 +20,6 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <java.version>11</java.version>
-        <sonar.coverage.exclusions>**/it/pagopa/pn/national/registries/model/**</sonar.coverage.exclusions>
         <spring.boot-version>2.5.2</spring.boot-version>
         <awssdk.version>2.16.97</awssdk.version>
     </properties>
@@ -194,36 +193,6 @@
                                 <skipDefaultInterface>false</skipDefaultInterface>
                                 <useTags>true</useTags>
                             </configOptions>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>pn-national-registries-pdnd-client</id>
-                        <goals>
-                            <goal>generate</goal>
-                        </goals>
-                        <phase>process-resources</phase>
-                        <configuration>
-                            <inputSpec>${project.basedir}/docs/wsclient/pdnd/pdnd-v1.yaml</inputSpec>
-                            <generatorName>java</generatorName>
-                            <library>webclient</library>
-                            <generateApiDocumentation>false</generateApiDocumentation>
-                            <generateApiTests>false</generateApiTests>
-                            <generateModelTests>false</generateModelTests>
-                            <generateSupportingFiles>true</generateSupportingFiles>
-                            <configOptions>
-                                <swaggerAnnotations>false</swaggerAnnotations>
-                                <openApiNullable>false</openApiNullable>
-                                <basePackage>it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1
-                                </basePackage>
-                                <modelPackage>it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto
-                                </modelPackage>
-                                <apiPackage>it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.api
-                                </apiPackage>
-                                <configPackage>it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.config
-                                </configPackage>
-                                <dateLibrary>java11</dateLibrary>
-                            </configOptions>
-                            <modelNameSuffix>Dto</modelNameSuffix>
                         </configuration>
                     </execution>
                 </executions>

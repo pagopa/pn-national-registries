@@ -19,11 +19,11 @@ public class PdndWebClient extends CommonWebClient {
     private final Integer tcpPoolIdleTimeout;
     private final String basePath;
 
-    public PdndWebClient(@Value("${webclient.pdnd.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                         @Value("${webclient.pdnd.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                         @Value("${webclient.pdnd.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
-                         @Value("${webclient.pdnd.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                         @Value("${pdnd.base-path}") String basePath) {
+    public PdndWebClient(@Value("${pn.national.registries.webclient.pdnd.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                         @Value("${pn.national.registries.webclient.pdnd.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                         @Value("${pn.national.registries.webclient.pdnd.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                         @Value("${pn.national.registries.webclient.pdnd.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
+                         @Value("${pn.national.registries.pdnd.base-path}") String basePath) {
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
