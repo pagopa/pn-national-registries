@@ -44,11 +44,11 @@ class AccessTokenExpiringMapTest {
 
         when(tokenProvider.getToken(new SecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
-        StepVerifier.create(accessTokenExpiringMap.getToken("n",new SecretValue())).expectNext(accessTokenCacheEntry).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new SecretValue())).expectNext(accessTokenCacheEntry).verifyComplete();
 
         expiringMap.put("purpose",accessTokenCacheEntry);
 
-        StepVerifier.create(accessTokenExpiringMap.getToken("",new SecretValue())).expectNext(expiringMap.get("purpose")).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new SecretValue())).expectNext(expiringMap.get("purpose")).verifyComplete();
 
     }
 

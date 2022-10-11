@@ -74,7 +74,7 @@ class CheckCfClientTest {
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
 
-        when(accessTokenExpiringMap.getToken("purposeId", new SecretValue())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/verifica")).thenReturn(requestBodySpec);
@@ -101,7 +101,7 @@ class CheckCfClientTest {
         accessTokenCacheEntry.setAccessToken("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
-        when(accessTokenExpiringMap.getToken("purposeId", new SecretValue())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getToken(eq("purposeId"),any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         StepVerifier.create(checkCfClient.callEService(richiesta)).expectError(PnInternalException.class).verify();
 

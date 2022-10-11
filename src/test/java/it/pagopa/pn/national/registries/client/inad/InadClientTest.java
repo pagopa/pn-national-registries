@@ -64,7 +64,7 @@ class InadClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken("purposeId", new SecretValue())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
         //when(requestHeadersUriSpec.uri().thenReturn(requestHeadersSpec));

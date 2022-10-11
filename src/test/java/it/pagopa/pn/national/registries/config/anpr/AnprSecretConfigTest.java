@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.config.anpr;
 
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -18,7 +20,7 @@ class AnprSecretConfigTest {
 
     @Test
     void getAnprSecretConfigTest() {
-        AnprSecretConfig anprSecretConfig1 = new AnprSecretConfig(secretManagerService,"test","test","test");
-        assertNotNull(anprSecretConfig1);
+        Assertions.assertThrows(PnInternalException.class,
+                ()-> new AnprSecretConfig(secretManagerService,"test", "test", "test"));
     }
 }

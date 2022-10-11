@@ -3,15 +3,14 @@ package it.pagopa.pn.national.registries.service;
 import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.TokenTypeDto;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
-
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -26,6 +25,54 @@ class TokenProviderTest {
     PdndClient pdndClient;
 
     @Test
+    @DisplayName("Should throw an exception when the client id and secret are invalid")
+    void getTokenWhenClientIdAndSecretAreInvalidThenThrowException() {
+        SecretValue secretValue = new SecretValue();
+        secretValue.setClientId("clientId");
+        secretValue.setKeyId("keyId");
+        when(assertionGenerator.generateClientAssertion(any())).thenReturn("clientAssertion");
+        when(pdndClient.createToken(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(Mono.empty());
+
+        TokenProvider tokenProvider =
+                new TokenProvider(
+                        assertionGenerator, pdndClient, "clientAssertionType", "grantType");
+        Mono<ClientCredentialsResponseDto> token = tokenProvider.getToken(secretValue);
+
+        StepVerifier.create(token).verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should return a token when the client id and secret are valid")
+    void getTokenWhenClientIdAndSecretAreValidThenReturnAToken() {
+        String clientId = "clientId";
+        String secret = "secret";
+        String token = "token";
+        SecretValue secretValue = new SecretValue();
+        secretValue.setClientId(clientId);
+        secretValue.setKeyId(secret);
+        ClientCredentialsResponseDto clientCredentialsResponseDto =
+                new ClientCredentialsResponseDto();
+        clientCredentialsResponseDto.setAccessToken(token);
+
+        when(assertionGenerator.generateClientAssertion(any())).thenReturn("assertion");
+        when(pdndClient.createToken(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(Mono.just(clientCredentialsResponseDto));
+
+        TokenProvider tokenProvider =
+                new TokenProvider(
+                        assertionGenerator, pdndClient, "clientAssertionType", "grantType");
+
+        Mono<ClientCredentialsResponseDto> tokenMono = tokenProvider.getToken(secretValue);
+
+        StepVerifier.create(tokenMono)
+                .expectNextMatches(
+                        clientCredentialsResponseDto1 ->
+                                clientCredentialsResponseDto1.getAccessToken().equals(token))
+                .verifyComplete();
+    }
+
+    @Test
     void getToken() {
         TokenProvider tokenProvider = new TokenProvider(assertionGenerator,
                 pdndClient,
@@ -34,7 +81,8 @@ class TokenProviderTest {
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
         clientCredentialsResponseDto.setAccessToken("token");
         when(assertionGenerator.generateClientAssertion(any())).thenReturn("clientAssertion");
-        when(pdndClient.createToken(eq("clientAssertion"),anyString(),anyString(),anyString())).thenReturn(Mono.just(clientCredentialsResponseDto));
+        when(pdndClient.createToken("clientAssertion", "client_credentials",
+                "basePath", null)).thenReturn(Mono.just(clientCredentialsResponseDto));
         StepVerifier.create(tokenProvider.getToken(new SecretValue())).expectNext(clientCredentialsResponseDto).verifyComplete();
     }
 
@@ -44,6 +92,11 @@ class TokenProviderTest {
                 pdndClient,
                 "test",
                 "client_credentials");
-        StepVerifier.create(tokenProvider.getToken(new SecretValue())).expectComplete().verify();
+        ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
+        clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
+        when(pdndClient.createToken(null,"test","client_credentials",null))
+                .thenReturn(Mono.just(clientCredentialsResponseDto));
+        StepVerifier.create(tokenProvider.getToken(new SecretValue())).expectNext(clientCredentialsResponseDto)
+                .verifyComplete();
     }
 }
