@@ -5,19 +5,18 @@ import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
+@ContextConfiguration(classes = {PdndClient.class})
 @ExtendWith(SpringExtension.class)
 class PdndClientTest {
-
     @MockBean
     WebClient webClient;
 
@@ -25,8 +24,8 @@ class PdndClientTest {
     PdndWebClient pdndWebClient;
 
     @Test
-    void callCreateTokenTest(){
-       when(pdndWebClient.initWebClient()).thenReturn(webClient);
+    void callCreateTokenTest() {
+        when(pdndWebClient.initWebClient()).thenReturn(webClient);
         PdndClient pdndClient = new PdndClient(pdndWebClient);
 
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
@@ -42,12 +41,12 @@ class PdndClientTest {
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/authorization-server/token.oauth2")).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
-        when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.header(any(), any())).thenReturn(requestHeadersSpec);
+        when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(clientCredentialsResponseDto));
 
-        StepVerifier.create(pdndClient.createToken("","","",""))
-                .expectNext(clientCredentialsResponseDto).verifyComplete();
+        StepVerifier.create(pdndClient.createToken("", "", "", "")).expectNext(clientCredentialsResponseDto).verifyComplete();
 
     }
 

@@ -31,7 +31,7 @@ public class PdndWebClient extends CommonWebClient {
         this.basePath = basePath;
     }
 
-    protected final WebClient initWebClient() {
+    protected WebClient initWebClient() {
 
         ConnectionProvider connectionProvider = ConnectionProvider.builder("fixed")
                 .maxConnections(tcpMaxPoolSize)
