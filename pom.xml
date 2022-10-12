@@ -199,29 +199,4 @@
             </plugin>
         </plugins>
     </build>
-    <profiles>
-        <profile>
-            <id>sonar</id>
-            <activation>
-                <activeByDefault>true</activeByDefault>
-            </activation>
-            <properties>
-                <sonar.host.url>https://sonarqube.nttdata-emea.com</sonar.host.url>
-                <sonar.projectKey>ITA-TechSol-ADC-PagoPa_Pn-National-Registries</sonar.projectKey>
-                <sonar.login>29b6b42f857c4a60ee18b61e275c6d40f389cc23</sonar.login>
-                <sonar.projectName>ITA-TechSol-ADC-PagoPa_Pn-National-Registries </sonar.projectName>
-                <sonar.projectDescription>PM Fabio Foglia - fabio.foglia@nttdata.com</sonar.projectDescription>
-                <sonar.source>${project.basedir}/src/main/java/it/pagopa/pn/national/registries</sonar.source>
-                <sonar.tests>${project.basedir}/src/test/java/it/pagopa/pn/national/registries</sonar.tests>
-                <sonar.coverage.exclusions>
-                    **/it/pagopa/pn/national/registries/model/**
-                </sonar.coverage.exclusions>
-                <sonar.cpd.exclusions>
-                    **/it/pagopa/pn/national/registries/model/**
-                </sonar.cpd.exclusions>
-                <argLine> --add-opens java.base/jdk.internal.reflect=ALL-UNNAMED</argLine>
-                <sonar.surefire.reportsPath>${project.basedir}/target/surefire-reports</sonar.surefire.reportsPath>
-            </properties>
-        </profile>
-    </profiles>
 </project>

@@ -1,5 +1,6 @@
-package it.pagopa.pn.national.registries.config.anpr;
+package it.pagopa.pn.national.registries.config.inipec;
 
+import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -10,19 +11,19 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
 import java.util.Optional;
-
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class AnprSecretConfigTest {
+class IniPecSecretConfigTest {
+
     @MockBean
-    AnprSecretConfig anprSecretConfig;
+    IniPecSecretConfig iniPecSecretConfig;
 
     @Mock
     SecretManagerService secretManagerService;
 
     @Test
-    void getAnprSecretConfigTest() {
+    void getIniPecSecretConfigTest() {
         GetSecretValueResponse getSecretValueResponse = GetSecretValueResponse.builder()
                 .secretString("{\n" +
                         "\"cert\":\"cert\",\n" +
@@ -39,11 +40,9 @@ class AnprSecretConfigTest {
                 .thenReturn(Optional.of(getSecretValueResponse2));
         when(secretManagerService.getSecretValue("test2"))
                 .thenReturn(Optional.of(getSecretValueResponse));
-        when(secretManagerService.getSecretValue("test3"))
-                .thenReturn(Optional.of(getSecretValueResponse));
-        AnprSecretConfig anprSecretConfig = new AnprSecretConfig(secretManagerService,"test1", "test2", "test3");
-        Assertions.assertNotNull(anprSecretConfig.getAnprSecretValue());
-        Assertions.assertNotNull(anprSecretConfig.getAnprIntegritySecret());
-        Assertions.assertNotNull(anprSecretConfig.getAnprAuthChannelSecret());
+        IniPecSecretConfig iniPecSecretConfig = new IniPecSecretConfig(secretManagerService,"test1", "test2");
+        Assertions.assertNotNull(iniPecSecretConfig.getIniPecIntegritySecret());
+        Assertions.assertNotNull(iniPecSecretConfig.getIniPecSecretValue());
     }
+
 }
