@@ -52,7 +52,8 @@ public class AnprClient {
 
 
     public Mono<RispostaE002OKDto> callEService(RichiestaE002Dto richiestaE002Dto){
-        return accessTokenExpiringMap.getToken(purposeId,anprSecretConfig.getAnprSecretValue()).flatMap(accessTokenCacheEntry -> {
+        return accessTokenExpiringMap.getToken(purposeId,anprSecretConfig.getAnprSecretValue())
+                .flatMap(accessTokenCacheEntry -> {
                     String s = convertToJson(richiestaE002Dto);
                     String digest = createDigestFromPayload(s);
                     log.debug("digest: {}",digest);

@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.client.anpr;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
@@ -102,7 +101,7 @@ class AnprClientTest {
         jwtConfig.setSubject("subject");
         jwtConfig.setPurposeId("purposeId");
         secretValue.setJwtConfig(jwtConfig);
-        when(anprSecretConfig.getAnprSecretValue()).thenReturn(secretValue);
+        //when(anprSecretConfig.getAnprSecretValue()).thenReturn(secretValue);
 
         RichiestaE002Dto richiestaE002Dto = new RichiestaE002Dto();
         TipoCriteriRicercaE002Dto dto = new TipoCriteriRicercaE002Dto();
@@ -131,7 +130,7 @@ class AnprClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(RispostaE002OKDto.class)).thenReturn(Mono.just(rispostaE002OKDto));
 
-        StepVerifier.create(anprClient.callEService(richiestaE002Dto)).expectError(PnInternalException.class);
+        StepVerifier.create(anprClient.callEService(richiestaE002Dto)).expectNext(rispostaE002OKDto).verifyComplete();
 
     }
 }
