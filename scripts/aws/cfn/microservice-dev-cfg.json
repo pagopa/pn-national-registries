@@ -1,9 +1,13 @@
 {
   "Parameters" : {
-    "CheckoutApiBaseUrl": "https://api.uat.platform.pagopa.it/checkout/auth/payments/v2",
-    "CheckoutSiteUrl": "https://uat.checkout.pagopa.it",
-    "SelfcareUsergroupBaseUrl": "https://api.uat.selfcare.pagopa.it/external/v1",
-    "PortalUrl": "https://portale-login.dev.pn.pagopa.it",
-    "SelfcareUsergroupPnProductId": "prod-pn-dev"
+    "PDNDBaseURL": "https://uat.gateway.test.pdnd-interop.pagopa.it",
+    "ANPRBaseURL": "https://modipa-val.anpr.interno.it/govway/rest/in/MinInternoPortaANPR/C001-servizioNotifica/v1",
+    "ANPRPurposeId": "fa2aa359-ab78-45b2-aa55-977d8ddb7d2b",
+    "AgenziaEntrateBaseURL": "https://api.agenziaentrate.gov.it/entrate/api/codice-fiscale/v0/",
+    "AgenziaEntratePurposeId": "",
+    "INADBaseURL": "",
+    "INADPurposeId": "",
+    "INIPECBaseURL": "",
+    "INIPECPurposeId": ""
   }
 }
