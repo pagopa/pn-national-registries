@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.GetAddressAnprApi;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.AddressAnprApi;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AnprService;
@@ -14,7 +14,7 @@ import reactor.core.scheduler.Scheduler;
 
 @RestController
 @Slf4j
-public class AnprController implements GetAddressAnprApi {
+public class AnprController implements AddressAnprApi {
 
     private final AnprService anprService;
 
@@ -37,7 +37,7 @@ public class AnprController implements GetAddressAnprApi {
      * or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<GetAddressANPROKDto>> getAddressANPR(GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
         return anprService.getAddressANPR(getAddressANPRRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }

@@ -7,4 +7,7 @@ import lombok.Data;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class TipoDatoLocalitaEsteraDto {
   private String descrizioneLocalita;
+  private String descrizioneStato;
+  private String provinciaContea;
+  private String codiceStato;
 }

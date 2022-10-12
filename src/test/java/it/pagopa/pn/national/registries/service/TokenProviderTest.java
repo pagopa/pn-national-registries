@@ -1,17 +1,16 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.client.pdnd.AuthApiCustom;
-import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.ApiClient;
-import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto.ClientCredentialsResponseDto;
+import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
+import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
+import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.TokenTypeDto;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
-
-import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -23,41 +22,81 @@ class TokenProviderTest {
     PdndAssertionGenerator assertionGenerator;
 
     @Mock
-    SecretManagerService secretManagerService;
+    PdndClient pdndClient;
 
-    @Mock
-    AuthApiCustom authApiCustom;
+    @Test
+    @DisplayName("Should throw an exception when the client id and secret are invalid")
+    void getTokenWhenClientIdAndSecretAreInvalidThenThrowException() {
+        SecretValue secretValue = new SecretValue();
+        secretValue.setClientId("clientId");
+        secretValue.setKeyId("keyId");
+        when(assertionGenerator.generateClientAssertion(any())).thenReturn("clientAssertion");
+        when(pdndClient.createToken(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(Mono.empty());
+
+        TokenProvider tokenProvider =
+                new TokenProvider(
+                        assertionGenerator, pdndClient, "clientAssertionType", "grantType");
+        Mono<ClientCredentialsResponseDto> token = tokenProvider.getToken(secretValue);
+
+        StepVerifier.create(token).verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Should return a token when the client id and secret are valid")
+    void getTokenWhenClientIdAndSecretAreValidThenReturnAToken() {
+        String clientId = "clientId";
+        String secret = "secret";
+        String token = "token";
+        SecretValue secretValue = new SecretValue();
+        secretValue.setClientId(clientId);
+        secretValue.setKeyId(secret);
+        ClientCredentialsResponseDto clientCredentialsResponseDto =
+                new ClientCredentialsResponseDto();
+        clientCredentialsResponseDto.setAccessToken(token);
+
+        when(assertionGenerator.generateClientAssertion(any())).thenReturn("assertion");
+        when(pdndClient.createToken(anyString(), anyString(), anyString(), anyString()))
+                .thenReturn(Mono.just(clientCredentialsResponseDto));
+
+        TokenProvider tokenProvider =
+                new TokenProvider(
+                        assertionGenerator, pdndClient, "clientAssertionType", "grantType");
+
+        Mono<ClientCredentialsResponseDto> tokenMono = tokenProvider.getToken(secretValue);
+
+        StepVerifier.create(tokenMono)
+                .expectNextMatches(
+                        clientCredentialsResponseDto1 ->
+                                clientCredentialsResponseDto1.getAccessToken().equals(token))
+                .verifyComplete();
+    }
 
     @Test
     void getToken() {
         TokenProvider tokenProvider = new TokenProvider(assertionGenerator,
-                secretManagerService,
-                authApiCustom,
-                "test",
+                pdndClient,
                 "client_credentials",
                 "basePath");
-        GetSecretValueResponse getSecretValueResponse = GetSecretValueResponse.builder().secretString("{\n" +
-                "\"client_id\":\"123\",\n" +
-                "\"keyId\":\"123\"\n" +
-                "}").build();
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
         clientCredentialsResponseDto.setAccessToken("token");
-        when(authApiCustom.getApiClient()).thenReturn(new ApiClient());
-        when(secretManagerService.getSecretValue(any())).thenReturn(Optional.of(getSecretValueResponse));
         when(assertionGenerator.generateClientAssertion(any())).thenReturn("clientAssertion");
-        when(authApiCustom.createToken(eq("clientAssertion"),anyString(),anyString(),anyString())).thenReturn(Mono.just(clientCredentialsResponseDto));
-        StepVerifier.create(tokenProvider.getToken("purpose")).expectNext(clientCredentialsResponseDto).verifyComplete();
+        when(pdndClient.createToken("clientAssertion", "client_credentials",
+                "basePath", null)).thenReturn(Mono.just(clientCredentialsResponseDto));
+        StepVerifier.create(tokenProvider.getToken(new SecretValue())).expectNext(clientCredentialsResponseDto).verifyComplete();
     }
 
     @Test
     void getTokenSecretEmpty() {
         TokenProvider tokenProvider = new TokenProvider(assertionGenerator,
-                secretManagerService,
-                authApiCustom,
+                pdndClient,
                 "test",
-                "client_credentials",
-                "basePath");
-        when(secretManagerService.getSecretValue(any())).thenReturn(Optional.empty());
-        StepVerifier.create(tokenProvider.getToken("purpose")).expectComplete().verify();
+                "client_credentials");
+        ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
+        clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
+        when(pdndClient.createToken(null,"test","client_credentials",null))
+                .thenReturn(Mono.just(clientCredentialsResponseDto));
+        StepVerifier.create(tokenProvider.getToken(new SecretValue())).expectNext(clientCredentialsResponseDto)
+                .verifyComplete();
     }
 }

@@ -3,7 +3,10 @@ package it.pagopa.pn.national.registries.client.anpr;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.generated.openapi.pdnd.client.v1.dto.TokenTypeDto;
+import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
+import it.pagopa.pn.national.registries.model.JwtConfig;
+import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.anpr.RichiestaE002Dto;
 import it.pagopa.pn.national.registries.model.anpr.RispostaE002OKDto;
 import it.pagopa.pn.national.registries.model.anpr.TipoCriteriRicercaE002Dto;
@@ -42,6 +45,9 @@ class AnprClientTest {
     @MockBean
     AnprWebClient anprWebClient;
 
+    @MockBean
+    AnprSecretConfig anprSecretConfig;
+
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
     void checkExceptionTypeWhenNotWebClientResponseExceptionThenReturnFalse() {
@@ -51,7 +57,8 @@ class AnprClientTest {
                         new ObjectMapper(),
                         agidJwtSignature,
                         anprWebClient,
-                        "purposeId");
+                        "purposeId",
+                        anprSecretConfig);
         assertFalse(anprClient.checkExceptionType(new Exception()));
     }
 
@@ -65,7 +72,8 @@ class AnprClientTest {
                         new ObjectMapper(),
                         agidJwtSignature,
                         anprWebClient,
-                        "purposeId");
+                        "purposeId",
+                        anprSecretConfig);
         WebClientResponseException webClientResponseException =
                 new WebClientResponseException(
                         "message",
@@ -81,8 +89,20 @@ class AnprClientTest {
     void callEService() {
         when(anprWebClient.init()).thenReturn(webClient);
         AnprClient anprClient = new AnprClient(
-                accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, anprWebClient, "purposeId"
-        );
+                accessTokenExpiringMap,new ObjectMapper(),agidJwtSignature, anprWebClient, "purposeId", anprSecretConfig);
+
+        SecretValue secretValue = new SecretValue();
+        secretValue.setClientId("testClient");
+        secretValue.setKeyId("testKeyId");
+        JwtConfig jwtConfig = new JwtConfig();
+        jwtConfig.setAudience("aud");
+        jwtConfig.setKid("kid");
+        jwtConfig.setIssuer("testiss");
+        jwtConfig.setSubject("subject");
+        jwtConfig.setPurposeId("purposeId");
+        secretValue.setJwtConfig(jwtConfig);
+        //when(anprSecretConfig.getAnprSecretValue()).thenReturn(secretValue);
+
         RichiestaE002Dto richiestaE002Dto = new RichiestaE002Dto();
         TipoCriteriRicercaE002Dto dto = new TipoCriteriRicercaE002Dto();
         dto.setCodiceFiscale("DDDFFF52G52H501H");
@@ -100,7 +120,7 @@ class AnprClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken("purposeId")).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getToken(any(),any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/anpr-service-e002")).thenReturn(requestBodySpec);

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
+import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.anpr.RichiestaE002Dto;
 import it.pagopa.pn.national.registries.model.anpr.RispostaE002OKDto;
 import lombok.extern.slf4j.Slf4j;
@@ -33,43 +34,48 @@ public class AnprClient {
     private final WebClient webClient;
     private final AgidJwtSignature agidJwtSignature;
     private final ObjectMapper mapper;
+    private final AnprSecretConfig anprSecretConfig;
 
     protected AnprClient(AccessTokenExpiringMap accessTokenExpiringMap,
                          ObjectMapper mapper,
                          AgidJwtSignature agidJwtSignature,
                          AnprWebClient anprWebClient,
-                         @Value("${pdnd.c001.purpose-id}") String purposeId) {
+                         @Value("${pn.national.registries.pdnd.anpr.purpose-id}") String purposeId,
+                         AnprSecretConfig anprSecretConfig) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.agidJwtSignature = agidJwtSignature;
         this.purposeId = purposeId;
         this.mapper = mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        this.anprSecretConfig = anprSecretConfig;
         webClient = anprWebClient.init();
     }
 
 
     public Mono<RispostaE002OKDto> callEService(RichiestaE002Dto richiestaE002Dto){
-        return accessTokenExpiringMap.getToken(purposeId).flatMap(accessTokenCacheEntry -> {
-            String s = convertToJson(richiestaE002Dto);
-            String digest = createDigestFromPayload(s);
-            return webClient.post()
-                    .uri("/anpr-service-e002")
-                    .contentType(MediaType.APPLICATION_JSON)
-                    .headers(httpHeaders -> {
-                        httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                        httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                        httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
-                        httpHeaders.add("Content-Encoding", "UTF-8");
-                        httpHeaders.add("Digest", digest);
-                        httpHeaders.add("bearerAuth", accessTokenCacheEntry.getAccessToken());
-                    })
-                    .bodyValue(s)
-                    .retrieve()
-                    .bodyToMono(RispostaE002OKDto.class)
-                    .retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                            .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                    new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,retrySignal.failure())));
-        });
-
+        return accessTokenExpiringMap.getToken(purposeId,anprSecretConfig.getAnprSecretValue())
+                .flatMap(accessTokenCacheEntry -> {
+                    String s = convertToJson(richiestaE002Dto);
+                    String digest = createDigestFromPayload(s);
+                    log.debug("digest: {}",digest);
+                    return webClient.post()
+                            .uri("/anpr-service-e002")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .headers(httpHeaders -> {
+                                httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                                httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                                httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
+                                httpHeaders.add("Content-Encoding", "UTF-8");
+                                httpHeaders.add("Digest", digest);
+                                httpHeaders.add("bearerAuth", accessTokenCacheEntry.getAccessToken());
+                            })
+                            .bodyValue(s)
+                            .retrieve()
+                            .bodyToMono(RispostaE002OKDto.class);
+                }).retryWhen(Retry.max(1).filter(throwable -> {
+                    log.debug("Try Retry call to ANPR");
+                    return checkExceptionType(throwable);
+                }).onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                            new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, retrySignal.failure())));
     }
 
     private String convertToJson(RichiestaE002Dto richiestaE002Dto) {

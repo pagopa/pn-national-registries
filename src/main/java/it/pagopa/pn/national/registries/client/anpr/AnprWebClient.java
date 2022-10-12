@@ -1,21 +1,19 @@
 package it.pagopa.pn.national.registries.client.anpr;
 
 import com.amazonaws.util.StringUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.client.CommonWebClient;
+import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
-import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
-import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
 import javax.net.ssl.SSLException;
 import java.io.*;
@@ -29,31 +27,25 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesEx
 @Slf4j
 public class AnprWebClient extends CommonWebClient {
 
-    private final ObjectMapper objectMapper;
-    private final SecretManagerService secretManagerService;
-
     private final Integer tcpMaxPoolSize;
     private final Integer tcpMaxQueuedConnections;
     private final Integer tcpPendingAcquireTimeout;
     private final Integer tcpPoolIdleTimeout;
     private final String basePath;
-    private final String secretName;
+    private final AnprSecretConfig anprSecretConfig;
 
-    public AnprWebClient(@Value("${webclient.anpr.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                         @Value("${webclient.anpr.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                         @Value("${webclient.anpr.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
-                         @Value("${webclient.anpr.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                         @Value("${pdnd.anpr.base-path}") String basePath,
-                         @Value("${pdnd.anpr.secret}") String secretName,
-                         SecretManagerService secretsManagerService) {
+    public AnprWebClient(@Value("${pn.national.registries.webclient.anpr.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                         @Value("${pn.national.registries.webclient.anpr.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                         @Value("${pn.national.registries.webclient.anpr.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                         @Value("${pn.national.registries.webclient.anpr.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
+                         @Value("${pn.national.registries.pdnd.anpr.base-path}") String basePath,
+                         AnprSecretConfig anprSecretConfig) {
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
         this.tcpPoolIdleTimeout = tcpPoolIdleTimeout;
         this.basePath = basePath;
-        this.secretManagerService = secretsManagerService;
-        this.objectMapper = new ObjectMapper();
-        this.secretName = secretName;
+        this.anprSecretConfig = anprSecretConfig;
     }
 
     public WebClient init() {
@@ -70,12 +62,7 @@ public class AnprWebClient extends CommonWebClient {
 
     public SslContext buildSSLHttpClient() {
         try {
-            Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretName);
-            if (opt.isEmpty()) {
-                log.info("secret value not found");
-                return null;
-            }
-            SSLData sslData = objectMapper.readValue(opt.get().secretString(), SSLData.class);
+            SSLData sslData = anprSecretConfig.getAnprAuthChannelSecret();
             SslContextBuilder sslContext = SslContextBuilder.forClient()
                     .keyManager(getCertInputStream(sslData.getCert()),getKeyInputStream(sslData.getKey()));
 

@@ -9,7 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@ConfigurationProperties(prefix = "pn.external-registry")
+@ConfigurationProperties(prefix = "pn.national-registry")
 @Slf4j
 @Data
 @ToString
