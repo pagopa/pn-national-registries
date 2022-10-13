@@ -58,6 +58,42 @@ Parameters:
     Type: String
     Description: 'keep track of used projects commitIds'
 
+  PDNDBaseURL:
+    Type: String
+    Description: 'PDND Base URL'
+
+  ANPRBaseURL:
+    Type: String
+    Description: 'ANPR Base URL'
+
+  ANPRPurposeId:
+    Type: String
+    Description: 'ANPR Base Purpose ID'
+
+  AgenziaEntrateBaseURL:
+    Type: String
+    Description: 'Agenzia Entrate Base URL'
+
+  AgenziaEntratePurposeId:
+    Type: String
+    Description: 'Agenzia Entrate Purpose ID'
+
+  INADBaseURL:
+    Type: String
+    Description: 'INAD Base URL'
+
+  INADPurposeId:
+    Type: String
+    Description: 'INAD Purpose ID'
+
+  INIPECBaseURL:
+    Type: String
+    Description: 'INIPEC Base URL'
+
+  INIPECPurposeId:
+    Type: String
+    Description: 'INIPEC Purpose ID'
+
   # Parametro obbligatorio (ARN del secret)
   ANPRSSLSecretName:
     Type: String
@@ -75,8 +111,8 @@ Parameters:
 
 Resources:
 
-  # PN-External-Registry microservice
-  ExternalRegistryMicroservice:
+  # PN-National-Registry microservice
+  NationalRegistryMicroservice:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/ecs-service.yaml"
@@ -104,96 +140,47 @@ Resources:
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
 
-
-  ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI M2M DI PDND    ###
-  ###   La chiave viene impiegata per firmare il client assertion che serve          ###
-  ###   per richedere a PDND il JWT da utilizzare per invocare i servizi M2M di PDND ###
-  ######################################################################################
-  PDNDSessionTokenSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
-
   ANPRSSLSecretPolicy:
-    Type: 'AWS::SecretsManager::ResourcePolicy'
+    Type: AWS::IAM::Policy
     Properties:
-      ResourcePolicy:
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-CustomTaskPolicy'
+      Roles:
+        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      PolicyDocument:
         Version: 2012-10-17
         Statement:
-            - Sid: Enable IAM User Permissions
-              Effect: Allow
-              Principal:
-                AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-              Action: 'secretsmanager:GetSecretValue'
-              Resource: '*'
-      SecretId: !Ref ANPRSSLSecretName
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource:
+              - !Ref ANPRSSLSecretName
 
   PDNDANPRClientAssertionSecretPolicy:
-    Type: 'AWS::SecretsManager::ResourcePolicy'
+    Type: AWS::IAM::Policy
     Properties:
-      ResourcePolicy:
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-CustomTaskPolicy'
+      Roles:
+        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'secretsmanager:GetSecretValue'
-            Resource: '*'
-      SecretId: !Ref PDNDANPRClientAssertionSecretName
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource:
+              - !Ref PDNDANPRClientAssertionSecretName
 
   PDNDANPRIntegritySecretPolicy:
-    Type: 'AWS::SecretsManager::ResourcePolicy'
+    Type: AWS::IAM::Policy
     Properties:
-      ResourcePolicy:
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-CustomTaskPolicy'
+      Roles:
+        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'secretsmanager:GetSecretValue'
-            Resource: '*'
-      SecretId: !Ref PDNDANPRIntegritySecretName
-
-  # Application use this alias to access the public/private key pair
-  PDNDSessionTokenSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-anpr-c001'
-      TargetKeyId: !Ref PDNDSessionTokenSigningKey
-
-  ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI ANPR DI PDND    ###
-  ###   La chiave viene impiegata per firmare il client assertion che serve           ###
-  ###   per richedere a PDND il JWT da utilizzare per invocare i servizi di ANPR      ###
-  #######################################################################################
-  PdndAnprSessionTokenSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource:
+              - !Ref PDNDANPRIntegritySecretName

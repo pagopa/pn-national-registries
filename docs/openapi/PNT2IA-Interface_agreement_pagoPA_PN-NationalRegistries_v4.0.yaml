@@ -16,7 +16,7 @@ tags:
   - name: digitalAddressIniPEC
     description: Consente di ottenere la PEC dell’impresa oppure del professionista corrispondente al codice fiscale al momento della consultazione. In caso di impresa si restituisce anche l’indirizzo della sede legale
 paths:
-  /checkTaxId:
+  /external-registry-private/agenzia-entrate/tax-id:
     post:
       tags:
         - checkTaxId
@@ -49,7 +49,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CheckTaxIdError'
-  /addressANPR:
+  /external-registry-private/anpr/address:
     post:
       tags:
         - addressANPR
@@ -88,7 +88,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressANPRError'
-  /digitalAddressINAD:
+  /external-registry-private/inad/digital-address:
     post:
       tags:
         - digitalAddressINAD
@@ -145,7 +145,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressINADError'
-  /digitalAddressIniPEC:
+  /external-registry-private/inipec/digital-address:
     post:
       tags:
         - digitalAddressIniPEC

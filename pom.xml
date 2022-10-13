@@ -140,11 +140,6 @@
             <version>0.5.10</version>
             <scope>compile</scope>
         </dependency>
-        <dependency>
-            <groupId>com.auth0</groupId>
-            <artifactId>java-jwt</artifactId>
-            <version>4.0.0</version>
-        </dependency>
     </dependencies>
 
     <build>
@@ -164,7 +159,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/docs/openapi/pn-api-rest-v3.yaml</inputSpec>
+                            <inputSpec>${project.basedir}/docs/openapi/PNT2IA-Interface_agreement_pagoPA_PN-NationalRegistries_v4.0.yaml</inputSpec>
                             <generatorName>spring</generatorName>
                             <library>spring-boot</library>
                             <modelNameSuffix>Dto</modelNameSuffix>

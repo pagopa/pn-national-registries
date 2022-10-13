@@ -5,7 +5,7 @@
     "ANPRPurposeId": "fa2aa359-ab78-45b2-aa55-977d8ddb7d2b",
     "AgenziaEntrateBaseURL": "https://api.agenziaentrate.gov.it/entrate/api/codice-fiscale/v0/",
     "AgenziaEntratePurposeId": "",
-    "INADBaseURL": "",
+    "INADBaseURL": "https://api.inad.gov.it/rest/inad/v1/domiciliodigitale",
     "INADPurposeId": "",
     "INIPECBaseURL": "",
     "INIPECPurposeId": ""
