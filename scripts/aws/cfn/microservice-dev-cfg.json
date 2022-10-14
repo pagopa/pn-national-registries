@@ -9,8 +9,8 @@
     "INADPurposeId": "",
     "INIPECBaseURL": "",
     "INIPECPurposeId": "",
-    "ANPRSSLSecretName": "pdnd-anpr-ssl",
-    "PDNDANPRClientAssertionSecretName": "fa2aa359-ab78-45b2-aa55-977d8ddb7d2b",
-    "PDNDANPRIntegritySecretName": "pdnd-anpr-integrity"
+    "ANPRSSLSecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:pdnd-anpr-ssl-FfkGOL",
+    "PDNDANPRClientAssertionSecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:fa2aa359-ab78-45b2-aa55-977d8ddb7d2b-PJMQRl",
+    "PDNDANPRIntegritySecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:pdnd-anpr-integrity-Mby6oZ"
   }
 }
