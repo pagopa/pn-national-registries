@@ -143,7 +143,7 @@ Resources:
   ANPRSSLSecretPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub '${ProjectName}-NationalRegistry-CustomTaskPolicy'
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-ANPRSSLSecretPolicy'
       Roles:
         - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
       PolicyDocument:
@@ -158,7 +158,7 @@ Resources:
   PDNDANPRClientAssertionSecretPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub '${ProjectName}-NationalRegistry-CustomTaskPolicy'
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-PDNDANPRClientAssertionSecretPolicy'
       Roles:
         - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
       PolicyDocument:
@@ -173,7 +173,7 @@ Resources:
   PDNDANPRIntegritySecretPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub '${ProjectName}-NationalRegistry-CustomTaskPolicy'
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-PDNDANPRIntegritySecretPolicy'
       Roles:
         - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
       PolicyDocument:
