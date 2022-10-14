@@ -8,6 +8,9 @@
     "INADBaseURL": "",
     "INADPurposeId": "",
     "INIPECBaseURL": "",
-    "INIPECPurposeId": ""
+    "INIPECPurposeId": "",
+    "ANPRSSLSecretName": "",
+    "PDNDANPRClientAssertionSecretName": "",
+    "PDNDANPRIntegritySecretName": ""
   }
 }
