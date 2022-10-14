@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.log;
 
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
@@ -40,7 +41,7 @@ public class ResponseExchangeFilter implements ExchangeFilterFunction {
                 request.url(),
                 response.statusCode().value(),
                 Objects.requireNonNull(response.statusCode().name()),
-                dataBuffer.toString(StandardCharsets.UTF_8),
+                MaskDataUtils.maskInformation(dataBuffer.toString(StandardCharsets.UTF_8)),
                 duration);
     }
 
@@ -59,6 +60,7 @@ public class ResponseExchangeFilter implements ExchangeFilterFunction {
         log.info("Request HTTP {} to: {} - body: {}",
                 request.method().name(),
                 request.url(),
-                dataBuffer.toString(StandardCharsets.UTF_8));
+                MaskDataUtils.maskInformation(dataBuffer.toString(StandardCharsets.UTF_8)));
     }
+
 }

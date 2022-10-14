@@ -1,0 +1,79 @@
+package it.pagopa.pn.national.registries.utils;
+
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class MaskDataUtils {
+
+    public static String maskInformation(String dataBuffered){
+        Pattern patternTaxId = Pattern.compile("(\"taxId\")\\s*:\\s*\"(.*?)\"");
+        Pattern patternAddress = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\"|\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|\"digitalAddress\")\\s*:\\s*\"(.*?)\"");
+        Pattern patternIdentity = Pattern.compile("(\"cf\"|\"codFiscale\"|\"codiceFiscale\"|\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
+        //Pattern patternPec = Pattern.compile("(\"pecBusiness\"|\"pecProfessional\")\\s*:\\s*\"([^\"]+)");
+
+        dataBuffered = maskMatcher(patternTaxId, dataBuffered);
+        dataBuffered = maskMatcher(patternAddress, dataBuffered);
+        dataBuffered = maskMatcher(patternIdentity, dataBuffered);
+        //dataBuffered = maskMatcher(patternPec, dataBuffered);
+
+
+        return dataBuffered;
+    }
+
+    private static String maskMatcher(Pattern pattern, String dataBuffered){
+        Matcher matcher = pattern.matcher(dataBuffered);
+        while(matcher.find()){
+            String toBeMasked = matcher.group(2);
+            String valueMasked = mask(toBeMasked);
+            if(!toBeMasked.isBlank()){
+                dataBuffered = dataBuffered.replace("\""+toBeMasked+"\"","\""+valueMasked+"\"");
+            }
+        }
+        return dataBuffered;
+    }
+
+    private static String mask(String unmasked){
+        if(unmasked.contains(","))
+            return maskAddress(unmasked);
+        else if(unmasked.contains("@"))
+            return maskEmailAddress(unmasked);
+        else
+            return maskString(unmasked);
+
+    }
+
+
+    private static String maskAddress(String strAddress){
+        String[] parts = strAddress.split(",");
+        String masked = "";
+        for (String part : parts)
+            masked = masked + maskString(part) + ",";
+        return masked.substring(0,masked.length()-1);
+    }
+
+    private static String maskEmailAddress(String strEmail) {
+        String[] parts = strEmail.split("@");
+        String strId = maskString(parts[0]);
+        return strId + "@" + parts[1];
+    }
+
+    private static String maskString(String strText) {
+        int start = 1;
+        int end = strText.length()-3;
+        String maskChar = String.valueOf('*');
+
+        if(strText.equals(""))
+            return "";
+        if(strText.length() < 4){
+            end = strText.length();
+        }
+        int maskLength = end - start;
+        if(maskLength == 0)
+            return maskChar;
+        String sbMaskString = maskChar.repeat(Math.max(0, maskLength));
+        return strText.substring(0, start)
+                + sbMaskString
+                + strText.substring(start + maskLength);
+    }
+
+}
