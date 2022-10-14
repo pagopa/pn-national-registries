@@ -51,4 +51,11 @@ Resources:
       AliasName: !Sub 'alias/${ProjectName}-national-registries-pdnd'
       TargetKeyId: !Ref PDNDSessionTokenSigningKey
 
+#Necessario a causa di bug script deploy
+Outputs:
+  FakeOut:
+    Description: Foo
+    Value: Foo
+
+
 
