@@ -40,10 +40,9 @@ Resources:
           - Sid: Enable IAM User Permissions
             Effect: Allow
             Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:role/pn-NationalRegistry-TaskRole'
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
             Action: 'kms:*'
             Resource: '*'
-
 
   # Application use this alias to access the public/private key pair
   PDNDSessionTokenSigningKeyAlias:
@@ -54,9 +53,9 @@ Resources:
 
 #Necessario a causa di bug script deploy
 Outputs:
-  FakeOut:
-    Description: Foo
-    Value: Foo
+  PDNDSessionTokenSigningKey:
+    Description: PDNDSessionTokenSigningKey
+    Value: !Ref PDNDSessionTokenSigningKey
 
 
 

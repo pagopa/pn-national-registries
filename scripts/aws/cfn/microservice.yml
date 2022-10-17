@@ -109,6 +109,10 @@ Parameters:
     Type: String
     Description: 'PDND ANPR Integrity certs'
 
+  PDNDSessionTokenSigningKey:
+    Type: String
+    Description: 'PDND Session Token Signing Key for eservice c001'
+
 Resources:
 
   # PN-National-Registry microservice
@@ -188,3 +192,18 @@ Resources:
               - secretsmanager:GetSecretValue
             Resource:
               - !Ref PDNDANPRIntegritySecretName
+
+  PDNDSessionTokenSigningKeyPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-PDNDSessionTokenSigningKeyPolicy'
+      Roles:
+        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:Sign
+            Resource:
+              - !Ref PDNDSessionTokenSigningKey
