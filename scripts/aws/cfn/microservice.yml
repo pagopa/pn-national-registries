@@ -117,6 +117,10 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/ecs-service.yaml"
       Parameters:
+        HealthCheckPath: /actuator/health
+        HealthCheckTimeout: 15
+        AutoscalingStrategy: REST-API
+        AutoscalingThreshold: 70
         MicroServiceUniqueName: !Sub '${ProjectName}-NationalRegistry'
         CpuValue: 1024
         MemoryAmount: 2GB
