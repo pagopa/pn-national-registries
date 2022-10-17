@@ -53,9 +53,9 @@ Resources:
 
 #Necessario a causa di bug script deploy
 Outputs:
-  PDNDSessionTokenSigningKey:
-    Description: PDNDSessionTokenSigningKey
-    Value: !Ref PDNDSessionTokenSigningKey
+  PDNDSessionTokenSigningKeyARN:
+    Description: PDNDSessionTokenSigningKeyARN
+    Value: !Sub '${PDNDSessionTokenSigningKey.Arn}'
 
 
 

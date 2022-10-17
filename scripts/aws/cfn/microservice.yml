@@ -109,7 +109,7 @@ Parameters:
     Type: String
     Description: 'PDND ANPR Integrity certs'
 
-  PDNDSessionTokenSigningKey:
+  PDNDSessionTokenSigningKeyARN:
     Type: String
     Description: 'PDND Session Token Signing Key for eservice c001'
 
@@ -206,4 +206,4 @@ Resources:
             Action:
               - kms:Sign
             Resource:
-              - !Ref PDNDSessionTokenSigningKey
+              - !Ref PDNDSessionTokenSigningKeyARN
