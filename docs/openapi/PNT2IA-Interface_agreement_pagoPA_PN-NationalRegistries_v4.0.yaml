@@ -7,6 +7,8 @@ info:
 servers:
   - url: http://127.0.0.1
 tags:
+  - name: healthCheck
+    description: Questo Servizio verifica lo stato del microservizio
   - name: checkTaxId
     description: Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response.
   - name: addressANPR
@@ -16,6 +18,18 @@ tags:
   - name: digitalAddressIniPEC
     description: Consente di ottenere la PEC dell’impresa oppure del professionista corrispondente al codice fiscale al momento della consultazione. In caso di impresa si restituisce anche l’indirizzo della sede legale
 paths:
+  /health:
+    get:
+      summary: healthCheck path
+      description: healtCheck path per verificare lo stato del microservizio
+      tags:
+        - healthCheck
+      operationId: health
+      responses:
+        '200':
+          description: Ok
+        '500':
+          description: Internal Server Error
   /external-registry-private/agenzia-entrate/tax-id:
     post:
       tags:
