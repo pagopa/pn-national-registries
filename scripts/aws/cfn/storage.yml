@@ -53,9 +53,9 @@ Resources:
 
 #Necessario a causa di bug script deploy
 Outputs:
-  PDNDSessionTokenSigningKeyAlias:
-    Description: Alias of key used in client assertion for eservice c001
-    Value: !Ref PDNDSessionTokenSigningKeyAlias
+  FakeOut:
+    Description: Foo
+    Value: Foo
 
 
 
