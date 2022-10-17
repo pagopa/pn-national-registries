@@ -27,6 +27,7 @@
     <orderEntry type="library" name="Maven: io.swagger.core.v3:swagger-annotations:2.1.10" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.12.3" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-web:5.3.8" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework:spring-beans:5.3.8" level="project" />
     <orderEntry type="library" name="Maven: javax.validation:validation-api:2.0.1.Final" level="project" />
     <orderEntry type="library" name="Maven: commons-codec:commons-codec:1.15" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-starter-webflux:2.5.2" level="project" />
@@ -70,31 +71,26 @@
     <orderEntry type="library" scope="PROVIDED" name="Maven: org.projectlombok:lombok:1.18.20" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-aws-context:2.2.6.RELEASE" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-aws-core:2.2.6.RELEASE" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework:spring-aop:5.3.8" level="project" />
+    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-core:1.11.792" level="project" />
+    <orderEntry type="library" name="Maven: software.amazon.ion:ion-java:1.0.2" level="project" />
+    <orderEntry type="library" name="Maven: com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.3" level="project" />
+    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-s3:1.11.792" level="project" />
+    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-kms:1.11.792" level="project" />
+    <orderEntry type="library" name="Maven: com.amazonaws:jmespath-java:1.11.792" level="project" />
+    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-ec2:1.11.792" level="project" />
+    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-cloudformation:1.11.792" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-context:5.3.8" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-expression:5.3.8" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-aws-autoconfigure:2.2.6.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-autoconfigure:2.5.2" level="project" />
     <orderEntry type="library" name="Maven: org.slf4j:slf4j-api:1.7.31" level="project" />
     <orderEntry type="library" name="Maven: javax.activation:javax.activation-api:1.2.0" level="project" />
-    <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-starter-aws-parameter-store-config:2.2.6.RELEASE" level="project" />
-    <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-aws-parameter-store-config:2.2.6.RELEASE" level="project" />
-    <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-context:3.0.3" level="project" />
-    <orderEntry type="library" name="Maven: org.springframework.security:spring-security-crypto:5.5.1" level="project" />
-    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-ssm:1.11.792" level="project" />
-    <orderEntry type="library" name="Maven: com.amazonaws:jmespath-java:1.11.792" level="project" />
-    <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-aws-core:2.2.6.RELEASE" level="project" />
-    <orderEntry type="library" name="Maven: org.springframework:spring-beans:5.3.8" level="project" />
-    <orderEntry type="library" name="Maven: org.springframework:spring-aop:5.3.8" level="project" />
-    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-core:1.11.792" level="project" />
-    <orderEntry type="library" name="Maven: software.amazon.ion:ion-java:1.0.2" level="project" />
-    <orderEntry type="library" name="Maven: com.fasterxml.jackson.dataformat:jackson-dataformat-cbor:2.12.3" level="project" />
-    <orderEntry type="library" name="Maven: joda-time:joda-time:2.8.1" level="project" />
-    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-s3:1.11.792" level="project" />
-    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-kms:1.11.792" level="project" />
-    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-ec2:1.11.792" level="project" />
-    <orderEntry type="library" name="Maven: com.amazonaws:aws-java-sdk-cloudformation:1.11.792" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-starter-bootstrap:3.1.0" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-starter:3.0.3" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-context:3.0.3" level="project" />
+    <orderEntry type="library" name="Maven: org.springframework.security:spring-security-crypto:5.5.1" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.cloud:spring-cloud-commons:3.0.3" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.security:spring-security-rsa:1.0.10.RELEASE" level="project" />
     <orderEntry type="library" name="Maven: org.bouncycastle:bcpkix-jdk15on:1.68" level="project" />
@@ -189,6 +185,7 @@
     <orderEntry type="library" scope="TEST" name="Maven: com.github.java-json-tools:uri-template:0.10" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.mozilla:rhino:1.7.7.2" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: com.sun.mail:mailapi:1.6.2" level="project" />
+    <orderEntry type="library" name="Maven: joda-time:joda-time:2.10.5" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: com.googlecode.libphonenumber:libphonenumber:8.11.1" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: net.sf.jopt-simple:jopt-simple:5.0.4" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: io.swagger.parser.v3:swagger-parser:2.0.20" level="project" />

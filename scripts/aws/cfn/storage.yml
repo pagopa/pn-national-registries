@@ -20,31 +20,42 @@ Parameters:
     Type: String
     Description: 'keep track of used projects commitIds'
 
-Conditions:
-  Never: !Equals [ 'true', 'false' ]
-
 
 Resources:
-  OptInSentTable:
-    Type: AWS::DynamoDB::Table
+  ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI M2M DI PDND    ###
+  ###   La chiave viene impiegata per firmare il client assertion che serve          ###
+  ###   per richedere a PDND il JWT da utilizzare per invocare i servizi M2M di PDND ###
+  ######################################################################################
+  PDNDSessionTokenSigningKey:
+    Type: 'AWS::KMS::Key'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
     Properties:
-      TableName: !Sub '${ProjectName}-OptInSent'
-      AttributeDefinitions:
-        - AttributeName: "pk"
-          AttributeType: "S"
-      KeySchema:
-        - AttributeName: "pk"
-          KeyType: "HASH"
-      BillingMode: "PAY_PER_REQUEST"
+      Description: RSA-2048 key to generate session token
+      KeySpec: RSA_2048
+      KeyUsage: SIGN_VERIFY
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
 
+  # Application use this alias to access the public/private key pair
+  PDNDSessionTokenSigningKeyAlias:
+    Type: 'AWS::KMS::Alias'
+    Properties:
+      AliasName: !Sub 'alias/${ProjectName}-national-registries-pdnd'
+      TargetKeyId: !Ref PDNDSessionTokenSigningKey
+
+#Necessario a causa di bug script deploy
 Outputs:
+  FakeOut:
+    Description: Foo
+    Value: Foo
 
-  # Table parameters
-  OptInSentTableName:
-    Description: Dynamo Name used by application to access the key-value store
-    Value: !Ref OptInSentTable
-  OptInSentTableArn:
-    Description: ARM Dynamo Name used by application to access the key-value store
-    Value: !Sub '${OptInSentTable.Arn}'
 
 
