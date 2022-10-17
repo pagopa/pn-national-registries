@@ -40,9 +40,10 @@ Resources:
           - Sid: Enable IAM User Permissions
             Effect: Allow
             Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:role/pn-NationalRegistry-TaskRole'
             Action: 'kms:*'
             Resource: '*'
+
 
   # Application use this alias to access the public/private key pair
   PDNDSessionTokenSigningKeyAlias:
