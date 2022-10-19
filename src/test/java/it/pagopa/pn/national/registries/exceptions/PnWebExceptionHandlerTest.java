@@ -79,6 +79,7 @@ class PnWebExceptionHandlerTest {
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
 
@@ -95,8 +96,10 @@ class PnWebExceptionHandlerTest {
         when(exception.getResponseBodyAsString()).thenReturn("");
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        when(exceptionHelper.generateFallbackProblem()).thenReturn("");
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
 
     }
@@ -113,9 +116,11 @@ class PnWebExceptionHandlerTest {
         when(exception.getMessage()).thenReturn("bad request");
         when(exception.getResponseBodyAsString()).thenReturn("");
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        when(exceptionHelper.generateFallbackProblem()).thenReturn("");
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
 
     }
