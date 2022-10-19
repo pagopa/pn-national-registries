@@ -12,8 +12,7 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRespon
 
 import java.util.Optional;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
 
 @Slf4j
 @Component
@@ -27,12 +26,12 @@ public class PnNationlRegistriesSecretConfig {
 
     protected SecretValue getSecretValue(String purposeId) {
         Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(purposeId);
-        if (opt.isEmpty()) {
+        if(opt.isPresent()){
+            return convertToSecretValueObject(opt.get().secretString());
+        }else{
             log.info("secret value not found");
-            return new SecretValue();
-            //throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR, new Throwable());
+            throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, new Throwable());
         }
-        return convertToSecretValueObject(opt.get().secretString());
     }
 
     protected SSLData getSslDataSecretValue(String secretName) {
@@ -40,14 +39,15 @@ public class PnNationlRegistriesSecretConfig {
         try {
             ObjectMapper mapper = new ObjectMapper();
             Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretName);
-            if (opt.isEmpty()) {
+            if(opt.isPresent()){
+                return mapper.readValue(opt.get().secretString(), SSLData.class);
+            }else{
                 log.info("secret value not found");
-                return new SSLData();
-                //throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR, new Throwable());
+                throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, new Throwable());
             }
-            return mapper.readValue(opt.get().secretString(), SSLData.class);
+
         } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR, e);
+            throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, e);
         }
     }
 

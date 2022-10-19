@@ -14,34 +14,6 @@ Parameters:
     Type: String
     Description: ARN of alarm topic
 
-  ApiDnsName:
-    Type: String
-    Description: 'The DNS name used for B2B rest API.'
-
-  WebApiDnsName:
-    Type: String
-    Description: 'The DNS name used for WEB rest API.'
-  
-  CorsAllowedDomains:
-    Type: String
-    Description: 'Comma separated list of domains allowed to make cross origin request'
-
-  CheckoutApiBaseUrl:
-    Type: String
-    Description: 'Checkout endpoint base url'
-
-  CheckoutSiteUrl:
-   Type: String
-   Description: 'Checkout site url'
-
-  SelfcareUsergroupBaseUrl:
-    Type: String
-    Description: 'Selfcare endpoint base url'
-
-  SelfcareUsergroupPnProductId:
-    Type: String
-    Description: 'Selfcare product id'
-
   ContainerImageUri:
     Type: String
     Description: 'Exact container image URI with full repository and image digest'
@@ -86,48 +58,89 @@ Parameters:
     Type: String
     Description: 'keep track of used projects commitIds'
 
-  OptInSentTableName:
+  PDNDBaseURL:
     Type: String
-    Description: 'Name of dynamodb table containing OptInSent information'
+    Description: 'PDND Base URL'
 
-  OptInSentTableArn:
+  ANPRBaseURL:
     Type: String
-    Description: 'ARN of dynamodb table containing OptInSent information'
+    Description: 'ANPR Base URL'
 
-  PortalUrl:
+  ANPRPurposeId:
     Type: String
-    Description: 'Url del portale della da inserire negli avvisi a IO'
+    Description: 'ANPR Base Purpose ID'
 
-  DeliveryPushInputsQueueName:
+  AgenziaEntrateBaseURL:
     Type: String
-    Description: 'Queue to pull for inputs event'
+    Description: 'Agenzia Entrate Base URL'
 
-  DeliveryPushInputsQueueARN:
+  AgenziaEntratePurposeId:
     Type: String
-    Description: 'Queue to pull for inputs event'
+    Description: 'Agenzia Entrate Purpose ID'
+
+  INADBaseURL:
+    Type: String
+    Description: 'INAD Base URL'
+
+  INADPurposeId:
+    Type: String
+    Description: 'INAD Purpose ID'
+
+  INIPECBaseURL:
+    Type: String
+    Description: 'INIPEC Base URL'
+
+  INIPECPurposeId:
+    Type: String
+    Description: 'INIPEC Purpose ID'
+
+  # Parametro obbligatorio (ARN del secret)
+  ANPRSSLSecretName:
+    Type: String
+    Description: 'ANPR SecretName'
+
+  # Parametro obbligatorio (ARN del secret)
+  PDNDANPRClientAssertionSecretName:
+    Type: String
+    Description: 'PDND ANPR Client assertion claims'
+
+  # Parametro obbligatorio (ARN del secret)
+  PDNDANPRIntegritySecretName:
+    Type: String
+    Description: 'PDND ANPR Integrity certs'
+
+  PDNDSessionTokenSigningKeyARN:
+    Type: String
+    Description: 'PDND Session Token Signing Key for eservice c001'
 
 Resources:
 
-  # PN-External-Registry microservice
-  ExternalRegistryMicroservice:
+  # PN-National-Registry microservice
+  NationalRegistryMicroservice:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/ecs-service.yaml"
       Parameters:
-        MicroServiceUniqueName: !Sub '${ProjectName}-ExternalRegistry'
+        HealthCheckPath: /actuator/health
+        HealthCheckTimeout: 15
+        AutoscalingStrategy: REST-API
+        AutoscalingThreshold: 70
+        MicroServiceUniqueName: !Sub '${ProjectName}-NationalRegistry'
         CpuValue: 1024
         MemoryAmount: 2GB
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
         ContainerImageURI: !Sub '${ContainerImageUri}'
-        ContainerEnvEntry1: !Sub 'AWS_REGIONCODE=${AWS::Region}'
-        ContainerEnvEntry2: !Sub 'CORS_ALLOWED_DOMAINS=${CorsAllowedDomains}'
-        ContainerEnvEntry3: !Sub 'PN_EXTERNAL_REGISTRY_CHECKOUT_API_BASE_URL=${CheckoutApiBaseUrl}'
-        ContainerEnvEntry4: !Sub 'PN_EXTERNAL_REGISTRY_CHECKOUT_SITE_URL=${CheckoutSiteUrl}'
-        ContainerEnvEntry5: !Sub 'PN_EXTERNAL_REGISTRY_CHECKOUT_API_KEY={{resolve:secretsmanager:${ProjectName}-ExternalRegistries-Secrets:SecretString:CheckoutApiKey}}'
-        ContainerEnvEntry6: !Sub 'PN_EXTERNAL_REGISTRY_IO_API_KEY={{resolve:secretsmanager:${ProjectName}-ExternalRegistries-Secrets:SecretString:IoApiKey}}'
-        ContainerEnvEntry7: !Sub 'PN_EXTERNAL_REGISTRY_IOACT_API_KEY={{resolve:secretsmanager:${ProjectName}-ExternalRegistries-Secrets:SecretString:IoActApiKey}}'
-
-        MappedPaths: '/external-registry/*'
+        ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
+        ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_API_BASE_URL=${PDNDBaseURL}'
+        ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_API_BASE_URL=${ANPRBaseURL}'
+        ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
+        ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_API_BASE_URL=${AgenziaEntrateBaseURL}'
+        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_PURPOSE_ID=${AgenziaEntratePurposeId}'
+        ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_INAD_API_BASE_URL=${INADBaseURL}'
+        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_INAD_PURPOSE_ID=${INADPurposeId}'
+        ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_API_BASE_URL=${INIPECBaseURL}'
+        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_PURPOSE_ID=${INIPECPurposeId}'
+        MappedPaths: '/external-registry-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
         VpcId: !Ref VpcId
@@ -135,56 +148,62 @@ Resources:
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
 
-
-
-  ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI M2M DI PDND    ###
-  ###   La chiave viene impiegata per firmare il client assertion che serve          ###
-  ###   per richedere a PDND il JWT da utilizzare per invocare i servizi M2M di PDND ###
-  ######################################################################################
-  PDNDSessionTokenSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
+  ANPRSSLSecretPolicy:
+    Type: AWS::IAM::Policy
     Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-ANPRSSLSecretPolicy'
+      Roles:
+        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource:
+              - !Ref ANPRSSLSecretName
 
-
-  # Application use this alias to access the public/private key pair
-  PDNDSessionTokenSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
+  PDNDANPRClientAssertionSecretPolicy:
+    Type: AWS::IAM::Policy
     Properties:
-      AliasName: !Sub 'alias/${ProjectName}-pdnd-authentication-token-key'
-      TargetKeyId: !Ref PDNDSessionTokenSigningKey
-
-  ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI ANPR DI PDND    ###
-  ###   La chiave viene impiegata per firmare il client assertion che serve           ###
-  ###   per richedere a PDND il JWT da utilizzare per invocare i servizi di ANPR      ###
-  #######################################################################################
-  PdndAnprSessionTokenSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-PDNDANPRClientAssertionSecretPolicy'
+      Roles:
+        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource:
+              - !Ref PDNDANPRClientAssertionSecretName
+
+  PDNDANPRIntegritySecretPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-PDNDANPRIntegritySecretPolicy'
+      Roles:
+        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource:
+              - !Ref PDNDANPRIntegritySecretName
+
+  PDNDSessionTokenSigningKeyPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${ProjectName}-NationalRegistry-PDNDSessionTokenSigningKeyPolicy'
+      Roles:
+        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - kms:Sign
+            Resource:
+              - !Ref PDNDSessionTokenSigningKeyARN

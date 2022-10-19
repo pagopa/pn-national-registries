@@ -1,9 +1,16 @@
 {
   "Parameters" : {
-    "CheckoutApiBaseUrl": "https://api.uat.platform.pagopa.it/checkout/auth/payments/v2",
-    "CheckoutSiteUrl": "https://uat.checkout.pagopa.it",
-    "SelfcareUsergroupBaseUrl": "https://api.uat.selfcare.pagopa.it/external/v1",
-    "PortalUrl": "https://portale-login.svil.pn.pagopa.it",
-    "SelfcareUsergroupPnProductId": "prod-pn-svil"
+    "PDNDBaseURL": "",
+    "ANPRBaseURL": "",
+    "ANPRPurposeId": "",
+    "AgenziaEntrateBaseURL": "",
+    "AgenziaEntratePurposeId": "",
+    "INADBaseURL": "",
+    "INADPurposeId": "",
+    "INIPECBaseURL": "",
+    "INIPECPurposeId": "",
+    "ANPRSSLSecretName": "",
+    "PDNDANPRClientAssertionSecretName": "",
+    "PDNDANPRIntegritySecretName": ""
   }
 }

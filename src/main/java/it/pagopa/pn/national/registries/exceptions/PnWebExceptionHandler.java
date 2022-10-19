@@ -53,7 +53,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
                 log.error("Error -> statusCode: {}, message: {}",exception.getStatusCode().value(),exception.getMessage());
                 problem = createProblem(exception);
             } else {
-                log.error("Error -> {}",throwable.getMessage());
+                log.error("Error -> {}, uri : {}",throwable.getMessage(), serverWebExchange.getRequest().getURI());
                 problem = exceptionHelper.handleException(throwable);
             }
             problem.setTraceId(MDC.get("trace_id"));

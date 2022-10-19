@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.cache;
 
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
+import it.pagopa.pn.national.registries.model.SecretValue;
 import it.pagopa.pn.national.registries.service.TokenProvider;
 import net.jodah.expiringmap.ExpiringMap;
 import org.junit.jupiter.api.BeforeAll;
@@ -41,13 +42,13 @@ class AccessTokenExpiringMapTest {
 
         accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider,Integer.parseInt("-5000"));
 
-        when(tokenProvider.getToken("purpose")).thenReturn(Mono.just(clientCredentialsResponseDto));
+        when(tokenProvider.getToken(new SecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
-        StepVerifier.create(accessTokenExpiringMap.getToken("purpose")).expectNext(accessTokenCacheEntry).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new SecretValue())).expectNext(accessTokenCacheEntry).verifyComplete();
 
         expiringMap.put("purpose",accessTokenCacheEntry);
 
-        StepVerifier.create(accessTokenExpiringMap.getToken("purpose")).expectNext(expiringMap.get("purpose")).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new SecretValue())).expectNext(expiringMap.get("purpose")).verifyComplete();
 
     }
 
@@ -60,13 +61,13 @@ class AccessTokenExpiringMapTest {
 
         accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider,Integer.parseInt("5000"));
 
-        when(tokenProvider.getToken("purpose")).thenReturn(Mono.just(clientCredentialsResponseDto));
+        when(tokenProvider.getToken(new SecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
-        StepVerifier.create(accessTokenExpiringMap.getToken("purpose")).expectNext(accessTokenCacheEntry).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new SecretValue())).expectNext(accessTokenCacheEntry).verifyComplete();
 
         expiringMap.put("purpose",accessTokenCacheEntry);
 
-        StepVerifier.create(accessTokenExpiringMap.getToken("purpose")).expectNext(accessTokenCacheEntry).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new SecretValue())).expectNext(accessTokenCacheEntry).verifyComplete();
 
     }
 

@@ -10,8 +10,8 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRespon
 
 import java.util.Optional;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_PDND_TOKEN;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_PDND_TOKEN;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_SECRET_MANAGER;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_SECRET_MANAGER;
 
 @Slf4j
 @Service
@@ -32,7 +32,7 @@ public class SecretManagerService {
         try {
             return Optional.of(secretsManagerClient.getSecretValue(secretValueRequest));
         } catch (Exception e) {
-            throw new PnInternalException(ERROR_MESSAGE_PDND_TOKEN, ERROR_CODE_PDND_TOKEN,e);
+            throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER,e);
         }
     }
 

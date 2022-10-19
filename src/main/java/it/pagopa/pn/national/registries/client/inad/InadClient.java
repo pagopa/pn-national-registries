@@ -48,8 +48,10 @@ public class InadClient {
                         })
                         .retrieve()
                         .bodyToMono(ResponseRequestDigitalAddressDto.class))
-                .retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                .retryWhen(Retry.max(1).filter(throwable -> {
+                            log.debug("Try Retry call to INAD");
+                            return checkExceptionType(throwable);
+                        }).onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                         new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, retrySignal.failure())));
     }
 
