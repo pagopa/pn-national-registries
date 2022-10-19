@@ -278,6 +278,10 @@ components:
             taxId:
               type: string
               example: AAAZZZ00H00T000Z
+            referenceRequestDate:
+              type: string
+            requestReason:
+              type: string
     GetAddressANPROK:
       type: object
       properties:

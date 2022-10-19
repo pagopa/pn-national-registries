@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -40,25 +41,25 @@ public class AnprService {
         richiesta.setCriteriRicerca(criteriRicercaE002Dto);
 
         TipoTestataRichiestaE000Dto tipoTestata = new TipoTestataRichiestaE000Dto();
-        tipoTestata.setIdOperazioneClient("10");
+        tipoTestata.setIdOperazioneClient(String.valueOf(System.nanoTime()));
         tipoTestata.setCodMittente("600010");
         tipoTestata.setCodDestinatario("ANPR02");
         tipoTestata.setOperazioneRichiesta("E002");
-        tipoTestata.setDataOraRichiesta("2022-08-13T10:03:09.366+01:00");
+        tipoTestata.setDataOraRichiesta(LocalDateTime.now().toString());
         tipoTestata.setTipoOperazione("C");
         tipoTestata.setTipoInvio("TEST");
-        tipoTestata.setDataDecorrenza("2022-08-13");
+        tipoTestata.setDataDecorrenza(request.getFilter().getReferenceRequestDate());
         richiesta.setTestataRichiesta(tipoTestata);
 
         TipoDatiRichiestaE002Dto dto = new TipoDatiRichiestaE002Dto();
         dto.setSchedaAnagraficaRichiesta("1");
-        dto.setDataRiferimentoRichiesta("2022-08-13");
+        dto.setDataRiferimentoRichiesta(request.getFilter().getReferenceRequestDate());
         dto.setDatiAnagraficiRichiesti(List.of("1"));
-        dto.setMotivoRichiesta("1");
+        dto.setMotivoRichiesta(request.getFilter().getRequestReason());
         dto.setCasoUso("C001");
 
         richiesta.setDatiRichiesta(dto);
-
+        log.debug("RichiestaE002Dto: {}",request);
         return richiesta;
     }
 }

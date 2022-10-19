@@ -105,13 +105,31 @@ Parameters:
     Description: 'PDND ANPR Client assertion claims'
 
   # Parametro obbligatorio (ARN del secret)
+  PDNDCheckCfClientAssertionSecretName:
+    Type: String
+    Description: 'PDND CheckCf Client assertion claims'
+
+  # Parametro obbligatorio (ARN del secret)
+  PDNDInadClientAssertionSecretName:
+    Type: String
+    Description: 'PDND INAD Client assertion claims'
+
+  # Parametro obbligatorio (ARN del secret)
   PDNDANPRIntegritySecretName:
     Type: String
     Description: 'PDND ANPR Integrity certs'
 
   PDNDSessionTokenSigningKeyARN:
     Type: String
-    Description: 'PDND Session Token Signing Key for eservice c001'
+    Description: 'PDND Session Token Signing Key for eservice C001'
+
+  CheckCfPDNDSessionTokenSigningKeyARN:
+    Type: String
+    Description: 'PDND Session Token Signing Key for eservice B001'
+
+  InadPDNDSessionTokenSigningKeyARN:
+    Type: String
+    Description: 'PDND Session Token Signing Key for eservice INAD'
 
 Resources:
 
@@ -207,3 +225,7 @@ Resources:
               - kms:Sign
             Resource:
               - !Ref PDNDSessionTokenSigningKeyARN
+              - !Ref CheckCfPDNDSessionTokenSigningKeyARN
+              - !Ref InadPDNDSessionTokenSigningKeyARN
+
+

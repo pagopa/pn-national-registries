@@ -11,6 +11,8 @@
     "INIPECPurposeId": "",
     "ANPRSSLSecretName": "",
     "PDNDANPRClientAssertionSecretName": "",
-    "PDNDANPRIntegritySecretName": ""
+    "PDNDANPRIntegritySecretName": "",
+    "PDNDCheckCfClientAssertionSecretName": "",
+    "PDNDInadClientAssertionSecretName": ""
   }
 }
