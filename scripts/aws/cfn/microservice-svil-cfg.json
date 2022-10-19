@@ -13,6 +13,7 @@
     "PDNDANPRClientAssertionSecretName": "",
     "PDNDANPRIntegritySecretName": "",
     "PDNDCheckCfClientAssertionSecretName": "",
-    "PDNDInadClientAssertionSecretName": ""
+    "PDNDInadClientAssertionSecretName": "",
+    "ANPRTipoInvio": "TEST"
   }
 }

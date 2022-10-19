@@ -70,11 +70,11 @@ Resources:
             Resource: '*'
 
     # Application use this alias to access the public/private key pair
-    CheckCfPDNDSessionTokenSigningKeyAlias:
-      Type: 'AWS::KMS::Alias'
-      Properties:
-        AliasName: !Sub 'alias/${ProjectName}-national-registries-check-cf-pdnd'
-        TargetKeyId: !Ref CheckCfPDNDSessionTokenSigningKey
+  CheckCfPDNDSessionTokenSigningKeyAlias:
+    Type: 'AWS::KMS::Alias'
+    Properties:
+      AliasName: !Sub 'alias/${ProjectName}-national-registries-check-cf-pdnd'
+      TargetKeyId: !Ref CheckCfPDNDSessionTokenSigningKey
 
   InadPDNDSessionTokenSigningKey:
     Type: 'AWS::KMS::Key'
@@ -94,12 +94,12 @@ Resources:
             Action: 'kms:*'
             Resource: '*'
 
-    # Application use this alias to access the public/private key pair
-    InadPDNDSessionTokenSigningKeyAlias:
-      Type: 'AWS::KMS::Alias'
-      Properties:
-        AliasName: !Sub 'alias/${ProjectName}-national-registries-inad-pdnd'
-        TargetKeyId: !Ref InadPDNDSessionTokenSigningKey
+  # Application use this alias to access the public/private key pair
+  InadPDNDSessionTokenSigningKeyAlias:
+    Type: 'AWS::KMS::Alias'
+    Properties:
+      AliasName: !Sub 'alias/${ProjectName}-national-registries-inad-pdnd'
+      TargetKeyId: !Ref InadPDNDSessionTokenSigningKey
 
 #Necessario a causa di bug script deploy
 Outputs:
