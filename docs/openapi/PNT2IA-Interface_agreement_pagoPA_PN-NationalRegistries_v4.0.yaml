@@ -285,6 +285,8 @@ components:
     GetAddressANPROK:
       type: object
       properties:
+        clientOperationId:
+          type: string
         residentialAddresses:
           type: array
           items:

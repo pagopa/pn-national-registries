@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.model.anpr.TipoCriteriRicercaE002Dto;
 import it.pagopa.pn.national.registries.model.anpr.TipoDatiRichiestaE002Dto;
 import it.pagopa.pn.national.registries.model.anpr.TipoTestataRichiestaE000Dto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -21,11 +22,14 @@ public class AnprService {
 
     private final AddressAnprConverter addressAnprConverter;
     private final AnprClient anprClient;
+    private final String anprSendType;
 
     public AnprService(AddressAnprConverter addressAnprConverter,
-                       AnprClient anprClient) {
+                       AnprClient anprClient,
+                       @Value("${pn.national.registries.pdnd.anpr.tipo-invio}") String anprSendType){
         this.addressAnprConverter = addressAnprConverter;
         this.anprClient = anprClient;
+        this.anprSendType = anprSendType;
     }
 
     public Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto request) {
@@ -47,7 +51,7 @@ public class AnprService {
         tipoTestata.setOperazioneRichiesta("E002");
         tipoTestata.setDataOraRichiesta(LocalDateTime.now().toString());
         tipoTestata.setTipoOperazione("C");
-        tipoTestata.setTipoInvio("TEST");
+        tipoTestata.setTipoInvio(anprSendType);
         tipoTestata.setDataDecorrenza(request.getFilter().getReferenceRequestDate());
         richiesta.setTestataRichiesta(tipoTestata);
 

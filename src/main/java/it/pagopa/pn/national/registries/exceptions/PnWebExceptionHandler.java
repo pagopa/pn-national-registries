@@ -5,7 +5,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
-import it.pagopa.pn.national.registries.model.WebClientResponseProblemDto;
+import it.pagopa.pn.national.registries.model.NationalRegistriesProblem;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
@@ -46,21 +46,21 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
     public Mono<Void> handle(@NonNull ServerWebExchange serverWebExchange, @NonNull Throwable throwable) {
         DataBuffer dataBuffer;
         DataBufferFactory bufferFactory = serverWebExchange.getResponse().bufferFactory();
-        Problem problem;
+        NationalRegistriesProblem nationalRegistriesProblem;
         try {
             if (throwable instanceof WebClientResponseException) {
                 WebClientResponseException exception = (WebClientResponseException) throwable;
-                log.error("Error -> statusCode: {}, message: {}",exception.getStatusCode().value(),exception.getMessage());
-                problem = createProblem(exception);
-            } else {
+                log.error("Error -> statusCode: {}, message: {}, uri: {}", exception.getStatusCode().value(), exception.getMessage(), serverWebExchange.getRequest().getURI());
+                nationalRegistriesProblem = createProblem(exception);
+            }else{
                 log.error("Error -> {}, uri : {}",throwable.getMessage(), serverWebExchange.getRequest().getURI());
-                problem = exceptionHelper.handleException(throwable);
+                nationalRegistriesProblem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
             }
-            problem.setTraceId(MDC.get("trace_id"));
-            problem.setTimestamp(OffsetDateTime.now());
-            serverWebExchange.getResponse().setStatusCode(HttpStatus.resolve(problem.getStatus()));
+            nationalRegistriesProblem.setTraceId(MDC.get("trace_id"));
+            nationalRegistriesProblem.setTimestamp(OffsetDateTime.now());
+            dataBuffer = bufferFactory.wrap(objectMapper.writeValueAsBytes(nationalRegistriesProblem));
+            serverWebExchange.getResponse().setStatusCode(HttpStatus.resolve(nationalRegistriesProblem.getStatus()));
 
-            dataBuffer = bufferFactory.wrap(objectMapper.writeValueAsBytes(problem));
         } catch (JsonProcessingException e) {
             log.error("cannot output problem", e);
             dataBuffer = bufferFactory.wrap(exceptionHelper.generateFallbackProblem().getBytes(StandardCharsets.UTF_8));
@@ -69,21 +69,22 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         return serverWebExchange.getResponse().writeWith(Mono.just(dataBuffer));
     }
 
-    private Problem createProblem(WebClientResponseException exception) {
+    private NationalRegistriesProblem convertToNationalRegistriesProblem(Problem handleException) {
+        NationalRegistriesProblem nationalRegistriesProblem = new NationalRegistriesProblem();
+        nationalRegistriesProblem.setDetail(handleException.getDetail());
+        nationalRegistriesProblem.setTitle(handleException.getTitle());
+        nationalRegistriesProblem.setStatus(handleException.getStatus());
+        nationalRegistriesProblem.setErrors(handleException.getErrors());
+        return nationalRegistriesProblem;
+    }
+
+    private NationalRegistriesProblem createProblem(WebClientResponseException exception) throws JsonProcessingException {
         String error = exception.getResponseBodyAsString();
-        Problem problemDef = new Problem();
-        WebClientResponseProblemDto problem;
-        try {
-            problem = objectMapper.readValue(error, WebClientResponseProblemDto.class);
-            problemDef.setTitle(problem.getTitle());
-            problemDef.setDetail(problem.getDetail());
-            problemDef.setStatus(problem.getStatus());
-        } catch (JsonProcessingException e) {
-            log.error("error during parse Exception -> ",e);
-            problemDef.setStatus(exception.getStatusCode().value());
-            problemDef.setTitle(exception.getStatusText());
-            problemDef.setDetail(exception.getMessage());
-        }
+        NationalRegistriesProblem problemDef = new NationalRegistriesProblem();
+        problemDef.setStatus(exception.getStatusCode().value());
+        problemDef.setTitle(exception.getStatusText());
+        problemDef.setDetail(exception.getMessage());
+        problemDef.setErrors(objectMapper.readValue(error,Object.class));
         return problemDef;
     }
 }

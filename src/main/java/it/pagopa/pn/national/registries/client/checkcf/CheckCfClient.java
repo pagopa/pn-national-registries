@@ -59,7 +59,7 @@ public class CheckCfClient {
                             log.debug("Try Retry call to CheckCf");
                             return checkExceptionType(throwable);
                         }).onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, retrySignal.failure())));
+                            retrySignal.failure()));
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
