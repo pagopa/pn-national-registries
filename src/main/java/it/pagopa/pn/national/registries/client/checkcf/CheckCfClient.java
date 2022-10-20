@@ -17,6 +17,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import java.util.List;
+
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
 
@@ -50,6 +52,7 @@ public class CheckCfClient {
                             .uri("/verifica")
                             .headers(httpHeaders -> {
                                 httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                                httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
                                 httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
                             })
                             .bodyValue(s)
@@ -59,7 +62,7 @@ public class CheckCfClient {
                             log.debug("Try Retry call to CheckCf");
                             return checkExceptionType(throwable);
                         }).onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, retrySignal.failure())));
+                            retrySignal.failure()));
     }
 
     protected boolean checkExceptionType(Throwable throwable) {

@@ -5,6 +5,7 @@ import it.pagopa.pn.national.registries.converter.AddressAnprConverter;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.anpr.RispostaE002OKDto;
 import it.pagopa.pn.national.registries.model.anpr.TipoDatiSoggettiEnteDto;
 import it.pagopa.pn.national.registries.model.anpr.TipoListaSoggettiDto;
@@ -44,7 +45,7 @@ class AnprServiceTest {
     void testGetAddressANPR() {
 
         GetAddressANPRRequestBodyDto request = new GetAddressANPRRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto cf = new CheckTaxIdRequestBodyFilterDto();
+        GetAddressANPRRequestBodyFilterDto cf = new GetAddressANPRRequestBodyFilterDto();
         cf.setTaxId("DDDFFF80A01H501F");
         request.setFilter(cf);
 

@@ -51,11 +51,67 @@ Resources:
       AliasName: !Sub 'alias/${ProjectName}-national-registries-pdnd'
       TargetKeyId: !Ref PDNDSessionTokenSigningKey
 
+  CheckCfPDNDSessionTokenSigningKey:
+    Type: 'AWS::KMS::Key'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: RSA-2048 key to generate session token
+      KeySpec: RSA_2048
+      KeyUsage: SIGN_VERIFY
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+
+    # Application use this alias to access the public/private key pair
+  CheckCfPDNDSessionTokenSigningKeyAlias:
+    Type: 'AWS::KMS::Alias'
+    Properties:
+      AliasName: !Sub 'alias/${ProjectName}-national-registries-check-cf-pdnd'
+      TargetKeyId: !Ref CheckCfPDNDSessionTokenSigningKey
+
+  InadPDNDSessionTokenSigningKey:
+    Type: 'AWS::KMS::Key'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: RSA-2048 key to generate session token
+      KeySpec: RSA_2048
+      KeyUsage: SIGN_VERIFY
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+
+  # Application use this alias to access the public/private key pair
+  InadPDNDSessionTokenSigningKeyAlias:
+    Type: 'AWS::KMS::Alias'
+    Properties:
+      AliasName: !Sub 'alias/${ProjectName}-national-registries-inad-pdnd'
+      TargetKeyId: !Ref InadPDNDSessionTokenSigningKey
+
 #Necessario a causa di bug script deploy
 Outputs:
   PDNDSessionTokenSigningKeyARN:
     Description: PDNDSessionTokenSigningKeyARN
     Value: !Sub '${PDNDSessionTokenSigningKey.Arn}'
+  CheckCfPDNDSessionTokenSigningKeyARN:
+    Description: CehckCfPDNDSessionTokenSigningKeyARN
+    Value: !Sub '${CheckCfPDNDSessionTokenSigningKey.Arn}'
+  InadPDNDSessionTokenSigningKeyARN:
+    Description: CehckCfPDNDSessionTokenSigningKeyARN
+    Value: !Sub '${InadPDNDSessionTokenSigningKey.Arn}'
 
 
 

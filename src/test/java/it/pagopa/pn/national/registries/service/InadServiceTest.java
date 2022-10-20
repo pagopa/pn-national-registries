@@ -36,7 +36,7 @@ class InadServiceTest {
         Date now = new Date();
 
         ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
-        responseRequestDigitalAddressDto.setCodiceFiscale("test");
+        responseRequestDigitalAddressDto.setTaxId("test");
         responseRequestDigitalAddressDto.setSince(now);
         List<ElementDigitalAddressDto> lista = new ArrayList<>();
         responseRequestDigitalAddressDto.setDigitalAddress(lista);

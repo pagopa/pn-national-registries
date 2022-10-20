@@ -4,19 +4,19 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.List;
 
+/**
+ * Modello di risposta Info Utilizzo per singolo Domicilio Digitale
+ */
 @Data
-public class ResponseRequestDigitalAddressDto {
+public class UsageInfo {
 
-  @JsonProperty("codice_fiscale")
-  private String taxId;
+  @JsonProperty("motivazione")
+  private MotivationTerminationDto motivation;
 
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
-  private Date since;
+  private Date dateEndValidity;
 
-  private List<ElementDigitalAddressDto> digitalAddress = new ArrayList<>();
 }
 

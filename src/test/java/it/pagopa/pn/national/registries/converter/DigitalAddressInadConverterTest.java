@@ -25,7 +25,7 @@ class DigitalAddressInadConverterTest {
     @Test
     void testMapToResponseOk() {
         ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
-        responseRequestDigitalAddressDto.setCodiceFiscale("Codice Fiscale");
+        responseRequestDigitalAddressDto.setTaxId("Codice Fiscale");
         List<ElementDigitalAddressDto> list = new ArrayList<>();
         ElementDigitalAddressDto dto = new ElementDigitalAddressDto();
         dto.setDigitalAddress("digitalAddress");

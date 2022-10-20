@@ -105,13 +105,35 @@ Parameters:
     Description: 'PDND ANPR Client assertion claims'
 
   # Parametro obbligatorio (ARN del secret)
+  PDNDCheckCfClientAssertionSecretName:
+    Type: String
+    Description: 'PDND CheckCf Client assertion claims'
+
+  # Parametro obbligatorio (ARN del secret)
+  PDNDInadClientAssertionSecretName:
+    Type: String
+    Description: 'PDND INAD Client assertion claims'
+
+  # Parametro obbligatorio (ARN del secret)
   PDNDANPRIntegritySecretName:
     Type: String
     Description: 'PDND ANPR Integrity certs'
 
   PDNDSessionTokenSigningKeyARN:
     Type: String
-    Description: 'PDND Session Token Signing Key for eservice c001'
+    Description: 'PDND Session Token Signing Key for eservice C001'
+
+  CheckCfPDNDSessionTokenSigningKeyARN:
+    Type: String
+    Description: 'PDND Session Token Signing Key for eservice B001'
+
+  InadPDNDSessionTokenSigningKeyARN:
+    Type: String
+    Description: 'PDND Session Token Signing Key for eservice INAD'
+
+  ANPRTipoInvio:
+    Type: String
+    Description: 'Input parameter for eservice C001'
 
 Resources:
 
@@ -140,6 +162,7 @@ Resources:
         ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_INAD_PURPOSE_ID=${INADPurposeId}'
         ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_API_BASE_URL=${INIPECBaseURL}'
         ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_PURPOSE_ID=${INIPECPurposeId}'
+        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
         MappedPaths: '/external-registry-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -207,3 +230,7 @@ Resources:
               - kms:Sign
             Resource:
               - !Ref PDNDSessionTokenSigningKeyARN
+              - !Ref CheckCfPDNDSessionTokenSigningKeyARN
+              - !Ref InadPDNDSessionTokenSigningKeyARN
+
+

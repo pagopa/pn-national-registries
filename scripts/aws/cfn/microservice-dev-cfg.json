@@ -3,14 +3,17 @@
     "PDNDBaseURL": "https://uat.gateway.test.pdnd-interop.pagopa.it",
     "ANPRBaseURL": "https://modipa-val.anpr.interno.it/govway/rest/in/MinInternoPortaANPR/C001-servizioNotifica/v1",
     "ANPRPurposeId": "fa2aa359-ab78-45b2-aa55-977d8ddb7d2b",
-    "AgenziaEntrateBaseURL": "https://api.agenziaentrate.gov.it/entrate/api/codice-fiscale/v0/",
-    "AgenziaEntratePurposeId": "test",
-    "INADBaseURL": "https://api.inad.gov.it/rest/inad/v1/domiciliodigitale",
-    "INADPurposeId": "test",
+    "AgenziaEntrateBaseURL": "https://testB001.agenziaentrate.gov.it/entrate/api/codice-fiscale/v0",
+    "AgenziaEntratePurposeId": "79489c37-5957-4635-9121-274ba50439d8",
+    "INADBaseURL": "https://domiciliodigitaleapi.oscl.infocamere.it/rest/inad/v1/domiciliodigitale",
+    "INADPurposeId": "660261a1-1a22-4e2d-9a64-91bbca8e02a9",
     "INIPECBaseURL": "",
     "INIPECPurposeId": "test",
     "ANPRSSLSecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:pdnd-anpr-ssl-FfkGOL",
     "PDNDANPRClientAssertionSecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:fa2aa359-ab78-45b2-aa55-977d8ddb7d2b-PJMQRl",
-    "PDNDANPRIntegritySecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:pdnd-anpr-integrity-Mby6oZ"
+    "PDNDANPRIntegritySecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:pdnd-anpr-integrity-Mby6oZ",
+    "PDNDCheckCfClientAssertionSecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:79489c37-5957-4635-9121-274ba50439d8-J3iU9J",
+    "PDNDInadClientAssertionSecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:660261a1-1a22-4e2d-9a64-91bbca8e02a9-vLjqCM",
+    "ANPRTipoInvio": "TEST"
   }
 }

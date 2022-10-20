@@ -6,8 +6,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.anpr.RichiestaE002Dto;
 import it.pagopa.pn.national.registries.model.anpr.RispostaE002OKDto;
+import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -18,6 +20,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -71,11 +74,18 @@ public class AnprClient {
                             .bodyValue(s)
                             .retrieve()
                             .bodyToMono(RispostaE002OKDto.class);
+                }).doOnError(throwable -> {
+                    if(!checkExceptionType(throwable) && throwable instanceof WebClientResponseException){
+                        WebClientResponseException ex = (WebClientResponseException) throwable;
+                        throw new PnNationalRegistriesException(ex.getMessage(),ex.getStatusCode().value(),
+                                ex.getStatusText(),ex.getHeaders(),ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(),ex.getRequest(), AnprResponseKO.class);
+                    }
                 }).retryWhen(Retry.max(1).filter(throwable -> {
                     log.debug("Try Retry call to ANPR");
                     return checkExceptionType(throwable);
                 }).onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                            new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, retrySignal.failure())));
+                        retrySignal.failure()));
     }
 
     private String convertToJson(RichiestaE002Dto richiestaE002Dto) {

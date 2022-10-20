@@ -1,14 +1,12 @@
 openapi: 3.0.0
 info:
-  title: PN-ExternalRegistries REST APIs
+  title: PN-NationalRegistries REST APIs
   description: |-
-    Nell’ambito del progetto Piattaforme Notifiche, il componente PN-ExternalRegistries si occuperà di recuperare i dati dalle banche dati esterne previste. Tali banche dati esporranno delle interfacce web verso il componente PN-External Registries, accessibili tramite piattaforma di interoperabilità.
+    Nell’ambito del progetto Piattaforme Notifiche, il componente PN-NationalRegistries si occuperà di recuperare i dati dalle banche dati esterne previste. Tali banche dati esporranno delle interfacce web verso il componente PN-NationalRegistries, accessibili tramite piattaforma di interoperabilità.
   version: 1.0.0
 servers:
   - url: http://127.0.0.1
 tags:
-  - name: healthCheck
-    description: Questo Servizio verifica lo stato del microservizio
   - name: checkTaxId
     description: Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response.
   - name: addressANPR
@@ -18,18 +16,6 @@ tags:
   - name: digitalAddressIniPEC
     description: Consente di ottenere la PEC dell’impresa oppure del professionista corrispondente al codice fiscale al momento della consultazione. In caso di impresa si restituisce anche l’indirizzo della sede legale
 paths:
-  /health:
-    get:
-      summary: healthCheck path
-      description: healtCheck path per verificare lo stato del microservizio
-      tags:
-        - healthCheck
-      operationId: health
-      responses:
-        '200':
-          description: Ok
-        '500':
-          description: Internal Server Error
   /external-registry-private/agenzia-entrate/tax-id:
     post:
       tags:
@@ -278,9 +264,15 @@ components:
             taxId:
               type: string
               example: AAAZZZ00H00T000Z
+            referenceRequestDate:
+              type: string
+            requestReason:
+              type: string
     GetAddressANPROK:
       type: object
       properties:
+        clientOperationId:
+          type: string
         residentialAddresses:
           type: array
           items:
@@ -319,16 +311,37 @@ components:
         timestamp:
           type: integer
         errors:
+          $ref: '#/components/schemas/AnprResponseKO'
+    AnprResponseKO:
+      properties:
+        responseHeader:
+          $ref: '#/components/schemas/AnprResponseHeader'
+        errorsList:
           type: array
           items:
-            type: object
-            properties:
-              code:
-                type: string
-              element:
-                type: string
-              detail:
-                type: string
+            $ref: '#/components/schemas/AnprErrorList'
+    AnprErrorList:
+      type: object
+      properties:
+        errorCode:
+          type: string
+        errorText:
+          type: string
+        errorType:
+          type: string
+    AnprResponseHeader:
+      type: object
+      properties:
+        clientOperationId:
+          type: string
+        senderCode:
+          type: string
+        recipientCode:
+          type: string
+        anprOperationId:
+          type: string
+        result:
+          type: string
     GetDigitalAddressINADRequestBody:
       type: object
       properties:
@@ -387,16 +400,12 @@ components:
         timestamp:
           type: integer
         errors:
-          type: array
-          items:
-            type: object
-            properties:
-              code:
-                type: string
-              element:
-                type: string
-              detail:
-                type: string
+          $ref: '#/components/schemas/InadResponseKO'
+    InadResponseKO:
+      type: object
+      properties:
+        detail:
+          type: string
     GetDigitalAddressIniPECRequestBody:
       type: object
       properties:
