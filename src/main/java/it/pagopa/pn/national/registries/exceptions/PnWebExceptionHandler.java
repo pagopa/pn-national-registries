@@ -36,6 +36,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
     public PnWebExceptionHandler(ExceptionHelper exceptionHelper){
         this.exceptionHelper = exceptionHelper;
         objectMapper.findAndRegisterModules();
+
         objectMapper
                 .configOverride(OffsetDateTime.class)
                 .setFormat(JsonFormat.Value.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX"));
@@ -48,8 +49,8 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         DataBufferFactory bufferFactory = serverWebExchange.getResponse().bufferFactory();
         NationalRegistriesProblem nationalRegistriesProblem;
         try {
-            if (throwable instanceof WebClientResponseException) {
-                WebClientResponseException exception = (WebClientResponseException) throwable;
+            if (throwable instanceof PnNationalRegistriesException) {
+                PnNationalRegistriesException exception = (PnNationalRegistriesException) throwable;
                 log.error("Error -> statusCode: {}, message: {}, uri: {}", exception.getStatusCode().value(), exception.getMessage(), serverWebExchange.getRequest().getURI());
                 nationalRegistriesProblem = createProblem(exception);
             }else{
@@ -78,13 +79,13 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         return nationalRegistriesProblem;
     }
 
-    private NationalRegistriesProblem createProblem(WebClientResponseException exception) throws JsonProcessingException {
+    private NationalRegistriesProblem createProblem(PnNationalRegistriesException exception) throws JsonProcessingException{
         String error = exception.getResponseBodyAsString();
         NationalRegistriesProblem problemDef = new NationalRegistriesProblem();
         problemDef.setStatus(exception.getStatusCode().value());
         problemDef.setTitle(exception.getStatusText());
         problemDef.setDetail(exception.getMessage());
-        problemDef.setErrors(objectMapper.readValue(error,Object.class));
+        problemDef.setErrors(objectMapper.readValue(error,exception.getClassName()));
         return problemDef;
     }
 }
