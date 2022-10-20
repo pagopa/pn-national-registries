@@ -9,6 +9,6 @@ import lombok.Data;
 public class ElementDigitalAddressDto {
   private String digitalAddress;
   private String practicedProfession;
-  private UsageInfoDto usageInfo;
+  private UsageInfo usageInfo;
 }
 

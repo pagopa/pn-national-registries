@@ -5,12 +5,11 @@ import lombok.Data;
 import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import java.io.Serializable;
 import java.time.OffsetDateTime;
 
 @Data
 @ToString
-public class NationalRegistriesProblem implements Serializable{
+public class NationalRegistriesProblem{
 
     private static final long serialVersionUID = 1L;
     @JsonProperty("status")

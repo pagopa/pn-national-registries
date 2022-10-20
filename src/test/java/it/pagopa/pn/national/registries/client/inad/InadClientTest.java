@@ -53,8 +53,8 @@ class InadClientTest {
         );
 
         ResponseRequestDigitalAddressDto response = new ResponseRequestDigitalAddressDto();
-        response.setCodiceFiscale("cf");
-        response.setSince(new Date());
+        response.setTaxId("cf");
+        response.setSince("2017-07-21T17:32:28Z");
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setAccessToken("fafsff");

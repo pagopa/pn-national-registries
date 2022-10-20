@@ -25,7 +25,7 @@ class DigitalAddressInadConverterTest {
     @Test
     void testMapToResponseOk() {
         ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
-        responseRequestDigitalAddressDto.setCodiceFiscale("Codice Fiscale");
+        responseRequestDigitalAddressDto.setTaxId("Codice Fiscale");
         List<ElementDigitalAddressDto> list = new ArrayList<>();
         ElementDigitalAddressDto dto = new ElementDigitalAddressDto();
         dto.setDigitalAddress("digitalAddress");
@@ -33,8 +33,7 @@ class DigitalAddressInadConverterTest {
         list.add(dto);
         responseRequestDigitalAddressDto.setDigitalAddress(list);
         LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
-        Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
-        responseRequestDigitalAddressDto.setSince(fromResult);
+        responseRequestDigitalAddressDto.setSince("2017-07-21T17:32:28Z");
         GetDigitalAddressINADOKDto actualMapToResponseOkResult = DigitalAddressInadConverter
                 .mapToResponseOk(responseRequestDigitalAddressDto);
         assertEquals("Codice Fiscale", actualMapToResponseOkResult.getTaxId());

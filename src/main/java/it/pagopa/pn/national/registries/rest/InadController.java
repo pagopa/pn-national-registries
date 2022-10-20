@@ -5,10 +5,12 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigital
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.service.InadService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+@RestController
 public class InadController implements DigitalAddressInadApi {
 
     private final InadService inadService;
