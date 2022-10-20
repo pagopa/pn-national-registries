@@ -54,7 +54,7 @@ class InadClientTest {
 
         ResponseRequestDigitalAddressDto response = new ResponseRequestDigitalAddressDto();
         response.setTaxId("cf");
-        response.setSince("2017-07-21T17:32:28Z");
+        response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setAccessToken("fafsff");

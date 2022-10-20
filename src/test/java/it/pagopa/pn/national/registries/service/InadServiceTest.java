@@ -36,8 +36,8 @@ class InadServiceTest {
         Date now = new Date();
 
         ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
-        responseRequestDigitalAddressDto.setTaxId("cf");
-        responseRequestDigitalAddressDto.setSince("2017-07-21T17:32:28Z");
+        responseRequestDigitalAddressDto.setTaxId("test");
+        responseRequestDigitalAddressDto.setSince(now);
         List<ElementDigitalAddressDto> lista = new ArrayList<>();
         responseRequestDigitalAddressDto.setDigitalAddress(lista);
         when(inadClient.callEService(anyString(), anyString())).thenReturn(Mono.just(responseRequestDigitalAddressDto));

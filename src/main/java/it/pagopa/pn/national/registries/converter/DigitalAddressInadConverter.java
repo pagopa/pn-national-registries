@@ -12,6 +12,9 @@ import org.springframework.stereotype.Component;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_INAD;
@@ -20,14 +23,15 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesEx
 @Component
 public class DigitalAddressInadConverter {
 
-    private DigitalAddressInadConverter() { }
+    private DigitalAddressInadConverter() {
+    }
 
     public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddressDto elementDigitalAddressDto) {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
 
         if (elementDigitalAddressDto != null) {
 
-            response.setSince(convertToDate(elementDigitalAddressDto.getSince()));
+            response.setSince(elementDigitalAddressDto.getSince());
             response.setTaxId(elementDigitalAddressDto.getTaxId());
 
             for (ElementDigitalAddressDto item : elementDigitalAddressDto.getDigitalAddress()) {
@@ -49,24 +53,15 @@ public class DigitalAddressInadConverter {
 
     private static UsageInfoDto convertUsageInfo(ElementDigitalAddressDto item) {
         UsageInfoDto usageInfoDto = new UsageInfoDto();
-        if(item!=null && item.getUsageInfo()!=null){
+        if (item != null && item.getUsageInfo() != null) {
             usageInfoDto.setMotivation(convertMotivation(item.getUsageInfo().getMotivation()));
-            usageInfoDto.setDateEndValidity(convertToDate(item.getUsageInfo().getDateEndValidity()));
+            usageInfoDto.setDateEndValidity(item.getUsageInfo().getDateEndValidity());
         }
         return usageInfoDto;
     }
 
-    private static Date convertToDate(String since) {
-        try {
-            DateFormat df = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
-            return df.parse(since);
-        } catch (ParseException e) {
-            throw new PnInternalException(ERROR_MESSAGE_INAD,ERROR_CODE_INAD,e);
-        }
-    }
-
     private static UsageInfoDto.MotivationEnum convertMotivation(MotivationTerminationDto motivation) {
-        switch (motivation){
+        switch (motivation) {
             case UFFICIO:
                 return UsageInfoDto.MotivationEnum.UFFICIO;
             case VOLONTARIA:

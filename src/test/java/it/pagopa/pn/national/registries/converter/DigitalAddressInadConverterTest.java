@@ -33,7 +33,8 @@ class DigitalAddressInadConverterTest {
         list.add(dto);
         responseRequestDigitalAddressDto.setDigitalAddress(list);
         LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
-        responseRequestDigitalAddressDto.setSince("2017-07-21T17:32:28Z");
+        Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
+        responseRequestDigitalAddressDto.setSince(fromResult);
         GetDigitalAddressINADOKDto actualMapToResponseOkResult = DigitalAddressInadConverter
                 .mapToResponseOk(responseRequestDigitalAddressDto);
         assertEquals("Codice Fiscale", actualMapToResponseOkResult.getTaxId());
