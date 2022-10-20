@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.log;
 
-import it.pagopa.pn.national.registries.utils.MaskData;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
@@ -33,7 +32,6 @@ public class RequestResponseLoggingFilter implements WebFilter {
         ServerHttpRequestDecorator loggingServerHttpRequestDecorator = new ServerHttpRequestDecorator(exchange.getRequest()) {
             String requestBody = "";
 
-            @MaskData
             @Override
             public @NotNull Flux<DataBuffer> getBody() {
                 return super.getBody().publishOn(Schedulers.boundedElastic()).doOnNext(dataBuffer -> {
