@@ -4,7 +4,7 @@ import it.pagopa.pn.national.registries.client.checkcf.CheckCfClient;
 import it.pagopa.pn.national.registries.converter.CheckCfConverter;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
-import it.pagopa.pn.national.registries.model.checkcf.Richiesta;
+import it.pagopa.pn.national.registries.model.checkcf.Request;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -27,8 +27,8 @@ public class CheckCfService {
                 .map(checkCfConverter::convertToCfStatusDto);
     }
 
-    private Richiesta createRequest(CheckTaxIdRequestBodyDto taxCodeRequestDto) {
-        Richiesta richiesta = new Richiesta();
+    private Request createRequest(CheckTaxIdRequestBodyDto taxCodeRequestDto) {
+        Request richiesta = new Request();
         richiesta.setCodiceFiscale(taxCodeRequestDto.getFilter().getTaxId());
         return richiesta;
     }

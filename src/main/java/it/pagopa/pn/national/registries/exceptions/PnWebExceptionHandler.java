@@ -2,10 +2,13 @@ package it.pagopa.pn.national.registries.exceptions;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
 import it.pagopa.pn.national.registries.model.NationalRegistriesProblem;
+import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
+import it.pagopa.pn.national.registries.model.anpr.ResponseKO;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
@@ -16,7 +19,6 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.NonNull;
@@ -38,6 +40,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         objectMapper.findAndRegisterModules();
 
         objectMapper
+                .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT,true)
                 .configOverride(OffsetDateTime.class)
                 .setFormat(JsonFormat.Value.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX"));
     }
@@ -52,7 +55,11 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
             if (throwable instanceof PnNationalRegistriesException) {
                 PnNationalRegistriesException exception = (PnNationalRegistriesException) throwable;
                 log.error("Error -> statusCode: {}, message: {}, uri: {}", exception.getStatusCode().value(), exception.getMessage(), serverWebExchange.getRequest().getURI());
-                nationalRegistriesProblem = createProblem(exception);
+                if(exception.getStatusCode().equals(HttpStatus.UNAUTHORIZED)){
+                    nationalRegistriesProblem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
+                }else {
+                    nationalRegistriesProblem = createProblem(exception);
+                }
             }else{
                 log.error("Error -> {}, uri : {}",throwable.getMessage(), serverWebExchange.getRequest().getURI());
                 nationalRegistriesProblem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
@@ -85,7 +92,25 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         problemDef.setStatus(exception.getStatusCode().value());
         problemDef.setTitle(exception.getStatusText());
         problemDef.setDetail(exception.getMessage());
-        problemDef.setErrors(objectMapper.readValue(error,exception.getClassName()));
+        if(exception.getClassName().equals(AnprResponseKO.class)) {
+            problemDef.setErrors(mapToAnprResponseKO(error));
+        }else {
+            problemDef.setErrors(objectMapper.readValue(error, exception.getClassName()));
+        }
         return problemDef;
+    }
+
+    private AnprResponseKO mapToAnprResponseKO(String responseBodyAsString) throws JsonProcessingException {
+        ResponseKO responseKO = objectMapper.readValue(responseBodyAsString, ResponseKO.class);
+        AnprResponseKO anprResponseKO = new AnprResponseKO();
+        if(responseKO.getResponseHeader()!=null){
+            anprResponseKO.setClientOperationId(responseKO.getResponseHeader().getClientOperationId());
+        }
+        if(responseKO.getErrorsList().size()==1){
+            anprResponseKO.setCode(responseKO.getErrorsList().get(0).getCode());
+            anprResponseKO.setDetail(responseKO.getErrorsList().get(0).getDetail());
+            anprResponseKO.setElement(responseKO.getErrorsList().get(0).getElement());
+        }
+        return anprResponseKO;
     }
 }

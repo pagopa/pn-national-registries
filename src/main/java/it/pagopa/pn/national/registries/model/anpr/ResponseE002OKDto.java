@@ -9,8 +9,8 @@ import java.util.List;
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RispostaE002OKDto {
-    private TipoTestataRispostaE000Dto testataRisposta;
-    private TipoListaSoggettiDto listaSoggetti;
-    private List<TipoErroriAnomaliaDto> listaAnomalie = null;
+public class ResponseE002OKDto {
+    private ResponseHeaderE002Dto testataRisposta;
+    private SubjectsListDto listaSoggetti;
+    private List<ErrorListAnpr> listaAnomalie = null;
 }

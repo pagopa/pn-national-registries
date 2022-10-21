@@ -10,10 +10,10 @@ import lombok.ToString;
 @Data
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public class RichiestaE002Dto {
-    private TipoCriteriRicercaE002Dto criteriRicerca;
-    private TipoTestataRichiestaE000Dto testataRichiesta;
-    private TipoDatiRichiestaE002Dto datiRichiesta;
+public class E002RequestDto {
+    private SearchCriteriaE002Dto criteriRicerca;
+    private RequestHeaderE002Dto testataRichiesta;
+    private RequestDateE002Dto datiRichiesta;
 
 }
 

@@ -9,14 +9,6 @@ import it.pagopa.pn.national.registries.model.inad.MotivationTerminationDto;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 import org.springframework.stereotype.Component;
 
-import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
-
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_INAD;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_INAD;
 

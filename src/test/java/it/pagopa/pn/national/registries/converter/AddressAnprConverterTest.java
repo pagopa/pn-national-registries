@@ -20,350 +20,350 @@ class AddressAnprConverterTest {
     private AddressAnprConverter addressAnprConverter;
 
     /**
-     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(RispostaE002OKDto, String)}
+     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
      */
     @Test
     void testConvertToGetAddressANPROKDto() {
-        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
-        tipoListaSoggettiDto.setDatiSoggetto(new ArrayList<>());
+        SubjectsListDto subjectsListDto = new SubjectsListDto();
+        subjectsListDto.setDatiSoggetto(new ArrayList<>());
 
-        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
-        rispostaE002OKDto.setListaAnomalie(new ArrayList<>());
-        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
-        rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
-        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setListaAnomalie(new ArrayList<>());
+        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
+        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
     void testConvertToGetAddressANPROKDto5() {
-        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
-        rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
-        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
+        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     /**
-     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(RispostaE002OKDto, String)}
+     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
      */
     @Test
     void testConvertToGetAddressANPROKDto11() {
-        TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
-        tipoCodiceFiscaleDto.setCodFiscale("Cf");
-        tipoCodiceFiscaleDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
-        tipoCodiceFiscaleDto.setValiditaCF("Validita CF");
+        TaxIdDto taxIdDto = new TaxIdDto();
+        taxIdDto.setCodFiscale("Cf");
+        taxIdDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        taxIdDto.setValiditaCF("Validita CF");
 
-        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
-        tipoGeneralitaDto.setCodiceFiscale(tipoCodiceFiscaleDto);
+        GeneralInformationDto generalInformationDto = new GeneralInformationDto();
+        generalInformationDto.setCodiceFiscale(taxIdDto);
 
-        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
-        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+        SubjectsInstitutionDataDto subjectsInstitutionDataDto = new SubjectsInstitutionDataDto();
+        subjectsInstitutionDataDto.setGeneralita(generalInformationDto);
 
-        List<TipoResidenzaDto> tipoResidenzaDtoList = new ArrayList<>();
-        TipoResidenzaDto tipoResidenzaDto = new TipoResidenzaDto();
+        List<ResidenceDto> residenceDtoList = new ArrayList<>();
+        ResidenceDto residenceDto = new ResidenceDto();
 
-        tipoResidenzaDto.setPresso("presso");
-        tipoResidenzaDto.setTipoIndirizzo("4");
+        residenceDto.setPresso("presso");
+        residenceDto.setTipoIndirizzo("4");
 
-        tipoResidenzaDtoList.add(tipoResidenzaDto);
-        tipoDatiSoggettiEnteDto.setResidenza(tipoResidenzaDtoList);
+        residenceDtoList.add(residenceDto);
+        subjectsInstitutionDataDto.setResidenza(residenceDtoList);
 
-        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
-        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+        ArrayList<SubjectsInstitutionDataDto> subjectsInstitutionDataDtoList = new ArrayList<>();
+        subjectsInstitutionDataDtoList.add(subjectsInstitutionDataDto);
 
-        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
-        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+        SubjectsListDto subjectsListDto = new SubjectsListDto();
+        subjectsListDto.setDatiSoggetto(subjectsInstitutionDataDtoList);
 
-        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
-        rispostaE002OKDto.setListaAnomalie(new ArrayList<>());
-        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
-        rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
-        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setListaAnomalie(new ArrayList<>());
+        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
+        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
 
     /**
-     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(RispostaE002OKDto, String)}
+     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
      */
     @Test
     void testConvertToGetAddressANPROKDto2() {
-        TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
-        tipoCodiceFiscaleDto.setCodFiscale("Cf");
-        tipoCodiceFiscaleDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
-        tipoCodiceFiscaleDto.setValiditaCF("Validita CF");
+        TaxIdDto taxIdDto = new TaxIdDto();
+        taxIdDto.setCodFiscale("Cf");
+        taxIdDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        taxIdDto.setValiditaCF("Validita CF");
 
-        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
-        tipoGeneralitaDto.setCodiceFiscale(tipoCodiceFiscaleDto);
+        GeneralInformationDto generalInformationDto = new GeneralInformationDto();
+        generalInformationDto.setCodiceFiscale(taxIdDto);
 
-        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
-        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+        SubjectsInstitutionDataDto subjectsInstitutionDataDto = new SubjectsInstitutionDataDto();
+        subjectsInstitutionDataDto.setGeneralita(generalInformationDto);
 
-        List<TipoResidenzaDto> tipoResidenzaDtoList = new ArrayList<>();
-        TipoResidenzaDto tipoResidenzaDto = new TipoResidenzaDto();
+        List<ResidenceDto> residenceDtoList = new ArrayList<>();
+        ResidenceDto residenceDto = new ResidenceDto();
 
-        TipoIndirizzoDto tipoIndirizzoDto = new TipoIndirizzoDto();
-        TipoNumeroCivicoDto tipoNumeroCivicoDto = new TipoNumeroCivicoDto();
-        tipoNumeroCivicoDto.setNumero("70");
-        tipoNumeroCivicoDto.setLettera("A");
-        tipoIndirizzoDto.setNumeroCivico(tipoNumeroCivicoDto);
+        AddressDto addressDto = new AddressDto();
+        StreetNumberDto streetNumberDto = new StreetNumberDto();
+        streetNumberDto.setNumero("70");
+        streetNumberDto.setLettera("A");
+        addressDto.setNumeroCivico(streetNumberDto);
 
-        TipoToponimoDto tipoToponimoDto = new TipoToponimoDto();
-        tipoToponimoDto.setSpecie("specie");
-        tipoToponimoDto.setDenominazioneToponimo("denominazione Toponimo");
-        tipoIndirizzoDto.setToponimo(tipoToponimoDto);
-        tipoIndirizzoDto.setCap("00178");
-        tipoIndirizzoDto.setFrazione("frazione");
+        ToponymDto toponymDto = new ToponymDto();
+        toponymDto.setSpecie("specie");
+        toponymDto.setDenominazioneToponimo("denominazione Toponimo");
+        addressDto.setToponimo(toponymDto);
+        addressDto.setCap("00178");
+        addressDto.setFrazione("frazione");
 
-        TipoComuneDto tipoComuneDto = new TipoComuneDto();
-        tipoComuneDto.setNomeComune("nomeComune");
-        tipoComuneDto.setSiglaProvinciaIstat("RM");
-        tipoIndirizzoDto.setComune(tipoComuneDto);
+        MunicipalityDto municipalityDto = new MunicipalityDto();
+        municipalityDto.setNomeComune("nomeComune");
+        municipalityDto.setSiglaProvinciaIstat("RM");
+        addressDto.setComune(municipalityDto);
 
-        TipoLocalitaEstera1Dto tipoLocalitaEstera1Dto = new TipoLocalitaEstera1Dto();
-        TipoIndirizzoEsteroDto tipoIndirizzoEsteroDto = new TipoIndirizzoEsteroDto();
-        TipoDatoLocalitaEsteraDto tipoDatoLocalitaEsteraDto = new TipoDatoLocalitaEsteraDto();
-        tipoDatoLocalitaEsteraDto.setDescrizioneLocalita("descrizione");
-        tipoIndirizzoEsteroDto.setLocalita(tipoDatoLocalitaEsteraDto);
+        ForeignLocation1Dto foreignLocation1Dto = new ForeignLocation1Dto();
+        ForeignAddressDto foreignAddressDto = new ForeignAddressDto();
+        ForeignLocationDataDto foreignLocationDataDto = new ForeignLocationDataDto();
+        foreignLocationDataDto.setDescrizioneLocalita("descrizione");
+        foreignAddressDto.setLocalita(foreignLocationDataDto);
 
-        tipoLocalitaEstera1Dto.setIndirizzoEstero(tipoIndirizzoEsteroDto);
-        tipoResidenzaDto.setLocalitaEstera(tipoLocalitaEstera1Dto);
+        foreignLocation1Dto.setIndirizzoEstero(foreignAddressDto);
+        residenceDto.setLocalitaEstera(foreignLocation1Dto);
 
-        tipoResidenzaDto.setIndirizzo(tipoIndirizzoDto);
-        tipoResidenzaDto.setPresso("presso");
-        tipoResidenzaDto.setTipoIndirizzo("4");
+        residenceDto.setIndirizzo(addressDto);
+        residenceDto.setPresso("presso");
+        residenceDto.setTipoIndirizzo("4");
 
-        tipoResidenzaDtoList.add(tipoResidenzaDto);
-        tipoDatiSoggettiEnteDto.setResidenza(tipoResidenzaDtoList);
+        residenceDtoList.add(residenceDto);
+        subjectsInstitutionDataDto.setResidenza(residenceDtoList);
 
-        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
-        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+        ArrayList<SubjectsInstitutionDataDto> subjectsInstitutionDataDtoList = new ArrayList<>();
+        subjectsInstitutionDataDtoList.add(subjectsInstitutionDataDto);
 
-        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
-        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+        SubjectsListDto subjectsListDto = new SubjectsListDto();
+        subjectsListDto.setDatiSoggetto(subjectsInstitutionDataDtoList);
 
-        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
-        rispostaE002OKDto.setListaAnomalie(new ArrayList<>());
-        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
-        rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
-        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setListaAnomalie(new ArrayList<>());
+        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
+        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
     void testConvertToGetAddressANPROKDto6() {
-        TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
-        tipoCodiceFiscaleDto.setCodFiscale("Cf");
-        tipoCodiceFiscaleDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
-        tipoCodiceFiscaleDto.setValiditaCF("Validita CF");
+        TaxIdDto taxIdDto = new TaxIdDto();
+        taxIdDto.setCodFiscale("Cf");
+        taxIdDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        taxIdDto.setValiditaCF("Validita CF");
 
-        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
-        tipoGeneralitaDto.setCodiceFiscale(tipoCodiceFiscaleDto);
+        GeneralInformationDto generalInformationDto = new GeneralInformationDto();
+        generalInformationDto.setCodiceFiscale(taxIdDto);
 
-        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
-        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+        SubjectsInstitutionDataDto subjectsInstitutionDataDto = new SubjectsInstitutionDataDto();
+        subjectsInstitutionDataDto.setGeneralita(generalInformationDto);
 
-        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
-        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+        ArrayList<SubjectsInstitutionDataDto> subjectsInstitutionDataDtoList = new ArrayList<>();
+        subjectsInstitutionDataDtoList.add(subjectsInstitutionDataDto);
 
-        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
-        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+        SubjectsListDto subjectsListDto = new SubjectsListDto();
+        subjectsListDto.setDatiSoggetto(subjectsInstitutionDataDtoList);
 
-        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
-        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
-        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
     void testConvertToGetAddressANPROKDto7() {
-        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
+        GeneralInformationDto generalInformationDto = new GeneralInformationDto();
 
-        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
-        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+        SubjectsInstitutionDataDto subjectsInstitutionDataDto = new SubjectsInstitutionDataDto();
+        subjectsInstitutionDataDto.setGeneralita(generalInformationDto);
 
-        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
-        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+        ArrayList<SubjectsInstitutionDataDto> subjectsInstitutionDataDtoList = new ArrayList<>();
+        subjectsInstitutionDataDtoList.add(subjectsInstitutionDataDto);
 
-        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
-        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+        SubjectsListDto subjectsListDto = new SubjectsListDto();
+        subjectsListDto.setDatiSoggetto(subjectsInstitutionDataDtoList);
 
-        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
-        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
-        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
     void testConvertToGetAddressANPROKDto8() {
-        TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
-        tipoCodiceFiscaleDto.setCodFiscale("Cf");
-        tipoCodiceFiscaleDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
-        tipoCodiceFiscaleDto.setValiditaCF("Validita CF");
+        TaxIdDto taxIdDto = new TaxIdDto();
+        taxIdDto.setCodFiscale("Cf");
+        taxIdDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        taxIdDto.setValiditaCF("Validita CF");
 
-        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
-        tipoGeneralitaDto.setCodiceFiscale(tipoCodiceFiscaleDto);
+        GeneralInformationDto generalInformationDto = new GeneralInformationDto();
+        generalInformationDto.setCodiceFiscale(taxIdDto);
 
-        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
-        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+        SubjectsInstitutionDataDto subjectsInstitutionDataDto = new SubjectsInstitutionDataDto();
+        subjectsInstitutionDataDto.setGeneralita(generalInformationDto);
 
-        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
-        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+        ArrayList<SubjectsInstitutionDataDto> subjectsInstitutionDataDtoList = new ArrayList<>();
+        subjectsInstitutionDataDtoList.add(subjectsInstitutionDataDto);
 
-        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
-        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+        SubjectsListDto subjectsListDto = new SubjectsListDto();
+        subjectsListDto.setDatiSoggetto(subjectsInstitutionDataDtoList);
 
-        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
-        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
-        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "cf2").getResidentialAddresses());
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "cf2").getResidentialAddresses());
     }
 
     /**
-     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(RispostaE002OKDto, String)}
+     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
      */
     @Test
     void testConvertToGetAddressANPROKDto3() {
-        TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
-        tipoCodiceFiscaleDto.setCodFiscale("Cf");
-        tipoCodiceFiscaleDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
-        tipoCodiceFiscaleDto.setValiditaCF("Validita CF");
+        TaxIdDto taxIdDto = new TaxIdDto();
+        taxIdDto.setCodFiscale("Cf");
+        taxIdDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        taxIdDto.setValiditaCF("Validita CF");
 
-        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
-        tipoGeneralitaDto.setCodiceFiscale(tipoCodiceFiscaleDto);
+        GeneralInformationDto generalInformationDto = new GeneralInformationDto();
+        generalInformationDto.setCodiceFiscale(taxIdDto);
 
-        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
-        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+        SubjectsInstitutionDataDto subjectsInstitutionDataDto = new SubjectsInstitutionDataDto();
+        subjectsInstitutionDataDto.setGeneralita(generalInformationDto);
 
-        List<TipoResidenzaDto> tipoResidenzaDtoList = new ArrayList<>();
-        TipoResidenzaDto tipoResidenzaDto = new TipoResidenzaDto();
+        List<ResidenceDto> residenceDtoList = new ArrayList<>();
+        ResidenceDto residenceDto = new ResidenceDto();
 
-        TipoIndirizzoDto tipoIndirizzoDto = new TipoIndirizzoDto();
-        TipoNumeroCivicoDto tipoNumeroCivicoDto = new TipoNumeroCivicoDto();
-        tipoNumeroCivicoDto.setNumero("70");
-        tipoNumeroCivicoDto.setLettera("A");
-        tipoIndirizzoDto.setNumeroCivico(tipoNumeroCivicoDto);
+        AddressDto addressDto = new AddressDto();
+        StreetNumberDto streetNumberDto = new StreetNumberDto();
+        streetNumberDto.setNumero("70");
+        streetNumberDto.setLettera("A");
+        addressDto.setNumeroCivico(streetNumberDto);
 
-        TipoComuneDto tipoComuneDto = new TipoComuneDto();
-        tipoComuneDto.setNomeComune("nomeComune");
-        tipoComuneDto.setSiglaProvinciaIstat("RM");
-        tipoIndirizzoDto.setComune(tipoComuneDto);
+        MunicipalityDto municipalityDto = new MunicipalityDto();
+        municipalityDto.setNomeComune("nomeComune");
+        municipalityDto.setSiglaProvinciaIstat("RM");
+        addressDto.setComune(municipalityDto);
 
-        TipoLocalitaEstera1Dto tipoLocalitaEstera1Dto = new TipoLocalitaEstera1Dto();
-        TipoIndirizzoEsteroDto tipoIndirizzoEsteroDto = new TipoIndirizzoEsteroDto();
-        TipoDatoLocalitaEsteraDto tipoDatoLocalitaEsteraDto = new TipoDatoLocalitaEsteraDto();
-        tipoDatoLocalitaEsteraDto.setDescrizioneLocalita("descrizione");
-        tipoIndirizzoEsteroDto.setLocalita(tipoDatoLocalitaEsteraDto);
+        ForeignLocation1Dto foreignLocation1Dto = new ForeignLocation1Dto();
+        ForeignAddressDto foreignAddressDto = new ForeignAddressDto();
+        ForeignLocationDataDto foreignLocationDataDto = new ForeignLocationDataDto();
+        foreignLocationDataDto.setDescrizioneLocalita("descrizione");
+        foreignAddressDto.setLocalita(foreignLocationDataDto);
 
-        tipoLocalitaEstera1Dto.setIndirizzoEstero(tipoIndirizzoEsteroDto);
-        tipoResidenzaDto.setLocalitaEstera(tipoLocalitaEstera1Dto);
+        foreignLocation1Dto.setIndirizzoEstero(foreignAddressDto);
+        residenceDto.setLocalitaEstera(foreignLocation1Dto);
 
-        tipoResidenzaDto.setIndirizzo(tipoIndirizzoDto);
-        tipoResidenzaDto.setPresso("presso");
-        tipoResidenzaDto.setTipoIndirizzo("4");
+        residenceDto.setIndirizzo(addressDto);
+        residenceDto.setPresso("presso");
+        residenceDto.setTipoIndirizzo("4");
 
-        tipoResidenzaDtoList.add(tipoResidenzaDto);
-        tipoDatiSoggettiEnteDto.setResidenza(tipoResidenzaDtoList);
+        residenceDtoList.add(residenceDto);
+        subjectsInstitutionDataDto.setResidenza(residenceDtoList);
 
-        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
-        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+        ArrayList<SubjectsInstitutionDataDto> subjectsInstitutionDataDtoList = new ArrayList<>();
+        subjectsInstitutionDataDtoList.add(subjectsInstitutionDataDto);
 
-        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
-        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+        SubjectsListDto subjectsListDto = new SubjectsListDto();
+        subjectsListDto.setDatiSoggetto(subjectsInstitutionDataDtoList);
 
-        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
-        rispostaE002OKDto.setListaAnomalie(new ArrayList<>());
-        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
-        rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
-        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setListaAnomalie(new ArrayList<>());
+        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
+        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
     void testConvertToGetAddressANPROKDto9() {
-        TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
-        tipoCodiceFiscaleDto.setCodFiscale("Cf");
-        tipoCodiceFiscaleDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
-        tipoCodiceFiscaleDto.setValiditaCF("Validita CF");
+        TaxIdDto taxIdDto = new TaxIdDto();
+        taxIdDto.setCodFiscale("Cf");
+        taxIdDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        taxIdDto.setValiditaCF("Validita CF");
 
-        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
-        tipoGeneralitaDto.setCodiceFiscale(tipoCodiceFiscaleDto);
+        GeneralInformationDto generalInformationDto = new GeneralInformationDto();
+        generalInformationDto.setCodiceFiscale(taxIdDto);
 
-        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
-        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+        SubjectsInstitutionDataDto subjectsInstitutionDataDto = new SubjectsInstitutionDataDto();
+        subjectsInstitutionDataDto.setGeneralita(generalInformationDto);
 
-        List<TipoResidenzaDto> tipoResidenzaDtoList = new ArrayList<>();
-        TipoResidenzaDto tipoResidenzaDto = new TipoResidenzaDto();
+        List<ResidenceDto> residenceDtoList = new ArrayList<>();
+        ResidenceDto residenceDto = new ResidenceDto();
 
-        TipoLocalitaEstera1Dto tipoLocalitaEstera1Dto = new TipoLocalitaEstera1Dto();
-        TipoIndirizzoEsteroDto tipoIndirizzoEsteroDto = new TipoIndirizzoEsteroDto();
-        TipoDatoLocalitaEsteraDto tipoDatoLocalitaEsteraDto = new TipoDatoLocalitaEsteraDto();
-        tipoDatoLocalitaEsteraDto.setDescrizioneLocalita("descrizione");
-        tipoIndirizzoEsteroDto.setLocalita(tipoDatoLocalitaEsteraDto);
+        ForeignLocation1Dto foreignLocation1Dto = new ForeignLocation1Dto();
+        ForeignAddressDto foreignAddressDto = new ForeignAddressDto();
+        ForeignLocationDataDto foreignLocationDataDto = new ForeignLocationDataDto();
+        foreignLocationDataDto.setDescrizioneLocalita("descrizione");
+        foreignAddressDto.setLocalita(foreignLocationDataDto);
 
-        tipoLocalitaEstera1Dto.setIndirizzoEstero(tipoIndirizzoEsteroDto);
-        tipoResidenzaDto.setLocalitaEstera(tipoLocalitaEstera1Dto);
+        foreignLocation1Dto.setIndirizzoEstero(foreignAddressDto);
+        residenceDto.setLocalitaEstera(foreignLocation1Dto);
 
-        tipoResidenzaDto.setPresso("presso");
-        tipoResidenzaDto.setTipoIndirizzo("4");
+        residenceDto.setPresso("presso");
+        residenceDto.setTipoIndirizzo("4");
 
-        tipoResidenzaDtoList.add(tipoResidenzaDto);
-        tipoDatiSoggettiEnteDto.setResidenza(tipoResidenzaDtoList);
+        residenceDtoList.add(residenceDto);
+        subjectsInstitutionDataDto.setResidenza(residenceDtoList);
 
-        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
-        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+        ArrayList<SubjectsInstitutionDataDto> subjectsInstitutionDataDtoList = new ArrayList<>();
+        subjectsInstitutionDataDtoList.add(subjectsInstitutionDataDto);
 
-        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
-        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+        SubjectsListDto subjectsListDto = new SubjectsListDto();
+        subjectsListDto.setDatiSoggetto(subjectsInstitutionDataDtoList);
 
-        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
-        rispostaE002OKDto.setListaAnomalie(new ArrayList<>());
-        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
-        rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
-        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setListaAnomalie(new ArrayList<>());
+        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
+        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
     void testConvertToGetAddressANPROKDto10() {
-        TipoCodiceFiscaleDto tipoCodiceFiscaleDto = new TipoCodiceFiscaleDto();
-        tipoCodiceFiscaleDto.setCodFiscale("Cf");
-        tipoCodiceFiscaleDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
-        tipoCodiceFiscaleDto.setValiditaCF("Validita CF");
+        TaxIdDto taxIdDto = new TaxIdDto();
+        taxIdDto.setCodFiscale("Cf");
+        taxIdDto.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        taxIdDto.setValiditaCF("Validita CF");
 
-        TipoGeneralitaDto tipoGeneralitaDto = new TipoGeneralitaDto();
-        tipoGeneralitaDto.setCodiceFiscale(tipoCodiceFiscaleDto);
+        GeneralInformationDto generalInformationDto = new GeneralInformationDto();
+        generalInformationDto.setCodiceFiscale(taxIdDto);
 
-        TipoDatiSoggettiEnteDto tipoDatiSoggettiEnteDto = new TipoDatiSoggettiEnteDto();
-        tipoDatiSoggettiEnteDto.setGeneralita(tipoGeneralitaDto);
+        SubjectsInstitutionDataDto subjectsInstitutionDataDto = new SubjectsInstitutionDataDto();
+        subjectsInstitutionDataDto.setGeneralita(generalInformationDto);
 
-        List<TipoResidenzaDto> tipoResidenzaDtoList = new ArrayList<>();
-        TipoResidenzaDto tipoResidenzaDto = new TipoResidenzaDto();
+        List<ResidenceDto> residenceDtoList = new ArrayList<>();
+        ResidenceDto residenceDto = new ResidenceDto();
 
-        TipoLocalitaEstera1Dto tipoLocalitaEstera1Dto = new TipoLocalitaEstera1Dto();
-        TipoIndirizzoEsteroDto tipoIndirizzoEsteroDto = new TipoIndirizzoEsteroDto();
-        TipoDatoLocalitaEsteraDto tipoDatoLocalitaEsteraDto = new TipoDatoLocalitaEsteraDto();
-        tipoDatoLocalitaEsteraDto.setDescrizioneLocalita("descrizione");
-        tipoIndirizzoEsteroDto.setLocalita(tipoDatoLocalitaEsteraDto);
+        ForeignLocation1Dto foreignLocation1Dto = new ForeignLocation1Dto();
+        ForeignAddressDto foreignAddressDto = new ForeignAddressDto();
+        ForeignLocationDataDto foreignLocationDataDto = new ForeignLocationDataDto();
+        foreignLocationDataDto.setDescrizioneLocalita("descrizione");
+        foreignAddressDto.setLocalita(foreignLocationDataDto);
 
-        tipoLocalitaEstera1Dto.setIndirizzoEstero(tipoIndirizzoEsteroDto);
-        tipoResidenzaDto.setLocalitaEstera(tipoLocalitaEstera1Dto);
+        foreignLocation1Dto.setIndirizzoEstero(foreignAddressDto);
+        residenceDto.setLocalitaEstera(foreignLocation1Dto);
 
-        TipoToponimoEsteroDto tipoToponimoEsteroDto = new TipoToponimoEsteroDto();
-        tipoToponimoEsteroDto.setNumeroCivico("34");
-        tipoToponimoEsteroDto.setDenominazione("via");
-        tipoIndirizzoEsteroDto.setToponimo(tipoToponimoEsteroDto);
+        ForeignToponymDto foreignToponymDto = new ForeignToponymDto();
+        foreignToponymDto.setNumeroCivico("34");
+        foreignToponymDto.setDenominazione("via");
+        foreignAddressDto.setToponimo(foreignToponymDto);
 
-        tipoLocalitaEstera1Dto.setIndirizzoEstero(tipoIndirizzoEsteroDto);
+        foreignLocation1Dto.setIndirizzoEstero(foreignAddressDto);
 
-        tipoResidenzaDto.setPresso("presso");
-        tipoResidenzaDto.setTipoIndirizzo("4");
+        residenceDto.setPresso("presso");
+        residenceDto.setTipoIndirizzo("4");
 
-        tipoResidenzaDtoList.add(tipoResidenzaDto);
-        tipoDatiSoggettiEnteDto.setResidenza(tipoResidenzaDtoList);
+        residenceDtoList.add(residenceDto);
+        subjectsInstitutionDataDto.setResidenza(residenceDtoList);
 
-        ArrayList<TipoDatiSoggettiEnteDto> tipoDatiSoggettiEnteDtoList = new ArrayList<>();
-        tipoDatiSoggettiEnteDtoList.add(tipoDatiSoggettiEnteDto);
+        ArrayList<SubjectsInstitutionDataDto> subjectsInstitutionDataDtoList = new ArrayList<>();
+        subjectsInstitutionDataDtoList.add(subjectsInstitutionDataDto);
 
-        TipoListaSoggettiDto tipoListaSoggettiDto = new TipoListaSoggettiDto();
-        tipoListaSoggettiDto.setDatiSoggetto(tipoDatiSoggettiEnteDtoList);
+        SubjectsListDto subjectsListDto = new SubjectsListDto();
+        subjectsListDto.setDatiSoggetto(subjectsInstitutionDataDtoList);
 
-        RispostaE002OKDto rispostaE002OKDto = new RispostaE002OKDto();
-        rispostaE002OKDto.setListaAnomalie(new ArrayList<>());
-        rispostaE002OKDto.setListaSoggetti(tipoListaSoggettiDto);
-        rispostaE002OKDto.setTestataRisposta(new TipoTestataRispostaE000Dto());
-        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, "Cf").getResidentialAddresses());
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setListaAnomalie(new ArrayList<>());
+        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
+        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
 

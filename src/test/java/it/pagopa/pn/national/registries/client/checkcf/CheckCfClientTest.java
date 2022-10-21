@@ -6,10 +6,9 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
-import it.pagopa.pn.national.registries.model.SecretValue;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
-import it.pagopa.pn.national.registries.model.checkcf.Richiesta;
-import it.pagopa.pn.national.registries.model.checkcf.VerificaCodiceFiscale;
+import it.pagopa.pn.national.registries.model.checkcf.Request;
+import it.pagopa.pn.national.registries.model.checkcf.TaxIdVerification;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,16 +52,16 @@ class CheckCfClientTest {
         CheckCfClient checkCfClient = new CheckCfClient(
                 accessTokenExpiringMap,checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
         );
-        Richiesta richiesta = new Richiesta();
+        Request richiesta = new Request();
         richiesta.setCodiceFiscale("cf");
 
         String richiestaJson = "{\"codiceFiscale\": \"cf\"}";
         when( objectMapper.writeValueAsString(any())).thenReturn(richiestaJson);
 
-        VerificaCodiceFiscale verificaCodiceFiscale = new VerificaCodiceFiscale();
-        verificaCodiceFiscale.setCodiceFiscale("cf");
-        verificaCodiceFiscale.setValido(true);
-        verificaCodiceFiscale.setMessaggio("valid");
+        TaxIdVerification taxIdVerification = new TaxIdVerification();
+        taxIdVerification.setCodiceFiscale("cf");
+        taxIdVerification.setValido(true);
+        taxIdVerification.setMessaggio("valid");
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setAccessToken("fafsff");
@@ -81,9 +80,9 @@ class CheckCfClientTest {
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(VerificaCodiceFiscale.class)).thenReturn(Mono.just(verificaCodiceFiscale));
+        when(responseSpec.bodyToMono(TaxIdVerification.class)).thenReturn(Mono.just(taxIdVerification));
 
-        StepVerifier.create(checkCfClient.callEService(richiesta)).expectNext(verificaCodiceFiscale).verifyComplete();
+        StepVerifier.create(checkCfClient.callEService(richiesta)).expectNext(taxIdVerification).verifyComplete();
 
     }
 
@@ -93,7 +92,7 @@ class CheckCfClientTest {
         CheckCfClient checkCfClient = new CheckCfClient(
                 accessTokenExpiringMap,checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
         );
-        Richiesta richiesta = new Richiesta();
+        Request richiesta = new Request();
         Mockito.when( objectMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("") {});
 
 

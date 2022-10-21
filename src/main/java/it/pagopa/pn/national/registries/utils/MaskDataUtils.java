@@ -5,19 +5,18 @@ import java.util.regex.Pattern;
 
 public class MaskDataUtils {
 
+    private MaskDataUtils(){}
+
     public static String maskInformation(String dataBuffered){
         Pattern patternTaxId = Pattern.compile("(\"taxId\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAddress = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\"|\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|\"digitalAddress\")\\s*:\\s*\"(.*?)\"");
         Pattern patternIdentity = Pattern.compile("(\"cf\"|\"codFiscale\"|\"codiceFiscale\"|\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAccessToken = Pattern.compile("(\"access_token\")\\s*:\\s*\"(.*?)\"");
-        //Pattern patternPec = Pattern.compile("(\"pecBusiness\"|\"pecProfessional\")\\s*:\\s*\"([^\"]+)");
 
         dataBuffered = maskMatcher(patternTaxId, dataBuffered);
         dataBuffered = maskMatcher(patternAddress, dataBuffered);
         dataBuffered = maskMatcher(patternIdentity, dataBuffered);
         dataBuffered = maskMatcher(patternAccessToken, dataBuffered);
-        //dataBuffered = maskMatcher(patternPec, dataBuffered);
-
 
         return dataBuffered;
     }
@@ -47,9 +46,10 @@ public class MaskDataUtils {
 
     private static String maskAddress(String strAddress){
         String[] parts = strAddress.split(",");
-        String masked = "";
-        for (String part : parts)
-            masked = masked + maskString(part) + ",";
+        StringBuilder masked = new StringBuilder();
+        for (String part : parts) {
+            masked.append(maskString(part)).append(",");
+        }
         return masked.substring(0,masked.length()-1);
     }
 

@@ -5,6 +5,9 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TipoLocalitaEstera1Dto {
-    private TipoIndirizzoEsteroDto indirizzoEstero;
+public class ForeignLocationDataDto {
+  private String descrizioneLocalita;
+  private String descrizioneStato;
+  private String provinciaContea;
+  private String codiceStato;
 }

@@ -5,10 +5,10 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TipoIndirizzoDto {
+public class AddressDto {
     private String cap;
-    private TipoComuneDto comune;
+    private MunicipalityDto comune;
     private String frazione;
-    private TipoToponimoDto toponimo;
-    private TipoNumeroCivicoDto numeroCivico;
+    private ToponymDto toponimo;
+    private StreetNumberDto numeroCivico;
 }

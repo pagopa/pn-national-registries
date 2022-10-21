@@ -7,9 +7,9 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.model.anpr.RichiestaE002Dto;
-import it.pagopa.pn.national.registries.model.anpr.RispostaE002OKDto;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
+import it.pagopa.pn.national.registries.model.anpr.E002RequestDto;
+import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -54,10 +54,10 @@ public class AnprClient {
     }
 
 
-    public Mono<RispostaE002OKDto> callEService(RichiestaE002Dto richiestaE002Dto){
+    public Mono<ResponseE002OKDto> callEService(E002RequestDto e002RequestDto){
         return accessTokenExpiringMap.getToken(purposeId,anprSecretConfig.getAnprSecretValue())
                 .flatMap(accessTokenCacheEntry -> {
-                    String s = convertToJson(richiestaE002Dto);
+                    String s = convertToJson(e002RequestDto);
                     String digest = createDigestFromPayload(s);
                     log.debug("digest: {}",digest);
                     return webClient.post()
@@ -73,13 +73,13 @@ public class AnprClient {
                             })
                             .bodyValue(s)
                             .retrieve()
-                            .bodyToMono(RispostaE002OKDto.class);
+                            .bodyToMono(ResponseE002OKDto.class);
                 }).doOnError(throwable -> {
                     if(!checkExceptionType(throwable) && throwable instanceof WebClientResponseException){
                         WebClientResponseException ex = (WebClientResponseException) throwable;
                         throw new PnNationalRegistriesException(ex.getMessage(),ex.getStatusCode().value(),
                                 ex.getStatusText(),ex.getHeaders(),ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(),ex.getRequest(), AnprResponseKO.class);
+                                Charset.defaultCharset(),AnprResponseKO.class);
                     }
                 }).retryWhen(Retry.max(1).filter(throwable -> {
                     log.debug("Try Retry call to ANPR");
@@ -88,9 +88,9 @@ public class AnprClient {
                         retrySignal.failure()));
     }
 
-    private String convertToJson(RichiestaE002Dto richiestaE002Dto) {
+    private String convertToJson(E002RequestDto e002RequestDto) {
         try {
-            return mapper.writeValueAsString(richiestaE002Dto);
+            return mapper.writeValueAsString(e002RequestDto);
         } catch (JsonProcessingException e) {
             throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
         }

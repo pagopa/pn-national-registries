@@ -5,5 +5,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TipoTestataRispostaE000Dto {
+public class StreetNumberDto {
+    private String numero;
+    private String lettera;
 }

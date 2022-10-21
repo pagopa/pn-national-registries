@@ -7,6 +7,7 @@ import java.util.List;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TipoListaSoggettiDto {
-    private List<TipoDatiSoggettiEnteDto> datiSoggetto = null;
+public class SubjectsInstitutionDataDto {
+    private GeneralInformationDto generalita;
+    private List<ResidenceDto> residenza = null;
 }

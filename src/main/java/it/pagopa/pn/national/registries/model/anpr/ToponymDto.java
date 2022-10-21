@@ -5,6 +5,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TipoGeneralitaDto {
-    private TipoCodiceFiscaleDto codiceFiscale;
+public class ToponymDto {
+    private String specie;
+    private String denominazioneToponimo;
 }

@@ -5,8 +5,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TipoCodiceFiscaleDto {
-    private String codFiscale;
-    private String validitaCF;
-    private String dataAttribuzioneValidita;
+public class ResponseHeaderE002Dto {
+
+    private String idOperazioneClient;
 }

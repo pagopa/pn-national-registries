@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
-import it.pagopa.pn.national.registries.model.checkcf.Richiesta;
-import it.pagopa.pn.national.registries.model.checkcf.VerificaCodiceFiscale;
+import it.pagopa.pn.national.registries.model.checkcf.Request;
+import it.pagopa.pn.national.registries.model.checkcf.TaxIdVerification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -44,7 +44,7 @@ public class CheckCfClient {
         this.checkCfSecretConfig = checkCfSecretConfig;
     }
 
-    public Mono<VerificaCodiceFiscale> callEService(Richiesta richiesta) {
+    public Mono<TaxIdVerification> callEService(Request richiesta) {
         return accessTokenExpiringMap.getToken(purposeId, checkCfSecretConfig.getCheckCfSecretValue())
                 .flatMap(accessTokenCacheEntry -> {
                     String s = convertToJson(richiesta);
@@ -57,7 +57,7 @@ public class CheckCfClient {
                             })
                             .bodyValue(s)
                             .retrieve()
-                            .bodyToMono(VerificaCodiceFiscale.class);
+                            .bodyToMono(TaxIdVerification.class);
                 }).retryWhen(Retry.max(1).filter(throwable -> {
                             log.debug("Try Retry call to CheckCf");
                             return checkExceptionType(throwable);
@@ -73,7 +73,7 @@ public class CheckCfClient {
         return false;
     }
 
-    private String convertToJson(Richiesta richiesta) {
+    private String convertToJson(Request richiesta) {
         try {
             return mapper.writeValueAsString(richiesta);
         } catch (JsonProcessingException e) {

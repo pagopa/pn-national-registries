@@ -1,10 +1,8 @@
 package it.pagopa.pn.national.registries.client.inad;
 
-import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 import lombok.extern.slf4j.Slf4j;
@@ -18,8 +16,6 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
-
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
 
 @Component
 @Slf4j
@@ -58,7 +54,7 @@ public class InadClient {
                         WebClientResponseException ex = (WebClientResponseException) throwable;
                         throw new PnNationalRegistriesException(ex.getMessage(),ex.getStatusCode().value(),
                                 ex.getStatusText(),ex.getHeaders(),ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(),ex.getRequest(), InadResponseKO.class);
+                                Charset.defaultCharset(), InadResponseKO.class);
                     }
                 })
                 .retryWhen(Retry.max(1).filter(throwable -> {

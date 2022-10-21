@@ -3,12 +3,10 @@ package it.pagopa.pn.national.registries.model.checkcf;
 import lombok.Data;
 
 /**
- * VerificaCodiceFiscale
+ * Richiesta
  */
 @Data
-public class VerificaCodiceFiscale {
+public class Request {
   private String codiceFiscale;
-  private Boolean valido;
-  private String messaggio;
 }
 

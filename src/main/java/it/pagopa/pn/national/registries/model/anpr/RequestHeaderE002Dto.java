@@ -7,7 +7,7 @@ import lombok.Data;
 @Data
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class TipoTestataRichiestaE000Dto {
+public class RequestHeaderE002Dto {
     private String idOperazioneClient;
     private String codMittente;
     private String codDestinatario;

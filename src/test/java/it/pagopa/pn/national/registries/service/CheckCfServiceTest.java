@@ -5,7 +5,7 @@ import it.pagopa.pn.national.registries.converter.CheckCfConverter;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.model.checkcf.VerificaCodiceFiscale;
+import it.pagopa.pn.national.registries.model.checkcf.TaxIdVerification;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,16 +34,16 @@ class CheckCfServiceTest {
         filter.setTaxId("test");
         requestBodyDto.setFilter(filter);
 
-        VerificaCodiceFiscale verificaCodiceFiscale = new VerificaCodiceFiscale();
-        verificaCodiceFiscale.setCodiceFiscale("test");
-        verificaCodiceFiscale.setMessaggio("trovato");
-        verificaCodiceFiscale.setValido(true);
+        TaxIdVerification taxIdVerification = new TaxIdVerification();
+        taxIdVerification.setCodiceFiscale("test");
+        taxIdVerification.setMessaggio("trovato");
+        taxIdVerification.setValido(true);
 
         CheckTaxIdOKDto checkTaxIdOKDto = new CheckTaxIdOKDto();
         checkTaxIdOKDto.setIsValid(true);
         checkTaxIdOKDto.setTaxId("test");
         checkTaxIdOKDto.setErrorCode(CheckTaxIdOKDto.ErrorCodeEnum.ERR01);
-        when(checkCfClient.callEService(any())).thenReturn(Mono.just(verificaCodiceFiscale));
+        when(checkCfClient.callEService(any())).thenReturn(Mono.just(taxIdVerification));
 
         when(checkCfConverter.convertToCfStatusDto(any())).thenReturn(checkTaxIdOKDto);
 

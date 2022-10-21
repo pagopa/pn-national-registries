@@ -11,11 +11,14 @@ import java.util.List;
 @Component
 public class AddressAnprConverter {
 
-    public GetAddressANPROKDto convertToGetAddressANPROKDto(RispostaE002OKDto rispostaE002OKDto, String cf) {
+    public GetAddressANPROKDto convertToGetAddressANPROKDto(ResponseE002OKDto responseE002OKDto, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
-        if (rispostaE002OKDto != null && rispostaE002OKDto.getListaSoggetti() != null
-                && rispostaE002OKDto.getListaSoggetti().getDatiSoggetto() != null) {
-            for (TipoDatiSoggettiEnteDto item : rispostaE002OKDto.getListaSoggetti().getDatiSoggetto()) {
+        if(responseE002OKDto!=null && responseE002OKDto.getTestataRisposta()!=null){
+            response.setClientOperationId(responseE002OKDto.getTestataRisposta().getIdOperazioneClient());
+        }
+        if (responseE002OKDto != null && responseE002OKDto.getListaSoggetti() != null
+                && responseE002OKDto.getListaSoggetti().getDatiSoggetto() != null) {
+            for (SubjectsInstitutionDataDto item : responseE002OKDto.getListaSoggetti().getDatiSoggetto()) {
                 if (item.getGeneralita() != null && item.getGeneralita().getCodiceFiscale() != null
                         && item.getGeneralita().getCodiceFiscale().getCodFiscale() != null
                         && item.getGeneralita().getCodiceFiscale().getCodFiscale().equalsIgnoreCase(cf)
@@ -27,9 +30,9 @@ public class AddressAnprConverter {
         return response;
     }
 
-    private List<ResidentialAddressDto> convertResidence(List<TipoResidenzaDto> residenza) {
+    private List<ResidentialAddressDto> convertResidence(List<ResidenceDto> residenza) {
         List<ResidentialAddressDto> list = new ArrayList<>();
-        for (TipoResidenzaDto dto : residenza) {
+        for (ResidenceDto dto : residenza) {
             ResidentialAddressDto innerDto = new ResidentialAddressDto();
             innerDto.setAt(dto.getPresso());
             innerDto.setDescription(dto.getTipoIndirizzo());
@@ -48,7 +51,7 @@ public class AddressAnprConverter {
         return list;
     }
 
-    private void mapToResidence(TipoIndirizzoDto indirizzo, ResidentialAddressDto innerDto) {
+    private void mapToResidence(AddressDto indirizzo, ResidentialAddressDto innerDto) {
         innerDto.setAddress(createAddressString(indirizzo));
         innerDto.setZip(indirizzo.getCap());
         innerDto.setMunicipalityDetails(indirizzo.getFrazione());
@@ -61,7 +64,7 @@ public class AddressAnprConverter {
 
     }
 
-    private void mapToForeignResidence(TipoLocalitaEstera1Dto localitaEstera, ResidentialAddressDto innerDto) {
+    private void mapToForeignResidence(ForeignLocation1Dto localitaEstera, ResidentialAddressDto innerDto) {
         if (localitaEstera.getIndirizzoEstero() != null) {
             innerDto.setZip(localitaEstera.getIndirizzoEstero().getCap());
             if (localitaEstera.getIndirizzoEstero().getToponimo() != null) {
@@ -76,11 +79,11 @@ public class AddressAnprConverter {
         }
     }
 
-    private String createForeignAddressString(TipoToponimoEsteroDto toponimo) {
+    private String createForeignAddressString(ForeignToponymDto toponimo) {
         return toponimo.getDenominazione() + "," + toponimo.getNumeroCivico();
     }
 
-    private String createAddressString(TipoIndirizzoDto indirizzo) {
+    private String createAddressString(AddressDto indirizzo) {
         if (indirizzo.getToponimo() != null && indirizzo.getNumeroCivico() != null) {
             return indirizzo.getToponimo().getSpecie() + " " + indirizzo.getToponimo().getDenominazioneToponimo() + " "
                     + indirizzo.getNumeroCivico().getNumero() + indirizzo.getNumeroCivico().getLettera();
