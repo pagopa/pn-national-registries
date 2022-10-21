@@ -163,7 +163,7 @@ Resources:
         ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_API_BASE_URL=${INIPECBaseURL}'
         ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_PURPOSE_ID=${INIPECPurposeId}'
         ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
-        MappedPaths: '/external-registry-private/*'
+        MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
         VpcId: !Ref VpcId
