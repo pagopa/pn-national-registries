@@ -18,8 +18,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PnWebExceptionHandlerTest {
@@ -43,6 +42,9 @@ class PnWebExceptionHandlerTest {
 
     @Mock
     ExceptionHelper exceptionHelper;
+
+    @Mock
+    HttpHeaders headers;
 
     /**
      * Method under test: {@link PnWebExceptionHandler#handle(ServerWebExchange, Throwable)}
@@ -69,58 +71,15 @@ class PnWebExceptionHandlerTest {
     void testHandle2() {
 
         WebClientResponseException exception = mock(WebClientResponseException.class);
-        when(exception.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
         when(exception.getMessage()).thenReturn("bad request");
-        when(exception.getResponseBodyAsString()).thenReturn("{\n" +
-                "\"title\":\"bas request\",\n" +
-                "\"status\":\"400\",\n" +
-                "\"detail\":\"invalid request\"\n" +
-                "}");
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
-        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
-
-    }
-
-    /**
-     * Method under test: {@link PnWebExceptionHandler#handle(ServerWebExchange, Throwable)}
-     */
-    @Test
-    void testHandle3() {
-        WebClientResponseException exception = mock(WebClientResponseException.class);
-        when(exception.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
-        when(exception.getMessage()).thenReturn("bad request");
-        when(exception.getResponseBodyAsString()).thenReturn("");
-        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
-        when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
-        when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
-        when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
-        when(exceptionHelper.generateFallbackProblem()).thenReturn("");
-        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
-
-    }
-
-
-    /**
-     * Method under test: {@link PnWebExceptionHandler#handle(ServerWebExchange, Throwable)}
-     */
-    @Test
-    void testHandle4(){
-
-        WebClientResponseException exception = mock(WebClientResponseException.class);
-        when(exception.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
-        when(exception.getMessage()).thenReturn("bad request");
-        when(exception.getResponseBodyAsString()).thenReturn("");
-        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
-        when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
-        when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
-        when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
-        when(exceptionHelper.generateFallbackProblem()).thenReturn("");
+        Problem problem = new Problem();
+        problem.setStatus(400);
+        when(exceptionHelper.handleException(any())).thenReturn(problem);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
 
     }
