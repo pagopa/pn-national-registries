@@ -9,11 +9,13 @@ public class MaskDataUtils {
         Pattern patternTaxId = Pattern.compile("(\"taxId\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAddress = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\"|\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|\"digitalAddress\")\\s*:\\s*\"(.*?)\"");
         Pattern patternIdentity = Pattern.compile("(\"cf\"|\"codFiscale\"|\"codiceFiscale\"|\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
+        Pattern patternAccessToken = Pattern.compile("(\"access_token\")\\s*:\\s*\"(.*?)\"");
         //Pattern patternPec = Pattern.compile("(\"pecBusiness\"|\"pecProfessional\")\\s*:\\s*\"([^\"]+)");
 
         dataBuffered = maskMatcher(patternTaxId, dataBuffered);
         dataBuffered = maskMatcher(patternAddress, dataBuffered);
         dataBuffered = maskMatcher(patternIdentity, dataBuffered);
+        dataBuffered = maskMatcher(patternAccessToken, dataBuffered);
         //dataBuffered = maskMatcher(patternPec, dataBuffered);
 
 

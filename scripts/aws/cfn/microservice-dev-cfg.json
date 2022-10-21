@@ -7,7 +7,7 @@
     "AgenziaEntratePurposeId": "79489c37-5957-4635-9121-274ba50439d8",
     "INADBaseURL": "https://domiciliodigitaleapi.oscl.infocamere.it/rest/inad/v1/domiciliodigitale",
     "INADPurposeId": "660261a1-1a22-4e2d-9a64-91bbca8e02a9",
-    "INIPECBaseURL": "",
+    "INIPECBaseURL": "test",
     "INIPECPurposeId": "test",
     "ANPRSSLSecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:pdnd-anpr-ssl-FfkGOL",
     "PDNDANPRClientAssertionSecretName": "arn:aws:secretsmanager:eu-south-1:558518206506:secret:fa2aa359-ab78-45b2-aa55-977d8ddb7d2b-PJMQRl",
