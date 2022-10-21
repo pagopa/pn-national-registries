@@ -5,9 +5,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 class MaskDataUtilsTest {
-    /**
-     * Method under test: {@link MaskDataUtils#maskInformation(String)}
-     */
     @Test
     void testMaskInformation() {
         assertEquals("Data Buffered", MaskDataUtils.maskInformation("Data Buffered"));
