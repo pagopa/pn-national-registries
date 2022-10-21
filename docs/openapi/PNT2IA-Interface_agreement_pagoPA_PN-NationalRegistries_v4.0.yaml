@@ -351,6 +351,9 @@ components:
       properties:
         filter:
           type: object
+          required:
+            - taxId
+            - practicalReference
           properties:
             taxId:
               type: string
