@@ -171,40 +171,10 @@ Resources:
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
 
-  ANPRSSLSecretPolicy:
+  NationalRegistryMicroserviceTaskPolicy:
     Type: AWS::IAM::Policy
     Properties:
-      PolicyName: !Sub '${ProjectName}-NationalRegistry-ANPRSSLSecretPolicy'
-      Roles:
-        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              - secretsmanager:GetSecretValue
-            Resource:
-              - !Ref ANPRSSLSecretName
-
-  PDNDANPRClientAssertionSecretPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub '${ProjectName}-NationalRegistry-PDNDANPRClientAssertionSecretPolicy'
-      Roles:
-        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
-          - Effect: Allow
-            Action:
-              - secretsmanager:GetSecretValue
-            Resource:
-              - !Ref PDNDANPRClientAssertionSecretName
-
-  PDNDANPRIntegritySecretPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub '${ProjectName}-NationalRegistry-PDNDANPRIntegritySecretPolicy'
+      PolicyName: !Sub '${ProjectName}-NationalRegistryMicroserviceSecretsPolicy'
       Roles:
         - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
       PolicyDocument:
@@ -215,16 +185,10 @@ Resources:
               - secretsmanager:GetSecretValue
             Resource:
               - !Ref PDNDANPRIntegritySecretName
-
-  PDNDSessionTokenSigningKeyPolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub '${ProjectName}-NationalRegistry-PDNDSessionTokenSigningKeyPolicy'
-      Roles:
-        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
+              - !Ref PDNDANPRClientAssertionSecretName
+              - !Ref ANPRSSLSecretName
+              - !Ref PDNDCheckCfClientAssertionSecretName
+              - !Ref PDNDInadClientAssertionSecretName
           - Effect: Allow
             Action:
               - kms:Sign
@@ -232,5 +196,3 @@ Resources:
               - !Ref PDNDSessionTokenSigningKeyARN
               - !Ref CheckCfPDNDSessionTokenSigningKeyARN
               - !Ref InadPDNDSessionTokenSigningKeyARN
-
-
