@@ -315,37 +315,18 @@ components:
         timestamp:
           type: integer
         errors:
-          $ref: '#/components/schemas/AnprResponseKO'
-    AnprResponseKO:
-      properties:
-        responseHeader:
-          $ref: '#/components/schemas/AnprResponseHeader'
-        errorsList:
           type: array
           items:
-            $ref: '#/components/schemas/AnprErrorList'
-    AnprErrorList:
-      type: object
-      properties:
-        errorCode:
-          type: string
-        errorText:
-          type: string
-        errorType:
-          type: string
-    AnprResponseHeader:
-      type: object
-      properties:
-        clientOperationId:
-          type: string
-        senderCode:
-          type: string
-        recipientCode:
-          type: string
-        anprOperationId:
-          type: string
-        result:
-          type: string
+            type: object
+            properties:
+              code:
+                type: string
+              element:
+                type: string
+              detail:
+                type: string
+              clientOperationId:
+                type: string
     GetDigitalAddressINADRequestBody:
       type: object
       properties:
@@ -407,12 +388,16 @@ components:
         timestamp:
           type: integer
         errors:
-          $ref: '#/components/schemas/InadResponseKO'
-    InadResponseKO:
-      type: object
-      properties:
-        detail:
-          type: string
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              element:
+                type: string
+              detail:
+                type: string
     GetDigitalAddressIniPECRequestBody:
       type: object
       properties:
