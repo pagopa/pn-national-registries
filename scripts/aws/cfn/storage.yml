@@ -101,6 +101,22 @@ Resources:
       AliasName: !Sub 'alias/${ProjectName}-national-registries-inad-pdnd'
       TargetKeyId: !Ref InadPDNDSessionTokenSigningKey
 
+  CounterTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-counter'
+      AttributeDefinitions:
+        - AttributeName: "eservice"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "eservice"
+          KeyType: "HASH"
+      BillingMode: "PAY_PER_REQUEST"
+      KinesisStreamSpecification:
+        StreamArn: !GetAtt aaggregatesCdcKinesis.Outputs.KinesisStreamArn
+      StreamSpecification:
+        StreamViewType: NEW_IMAGE
+
 #Necessario a causa di bug script deploy
 Outputs:
   PDNDSessionTokenSigningKeyARN:
@@ -112,6 +128,12 @@ Outputs:
   InadPDNDSessionTokenSigningKeyARN:
     Description: CehckCfPDNDSessionTokenSigningKeyARN
     Value: !Sub '${InadPDNDSessionTokenSigningKey.Arn}'
+  CounterTableName:
+    Description: Dynamo Name used by application to access the key-value store of AnprCounterTable
+    Value: !Ref AnprCounterTable
+  CounterArn:
+    Description: ARM Dynamo Name used by application to access the key-value store of AnprCounterTable
+    value: !Sub '${AnprCounterTable.Arn}'
 
 
 

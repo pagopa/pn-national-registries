@@ -8,6 +8,7 @@ import it.pagopa.pn.national.registries.model.anpr.E002RequestDto;
 import it.pagopa.pn.national.registries.model.anpr.SearchCriteriaE002Dto;
 import it.pagopa.pn.national.registries.model.anpr.RequestDateE002Dto;
 import it.pagopa.pn.national.registries.model.anpr.RequestHeaderE002Dto;
+import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -23,29 +24,38 @@ public class AnprService {
     private final AddressAnprConverter addressAnprConverter;
     private final AnprClient anprClient;
     private final String anprSendType;
+    private final CounterRepositoryImpl counterRepository;
 
     public AnprService(AddressAnprConverter addressAnprConverter,
                        AnprClient anprClient,
-                       @Value("${pn.national.registries.pdnd.anpr.tipo-invio}") String anprSendType){
+                       @Value("${pn.national.registries.pdnd.anpr.tipo-invio}") String anprSendType,
+                       CounterRepositoryImpl counterRepository){
         this.addressAnprConverter = addressAnprConverter;
         this.anprClient = anprClient;
         this.anprSendType = anprSendType;
+        this.counterRepository = counterRepository;
     }
 
     public Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto request) {
-        E002RequestDto e002RequestDto = createRequest(request);
-        return anprClient.callEService(e002RequestDto)
-                .map(rispostaE002OKDto -> addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, e002RequestDto.getCriteriRicerca().getCodiceFiscale()));
+       return createRequest(request)
+               .flatMap(e002RequestDto -> anprClient.callEService(e002RequestDto)
+                       .map(rispostaE002OKDto ->
+                               addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, e002RequestDto.getCriteriRicerca().getCodiceFiscale())));
     }
 
-    private E002RequestDto createRequest(GetAddressANPRRequestBodyDto request) {
+    private Mono<E002RequestDto> createRequest(GetAddressANPRRequestBodyDto request){
+        return counterRepository.getCounter("anpr")
+                .flatMap(s -> Mono.just(constructE002RequestDto(request,s.getCounter())));
+    }
+
+    private E002RequestDto constructE002RequestDto(GetAddressANPRRequestBodyDto request,Long s) {
         E002RequestDto richiesta = new E002RequestDto();
         SearchCriteriaE002Dto criteriRicercaE002Dto = new SearchCriteriaE002Dto();
         criteriRicercaE002Dto.setCodiceFiscale(request.getFilter().getTaxId());
         richiesta.setCriteriRicerca(criteriRicercaE002Dto);
 
         RequestHeaderE002Dto tipoTestata = new RequestHeaderE002Dto();
-        tipoTestata.setIdOperazioneClient(String.valueOf(System.nanoTime()));
+        tipoTestata.setIdOperazioneClient(String.valueOf(s));
         tipoTestata.setCodMittente("600010");
         tipoTestata.setCodDestinatario("ANPR02");
         tipoTestata.setOperazioneRichiesta("E002");

@@ -106,7 +106,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         if(responseKO.getResponseHeader()!=null){
             anprResponseKO.setClientOperationId(responseKO.getResponseHeader().getClientOperationId());
         }
-        if(responseKO.getErrorsList().size()==1){
+        if(responseKO.getErrorsList()!=null && responseKO.getErrorsList().size()==1){
             anprResponseKO.setCode(responseKO.getErrorsList().get(0).getCode());
             anprResponseKO.setDetail(responseKO.getErrorsList().get(0).getDetail());
             anprResponseKO.setElement(responseKO.getErrorsList().get(0).getElement());
