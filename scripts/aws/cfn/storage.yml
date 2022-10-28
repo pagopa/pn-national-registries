@@ -125,10 +125,10 @@ Outputs:
     Description: CehckCfPDNDSessionTokenSigningKeyARN
     Value: !Sub '${InadPDNDSessionTokenSigningKey.Arn}'
   CounterTableName:
-    Description: Dynamo Name used by application to access the key-value store of AnprCounterTable
-    Value: !Ref AnprCounterTable
+    Description: Dynamo Name used by application to access the key-value store of CounterTable
+    Value: !Ref CounterTable
   CounterTableArn:
-    Description: ARM Dynamo Name used by application to access the key-value store of AnprCounterTable
+    Description: ARM Dynamo Name used by application to access the key-value store of CounterTable
     value: !Sub '${CounterTable.Arn}'
 
 
