@@ -15,7 +15,7 @@ public class CounterModel {
         @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute("eservice")}))
         private String eservice;
 
-        @Setter @Getter(onMethod=@__({@DynamoDbAtomicCounter, @DynamoDbAttribute("counter")}))
+        @Setter @Getter(onMethod=@__({@DynamoDbAtomicCounter(startValue = 1), @DynamoDbAttribute("counter")}))
         private Long counter;
 
 }
