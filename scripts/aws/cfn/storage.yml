@@ -131,9 +131,9 @@ Outputs:
   CounterTableName:
     Description: Dynamo Name used by application to access the key-value store of AnprCounterTable
     Value: !Ref AnprCounterTable
-  CounterArn:
+  CounterTableArn:
     Description: ARM Dynamo Name used by application to access the key-value store of AnprCounterTable
-    value: !Sub '${AnprCounterTable.Arn}'
+    value: !Sub '${CounterTable.Arn}'
 
 
 
