@@ -17,12 +17,10 @@ public class CounterRepositoryImpl implements CounterRepository{
 
     @Override
     public Mono<CounterModel> getCounter(String eservice) {
-        return Mono.fromFuture(table.updateItem(createUpdateItemEnhancedRequest(eservice)).thenApply(counterModel -> counterModel))
-                .flatMap(s -> Mono.fromFuture(table.getItem(Key.builder().partitionValue(eservice).build())
-                        .thenApply(counterModel -> counterModel)));
+        return Mono.fromFuture(table.updateItem(createUpdateItemEnhancedRequest(eservice)).thenApply(counterModel -> counterModel));
     }
 
-    private UpdateItemEnhancedRequest<CounterModel> createUpdateItemEnhancedRequest(String eservice) {
+    protected UpdateItemEnhancedRequest<CounterModel> createUpdateItemEnhancedRequest(String eservice) {
         CounterModel counterModel = new CounterModel();
         counterModel.setEservice(eservice);
         return UpdateItemEnhancedRequest

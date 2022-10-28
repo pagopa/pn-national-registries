@@ -135,10 +135,6 @@ Parameters:
     Type: String
     Description: 'Input parameter for eservice C001'
 
-  CounterTableName:
-    Type: String
-    Description: 'Name of dynamodb table containing eservice Counter information'
-
 Resources:
 
   # PN-National-Registry microservice
