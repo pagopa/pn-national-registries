@@ -48,9 +48,9 @@ public class AgidJwtSignature {
             JwtConfig jwtConfig = anprSecretConfig.getAnprSecretValue().getJwtConfig();
             SSLData sslData = anprSecretConfig.getAnprIntegritySecret();
             TokenHeader th = new TokenHeader(jwtConfig);
-            log.debug("tokenHeader: {}",th);
+            log.debug("tokenHeader ALg: {}",th.getAlg());
             TokenPayload tp = new TokenPayload(jwtConfig);
-            log.debug("tokenPayload: {}",th);
+            log.debug("tokenPayload Audience: {}",tp.getAud());
             return JWT.create().withHeader(createHeaderMap(th, sslData)).withPayload(createClaimMap(digest, tp))
                     .sign(Algorithm.RSA256(getPublicKey(sslData.getPub()), getPrivateKey(sslData.getKey())));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
@@ -63,7 +63,7 @@ public class AgidJwtSignature {
         map.put(HeaderParams.TYPE, th.getTyp());
         map.put(HeaderParams.ALGORITHM, th.getAlg());
         map.put("x5c", List.of(sslData.getCert()));
-        log.debug("HeaderMap: {}",map);
+        log.debug("HeaderMap type: {}",map.get(HeaderParams.TYPE));
         return map;
     }
 
@@ -76,7 +76,7 @@ public class AgidJwtSignature {
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
         map.put(RegisteredClaims.JWT_ID, tp.getJti());
         map.put("signed_headers", createSignedHeaders(digest));
-        log.debug("ClaimMap: {}",map);
+        log.debug("ClaimMap audience: {}",map.get(RegisteredClaims.AUDIENCE));
         return map;
     }
 

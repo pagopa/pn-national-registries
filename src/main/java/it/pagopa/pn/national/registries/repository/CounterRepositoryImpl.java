@@ -23,7 +23,8 @@ public class CounterRepositoryImpl implements CounterRepository{
     }
 
     private UpdateItemEnhancedRequest<CounterModel> createUpdateItemEnhancedRequest(String eservice) {
-        CounterModel counterModel = CounterModel.builder().eservice(eservice).build();
+        CounterModel counterModel = new CounterModel();
+        counterModel.setEservice(eservice);
         return UpdateItemEnhancedRequest
                 .builder(CounterModel.class)
                 .item(counterModel)

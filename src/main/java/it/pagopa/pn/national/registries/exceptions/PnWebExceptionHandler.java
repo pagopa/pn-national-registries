@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.exceptions;
 
+import com.amazonaws.util.StringUtils;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -101,7 +102,9 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
     }
 
     private AnprResponseKO mapToAnprResponseKO(String responseBodyAsString) throws JsonProcessingException {
-        ResponseKO responseKO = objectMapper.readValue(responseBodyAsString, ResponseKO.class);
+        ResponseKO responseKO = new ResponseKO();
+        if(!StringUtils.isNullOrEmpty(responseBodyAsString))
+            responseKO = objectMapper.readValue(responseBodyAsString, ResponseKO.class);
         AnprResponseKO anprResponseKO = new AnprResponseKO();
         if(responseKO.getResponseHeader()!=null){
             anprResponseKO.setClientOperationId(responseKO.getResponseHeader().getClientOperationId());

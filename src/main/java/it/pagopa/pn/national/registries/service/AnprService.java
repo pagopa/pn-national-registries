@@ -1,19 +1,20 @@
 package it.pagopa.pn.national.registries.service;
 
+import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.converter.AddressAnprConverter;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
-import it.pagopa.pn.national.registries.model.anpr.E002RequestDto;
-import it.pagopa.pn.national.registries.model.anpr.SearchCriteriaE002Dto;
-import it.pagopa.pn.national.registries.model.anpr.RequestDateE002Dto;
-import it.pagopa.pn.national.registries.model.anpr.RequestHeaderE002Dto;
+import it.pagopa.pn.national.registries.model.anpr.*;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -29,7 +30,7 @@ public class AnprService {
     public AnprService(AddressAnprConverter addressAnprConverter,
                        AnprClient anprClient,
                        @Value("${pn.national.registries.pdnd.anpr.tipo-invio}") String anprSendType,
-                       CounterRepositoryImpl counterRepository){
+                       CounterRepositoryImpl counterRepository) {
         this.addressAnprConverter = addressAnprConverter;
         this.anprClient = anprClient;
         this.anprSendType = anprSendType;
@@ -37,18 +38,23 @@ public class AnprService {
     }
 
     public Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto request) {
-       return createRequest(request)
-               .flatMap(e002RequestDto -> anprClient.callEService(e002RequestDto)
-                       .map(rispostaE002OKDto ->
-                               addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, e002RequestDto.getCriteriRicerca().getCodiceFiscale())));
+        if (StringUtils.isNullOrEmpty(request.getFilter().getReferenceRequestDate()))
+            throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),
+                    HttpStatus.BAD_REQUEST.getReasonPhrase(),null, null,
+                    Charset.defaultCharset(), AnprResponseKO.class);
+
+        return createRequest(request)
+                .flatMap(e002RequestDto -> anprClient.callEService(e002RequestDto)
+                        .map(rispostaE002OKDto ->
+                                addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, e002RequestDto.getCriteriRicerca().getCodiceFiscale())));
     }
 
-    private Mono<E002RequestDto> createRequest(GetAddressANPRRequestBodyDto request){
+    private Mono<E002RequestDto> createRequest(GetAddressANPRRequestBodyDto request) {
         return counterRepository.getCounter("anpr")
-                .flatMap(s -> Mono.just(constructE002RequestDto(request,s.getCounter())));
+                .flatMap(s -> Mono.just(constructE002RequestDto(request, s.getCounter())));
     }
 
-    private E002RequestDto constructE002RequestDto(GetAddressANPRRequestBodyDto request,Long s) {
+    private E002RequestDto constructE002RequestDto(GetAddressANPRRequestBodyDto request, Long s) {
         E002RequestDto richiesta = new E002RequestDto();
         SearchCriteriaE002Dto criteriRicercaE002Dto = new SearchCriteriaE002Dto();
         criteriRicercaE002Dto.setCodiceFiscale(request.getFilter().getTaxId());
@@ -73,7 +79,7 @@ public class AnprService {
         dto.setCasoUso("C001");
 
         richiesta.setDatiRichiesta(dto);
-        log.debug("RichiestaE002Dto: {}",request);
+        log.debug("RichiestaE002Dto: {}", request);
         return richiesta;
     }
 }
