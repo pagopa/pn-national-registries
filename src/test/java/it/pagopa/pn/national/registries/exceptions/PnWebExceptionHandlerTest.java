@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.exceptions;
 
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
+import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -91,6 +92,25 @@ class PnWebExceptionHandlerTest {
     @Test
     void testHandle5() {
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.UNAUTHORIZED);
+        when(exception.getMessage()).thenReturn("bad request");
+        when(exceptionHelper.handleException(exception)).thenReturn(Problem.builder().status(400).build());
+        Class<?> inadResponseKOClass = InadResponseKO.class;
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
+        when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
+        when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        Problem problem = new Problem();
+        problem.setStatus(400);
+        //when(exceptionHelper.handleException(any())).thenReturn(problem);
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
+
+    }
+
+    @Test
+    void testHandle6() {
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
         when(exception.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
         when(exception.getMessage()).thenReturn("bad request");
         when(exception.getResponseBodyAsString()).thenReturn("{}");
@@ -108,5 +128,24 @@ class PnWebExceptionHandlerTest {
 
     }
 
+    @Test
+    void testHandle7() {
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
+        when(exception.getMessage()).thenReturn("bad request");
+        when(exception.getResponseBodyAsString()).thenReturn("{}");
+        Class<?> inadResponseKOClass = AnprResponseKO.class;
+        doReturn(inadResponseKOClass).when(exception).getClassName();
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
+        when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
+        when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        Problem problem = new Problem();
+        problem.setStatus(400);
+        //when(exceptionHelper.handleException(any())).thenReturn(problem);
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
+
+    }
 }
 
