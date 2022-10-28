@@ -112,10 +112,6 @@ Resources:
         - AttributeName: "eservice"
           KeyType: "HASH"
       BillingMode: "PAY_PER_REQUEST"
-      KinesisStreamSpecification:
-        StreamArn: !GetAtt aaggregatesCdcKinesis.Outputs.KinesisStreamArn
-      StreamSpecification:
-        StreamViewType: NEW_IMAGE
 
 #Necessario a causa di bug script deploy
 Outputs:
