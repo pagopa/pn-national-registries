@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Import;
 @Data
 @ToString
 @Import(SharedAutoConfiguration.class)
-public class PnExternalRegistriesConfig {
+public class PnNationalRegistriesConfig {
 
     public static final String PDND_M2M_TOKEN = "pdnd";
 
