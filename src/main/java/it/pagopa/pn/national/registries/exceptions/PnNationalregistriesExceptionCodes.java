@@ -11,6 +11,7 @@ public class PnNationalregistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_CODE_CHECK_CF = "PN_NATIONAL_REGISTRIES_CHECK_CF";
     public static final String ERROR_CODE_INAD = "PN_NATIONAL_REGISTRIES_INAD";
     public static final String ERROR_CODE_SECRET_MANAGER = "PN_NATIONAL_REGISTRIES";
+    public static final String ERROR_CODE_INI_PEC = "PN_NATIONAL_REGISTRIES_INI_PEC";
 
 
     public static final String ERROR_MESSAGE_CLIENTASSERTION = "Errore di generazione client_assertion";
@@ -19,6 +20,7 @@ public class PnNationalregistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_MESSAGE_CHECK_CF = "Errore durante la chiamata al servizio VerificaCodiceFiscale";
     public static final String ERROR_MESSAGE_INAD = "Errore durante la chiamata al servizio EstrazioniPuntualiApi";
 
+    public static final String ERROR_MESSAGE_INI_PEC = "Errore durante la chiamata al servizio digitalAddressIniPEC";
     public static final String ERROR_MESSAGE_SECRET_MANAGER = "Secret Value not found";
 
 
