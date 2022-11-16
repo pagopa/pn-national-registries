@@ -25,7 +25,7 @@ public class CheckCfController implements CheckTaxIdApi {
     }
 
     /**
-     * POST /checkTaxId : Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
+     * POST /national-registries-private/agenzia-entrate/tax-id : Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
      * Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
      *
      * @param checkTaxIdRequestBodyDto Effettua la ricerca di un codice fiscale (required)
