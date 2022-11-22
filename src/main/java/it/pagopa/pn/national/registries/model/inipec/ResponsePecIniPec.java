@@ -11,7 +11,7 @@ public class ResponsePecIniPec {
 
   private String identificativoRichiesta;
 
-  private List<Pec> pecs;
+  private List<Pec> elencoPec;
 
 }
 

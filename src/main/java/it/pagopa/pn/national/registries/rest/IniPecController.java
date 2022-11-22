@@ -1,10 +1,9 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.entity.BatchPolling;
-import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.DigitalAddressIniPecApi;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
+import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.service.IniPecService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -48,16 +47,5 @@ public class IniPecController implements DigitalAddressIniPecApi {
         return iniPecService.getDigitalAddress(getDigitalAddressIniPECRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
-
-    @PostMapping(
-            value = "/national-registries-private/inipec/get",
-            produces = { "application/json" },
-            consumes = { "application/json" }
-    )
-    public Mono<ResponseEntity<BatchPolling>> get(){
-        return iniPecService.get()
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
-    }
-
 
 }

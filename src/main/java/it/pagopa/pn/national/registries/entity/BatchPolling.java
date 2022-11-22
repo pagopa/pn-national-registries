@@ -23,4 +23,10 @@ public class BatchPolling {
         @Getter(onMethod=@__({@DynamoDbAttribute("status")}))
         private String status;
 
+        @Getter(onMethod=@__({@DynamoDbAttribute("reservationId")}))
+        private String reservationId;
+
+        @Getter(onMethod=@__({@DynamoDbAttribute("timeStamp")}))
+        private LocalDateTime timeStamp;
+
 }

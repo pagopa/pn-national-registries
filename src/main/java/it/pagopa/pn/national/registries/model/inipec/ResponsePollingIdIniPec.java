@@ -3,11 +3,11 @@ package it.pagopa.pn.national.registries.model.inipec;
 import lombok.Data;
 
 @Data
-public class ResponseCfIniPec {
+public class ResponsePollingIdIniPec {
 
   private String dataOraRichiesta;
 
-  private String requestId;
+  private String identificativoRichiesta;
 
 }
 

@@ -8,10 +8,8 @@ import java.util.List;
 public class Pec {
 
   private String cf;
-
   private String pecImpresa;
-
-  private List<PecProfessionista> pecProfessionistas;
+  private List<String> pecProfessionistas;
 
 }
 
