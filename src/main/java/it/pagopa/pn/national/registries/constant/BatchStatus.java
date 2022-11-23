@@ -9,8 +9,8 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum BatchStatus {
 
+  NO_BATCH_ID("NO_BATCH_ID"),
   NOT_WORKED("NOT_WORKED"),
-  TO_WORK("TO_WORK"),
   WORKING("WORKING"),
   WORKED("WORKED"),
   ERROR("ERROR");

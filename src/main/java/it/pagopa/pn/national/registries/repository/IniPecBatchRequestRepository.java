@@ -11,13 +11,10 @@ import java.util.Map;
 
 public interface IniPecBatchRequestRepository {
 
-    Mono<BatchRequest> createBatchRequest(BatchRequest batchRequest);
     Mono<BatchRequest> createBatchRequestByCf(GetDigitalAddressIniPECRequestBodyDto requestCF);
     Mono<Page<BatchRequest>> getBatchRequestByNotBatchIdPageable(Map<String, AttributeValue> lastKey);
-    Mono<List<BatchRequest>> getBatchRequestByBatchId(String batchId);
-    Mono<List<BatchRequest>> getBatchRequestToRecovery();
+    Mono<List<BatchRequest>> getBatchRequestsByBatchIdAndSetStatus(String batchId, String status);
     Mono<List<BatchRequest>> setNewBatchIdToBatchRequests(List<BatchRequest> batchRequest, String batchId);
-    Mono<List<BatchRequest>> setStatusToBatchRequests(List<BatchRequest> batchRequests, String status);
-    Mono<List<BatchRequest>> resetBatchIdToBatchRequests(List<BatchRequest> batchRequests);
+    Mono<List<BatchRequest>> resetBatchIdForRecovery();
 
 }

@@ -44,13 +44,20 @@ public class IniPecConverter {
     public CodeSqsDto convertoResponsePecToCodeSqsDto(ResponsePecIniPec responsePecIniPec, String status, String description){
         CodeSqsDto codeSqsDto = new CodeSqsDto();
 
-        List<Pec> pecs = responsePecIniPec.getElencoPec();
-        List<String> cfs = pecs.stream().map(Pec::getCf).collect(Collectors.toList());
-        List<String> pecImpresa = pecs.stream().map(Pec::getPecImpresa).collect(Collectors.toList());
+        List<Pec> pecs = new ArrayList<>();
+        List<String> cfs = new ArrayList<>();
+        List<String> pecImpresa = new ArrayList<>();
         List<String> pecProfessionista = new ArrayList<>();
 
+        if(responsePecIniPec.getElencoPec()!=null){
+            pecs = responsePecIniPec.getElencoPec();
+            cfs = pecs.stream().map(Pec::getCf).collect(Collectors.toList());
+            pecImpresa = pecs.stream().map(Pec::getPecImpresa).collect(Collectors.toList());
+        }
+
         for(Pec pec : pecs){
-            pecProfessionista.addAll(pec.getPecProfessionistas().stream().collect(Collectors.toList()));
+            if(pec.getPecProfessionistas()!=null)
+                pecProfessionista.addAll(new ArrayList<>(pec.getPecProfessionistas()));
         }
 
         codeSqsDto.setCfs(cfs);
