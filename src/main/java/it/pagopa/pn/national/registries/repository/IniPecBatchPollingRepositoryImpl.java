@@ -32,6 +32,7 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
     public Mono<BatchPolling> createBatchPolling(BatchPolling batchPolling){
         return Mono.fromFuture(tablePolling.putItem(batchPolling)).thenReturn(batchPolling);
     }
+
     @Override
     public Mono<BatchPolling> updateBatchPolling(BatchPolling batchPolling){
         return Mono.fromFuture(tablePolling.updateItem(batchPolling)).thenReturn(batchPolling);
@@ -73,11 +74,9 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put("#reservationId","reservationId");
         expressionNames.put("#status","status");
-
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":reservationId",AttributeValue.builder().s(reservationId).build());
         expressionValues.put(":status",AttributeValue.builder().s(BatchStatus.WORKING.getValue()).build());
-
         ScanEnhancedRequest scanEnhancedRequest = ScanEnhancedRequest.builder()
                 .filterExpression(expressionBuilder("#reservationId = :reservationId AND #status = :status",expressionValues,expressionNames))
                 .build();

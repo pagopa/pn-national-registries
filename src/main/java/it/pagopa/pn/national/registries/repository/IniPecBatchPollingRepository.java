@@ -15,5 +15,4 @@ public interface IniPecBatchPollingRepository {
     Mono<Page<BatchPolling>> getBatchPollingWithoutReservationIdAndStatusNotWork(Map<String, AttributeValue> lastKey);
     Mono<List<BatchPolling>> setReservationIdToAndStatusWorkingBatchPolling(List<BatchPolling> batchPollings, String reservationId);
     Mono<List<BatchPolling>> getBatchPollingByReservationIdAndStatusWorking(String reservationId);
-
 }

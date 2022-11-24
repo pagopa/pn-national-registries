@@ -83,7 +83,8 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         return Mono.from(tableBatch.index(BatchRequestConstant.GSI_BL).query(queryEnhancedRequest)).map(Page::items);
     }
 
-    private Mono<List<BatchRequest>> setStatusToBatchRequests(List<BatchRequest> batchRequests, String status) {
+    @Override
+    public Mono<List<BatchRequest>> setStatusToBatchRequests(List<BatchRequest> batchRequests, String status) {
         return Flux.fromIterable(batchRequests)
                 .flatMap(batchRequest -> {
                     batchRequest.setStatus(status);
@@ -151,7 +152,8 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         return Mono.from(tableBatch.index(BatchRequestConstant.GSI_S).query(queryEnhancedRequestBuilder.build())).map(Page::items);
     }
 
-    private Mono<List<BatchRequest>> resetBatchIdToBatchRequests(List<BatchRequest> batchRequests) {
+    @Override
+    public Mono<List<BatchRequest>> resetBatchIdToBatchRequests(List<BatchRequest> batchRequests) {
         return Flux.fromIterable(batchRequests)
                 .flatMap(batchRequest -> {
                     batchRequest.setBatchId(BatchStatus.NO_BATCH_ID.getValue());

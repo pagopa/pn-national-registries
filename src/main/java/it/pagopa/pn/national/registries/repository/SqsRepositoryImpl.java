@@ -37,7 +37,9 @@ public class SqsRepositoryImpl implements SqsRepository {
     }
 
     private String getQueueUrl(SqsClient sqsClient) {
-        return sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName("pn-inipec").build()).queueUrl();
+        return sqsClient
+                .getQueueUrl(GetQueueUrlRequest.builder().queueName("pn-inipec").build())
+                .queueUrl();
     }
 
     public void push(List<CodeSqsDto> msges) {

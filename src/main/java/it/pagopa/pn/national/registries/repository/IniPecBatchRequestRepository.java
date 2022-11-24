@@ -16,5 +16,6 @@ public interface IniPecBatchRequestRepository {
     Mono<List<BatchRequest>> getBatchRequestsByBatchIdAndSetStatus(String batchId, String status);
     Mono<List<BatchRequest>> setNewBatchIdToBatchRequests(List<BatchRequest> batchRequest, String batchId);
     Mono<List<BatchRequest>> resetBatchIdForRecovery();
-
+    Mono<List<BatchRequest>> setStatusToBatchRequests(List<BatchRequest> batchRequests, String status);
+    Mono<List<BatchRequest>> resetBatchIdToBatchRequests(List<BatchRequest> batchRequests);
 }
