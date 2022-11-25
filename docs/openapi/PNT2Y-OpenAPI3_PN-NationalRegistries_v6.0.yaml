@@ -401,6 +401,8 @@ components:
     GetDigitalAddressIniPECRequestBody:
       type: object
       properties:
+        correlationId:
+          type: string
         filter:
           type: object
           properties:

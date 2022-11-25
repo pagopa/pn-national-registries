@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.client.inipec.IniPecClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.IniPecConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
@@ -8,8 +9,6 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigital
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.repository.SqsRepositoryImpl;
@@ -36,15 +35,18 @@ public class IniPecService {
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
     private final IniPecBatchPollingRepository iniPecBatchPollingRepository;
     private final SqsRepositoryImpl sqsRepository;
+    private final IniPecClient iniPecClient;
 
     public IniPecService(IniPecConverter iniPecConverter,
                          IniPecBatchRequestRepository iniPecBatchRequestRepository,
                          IniPecBatchPollingRepository iniPecBatchPollingRepository,
-                         SqsRepositoryImpl sqsRepository) {
+                         SqsRepositoryImpl sqsRepository,
+                         IniPecClient iniPecClient) {
         this.iniPecConverter = iniPecConverter;
         this.iniPecBatchRequestRepository = iniPecBatchRequestRepository;
         this.iniPecBatchPollingRepository = iniPecBatchPollingRepository;
         this.sqsRepository = sqsRepository;
+        this.iniPecClient = iniPecClient;
     }
 
     public Mono<GetDigitalAddressIniPECOKDto> getDigitalAddress(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto) {
@@ -77,14 +79,15 @@ public class IniPecService {
                                         .collect(Collectors.toList()));
                                 log.info("Calling ini pec with cf size: {} and batchId: {}",requestCfIniPec.getElencoCf().size(),batchId);
                                 requestCfIniPec.setDataOraRichiesta(LocalDateTime.now().toString());
-                                //chiamata del client e mi ritorna polling id
-                                //flat map convert dto
-                                ResponsePollingIdIniPec responsePollingIdIniPec = new ResponsePollingIdIniPec();
-                                String pollingId = responsePollingIdIniPec.getIdentificativoRichiesta();
-                                log.info("Called ini pec with batchId: {} and response pollingId: {}",batchId,pollingId);
-                                return iniPecBatchPollingRepository.createBatchPolling(iniPecConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId))
-                                        .doOnNext(batchPolling -> log.info("Created BatchPolling with batchId: {} and pollingId: {}",batchId,pollingId))
-                                        .doOnError(batchPollingSignal -> log.error("Failed to create BatchPolling with batchId: {} and pollingId: {}",batchId,pollingId));
+
+                                return iniPecClient.callEServiceRequestId(requestCfIniPec)
+                                        .flatMap(responsePollingIdIniPec -> {
+                                            String pollingId = responsePollingIdIniPec.getIdentificativoRichiesta();
+                                            log.info("Called ini pec with batchId: {} and response pollingId: {}",batchId,pollingId);
+                                            return iniPecBatchPollingRepository.createBatchPolling(iniPecConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId))
+                                                    .doOnNext(batchPolling -> log.info("Created BatchPolling with batchId: {} and pollingId: {}",batchId,pollingId))
+                                                    .doOnError(batchPollingSignal -> log.error("Failed to create BatchPolling with batchId: {} and pollingId: {}",batchId,pollingId));
+                                        });
                             })
                             .doOnNext(batchPolling -> log.info("Created {} BatchRequests with batchId: {}",batchRequestPage.items().size(),batchId))
                             .doOnError(batchPollingSignal -> log.error("Failed to create {} BatchRequests with batchId: {}",batchRequestPage.items().size(),batchId))
@@ -95,51 +98,51 @@ public class IniPecService {
     }
 
 
-    public Mono<List<CodeSqsDto>> secondoFlusso() {
+    public Mono<List<List<CodeSqsDto>>> secondoFlusso() {
         AtomicReference<Map<String, AttributeValue>> atomicLastKey = new AtomicReference<>(new HashMap<>());
         AtomicReference<Boolean> last = new AtomicReference<>(false);
         BooleanSupplier booleanSupplier = () -> !last.get();
 
         return iniPecBatchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWork(atomicLastKey.get()).flatMap(batchPollingWithoutReservationId -> {
-            if(batchPollingWithoutReservationId.lastEvaluatedKey() == null){
-                last.set(true);
-            }
-            else{
-                atomicLastKey.set(batchPollingWithoutReservationId.lastEvaluatedKey());
-            }
-            String reservationId = UUID.randomUUID().toString();
+                    if(batchPollingWithoutReservationId.lastEvaluatedKey() == null){
+                        last.set(true);
+                    }
+                    else{
+                        atomicLastKey.set(batchPollingWithoutReservationId.lastEvaluatedKey());
+                    }
+                    String reservationId = UUID.randomUUID().toString();
 
-            return iniPecBatchPollingRepository.setReservationIdToAndStatusWorkingBatchPolling(batchPollingWithoutReservationId.items(), reservationId)
-                    .filter(batchPollings -> batchPollings.size()!=0)
-                    .flatMap(batchPollingWithReservationId -> {
-                        BatchPolling batchPollingToCall = batchPollingWithReservationId.get(0);
-                        String pollingId = batchPollingToCall.getPollingId();
-                        //effettuo la chiamata per inipec e costruisco la risposta
-                        String cf = "";
-                        batchPollingToCall.setStatus(BatchStatus.WORKED.getValue());
+                    return iniPecBatchPollingRepository.setReservationIdToAndStatusWorkingBatchPolling(batchPollingWithoutReservationId.items(), reservationId)
+                            .filter(batchPollings -> batchPollings.size()!=0)
+                            .flatMap(batchPollingWithReservationId -> {
+                                BatchPolling batchPollingToCall = batchPollingWithReservationId.get(0);
+                                String pollingId = batchPollingToCall.getPollingId();
 
-                        return iniPecBatchPollingRepository.updateBatchPolling(batchPollingToCall).flatMap(batchPollingWorked -> {
-                            String batchId = batchPollingWorked.getBatchId();
-                            return iniPecBatchRequestRepository.getBatchRequestsByBatchIdAndSetStatus(batchId,BatchStatus.WORKED.getValue())
-                                    .filter(batchRequests -> batchRequests.size() != 0)
-                                    .map(batchRequests -> {
-                                ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
-                                responsePecIniPec.setIdentificativoRichiesta(batchPollingWorked.getPollingId());
-                                responsePecIniPec.setIdentificativoRichiesta(UUID.randomUUID().toString()); //DA LEVARE
-                                return iniPecConverter.convertoResponsePecToCodeSqsDto(responsePecIniPec, "OK", "OK!");
+                                return iniPecClient.callEServiceRequestPec(pollingId).flatMap(responsePecIniPec -> {
+                                    batchPollingToCall.setStatus(BatchStatus.WORKED.getValue());
+
+                                    return iniPecBatchPollingRepository.updateBatchPolling(batchPollingToCall).flatMap(batchPollingWorked -> {
+                                        String batchId = batchPollingWorked.getBatchId();
+
+                                        return iniPecBatchRequestRepository.getBatchRequestsByBatchIdAndSetStatus(batchId,BatchStatus.WORKED.getValue())
+                                                .filter(batchRequests -> batchRequests.size() != 0)
+                                                .map(batchRequests -> {
+                                                    responsePecIniPec.setIdentificativoRichiesta(batchPollingWorked.getPollingId());
+                                                    return iniPecConverter.convertoResponsePecToCodeSqsDto(batchRequests,responsePecIniPec);
+                                                });
+                                    });
+                                });
                             });
-                        });
-                    });
-        }).repeat(booleanSupplier).collectList().map(codeSqsDtos -> {
-            sqsRepository.push(codeSqsDtos);
-            return codeSqsDtos;
-        });
+                }).repeat(booleanSupplier)
+                .collectList()
+                .map(codeSqsDtos -> {
+                    sqsRepository.push(codeSqsDtos);
+                    return codeSqsDtos;
+                });
     }
 
     public Mono<List<BatchPolling>> recoveryPrimoFlusso(){
-        return iniPecBatchRequestRepository.resetBatchIdForRecovery().flatMap(batchRequests -> {
-            return primoFlusso();
-        });
+        return iniPecBatchRequestRepository.resetBatchIdForRecovery().flatMap(batchRequests -> primoFlusso());
     }
 
 }

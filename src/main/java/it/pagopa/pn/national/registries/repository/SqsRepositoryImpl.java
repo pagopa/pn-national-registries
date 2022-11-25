@@ -3,23 +3,17 @@ package it.pagopa.pn.national.registries.repository;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import it.pagopa.pn.api.dto.events.StandardEventHeader;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
-import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageBatchRequestEntry;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
+import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static it.pagopa.pn.api.dto.events.StandardEventHeader.*;
 
 
 @Slf4j
@@ -42,20 +36,23 @@ public class SqsRepositoryImpl implements SqsRepository {
                 .queueUrl();
     }
 
-    public void push(List<CodeSqsDto> msges) {
-        for (int i = 0; i < msges.size(); i += 10) {
-            List<CodeSqsDto> sub = msges.subList(i, Math.min(msges.size(),i+10));
-            sqsClient.sendMessageBatch(SendMessageBatchRequest.builder()
-                    .queueUrl(this.queueUrl)
-                    .entries(sub.stream()
-                            .map(msg -> SendMessageBatchRequestEntry.builder()
-                                    .messageBody(toJson(msg))
-                                    .id(msg.getCorrelationId())
-                                    .build()
-                            )
-                            .collect(Collectors.toList()))
-                    .build());
+    public void push(List<List<CodeSqsDto>> msges) {
+        for(List<CodeSqsDto> ms : msges){
+            for (int i = 0; i < ms.size(); i += 10) {
+                List<CodeSqsDto> sub = ms.subList(i, Math.min(ms.size(),i+10));
+                sqsClient.sendMessageBatch(SendMessageBatchRequest.builder()
+                        .queueUrl(this.queueUrl)
+                        .entries(sub.stream()
+                                .map(msg -> SendMessageBatchRequestEntry.builder()
+                                        .messageBody(toJson(msg))
+                                        .id(UUID.randomUUID().toString())
+                                        .build()
+                                )
+                                .collect(Collectors.toList()))
+                        .build());
+            }
         }
+
     }
 
     private String toJson(CodeSqsDto codeSqsDto) {

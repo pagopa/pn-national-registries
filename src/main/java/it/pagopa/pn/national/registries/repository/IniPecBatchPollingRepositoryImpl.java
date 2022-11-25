@@ -3,7 +3,6 @@ package it.pagopa.pn.national.registries.repository;
 import it.pagopa.pn.national.registries.constant.BatchRequestConstant;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -18,7 +17,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Slf4j
 @Component
 public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepository{
 

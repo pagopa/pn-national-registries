@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.client.inipec.IniPecClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.IniPecConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
@@ -7,6 +8,7 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
+import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepositoryImpl;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
 import it.pagopa.pn.national.registries.repository.SqsRepositoryImpl;
@@ -34,18 +36,14 @@ class IniPecServiceTest {
 
     @InjectMocks
     IniPecService iniPecService;
-
     @Mock
-    IniPecService iniPecService2;
+    IniPecClient iniPecClient;
     @Mock
     IniPecConverter iniPecConverter;
-
     @Mock
     IniPecBatchRequestRepositoryImpl iniPecBatchRequestRepository;
-
     @Mock
     IniPecBatchPollingRepositoryImpl iniPecBatchPollingRepository;
-
     @Mock
     SqsRepositoryImpl sqsRepository;
 
@@ -96,9 +94,15 @@ class IniPecServiceTest {
         batchPolling.setBatchId("batchId");
         batchPollings.add(batchPolling);
 
+        ResponsePollingIdIniPec responsePollingIdIniPec = new ResponsePollingIdIniPec();
+        responsePollingIdIniPec.setIdentificativoRichiesta("pollingId");
+        responsePollingIdIniPec.setDataOraRichiesta(LocalDateTime.now().toString());
+
         when(iniPecBatchRequestRepository.getBatchRequestByNotBatchIdPageable(atomicLastKey.get())).thenReturn(Mono.just(Page.create(batchRequests)));
 
         when(iniPecBatchRequestRepository.setNewBatchIdToBatchRequests(anyList(),anyString())).thenReturn(Mono.just(batchRequests));
+
+        when(iniPecClient.callEServiceRequestId(any())).thenReturn(Mono.just(responsePollingIdIniPec));
 
         when(iniPecConverter.createBatchPollingByBatchIdAndPollingId(anyString(),anyString())).thenReturn(batchPolling);
 
@@ -135,24 +139,29 @@ class IniPecServiceTest {
 
         when(iniPecBatchPollingRepository.setReservationIdToAndStatusWorkingBatchPolling(anyList(),anyString())).thenReturn(Mono.just(batchPollings));
 
+        ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
+        responsePecIniPec.setIdentificativoRichiesta(batchPolling.getPollingId());
+
+        when(iniPecClient.callEServiceRequestPec(anyString())).thenReturn(Mono.just(responsePecIniPec));
+
         when(iniPecBatchPollingRepository.updateBatchPolling(batchPolling)).thenReturn(Mono.just(batchPolling));
 
         when(iniPecBatchRequestRepository.getBatchRequestsByBatchIdAndSetStatus("batchId", BatchStatus.WORKED.getValue())).thenReturn(Mono.just(batchRequests));
 
-        ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
-        responsePecIniPec.setIdentificativoRichiesta(batchPolling.getPollingId());
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setStatus("ok");
         codeSqsDto.setCorrelationId("correlationId");
-
-        when(iniPecConverter.convertoResponsePecToCodeSqsDto(any(), anyString(), anyString())).thenReturn(codeSqsDto);
-
         ArrayList<CodeSqsDto> codeSqsDtos = new ArrayList<>();
         codeSqsDtos.add(codeSqsDto);
 
-        doNothing().when(sqsRepository).push(codeSqsDtos);
+        when(iniPecConverter.convertoResponsePecToCodeSqsDto(any(),any())).thenReturn(codeSqsDtos);
 
-        StepVerifier.create(iniPecService.secondoFlusso()).expectNext(codeSqsDtos).verifyComplete();
+        List<List<CodeSqsDto>> ms = new ArrayList<>();
+        ms.add(codeSqsDtos);
+
+        doNothing().when(sqsRepository).push(ms);
+
+        StepVerifier.create(iniPecService.secondoFlusso()).expectNext(ms).verifyComplete();
     }
 
     @Test

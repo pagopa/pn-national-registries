@@ -67,7 +67,8 @@ class IniPecBatchRequestRepositoryImplTest {
         when(dynamoDbAsyncTable.updateItem(updateItemEnhancedRequest)).thenReturn(CompletableFuture.completedFuture(batchRequests));
 
         StepVerifier.create(iniPecBatchPollingRepository.setNewBatchIdToBatchRequests(batchRequests,"status"))
-                .expectNextCount(0);
+                .expectError().verify();
+        //To check
     }
 
 

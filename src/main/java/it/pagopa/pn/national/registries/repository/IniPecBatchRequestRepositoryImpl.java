@@ -4,7 +4,6 @@ import it.pagopa.pn.national.registries.constant.BatchRequestConstant;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -15,7 +14,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import java.time.LocalDateTime;
 import java.util.*;
 
-@Slf4j
 @Component
 public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepository {
 
@@ -27,13 +25,12 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     @Override
     public Mono<BatchRequest> createBatchRequestByCf(GetDigitalAddressIniPECRequestBodyDto requestCf) {
         BatchRequest batchRequest = createNewStartBatchRequest();
+        batchRequest.setCorrelationId(requestCf.getCorrelationId());
         batchRequest.setCf(requestCf.getFilter().getTaxId());
         return createBatchRequest(batchRequest);
     }
     private BatchRequest createNewStartBatchRequest(){
         BatchRequest batchRequest = new BatchRequest();
-        //TO-DO correlation id lo genera dynamo
-        batchRequest.setCorrelationId(UUID.randomUUID().toString());
         batchRequest.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
         batchRequest.setStatus(BatchStatus.NOT_WORKED.getValue());
         batchRequest.setRetry(0);
@@ -43,15 +40,19 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         return batchRequest;
     }
     private Mono<BatchRequest> createBatchRequest(BatchRequest batchRequest){
-        return Mono.fromFuture(tableBatch.putItem(batchRequest)).thenReturn(batchRequest)
-                .doOnNext(br -> log.info("Created Batch Request for taxId: {}",batchRequest.getCf()))
-                .doOnError(throwable -> log.error("Failed to create Batch Request for taxId: {}",batchRequest.getCf()));
+        return Mono.fromFuture(tableBatch.putItem(batchRequest)).thenReturn(batchRequest);
     }
 
     @Override
     public Mono<Page<BatchRequest>> getBatchRequestByNotBatchIdPageable(Map<String, AttributeValue> lastKey){
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
+        Map<String, String> expressionNames = new HashMap<>();
+
+        expressionNames.put("#status","status");
+        expressionValues.put(":status",AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
 
         QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
+                .filterExpression(expressionBuilder("#status = :status",expressionValues,expressionNames))
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(BatchStatus.NO_BATCH_ID.getValue())))
                 .limit(100);
 
@@ -68,15 +69,10 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         return getBatchRequestByBatchId(batchId)
                 .flatMap(batchRequests -> setStatusToBatchRequests(batchRequests,status));
     }
-    private Mono<List<BatchRequest>> getBatchRequestByBatchId(String batchId){
-        Map<String, AttributeValue> expressionValues = new HashMap<>();
-        Map<String, String> expressionNames = new HashMap<>();
 
-        expressionNames.put("#status","status");
-        expressionValues.put(":status",AttributeValue.builder().s(BatchStatus.WORKING.getValue()).build());
+    private Mono<List<BatchRequest>> getBatchRequestByBatchId(String batchId){
 
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
-                .filterExpression(expressionBuilder("#status = :status",expressionValues,expressionNames))
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(batchId)))
                 .build();
 
@@ -102,9 +98,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
                     if (batchRequest.getRetry() > 3) {
                         batchRequest.setStatus(BatchStatus.ERROR.getValue());
                     }
-                    else{
-                        batchRequest.setBatchId(idBatch);
-                    }
+                    batchRequest.setBatchId(idBatch);
                     batchRequest.setLastReserved(LocalDateTime.now());
 
                     Map<String, AttributeValue> expressionValues = new HashMap<>();
@@ -128,7 +122,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
     @Override
     public Mono<List<BatchRequest>> resetBatchIdForRecovery(){
-        return getBatchRequestToRecovery().flatMap(batchRequests -> resetBatchIdToBatchRequests(batchRequests));
+        return getBatchRequestToRecovery().flatMap(this::resetBatchIdToBatchRequests);
     }
 
     private Mono<List<BatchRequest>> getBatchRequestToRecovery(){
@@ -139,7 +133,8 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         expressionNames.put("#lastReserved","lastReserved");
 
         expressionValues.put(":retry",AttributeValue.builder().n("3").build());
-        expressionValues.put(":lastReserved",AttributeValue.builder().s(LocalDateTime.now().minusHours(1).toString()).build());
+        //expressionValues.put(":lastReserved",AttributeValue.builder().s(LocalDateTime.now().minusHours(1).toString()).build());
+        expressionValues.put(":lastReserved",AttributeValue.builder().s(LocalDateTime.now().toString()).build());
 
         String expression = "#retry <= :retry AND :lastReserved > #lastReserved";
 

@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.DigitalAddressIniPecApi;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
@@ -45,6 +46,38 @@ public class IniPecController implements DigitalAddressIniPecApi {
     @Override
     public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto, final ServerWebExchange exchange) {
         return iniPecService.getDigitalAddress(getDigitalAddressIniPECRequestBodyDto)
+                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+    }
+
+
+    @PostMapping(
+            value = "/national-registries-private/inipec/primoFlusso",
+            produces = { "application/json" },
+            consumes = { "application/json" }
+    )
+    public Mono<ResponseEntity<List<BatchPolling>>> primoFlusso(){
+        return iniPecService.primoFlusso()
+                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+    }
+
+    @PostMapping(
+            value = "/national-registries-private/inipec/secondoFlusso",
+            produces = { "application/json" },
+            consumes = { "application/json" }
+    )
+    public Mono<ResponseEntity<List<List<CodeSqsDto>>>> secondoFlusso(){
+        return iniPecService.secondoFlusso()
+                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+    }
+
+
+    @PostMapping(
+            value = "/national-registries-private/inipec/recovery",
+            produces = { "application/json" },
+            consumes = { "application/json" }
+    )
+    public Mono<ResponseEntity<List<BatchPolling>>> recovery(){
+        return iniPecService.recoveryPrimoFlusso()
                 .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 
