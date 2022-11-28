@@ -12,5 +12,5 @@ public class CodeSqsDto {
     private String pecImpresa;
     private List<String> pecProfessionista;
     private String status;
-    private String descrption;
+    private String description;
 }

@@ -1,13 +1,12 @@
 package it.pagopa.pn.national.registries.config;
 
-import it.pagopa.pn.national.registries.log.AwsClientLoggerInterceptor;
+import com.amazonaws.client.builder.AwsClientBuilder;
+import com.amazonaws.services.sqs.AmazonSQS;
+import com.amazonaws.services.sqs.AmazonSQSClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
-import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.sqs.SqsClient;
 
 @Configuration
 public class SqsConfiguration {
@@ -19,14 +18,11 @@ public class SqsConfiguration {
     }
 
     @Bean
-    public SqsClient sqsClient() {
-        SqsClient sqsClient = SqsClient.builder()
-                .region(Region.of(awsRegion))
-                .credentialsProvider(EnvironmentVariableCredentialsProvider.create())
-                .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        .addExecutionInterceptor(new AwsClientLoggerInterceptor())
-                        .build())
+    public AmazonSQS sqsClient() {
+        return AmazonSQSClient.builder()
+                .withEndpointConfiguration(new AwsClientBuilder
+                        .EndpointConfiguration("https://sqs.eu-south-1.amazonaws.com/558518206506/pn-inipec",awsRegion))
+                .withRegion(String.valueOf(Region.of(awsRegion)))
                 .build();
-        return sqsClient;
     }
 }

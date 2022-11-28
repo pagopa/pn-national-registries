@@ -19,8 +19,8 @@ import reactor.util.retry.Retry;
 
 import java.util.List;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
 
 @Component
 @Slf4j

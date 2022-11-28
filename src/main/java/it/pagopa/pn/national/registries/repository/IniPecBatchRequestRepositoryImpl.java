@@ -3,16 +3,20 @@ package it.pagopa.pn.national.registries.repository;
 import it.pagopa.pn.national.registries.constant.BatchRequestConstant;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.*;
-import software.amazon.awssdk.enhanced.dynamodb.model.*;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepository {
@@ -22,24 +26,9 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     public IniPecBatchRequestRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient){
         this.tableBatch = dynamoDbEnhancedAsyncClient.table("pn-batchRequests", TableSchema.fromClass(BatchRequest.class));
     }
-    @Override
-    public Mono<BatchRequest> createBatchRequestByCf(GetDigitalAddressIniPECRequestBodyDto requestCf) {
-        BatchRequest batchRequest = createNewStartBatchRequest();
-        batchRequest.setCorrelationId(requestCf.getCorrelationId());
-        batchRequest.setCf(requestCf.getFilter().getTaxId());
-        return createBatchRequest(batchRequest);
-    }
-    private BatchRequest createNewStartBatchRequest(){
-        BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
-        batchRequest.setStatus(BatchStatus.NOT_WORKED.getValue());
-        batchRequest.setRetry(0);
 
-        batchRequest.setLastReserved(LocalDateTime.now());
-        batchRequest.setTimeStamp(LocalDateTime.now());
-        return batchRequest;
-    }
-    private Mono<BatchRequest> createBatchRequest(BatchRequest batchRequest){
+    @Override
+    public Mono<BatchRequest> createBatchRequest(BatchRequest batchRequest){
         return Mono.fromFuture(tableBatch.putItem(batchRequest)).thenReturn(batchRequest);
     }
 
@@ -65,28 +54,22 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     }
 
     @Override
-    public Mono<List<BatchRequest>> getBatchRequestsByBatchIdAndSetStatus(String batchId, String status){
-        return getBatchRequestByBatchId(batchId)
-                .flatMap(batchRequests -> setStatusToBatchRequests(batchRequests,status));
+    public Mono<List<BatchRequest>> getBatchRequestsToSend(String batchId) {
+        return getBatchRequestByBatchId(batchId);
+    }
+
+    @Override
+    public Mono<BatchRequest> setBatchRequestsStatus(BatchRequest batchRequest, String status){
+        batchRequest.setStatus(status);
+        return Mono.fromFuture(tableBatch.updateItem(batchRequest));
     }
 
     private Mono<List<BatchRequest>> getBatchRequestByBatchId(String batchId){
-
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(batchId)))
                 .build();
 
         return Mono.from(tableBatch.index(BatchRequestConstant.GSI_BL).query(queryEnhancedRequest)).map(Page::items);
-    }
-
-    @Override
-    public Mono<List<BatchRequest>> setStatusToBatchRequests(List<BatchRequest> batchRequests, String status) {
-        return Flux.fromIterable(batchRequests)
-                .flatMap(batchRequest -> {
-                    batchRequest.setStatus(status);
-                    return Mono.fromFuture(tableBatch.updateItem(batchRequest));
-                })
-                .collectList();
     }
 
     @Override
@@ -133,8 +116,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         expressionNames.put("#lastReserved","lastReserved");
 
         expressionValues.put(":retry",AttributeValue.builder().n("3").build());
-        //expressionValues.put(":lastReserved",AttributeValue.builder().s(LocalDateTime.now().minusHours(1).toString()).build());
-        expressionValues.put(":lastReserved",AttributeValue.builder().s(LocalDateTime.now().toString()).build());
+        expressionValues.put(":lastReserved",AttributeValue.builder().s(LocalDateTime.now().minusHours(1).toString()).build());
 
         String expression = "#retry <= :retry AND :lastReserved > #lastReserved";
 

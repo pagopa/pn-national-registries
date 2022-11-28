@@ -18,7 +18,8 @@ import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_CLIENTASSERTION;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_CLIENTASSERTION;
 
 @Slf4j
 @Component
