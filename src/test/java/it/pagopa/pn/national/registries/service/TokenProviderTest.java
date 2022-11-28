@@ -1,5 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.client.inipec.IniPecClient;
+import it.pagopa.pn.national.registries.client.inipec.IniPecJwsGenerator;
 import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.SecretValue;
@@ -24,6 +26,12 @@ class TokenProviderTest {
     @Mock
     PdndClient pdndClient;
 
+    @Mock
+    IniPecClient iniPecClient;
+
+    @Mock
+    IniPecJwsGenerator iniPecJwsGenerator;
+
     @Test
     @DisplayName("Should throw an exception when the client id and secret are invalid")
     void getTokenWhenClientIdAndSecretAreInvalidThenThrowException() {
@@ -36,8 +44,8 @@ class TokenProviderTest {
 
         TokenProvider tokenProvider =
                 new TokenProvider(
-                        assertionGenerator, pdndClient, "clientAssertionType", "grantType");
-        Mono<ClientCredentialsResponseDto> token = tokenProvider.getToken(secretValue);
+                        assertionGenerator, iniPecJwsGenerator, pdndClient,iniPecClient, "clientAssertionType", "grantType");
+        Mono<ClientCredentialsResponseDto> token = tokenProvider.getTokenPdnd(secretValue);
 
         StepVerifier.create(token).verifyComplete();
     }
@@ -61,9 +69,9 @@ class TokenProviderTest {
 
         TokenProvider tokenProvider =
                 new TokenProvider(
-                        assertionGenerator, pdndClient, "clientAssertionType", "grantType");
+                        assertionGenerator, iniPecJwsGenerator, pdndClient, iniPecClient, "clientAssertionType", "grantType");
 
-        Mono<ClientCredentialsResponseDto> tokenMono = tokenProvider.getToken(secretValue);
+        Mono<ClientCredentialsResponseDto> tokenMono = tokenProvider.getTokenPdnd(secretValue);
 
         StepVerifier.create(tokenMono)
                 .expectNextMatches(
@@ -75,7 +83,9 @@ class TokenProviderTest {
     @Test
     void getToken() {
         TokenProvider tokenProvider = new TokenProvider(assertionGenerator,
+                iniPecJwsGenerator,
                 pdndClient,
+                iniPecClient,
                 "client_credentials",
                 "basePath");
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
@@ -83,20 +93,22 @@ class TokenProviderTest {
         when(assertionGenerator.generateClientAssertion(any())).thenReturn("clientAssertion");
         when(pdndClient.createToken("clientAssertion", "client_credentials",
                 "basePath", null)).thenReturn(Mono.just(clientCredentialsResponseDto));
-        StepVerifier.create(tokenProvider.getToken(new SecretValue())).expectNext(clientCredentialsResponseDto).verifyComplete();
+        StepVerifier.create(tokenProvider.getTokenPdnd(new SecretValue())).expectNext(clientCredentialsResponseDto).verifyComplete();
     }
 
     @Test
     void getTokenSecretEmpty() {
         TokenProvider tokenProvider = new TokenProvider(assertionGenerator,
+                iniPecJwsGenerator,
                 pdndClient,
+                iniPecClient,
                 "test",
                 "client_credentials");
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
         clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
         when(pdndClient.createToken(null,"test","client_credentials",null))
                 .thenReturn(Mono.just(clientCredentialsResponseDto));
-        StepVerifier.create(tokenProvider.getToken(new SecretValue())).expectNext(clientCredentialsResponseDto)
+        StepVerifier.create(tokenProvider.getTokenPdnd(new SecretValue())).expectNext(clientCredentialsResponseDto)
                 .verifyComplete();
     }
 }

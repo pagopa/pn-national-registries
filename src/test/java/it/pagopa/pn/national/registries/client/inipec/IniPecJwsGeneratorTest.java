@@ -16,17 +16,17 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.security.spec.InvalidKeySpecException;
 
-@ContextConfiguration(classes = {AuthRest.class, String.class})
+@ContextConfiguration(classes = {IniPecJwsGenerator.class, String.class})
 @ExtendWith(SpringExtension.class)
-class AuthRestTest {
+class IniPecJwsGeneratorTest {
     @Autowired
-    private AuthRest authRest;
+    private IniPecJwsGenerator authRest;
     @MockBean
     private IniPecSecretConfig iniPecSecretConfig;
 
     @Test
     void testCreateAuthRest() {
-        AuthRest authRest = new AuthRest("aud", iniPecSecretConfig);
+        IniPecJwsGenerator authRest = new IniPecJwsGenerator("aud", "clientID", iniPecSecretConfig);
 
         SecretValue secretValue = new SecretValue();
         secretValue.setClientId("test");
@@ -40,12 +40,12 @@ class AuthRestTest {
         sslData.setPub("TestPub");
         sslData.setTrust("TestTrust");
         Mockito.when(iniPecSecretConfig.getIniPecAuthRestSecret()).thenReturn(sslData);
-        Assertions.assertThrows(PnInternalException.class,()->authRest.createAuthRest());
+        Assertions.assertThrows(PnInternalException.class, authRest::createAuthRest);
     }
 
     @Test
     void testgetPrivateKey() {
-        AuthRest authRest = new AuthRest("secret1",iniPecSecretConfig);
+        IniPecJwsGenerator authRest = new IniPecJwsGenerator("secret1","",iniPecSecretConfig);
         Assertions.assertThrows(InvalidKeySpecException.class,()->authRest.getPrivateKey("dGVzdA=="));
     }
 }

@@ -28,22 +28,24 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesEx
 
 @Component
 @Slf4j
-public class AuthRest {
+public class IniPecJwsGenerator {
 
     private final String aud;
     private final IniPecSecretConfig iniPecSecretConfig;
+    private final String clientId;
 
-    public AuthRest(@Value("${pn.national.registries.pdnd.inipec.base-path}") String aud,
-                    IniPecSecretConfig iniPecSecretConfig) {
+    public IniPecJwsGenerator(@Value("${pn.national.registries.pdnd.inipec.base-path}") String aud,
+                              @Value("${pn.national.registries.pdnd.inipec.client-id}") String clientId,
+                              IniPecSecretConfig iniPecSecretConfig) {
         this.aud = aud;
         this.iniPecSecretConfig = iniPecSecretConfig;
+        this.clientId = clientId;
     }
 
     public String createAuthRest() {
         try {
             log.info("start to createAuthRest");
             SSLData sslData = iniPecSecretConfig.getIniPecAuthRestSecret();
-
             return JWT.create().withHeader(createHeaderMap(sslData)).withPayload(createClaimMap())
                     .sign(Algorithm.RSA256(getPublicKey(sslData.getPub()), getPrivateKey(sslData.getKey())));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
@@ -66,11 +68,9 @@ public class AuthRest {
         long expireSeconds = nowSeconds + 5000L;
 
         map.put(RegisteredClaims.AUDIENCE, aud);
-        map.put(RegisteredClaims.ISSUED_AT, nowSeconds);
-        map.put(RegisteredClaims.NOT_BEFORE, nowSeconds);
         map.put(RegisteredClaims.EXPIRES_AT, expireSeconds);
-        map.put(RegisteredClaims.ISSUER, "url");
-        map.put(RegisteredClaims.SUBJECT, "url");
+        map.put(RegisteredClaims.ISSUER, clientId);
+        map.put(RegisteredClaims.SUBJECT, clientId);
         map.put(RegisteredClaims.JWT_ID, UUID.randomUUID().toString());
 
         log.debug("ClaimMap audience: {}",map.get(RegisteredClaims.AUDIENCE));

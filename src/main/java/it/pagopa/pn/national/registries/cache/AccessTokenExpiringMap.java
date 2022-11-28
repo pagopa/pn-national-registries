@@ -46,7 +46,7 @@ public class AccessTokenExpiringMap {
 
     private Mono<AccessTokenCacheEntry> requireNewAccessToken(String purposeId, SecretValue secretValue) {
         log.info("New Access Token Required with PurposeId: " + purposeId);
-        return tokenProvider.getToken(secretValue)
+        return tokenProvider.getTokenPdnd(secretValue)
                 .map(clientCredentialsResponseDto -> {
                     AccessTokenCacheEntry tok = new AccessTokenCacheEntry(purposeId);
                     tok.setClientCredentials(clientCredentialsResponseDto);
