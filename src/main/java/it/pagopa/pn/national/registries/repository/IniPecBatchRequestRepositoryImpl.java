@@ -58,18 +58,18 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         return getBatchRequestByBatchId(batchId);
     }
 
-    @Override
-    public Mono<BatchRequest> setBatchRequestsStatus(BatchRequest batchRequest, String status){
-        batchRequest.setStatus(status);
-        return Mono.fromFuture(tableBatch.updateItem(batchRequest));
-    }
-
     private Mono<List<BatchRequest>> getBatchRequestByBatchId(String batchId){
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(batchId)))
                 .build();
 
         return Mono.from(tableBatch.index(BatchRequestConstant.GSI_BL).query(queryEnhancedRequest)).map(Page::items);
+    }
+
+    @Override
+    public Mono<BatchRequest> setBatchRequestsStatus(BatchRequest batchRequest, String status){
+        batchRequest.setStatus(status);
+        return Mono.fromFuture(tableBatch.updateItem(batchRequest));
     }
 
     @Override

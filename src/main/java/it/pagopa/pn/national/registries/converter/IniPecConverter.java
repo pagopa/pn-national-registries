@@ -2,17 +2,21 @@ package it.pagopa.pn.national.registries.converter;
 
 import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Component
 public class IniPecConverter {
@@ -41,15 +45,12 @@ public class IniPecConverter {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         if(opt.isPresent()) {
             codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
-            codeSqsDto.setStatus("OK");
-            codeSqsDto.setCf(opt.get().getCf());
-            codeSqsDto.setPecImpresa(opt.get().getPecImpresa());
-            codeSqsDto.setPecProfessionista(opt.get().getPecProfessionistas());
-        }else {
-            if (batchRequest.getRetry() > 3) {
-                codeSqsDto.setStatus("KO");
-                codeSqsDto.setDescription("Superato il numero massimo di tentativi");
-            }
+            codeSqsDto.setTaxId(batchRequest.getCf());
+            codeSqsDto.setPrimaryDigitalAddress(new DigitalAddress(DigitalAddressType.PEC.getValue(),opt.get().getPecImpresa()));
+            ArrayList<DigitalAddress> secondaryDigitalAddresses = opt.get().getPecProfessionistas().stream().map(s -> new DigitalAddress(DigitalAddressType.PEC.getValue(),s)).collect(Collectors.toCollection(ArrayList::new));
+            codeSqsDto.setSecondaryDigitalAddresses(secondaryDigitalAddresses);
+            codeSqsDto.setPrimaryPhysicalAddress(null);
+            codeSqsDto.setSecondaryPhysicalAddresses(null);
         }
         return codeSqsDto;
     }

@@ -208,6 +208,8 @@ components:
             taxId:
               type: string
               example: AAAZZZ00H00T000Z
+            correlationId:
+              type: string
     CheckTaxIdOK:
       type: object
       properties:
@@ -401,14 +403,14 @@ components:
     GetDigitalAddressIniPECRequestBody:
       type: object
       properties:
-        correlationId:
-          type: string
         filter:
           type: object
           properties:
             taxId:
               type: string
               example: AAAZZZ00H00T000Z
+            correlationId:
+              type: string
     GetDigitalAddressIniPECOK:
       type: object
       properties:

@@ -2,15 +2,15 @@ package it.pagopa.pn.national.registries.model.inipec;
 
 import lombok.Data;
 
-import java.util.List;
+import java.util.ArrayList;
 
 @Data
 public class CodeSqsDto {
 
     private String correlationId;
-    private String cf;
-    private String pecImpresa;
-    private List<String> pecProfessionista;
-    private String status;
-    private String description;
+    private String taxId;
+    private DigitalAddress primaryDigitalAddress;
+    private PhysicalAddress primaryPhysicalAddress;
+    private ArrayList<DigitalAddress> secondaryDigitalAddresses;
+    private ArrayList<PhysicalAddress> secondaryPhysicalAddresses;
 }
