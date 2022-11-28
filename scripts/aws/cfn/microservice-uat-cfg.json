@@ -8,12 +8,14 @@
     "INADBaseURL": "",
     "INADPurposeId": "",
     "INIPECBaseURL": "",
-    "INIPECPurposeId": "",
-    "ANPRSSLSecretName": "",
-    "PDNDANPRClientAssertionSecretName": "",
-    "PDNDANPRIntegritySecretName": "",
-    "PDNDCheckCfClientAssertionSecretName": "",
-    "PDNDInadClientAssertionSecretName": "",
-    "ANPRTipoInvio": "TEST"
+    "INIPECClientId": "",
+    "INIPECQueueName": "",
+    "ANPRSSLSecret": "",
+    "PDNDANPRSecret": "",
+    "PDNDANPRIntegritySecret": "",
+    "PDNDCheckCfSecret": "",
+    "PDNDInadSecret": "a",
+    "INIPECAuthSecret": "",
+    "ANPRTipoInvio": ""
   }
 }

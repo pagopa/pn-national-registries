@@ -20,8 +20,6 @@ public class SqsConfiguration {
     @Bean
     public AmazonSQS sqsClient() {
         return AmazonSQSClient.builder()
-                .withEndpointConfiguration(new AwsClientBuilder
-                        .EndpointConfiguration("https://sqs.eu-south-1.amazonaws.com/558518206506/pn-inipec",awsRegion))
                 .withRegion(String.valueOf(Region.of(awsRegion)))
                 .build();
     }

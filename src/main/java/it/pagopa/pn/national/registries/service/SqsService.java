@@ -7,12 +7,16 @@ import com.amazonaws.services.sqs.model.SendMessageResult;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
-
 import java.util.Map;
+
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_INI_PEC;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_INI_PEC;
 
 
 @Slf4j
@@ -21,15 +25,17 @@ public class SqsService {
 
     private final AmazonSQS amazonSQS;
     private final ObjectMapper mapper;
+    private final String queueUrl;
 
-    public SqsService(AmazonSQS amazonSQS, ObjectMapper mapper) {
+    public SqsService(@Value("${}")String queueUrl, AmazonSQS amazonSQS, ObjectMapper mapper) {
         this.amazonSQS = amazonSQS;
         this.mapper = mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        this.queueUrl = queueUrl;
     }
 
     public Mono<SendMessageResult> push(CodeSqsDto msges) {
         SendMessageRequest sendMessageRequest = new SendMessageRequest();
-        sendMessageRequest.setQueueUrl("pn-inipec");
+        sendMessageRequest.setQueueUrl(amazonSQS.getQueueUrl(queueUrl).getQueueUrl());
         MessageAttributeValue messageAttributeValue = new MessageAttributeValue();
         messageAttributeValue.setStringValue(msges.getCorrelationId());
         sendMessageRequest.setMessageAttributes(Map.of("correlationId",messageAttributeValue));
@@ -40,10 +46,8 @@ public class SqsService {
     private String toJson(CodeSqsDto codeSqsDto) {
         try {
             return mapper.writeValueAsString(codeSqsDto);
-        } catch (JsonProcessingException exc) {
-            //throw new PnNationalRegistriesException();
+        } catch (JsonProcessingException e) {
+            throw new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, e);
         }
-        return null;
     }
-
 }
