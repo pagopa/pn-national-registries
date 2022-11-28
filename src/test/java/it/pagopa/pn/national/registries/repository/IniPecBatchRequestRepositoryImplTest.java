@@ -2,8 +2,6 @@ package it.pagopa.pn.national.registries.repository;
 
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -39,6 +37,62 @@ class IniPecBatchRequestRepositoryImplTest {
     private DynamoDbAsyncTable<Object> dynamoDbAsyncTable;
 
     @Test
+    void testCreateBatchRequest(){
+        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
+        IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
+
+        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
+        completableFuture.completeAsync(() -> null);
+        BatchRequest batchRequest = new BatchRequest();
+        when(dynamoDbAsyncTable.putItem(batchRequest)).thenReturn(completableFuture);
+
+        StepVerifier.create(iniPecBatchPollingRepository.createBatchRequest(batchRequest))
+                .expectNext(batchRequest).verifyComplete();
+    }
+
+    @Test
+    void testGetBatchRequestByNotBatchIdPageable(){
+        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
+        IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
+
+        Map<String, AttributeValue> lastKey = new HashMap<>();
+        lastKey.put("chiave", AttributeValue.builder().s("valore").build());
+
+        SdkPublisher<Page<Object>> sdkPublisher = mock(SdkPublisher.class);
+        DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
+        when(dynamoDbAsyncTable.index(any())).thenReturn(index);
+        when(index.query((QueryEnhancedRequest) any())).thenReturn(sdkPublisher);
+        StepVerifier.create(iniPecBatchPollingRepository.getBatchRequestByNotBatchIdPageable(lastKey))
+                .expectNextCount(0);
+    }
+
+    @Test
+    void testGetBatchRequestsToSend(){
+        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
+        IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
+
+        SdkPublisher<Page<Object>> sdkPublisher = mock(SdkPublisher.class);
+        DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
+        when(dynamoDbAsyncTable.index(any())).thenReturn(index);
+        when(index.query((QueryEnhancedRequest) any())).thenReturn(sdkPublisher);
+
+        StepVerifier.create(iniPecBatchPollingRepository.getBatchRequestsToSend("batchId"))
+                .expectNextCount(0);
+    }
+
+    @Test
+    void testSetBatchRequestsStatus(){
+        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
+        IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
+
+        BatchRequest batchRequest = new BatchRequest();
+        when(dynamoDbAsyncTable.updateItem((BatchRequest) any())).thenReturn(CompletableFuture.completedFuture(batchRequest));
+
+        StepVerifier.create(iniPecBatchPollingRepository.setBatchRequestsStatus(batchRequest,"status"))
+                .expectNext(batchRequest).verifyComplete();
+    }
+
+    @Test
     void testSetNewBatchIdToBatchRequests(){
         when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
         IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
@@ -52,7 +106,7 @@ class IniPecBatchRequestRepositoryImplTest {
         batchRequest.setCf("taxId");
         batchRequest.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
         batchRequest.setStatus(BatchStatus.NOT_WORKED.getValue());
-        batchRequest.setRetry(0);
+        batchRequest.setRetry(4);
         batchRequest.setLastReserved(LocalDateTime.now());
         batchRequest.setTimeStamp(LocalDateTime.now());
         List<BatchRequest> batchRequests = new ArrayList<>();
@@ -68,120 +122,30 @@ class IniPecBatchRequestRepositoryImplTest {
 
         StepVerifier.create(iniPecBatchPollingRepository.setNewBatchIdToBatchRequests(batchRequests,"status"))
                 .expectError().verify();
-        //To check
     }
-
-
-   /* @Test
-    void testCreateBatchRequestByCf(){
-        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
-
-        GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
-        filter.setTaxId("DDDFGF52F52H501S");
-        requestBodyDto.setFilter(filter);
-
-        BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setCf("DDDFGF52F52H501S");
-
-        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-        completableFuture.completeAsync(() -> null);
-        when(dynamoDbAsyncTable.putItem((BatchRequest) any())).thenReturn(completableFuture);
-
-        StepVerifier.create(iniPecBatchPollingRepository.createBatchRequestByCf(requestBodyDto))
-                .expectNextCount(0);
-    }*/
-
-    @Test
-    void testGetBatchRequestByNotBatchIdPageable(){
-        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
-
-        Map<String, AttributeValue> lastKey = new HashMap<>();
-        lastKey.put("chiave", AttributeValue.builder().s("valore").build());
-
-        SdkPublisher<Page<Object>> sdkPublisher = mock(SdkPublisher.class);
-        DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
-        when(index.query((QueryEnhancedRequest) any())).thenReturn(sdkPublisher);
-        when(dynamoDbAsyncTable.index(any())).thenReturn(index);
-        StepVerifier.create(iniPecBatchPollingRepository.getBatchRequestByNotBatchIdPageable(lastKey))
-                .expectNextCount(0);
-    }
-
-    /*
-    @Test
-    void testGetBatchRequestsByBatchIdAndSetStatus(){
-        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
-
-        BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setCf("taxId");
-        batchRequest.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
-        batchRequest.setStatus(BatchStatus.NOT_WORKED.getValue());
-        batchRequest.setRetry(0);
-        batchRequest.setLastReserved(LocalDateTime.now());
-        batchRequest.setTimeStamp(LocalDateTime.now());
-
-        SdkPublisher<Page<Object>> sdkPublisher = mock(SdkPublisher.class);
-        DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
-
-        when(index.query((QueryEnhancedRequest) any())).thenReturn(sdkPublisher);
-        when(dynamoDbAsyncTable.index(any())).thenReturn(index);
-
-        CompletableFuture<Void> completableFuture = new CompletableFuture<>();
-        completableFuture.completeAsync(() -> null);
-        when(dynamoDbAsyncTable.updateItem((BatchRequest) any())).thenReturn(CompletableFuture.completedFuture(batchRequest));
-
-        StepVerifier.create(iniPecBatchPollingRepository.getBatchRequestsByBatchIdAndSetStatus("batchId","status"))
-                .expectNextCount(0);
-    }*/
 
     @Test
     void testResetBatchIdForRecovery(){
-        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
-
-        DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
-
-        when(dynamoDbAsyncTable.index(any())).thenReturn(index);
-
-        SdkPublisher<Page<Object>> sdkPublisher = mock(SdkPublisher.class);
-
-        when(index.query((QueryEnhancedRequest) any())).thenReturn(sdkPublisher);
-
-        CompletableFuture<Object> completableFuture = new CompletableFuture<>();
-        completableFuture.completeAsync(BatchRequest::new);
-        when(dynamoDbAsyncTable.updateItem((BatchRequest) any())).thenReturn(completableFuture);
-
-        StepVerifier.create(iniPecBatchPollingRepository.resetBatchIdForRecovery());
-    }
-
-    /*
-    @Test
-    void testSetStatusToBatchRequests(){
-        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
-
-        CompletableFuture<Object> completableFuture = new CompletableFuture<>();
-        completableFuture.completeAsync(BatchRequest::new);
-        when(dynamoDbAsyncTable.updateItem((BatchRequest) any())).thenReturn(completableFuture);
-
+        ArrayList<BatchRequest> batchRequests = new ArrayList<>();
         BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setCf("taxId");
-        batchRequest.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
-        batchRequest.setStatus(BatchStatus.NOT_WORKED.getValue());
-        batchRequest.setRetry(0);
-        batchRequest.setLastReserved(LocalDateTime.now());
-        batchRequest.setTimeStamp(LocalDateTime.now());
-        List<BatchRequest> batchRequests = new ArrayList<>();
         batchRequests.add(batchRequest);
 
-        StepVerifier.create(iniPecBatchPollingRepository.setStatusToBatchRequests(batchRequests,BatchStatus.NOT_WORKED.getValue()))
-                .expectNextCount(1).verifyComplete();
+        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
+        IniPecBatchRequestRepositoryImpl iniPecBatchPollingRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient);
+
+        SdkPublisher<Page<Object>> sdkPublisher = mock(SdkPublisher.class);
+        DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
+        when(index.query((QueryEnhancedRequest) any())).thenReturn(sdkPublisher);
+        when(dynamoDbAsyncTable.index(any())).thenReturn(index);
+
+        when(dynamoDbAsyncTable.updateItem((BatchRequest) any())).thenReturn(CompletableFuture.completedFuture(batchRequest));
+
+        StepVerifier.create(iniPecBatchPollingRepository.resetBatchIdForRecovery())
+                .expectNext(batchRequests);
 
     }
-*/
+
+
     @Test
     void testResetBatchIdToBatchRequests(){
         when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
@@ -205,5 +169,4 @@ class IniPecBatchRequestRepositoryImplTest {
                 .expectNextCount(1).verifyComplete();
 
     }
-
 }
