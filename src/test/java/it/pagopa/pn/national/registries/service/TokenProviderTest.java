@@ -26,12 +26,6 @@ class TokenProviderTest {
     @Mock
     PdndClient pdndClient;
 
-    @Mock
-    IniPecClient iniPecClient;
-
-    @Mock
-    IniPecJwsGenerator iniPecJwsGenerator;
-
     @Test
     @DisplayName("Should throw an exception when the client id and secret are invalid")
     void getTokenWhenClientIdAndSecretAreInvalidThenThrowException() {
@@ -44,7 +38,7 @@ class TokenProviderTest {
 
         TokenProvider tokenProvider =
                 new TokenProvider(
-                        assertionGenerator, iniPecJwsGenerator, pdndClient,iniPecClient, "clientAssertionType", "grantType");
+                        assertionGenerator,pdndClient,"clientAssertionType", "grantType");
         Mono<ClientCredentialsResponseDto> token = tokenProvider.getTokenPdnd(secretValue);
 
         StepVerifier.create(token).verifyComplete();
@@ -69,7 +63,7 @@ class TokenProviderTest {
 
         TokenProvider tokenProvider =
                 new TokenProvider(
-                        assertionGenerator, iniPecJwsGenerator, pdndClient, iniPecClient, "clientAssertionType", "grantType");
+                        assertionGenerator, pdndClient, "clientAssertionType", "grantType");
 
         Mono<ClientCredentialsResponseDto> tokenMono = tokenProvider.getTokenPdnd(secretValue);
 
@@ -83,9 +77,7 @@ class TokenProviderTest {
     @Test
     void getToken() {
         TokenProvider tokenProvider = new TokenProvider(assertionGenerator,
-                iniPecJwsGenerator,
                 pdndClient,
-                iniPecClient,
                 "client_credentials",
                 "basePath");
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
@@ -99,9 +91,7 @@ class TokenProviderTest {
     @Test
     void getTokenSecretEmpty() {
         TokenProvider tokenProvider = new TokenProvider(assertionGenerator,
-                iniPecJwsGenerator,
                 pdndClient,
-                iniPecClient,
                 "test",
                 "client_credentials");
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();

@@ -27,16 +27,16 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesEx
 public class IniPecClient {
 
     private final WebClient webClient;
-    private final TokenProvider tokenProvider;
+    private final IniPecJwsGenerator iniPecJwsGenerator;
 
-
-    protected IniPecClient(TokenProvider tokenProvider,
-                           IniPecWebClient iniPecWebClient) {
-        this.tokenProvider = tokenProvider;
+    protected IniPecClient(IniPecWebClient iniPecWebClient,
+                           IniPecJwsGenerator iniPecJwsGenerator) {
         webClient = iniPecWebClient.init();
+        this.iniPecJwsGenerator = iniPecJwsGenerator;
     }
 
-    public Mono<ClientCredentialsResponseDto> getToken(String jws){
+    public Mono<ClientCredentialsResponseDto> getToken(){
+        String jws = iniPecJwsGenerator.createAuthRest();
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/token")
@@ -61,7 +61,7 @@ public class IniPecClient {
     }
 
     public Mono<ResponsePollingIdIniPec> callEServiceRequestId(RequestCfIniPec request) {
-        return tokenProvider.getTokenIniPec().flatMap(accessTokenCacheEntry ->
+        return getToken().flatMap(accessTokenCacheEntry ->
                 webClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/richiestaElencoPec")
@@ -88,7 +88,7 @@ public class IniPecClient {
     }
 
     public Mono<ResponsePecIniPec> callEServiceRequestPec(String correlationId) {
-        return tokenProvider.getTokenIniPec().flatMap(accessTokenCacheEntry ->
+        return getToken().flatMap(accessTokenCacheEntry ->
             webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/getElencoPec/{identificativoRichiesta}")
