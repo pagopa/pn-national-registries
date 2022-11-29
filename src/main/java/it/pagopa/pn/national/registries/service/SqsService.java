@@ -27,7 +27,7 @@ public class SqsService {
     private final ObjectMapper mapper;
     private final String queueUrl;
 
-    public SqsService(@Value("${}")String queueUrl, AmazonSQS amazonSQS, ObjectMapper mapper) {
+    public SqsService(@Value("${pn.national.registries.sqs.queue.name}")String queueUrl, AmazonSQS amazonSQS, ObjectMapper mapper) {
         this.amazonSQS = amazonSQS;
         this.mapper = mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.queueUrl = queueUrl;

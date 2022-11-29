@@ -2,9 +2,7 @@ package it.pagopa.pn.national.registries.client.inipec;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.config.inipec.IniPecSecretConfig;
-import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
-import it.pagopa.pn.national.registries.model.SecretValue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,6 +17,7 @@ import java.security.spec.InvalidKeySpecException;
 @ContextConfiguration(classes = {IniPecJwsGenerator.class, String.class})
 @ExtendWith(SpringExtension.class)
 class IniPecJwsGeneratorTest {
+
     @Autowired
     private IniPecJwsGenerator authRest;
     @MockBean
@@ -27,12 +26,6 @@ class IniPecJwsGeneratorTest {
     @Test
     void testCreateAuthRest() {
         IniPecJwsGenerator authRest = new IniPecJwsGenerator("aud", "clientID", iniPecSecretConfig);
-
-        SecretValue secretValue = new SecretValue();
-        secretValue.setClientId("test");
-        secretValue.setKeyId("test");
-        secretValue.setJwtConfig(new JwtConfig());
-        Mockito.when(iniPecSecretConfig.getIniPecSecretValue()).thenReturn(secretValue);
 
         SSLData sslData = new SSLData();
         sslData.setCert("TestCert");
@@ -49,4 +42,3 @@ class IniPecJwsGeneratorTest {
         Assertions.assertThrows(InvalidKeySpecException.class,()->authRest.getPrivateKey("dGVzdA=="));
     }
 }
-

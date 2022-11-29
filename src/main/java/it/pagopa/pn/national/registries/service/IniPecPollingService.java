@@ -21,8 +21,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class IniPecPollingService {
 
-    private static final Integer FIXED_DELAY = 300000;
-
     private final IniPecConverter iniPecConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
     private final IniPecBatchPollingRepository iniPecBatchPollingRepository;
@@ -41,7 +39,7 @@ public class IniPecPollingService {
         this.iniPecClient = iniPecClient;
     }
 
-    @Scheduled(fixedDelay = FIXED_DELAY)
+    @Scheduled(fixedDelay = 300000)
     public void getPecList() {
         Map<String, AttributeValue> lastEvaluatedKeyMap = new HashMap<>();
         boolean hasNext = true;

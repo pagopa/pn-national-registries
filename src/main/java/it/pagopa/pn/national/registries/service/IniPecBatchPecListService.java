@@ -2,7 +2,6 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.inipec.IniPecClient;
 import it.pagopa.pn.national.registries.converter.IniPecConverter;
-import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
@@ -25,8 +24,6 @@ import java.util.stream.Collectors;
 @Slf4j
 public class IniPecBatchPecListService {
 
-    private static final Integer FIXED_DELAY = 300000;
-
     private final IniPecConverter iniPecConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
     private final IniPecBatchPollingRepository iniPecBatchPollingRepository;
@@ -42,7 +39,7 @@ public class IniPecBatchPecListService {
         this.iniPecClient = iniPecClient;
     }
 
-    @Scheduled(fixedDelay = FIXED_DELAY)
+    @Scheduled(fixedDelay = 300000)
     public void batchPecListRequest() {
         Map<String, AttributeValue> lastEvaluatedKeyMap = new HashMap<>();
         boolean hasNext = true;
@@ -93,7 +90,7 @@ public class IniPecBatchPecListService {
                 }).then();
     }
 
-    @Scheduled(fixedDelay = FIXED_DELAY)
+    @Scheduled(fixedDelay = 300000)
     public void recoveryPrimoFlusso() {
         iniPecBatchRequestRepository.resetBatchIdForRecovery()
                 .doOnNext(batchRequests -> batchPecListRequest())

@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.service;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
@@ -48,8 +50,6 @@ class IniPecBatchPecListServiceTest {
         batchPolling.setBatchId("batchId");
         batchPolling.setPollingId("pollingId");
         batchPolling.setStatus("status");
-        ArrayList<BatchPolling> batchPollings = new ArrayList<>();
-        batchPollings.add(batchPolling);
 
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCorrelationId("correlationId");
@@ -72,15 +72,15 @@ class IniPecBatchPecListServiceTest {
         when(iniPecBatchRequestRepository.setNewBatchIdToBatchRequests(anyList(),any())).thenReturn(Mono.just(batchRequests));
 
         ResponsePollingIdIniPec responsePollingIdIniPec = new ResponsePollingIdIniPec();
-        responsePollingIdIniPec.setIdentificativoRichiesta("correlationId");
+        responsePollingIdIniPec.setIdentificativoRichiesta("pollingId");
 
         when(iniPecClient.callEServiceRequestId(any())).thenReturn(Mono.just(responsePollingIdIniPec));
 
-        when(iniPecConverter.createBatchPollingByBatchIdAndPollingId("batchId", "pollingId")).thenReturn(batchPolling);
+        when(iniPecConverter.createBatchPollingByBatchIdAndPollingId(any(), eq("pollingId"))).thenReturn(batchPolling);
 
         when(iniPecBatchPollingRepository.createBatchPolling(batchPolling)).thenReturn(Mono.just(batchPolling));
 
-        iniPecBatchPecListService.batchPecListRequest();
+        assertDoesNotThrow(() -> iniPecBatchPecListService.batchPecListRequest());
     }
 
     @Test
@@ -99,10 +99,10 @@ class IniPecBatchPecListServiceTest {
         batchRequests.add(batchRequest);
         batchRequests.add(batchRequest2);
 
+        when(iniPecBatchPollingRepository.createBatchPolling(any())).thenReturn(Mono.just(new BatchPolling()));
         when(iniPecBatchRequestRepository.resetBatchIdForRecovery()).thenReturn(Mono.just(batchRequests));
         testBatchPecListRequest();
-        iniPecBatchPecListService.recoveryPrimoFlusso();
+        assertDoesNotThrow(() -> iniPecBatchPecListService.recoveryPrimoFlusso());
     }
 
 }
-
