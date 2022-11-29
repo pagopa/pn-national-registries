@@ -4,18 +4,19 @@ import it.pagopa.pn.national.registries.client.inipec.IniPecClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.IniPecConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
+import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -48,7 +49,7 @@ public class IniPecPollingService {
             hasNext = false;
             Page<BatchPolling> batchPollingPage = iniPecBatchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWork(lastEvaluatedKeyMap)
                     .block();
-            if(batchPollingPage!=null) {
+            if(batchPollingPage != null && !batchPollingPage.items().isEmpty()) {
                 String reservationId = UUID.randomUUID().toString();
                 setReservationId(batchPollingPage.items(), reservationId).block();
                 if(batchPollingPage.lastEvaluatedKey()!=null){
@@ -80,14 +81,19 @@ public class IniPecPollingService {
         return iniPecBatchPollingRepository.updateBatchPolling(batchPollingToCall).flatMap(batchPollingWorked -> {
             String batchId = batchPollingWorked.getBatchId();
             return iniPecBatchRequestRepository.getBatchRequestsToSend(batchId)
-                    .map(batchRequests -> {
+                    .flatMap(batchRequests -> {
                         responsePecIniPec.setIdentificativoRichiesta(batchPollingWorked.getPollingId());
-                        return batchRequests.stream()
-                                .map(request -> sqsService.push(iniPecConverter.convertoResponsePecToCodeSqsDto(request, responsePecIniPec))
-                                        .flatMap(sendMessageResult -> iniPecBatchRequestRepository.setBatchRequestsStatus(request, BatchStatus.WORKED.getValue())))
-                                .collect(Collectors.toList());
-                    })
-                    .then();
+                        return Flux.fromStream(batchRequests.stream())
+                                .flatMap(request -> {
+                                    CodeSqsDto codeSqsDto = iniPecConverter.convertoResponsePecToCodeSqsDto(request, responsePecIniPec);
+                                    return sqsService.push(codeSqsDto)
+                                            .flatMap(sendMessageResult -> {
+                                                log.info("ASD");
+                                                return iniPecBatchRequestRepository.setBatchRequestsStatus(request, BatchStatus.WORKED.getValue());
+                                            });
+                                })
+                                .then();
+                    });
         });
     }
 }
