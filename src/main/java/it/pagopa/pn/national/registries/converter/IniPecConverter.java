@@ -5,15 +5,20 @@ import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKProfessionalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
+import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -53,6 +58,30 @@ public class IniPecConverter {
             codeSqsDto.setSecondaryPhysicalAddresses(null);
         }
         return codeSqsDto;
+    }
+
+    public GetAddressRegistroImpreseOKDto mapToResponseOk(AddressRegistroImpreseResponse response) {
+        GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
+        getAddressRegistroImpreseOKDto.setTaxId(response.getTaxId());
+        getAddressRegistroImpreseOKDto.setDateTimeExtraction(new Date());
+        getAddressRegistroImpreseOKDto.setProfessionalAddress(convertToProfessionalAddressDto(response));
+        return getAddressRegistroImpreseOKDto;
+    }
+
+    private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImpreseResponse response) {
+        GetAddressRegistroImpreseOKProfessionalAddressDto dto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
+        if(response.getAddress()!=null) {
+            dto.setAddress(createLegalAddress(response.getAddress()));
+            dto.setMunicipality(response.getAddress().getMunicipality());
+            dto.setProvince(response.getAddress().getProvince());
+            dto.setZip(response.getAddress().getPostalCode());
+            dto.setDescription(response.getAddress().getAddress());
+        }
+        return dto;
+    }
+
+    private String createLegalAddress(LegalAddress address) {
+        return address.getToponym() + " " + address.getStreet() + " " + address.getStreetNumber();
     }
 
 }

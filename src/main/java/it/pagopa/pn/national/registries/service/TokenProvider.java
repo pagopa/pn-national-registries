@@ -18,13 +18,9 @@ public class TokenProvider {
     private final String grantType;
     private final PdndAssertionGenerator assertionGenerator;
     private final PdndClient pdndClient;
-    private final IniPecJwsGenerator iniPecJwsGenerator;
-    private final IniPecClient iniPecClient;
 
     public TokenProvider(PdndAssertionGenerator assertionGenerator,
-                         IniPecJwsGenerator iniPecJwsGenerator,
                          PdndClient pdndClient,
-                         IniPecClient iniPecClient,
                          @Value("${pn.national-registries.pdnd.client-assertion-type}") String clientAssertionType,
                          @Value("${pn.national-registries.pdnd.grant-type}") String grantType
     ) {
@@ -32,19 +28,11 @@ public class TokenProvider {
         this.clientAssertionType = clientAssertionType;
         this.grantType = grantType;
         this.pdndClient = pdndClient;
-        this.iniPecJwsGenerator = iniPecJwsGenerator;
-        this.iniPecClient = iniPecClient;
     }
 
     public Mono<ClientCredentialsResponseDto> getTokenPdnd(SecretValue secretValue) {
         String clientAssertion = assertionGenerator.generateClientAssertion(secretValue);
         return pdndClient.createToken(clientAssertion, clientAssertionType, grantType, secretValue.getClientId())
-                .map(clientCredentialsResponseDto -> clientCredentialsResponseDto);
-    }
-
-    public Mono<ClientCredentialsResponseDto> getTokenIniPec() {
-        String clientAssertion = iniPecJwsGenerator.createAuthRest();
-        return iniPecClient.getToken(clientAssertion)
                 .map(clientCredentialsResponseDto -> clientCredentialsResponseDto);
     }
 }

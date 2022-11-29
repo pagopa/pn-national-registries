@@ -535,6 +535,8 @@ components:
             taxId:
               type: string
               example: AAAZZZ00H00T000Z
+            correlationId:
+              type: string
     GetDigitalAddressIniPECOK:
       type: object
       properties:
