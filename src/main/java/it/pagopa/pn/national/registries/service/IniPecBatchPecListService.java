@@ -48,7 +48,7 @@ public class IniPecBatchPecListService {
             hasNext = false;
             Page<BatchRequest> batchRequestPage = iniPecBatchRequestRepository.getBatchRequestByNotBatchIdPageable(lastEvaluatedKeyMap)
                     .block();
-            if (batchRequestPage != null) {
+            if (batchRequestPage!= null && !batchRequestPage.items().isEmpty()) {
                 if (batchRequestPage.lastEvaluatedKey() != null) {
                     hasNext = true;
                     lastEvaluatedKeyMap = batchRequestPage.lastEvaluatedKey();

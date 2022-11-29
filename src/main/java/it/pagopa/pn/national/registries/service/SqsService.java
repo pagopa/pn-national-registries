@@ -13,6 +13,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
+
+import java.util.HashMap;
 import java.util.Map;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_INI_PEC;
@@ -36,9 +38,9 @@ public class SqsService {
     public Mono<SendMessageResult> push(CodeSqsDto msges) {
         SendMessageRequest sendMessageRequest = new SendMessageRequest();
         sendMessageRequest.setQueueUrl(amazonSQS.getQueueUrl(queueUrl).getQueueUrl());
-        MessageAttributeValue messageAttributeValue = new MessageAttributeValue();
-        messageAttributeValue.setStringValue(msges.getCorrelationId());
-        sendMessageRequest.setMessageAttributes(Map.of("correlationId",messageAttributeValue));
+        Map<String, MessageAttributeValue> messageAttributes = new HashMap<>();
+        messageAttributes.put("correlationId", new MessageAttributeValue().withDataType("String").withStringValue(msges.getCorrelationId()));
+        sendMessageRequest.setMessageAttributes(messageAttributes);
         sendMessageRequest.setMessageBody(toJson(msges));
         return Mono.fromCallable(() -> amazonSQS.sendMessage(sendMessageRequest));
     }
