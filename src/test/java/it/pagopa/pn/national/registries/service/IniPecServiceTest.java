@@ -33,10 +33,10 @@ class IniPecServiceTest {
     @Test
     void testGetDigitalAddress() {
         GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
-        checkTaxIdRequestBodyFilterDto.setCorrelationId("correlationId");
-        checkTaxIdRequestBodyFilterDto.setTaxId("taxId");
-        requestBodyDto.setFilter(checkTaxIdRequestBodyFilterDto);
+        GetDigitalAddressIniPECRequestBodyFilterDto dto = new GetDigitalAddressIniPECRequestBodyFilterDto();
+        dto.setCorrelationId("correlationId");
+        dto.setTaxId("taxId");
+        requestBodyDto.setFilter(dto);
 
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCf("taxId");
@@ -51,7 +51,7 @@ class IniPecServiceTest {
                 .thenReturn(getDigitalAddressIniPECOKDto);
         StepVerifier.create(iniPecService.getDigitalAddress(requestBodyDto))
                 .expectNext(getDigitalAddressIniPECOKDto).verifyComplete();
-  }
+    }
 
 
 }

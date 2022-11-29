@@ -2,12 +2,13 @@ package it.pagopa.pn.national.registries.client.inipec;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseErrorDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECErrorDto;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
-import it.pagopa.pn.national.registries.service.TokenProvider;
+import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.utils.InipecScopeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -69,7 +70,7 @@ public class IniPecClient {
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                            httpHeaders.set("scope",InipecScopeEnum.PEC.value());
+                            httpHeaders.set("scope", InipecScopeEnum.PEC.value());
                         })
                         .retrieve()
                         .bodyToMono(ResponsePollingIdIniPec.class)
@@ -111,6 +112,31 @@ public class IniPecClient {
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, retrySignal.failure()))
                     )
+        );
+    }
+
+    public Mono<AddressRegistroImpreseResponse> getLegalAddress(String taxId) {
+        return getToken().flatMap(accessTokenCacheEntry ->
+                webClient.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/sede/{cf}")
+                                .build(taxId))
+                        .headers(httpHeaders -> {
+                            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                        })
+                        .retrieve()
+                        .bodyToMono(AddressRegistroImpreseResponse.class)
+                        .doOnError(throwable -> {
+                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
+                                WebClientResponseException ex = (WebClientResponseException) throwable;
+                                throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                        ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                        Charset.defaultCharset(), GetAddressRegistroImpreseErrorDto.class);
+                            }
+                        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                        new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, retrySignal.failure())))
         );
     }
 
