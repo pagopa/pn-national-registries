@@ -5,8 +5,6 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class StreetNumberDto {
-    private String numero;
-    private String lettera;
-    private InternalStreetNumber civicoInterno;
+public class InternalStreetNumber {
+    private String scala;
 }

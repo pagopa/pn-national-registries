@@ -16,9 +16,9 @@ tags:
   - name: digitalAddressIniPEC
     description: Consente di ottenere la PEC dell’impresa oppure del professionista corrispondente al codice fiscale al momento della consultazione. In caso di impresa si restituisce anche l’indirizzo della sede legale.
   - name: addressRegistroImprese
-    description: Consente di ottenere l’indirizzo della sede legale a cui corrisponde il codice fiscale al momento della consultazione. 
+    description: Consente di ottenere l’indirizzo della sede legale a cui corrisponde il codice fiscale al momento della consultazione.
 paths:
-  /national-registries-private/{cx-type}/addresses:
+  /national-registries-private/{recipient-type}/addresses:
     post:
       tags:
         - address
@@ -26,7 +26,7 @@ paths:
       description: 'Questo servizio si occupa di smistare le richieste in ingresso al fine di fornire uno o più indirizzi fisici o digitali per la PF o la PG indicata'
       operationId: getAddresses
       parameters:
-        - $ref: '#/components/parameters/pathCxType'
+        - $ref: '#/components/parameters/pathRecipientType'
       requestBody:
         content:
           application/json:
@@ -39,25 +39,25 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AddressesOK'
+                $ref: '#/components/schemas/AddressOK'
         "400":
           description: Bad request
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AddressesError'
+                $ref: '#/components/schemas/AddressError'
         "404":
           description: Not Found
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AddressesError'
+                $ref: '#/components/schemas/AddressError'
         "500":
           description: Internal server error
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AddressesError'
+                $ref: '#/components/schemas/AddressError'
   /national-registries-private/agenzia-entrate/tax-id:
     post:
       tags:
@@ -270,7 +270,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetAddressRegistroImpreseError'                
+                $ref: '#/components/schemas/GetAddressRegistroImpreseError'
         "404":
           description: Caso d'uso non trovato
           content:
@@ -288,13 +288,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetAddressRegistroImpreseError'                
+                $ref: '#/components/schemas/GetAddressRegistroImpreseError'
 components:
   parameters:
-    pathCxType:
+    pathRecipientType:
       description: >-
         Enum per indicare se la ricerca è effettuata per una PF o per una PG
-      name: cx-type
+      name: recipient-type
       in: path
       required: true
       schema:
@@ -322,7 +322,7 @@ components:
             domicileType:
               type: string
               enum: [ PHYSICAL , DIGITAL ]
-    AddressesOK:
+    AddressOK:
       type: object
       properties:
         correlationId:
@@ -332,6 +332,8 @@ components:
       properties:
         filter:
           type: object
+          required:
+            - taxId
           properties:
             taxId:
               type: string
@@ -417,6 +419,8 @@ components:
         at:
           type: string
         address:
+          type: string
+        addressDetail:
           type: string
         zip:
           type: string
@@ -531,6 +535,9 @@ components:
       properties:
         filter:
           type: object
+          required:
+            - taxId
+            - correlationId
           properties:
             taxId:
               type: string
@@ -572,10 +579,12 @@ components:
       properties:
         filter:
           type: object
+          required:
+            - taxId
           properties:
             taxId:
               type: string
-              example: AAAZZZ00H00T000Z      
+              example: AAAZZZ00H00T0
     GetAddressRegistroImpreseOK:
       type: object
       properties:
@@ -625,7 +634,7 @@ components:
                 type: string
               clientOperationId:
                 type: string
-    AddressesError:
+    AddressError:
       type: object
       properties:
         status:

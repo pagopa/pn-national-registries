@@ -9,7 +9,7 @@ import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
 import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
-import it.pagopa.pn.national.registries.utils.InipecScopeEnum;
+import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
