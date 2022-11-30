@@ -52,6 +52,8 @@ public class AddressAnprConverter {
     }
 
     private void mapToResidence(AddressDto indirizzo, ResidentialAddressDto innerDto) {
+        if(indirizzo.getNumeroCivico()!=null && indirizzo.getNumeroCivico().getCivicoInterno()!=null)
+           innerDto.setAddressDetail(indirizzo.getNumeroCivico().getCivicoInterno().getScala());
         innerDto.setAddress(createAddressString(indirizzo));
         innerDto.setZip(indirizzo.getCap());
         innerDto.setMunicipalityDetails(indirizzo.getFrazione());

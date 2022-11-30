@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.utils;
+package it.pagopa.pn.national.registries.constant;
 
 public enum InipecScopeEnum {
 
