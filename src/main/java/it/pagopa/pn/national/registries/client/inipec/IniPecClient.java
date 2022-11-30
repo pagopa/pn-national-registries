@@ -1,5 +1,7 @@
 package it.pagopa.pn.national.registries.client.inipec;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseErrorDto;
@@ -30,10 +32,14 @@ public class IniPecClient {
     private final WebClient webClient;
     private final IniPecJwsGenerator iniPecJwsGenerator;
 
+    private final ObjectMapper mapper;
+
     protected IniPecClient(IniPecWebClient iniPecWebClient,
-                           IniPecJwsGenerator iniPecJwsGenerator) {
+                           IniPecJwsGenerator iniPecJwsGenerator,
+                           ObjectMapper mapper) {
         webClient = iniPecWebClient.init();
         this.iniPecJwsGenerator = iniPecJwsGenerator;
+        this.mapper = mapper;
     }
 
     public Mono<ClientCredentialsResponseDto> getToken(){
@@ -62,16 +68,17 @@ public class IniPecClient {
     }
 
     public Mono<ResponsePollingIdIniPec> callEServiceRequestId(RequestCfIniPec request) {
+        String requestJson = convertToJson(request);
         return getToken().flatMap(accessTokenCacheEntry ->
-                webClient.get()
-                        .uri(uriBuilder -> uriBuilder
-                                .path("/richiestaElencoPec")
-                                .build(request))
+                webClient.post()
+                        .uri("/richiestaElencoPec")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
                             httpHeaders.set("scope", InipecScopeEnum.PEC.value());
                         })
+                        .bodyValue(requestJson)
                         .retrieve()
                         .bodyToMono(ResponsePollingIdIniPec.class)
                         .doOnError(throwable -> {
@@ -90,28 +97,28 @@ public class IniPecClient {
 
     public Mono<ResponsePecIniPec> callEServiceRequestPec(String correlationId) {
         return getToken().flatMap(accessTokenCacheEntry ->
-            webClient.get()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/getElencoPec/{identificativoRichiesta}")
-                        .build(correlationId))
-                .headers(httpHeaders -> {
-                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                    httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                    httpHeaders.set("scope",InipecScopeEnum.PEC.value());
-                })
-                .retrieve()
-                .bodyToMono(ResponsePecIniPec.class)
-                .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
-                        WebClientResponseException ex = (WebClientResponseException) throwable;
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
-                    }
-                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, retrySignal.failure()))
-                    )
+                webClient.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("/getElencoPec/{identificativoRichiesta}")
+                                .build(correlationId))
+                        .headers(httpHeaders -> {
+                            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                            httpHeaders.set("scope",InipecScopeEnum.PEC.value());
+                        })
+                        .retrieve()
+                        .bodyToMono(ResponsePecIniPec.class)
+                        .doOnError(throwable -> {
+                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
+                                WebClientResponseException ex = (WebClientResponseException) throwable;
+                                throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                        ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                        Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
+                            }
+                        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                        new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, retrySignal.failure()))
+                        )
         );
     }
 
@@ -146,5 +153,13 @@ public class IniPecClient {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;
+    }
+
+    private String convertToJson(RequestCfIniPec requestCfIniPec) {
+        try {
+            return mapper.writeValueAsString(requestCfIniPec);
+        } catch (JsonProcessingException e) {
+            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
+        }
     }
 }
