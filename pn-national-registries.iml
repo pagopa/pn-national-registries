@@ -22,21 +22,14 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="pn-commons" />
-    <orderEntry type="module" module-name="pn-model" />
+    <orderEntry type="library" name="Maven: it.pagopa.pn:pn-commons:0.0.1-SNAPSHOT" level="project" />
+    <orderEntry type="library" name="Maven: it.pagopa.pn:pn-model:0.0.1-SNAPSHOT" level="project" />
     <orderEntry type="library" name="Maven: io.swagger.core.v3:swagger-annotations:2.1.10" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-annotations:2.12.3" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-web:5.3.8" level="project" />
     <orderEntry type="library" name="Maven: org.springframework:spring-beans:5.3.8" level="project" />
     <orderEntry type="library" name="Maven: javax.validation:validation-api:2.0.1.Final" level="project" />
     <orderEntry type="library" name="Maven: commons-codec:commons-codec:1.15" level="project" />
-    <orderEntry type="library" name="Maven: org.springdoc:springdoc-openapi-webflux-ui:1.5.10" level="project" />
-    <orderEntry type="library" name="Maven: org.springdoc:springdoc-openapi-webflux-core:1.5.10" level="project" />
-    <orderEntry type="library" name="Maven: org.springdoc:springdoc-openapi-common:1.5.10" level="project" />
-    <orderEntry type="library" name="Maven: io.swagger.core.v3:swagger-integration:2.1.10" level="project" />
-    <orderEntry type="library" name="Maven: io.github.classgraph:classgraph:4.8.69" level="project" />
-    <orderEntry type="library" name="Maven: org.webjars:swagger-ui:3.51.1" level="project" />
-    <orderEntry type="library" name="Maven: org.webjars:webjars-locator-core:0.46" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-starter-webflux:2.5.2" level="project" />
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-starter-json:2.5.2" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.12.3" level="project" />
@@ -55,6 +48,14 @@
     <orderEntry type="library" name="Maven: jakarta.validation:jakarta.validation-api:2.0.2" level="project" />
     <orderEntry type="library" name="Maven: org.jboss.logging:jboss-logging:3.4.2.Final" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml:classmate:1.5.1" level="project" />
+    <orderEntry type="library" name="Maven: org.springdoc:springdoc-openapi-webflux-ui:1.5.8" level="project" />
+    <orderEntry type="library" name="Maven: org.springdoc:springdoc-openapi-webflux-core:1.5.8" level="project" />
+    <orderEntry type="library" name="Maven: org.springdoc:springdoc-openapi-common:1.5.8" level="project" />
+    <orderEntry type="library" name="Maven: io.swagger.core.v3:swagger-models:2.1.9" level="project" />
+    <orderEntry type="library" name="Maven: io.swagger.core.v3:swagger-integration:2.1.9" level="project" />
+    <orderEntry type="library" name="Maven: io.github.classgraph:classgraph:4.8.69" level="project" />
+    <orderEntry type="library" name="Maven: org.webjars:swagger-ui:3.47.1" level="project" />
+    <orderEntry type="library" name="Maven: org.webjars:webjars-locator-core:0.46" level="project" />
     <orderEntry type="library" name="Maven: software.amazon.awssdk:dynamodb:2.18.3" level="project" />
     <orderEntry type="library" name="Maven: software.amazon.awssdk:profiles:2.18.3" level="project" />
     <orderEntry type="library" name="Maven: software.amazon.awssdk:sqs:2.18.3" level="project" />
@@ -64,7 +65,6 @@
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpclient:4.5.13" level="project" />
     <orderEntry type="library" name="Maven: org.apache.httpcomponents:httpcore:4.4.14" level="project" />
     <orderEntry type="library" name="Maven: org.jetbrains:annotations:23.0.0" level="project" />
-    <orderEntry type="library" name="Maven: org.apache.commons:commons-lang3:3.12.0" level="project" />
     <orderEntry type="library" name="Maven: io.swagger:swagger-annotations:1.6.5" level="project" />
     <orderEntry type="library" name="Maven: net.logstash.logback:logstash-logback-encoder:6.6" level="project" />
     <orderEntry type="library" name="Maven: com.fasterxml.jackson.core:jackson-databind:2.12.3" level="project" />
@@ -176,6 +176,7 @@
     <orderEntry type="library" name="Maven: org.springframework.boot:spring-boot-configuration-processor:2.5.2" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.mock-server:mockserver-netty:5.11.0" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.mock-server:mockserver-client-java:5.11.0" level="project" />
+    <orderEntry type="library" name="Maven: org.apache.commons:commons-lang3:3.12.0" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: org.mock-server:mockserver-core:5.11.0" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: com.lmax:disruptor:3.4.2" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: javax.servlet:javax.servlet-api:4.0.1" level="project" />
@@ -203,7 +204,6 @@
     <orderEntry type="library" scope="TEST" name="Maven: io.swagger:swagger-models:1.6.1" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: io.swagger:swagger-parser:1.0.51" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: io.swagger:swagger-compat-spec-parser:1.0.51" level="project" />
-    <orderEntry type="library" name="Maven: io.swagger.core.v3:swagger-models:2.1.2" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: io.swagger.parser.v3:swagger-parser-core:2.0.20" level="project" />
     <orderEntry type="library" scope="TEST" name="Maven: io.swagger.parser.v3:swagger-parser-v3:2.0.20" level="project" />
     <orderEntry type="library" name="Maven: io.swagger.core.v3:swagger-core:2.1.2" level="project" />

@@ -34,9 +34,9 @@ class IniPecControllerTest {
     @Test
     void getDigitalAddressINAD() {
         GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
-        checkTaxIdRequestBodyFilterDto.setTaxId("DDDFGF52F52H501S");
-        requestBodyDto.setFilter(checkTaxIdRequestBodyFilterDto);
+        GetDigitalAddressIniPECRequestBodyFilterDto dto = new GetDigitalAddressIniPECRequestBodyFilterDto();
+        dto.setTaxId("DDDFGF52F52H501S");
+        requestBodyDto.setFilter(dto);
 
         GetDigitalAddressIniPECOKDto getDigitalAddressINADOKDto = new GetDigitalAddressIniPECOKDto();
         getDigitalAddressINADOKDto.setCorrelationId("correlationId");
