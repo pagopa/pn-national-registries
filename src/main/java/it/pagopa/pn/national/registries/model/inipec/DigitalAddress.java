@@ -5,12 +5,13 @@ import lombok.Data;
 @Data
 public class DigitalAddress {
 
-  private String type;
-  private String address;
+    private String type;
+    private String address;
+    private String recipient;
 
-  public DigitalAddress(String type, String address){
-    this.type = type;
-    this.address = address;
-  }
+    public DigitalAddress(String type, String address, String recipient) {
+        this.type = type;
+        this.address = address;
+        this.recipient = recipient;
+    }
 }
-

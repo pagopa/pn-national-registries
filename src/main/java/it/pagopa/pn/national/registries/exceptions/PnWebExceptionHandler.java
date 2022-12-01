@@ -26,6 +26,7 @@ import reactor.util.annotation.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
 
 @Configuration
 @Order(-2)
@@ -87,16 +88,18 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         return nationalRegistriesProblem;
     }
 
-    private NationalRegistriesProblem createProblem(PnNationalRegistriesException exception) throws JsonProcessingException{
+    private NationalRegistriesProblem createProblem(PnNationalRegistriesException exception) throws JsonProcessingException {
         String error = exception.getResponseBodyAsString();
         NationalRegistriesProblem problemDef = new NationalRegistriesProblem();
         problemDef.setStatus(exception.getStatusCode().value());
         problemDef.setTitle(exception.getStatusText());
         problemDef.setDetail(exception.getMessage());
-        if(exception.getClassName().equals(AnprResponseKO.class)) {
+        if (exception.getClassName().equals(AnprResponseKO.class)) {
             problemDef.setErrors(mapToAnprResponseKO(error));
-        }else {
+        } else if (!StringUtils.isNullOrEmpty(error)) {
             problemDef.setErrors(objectMapper.readValue(error, exception.getClassName()));
+        } else {
+            problemDef.setErrors(new ArrayList<>());
         }
         return problemDef;
     }

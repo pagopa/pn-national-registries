@@ -38,15 +38,19 @@ public class AnprService {
     }
 
     public Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto request) {
-        if (StringUtils.isNullOrEmpty(request.getFilter().getReferenceRequestDate()))
-            throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),
-                    HttpStatus.BAD_REQUEST.getReasonPhrase(),null, null,
-                    Charset.defaultCharset(), AnprResponseKO.class);
+        String cf = request.getFilter().getTaxId();
+        return getRawAddressANPR(request)
+                .map(rispostaE002OKDto -> addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, cf));
+    }
 
+    public Mono<ResponseE002OKDto> getRawAddressANPR(GetAddressANPRRequestBodyDto request) {
+        if (StringUtils.isNullOrEmpty(request.getFilter().getReferenceRequestDate())) {
+            throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),
+                    HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null,
+                    Charset.defaultCharset(), AnprResponseKO.class);
+        }
         return createRequest(request)
-                .flatMap(e002RequestDto -> anprClient.callEService(e002RequestDto)
-                        .map(rispostaE002OKDto ->
-                                addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, e002RequestDto.getCriteriRicerca().getCodiceFiscale())));
+                .flatMap(anprClient::callEService);
     }
 
     private Mono<E002RequestDto> createRequest(GetAddressANPRRequestBodyDto request) {

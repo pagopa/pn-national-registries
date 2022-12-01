@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.converter;
 
 import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -44,18 +45,16 @@ public class IniPecConverter {
         return batchPolling;
     }
 
-    public CodeSqsDto convertoResponsePecToCodeSqsDto(BatchRequest batchRequest, ResponsePecIniPec responsePecIniPec){
+    public CodeSqsDto convertoResponsePecToCodeSqsDto(BatchRequest batchRequest, ResponsePecIniPec responsePecIniPec) {
         List<Pec> pecs = responsePecIniPec.getElencoPec();
         Optional<Pec> opt = pecs.stream().filter(pec1 -> pec1.getCf().equalsIgnoreCase(batchRequest.getCf())).findAny();
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        if(opt.isPresent()) {
+        if (opt.isPresent()) {
             codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
             codeSqsDto.setTaxId(batchRequest.getCf());
-            codeSqsDto.setPrimaryDigitalAddress(new DigitalAddress(DigitalAddressType.PEC.getValue(),opt.get().getPecImpresa()));
-            ArrayList<DigitalAddress> secondaryDigitalAddresses = opt.get().getPecProfessionistas().stream().map(s -> new DigitalAddress(DigitalAddressType.PEC.getValue(),s)).collect(Collectors.toCollection(ArrayList::new));
+            codeSqsDto.setPrimaryDigitalAddress(toDigitalAddress(opt.get().getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
+            ArrayList<DigitalAddress> secondaryDigitalAddresses = opt.get().getPecProfessionistas().stream().map(s -> toDigitalAddress(s, DigitalAddressRecipientType.PROFESSIONISTA)).collect(Collectors.toCollection(ArrayList::new));
             codeSqsDto.setSecondaryDigitalAddresses(secondaryDigitalAddresses);
-            codeSqsDto.setPrimaryPhysicalAddress(null);
-            codeSqsDto.setSecondaryPhysicalAddresses(null);
         }
         return codeSqsDto;
     }
@@ -82,6 +81,10 @@ public class IniPecConverter {
 
     private String createLegalAddress(LegalAddress address) {
         return address.getToponym() + " " + address.getStreet() + " " + address.getStreetNumber();
+    }
+
+    private DigitalAddress toDigitalAddress(String address, DigitalAddressRecipientType recipient) {
+        return new DigitalAddress(DigitalAddressType.PEC.getValue(), address, recipient.getValue());
     }
 
 }
