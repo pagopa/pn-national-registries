@@ -123,7 +123,7 @@ class AddressServiceTest {
         StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PF", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
-        assertNotNull(anprSqsCaptor.getValue().getPrimaryPhysicalAddress());
+        assertNotNull(anprSqsCaptor.getValue().getPhysicalAddress());
     }
 
     @Captor
@@ -176,9 +176,9 @@ class AddressServiceTest {
         StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PF", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
-        assertNotNull(inadSqsCaptor.getValue().getSecondaryDigitalAddresses());
-        assertEquals(2, inadSqsCaptor.getValue().getSecondaryDigitalAddresses().size());
-        assertFalse(inadSqsCaptor.getValue().getSecondaryDigitalAddresses().stream()
+        assertNotNull(inadSqsCaptor.getValue().getDigitalAddress());
+        assertEquals(2, inadSqsCaptor.getValue().getDigitalAddress().size());
+        assertFalse(inadSqsCaptor.getValue().getDigitalAddress().stream()
                 .anyMatch(a -> a.getAddress().equals("a1")));
     }
 
@@ -221,8 +221,8 @@ class AddressServiceTest {
         StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PG", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
-        assertNotNull(regImpSqsCaptor.getValue().getPrimaryPhysicalAddress());
-        assertEquals("a", regImpSqsCaptor.getValue().getPrimaryPhysicalAddress().getAddress());
+        assertNotNull(regImpSqsCaptor.getValue().getPhysicalAddress());
+        assertEquals("a", regImpSqsCaptor.getValue().getPhysicalAddress().getAddress());
     }
 
     @Test

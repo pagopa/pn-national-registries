@@ -8,8 +8,6 @@ import java.util.List;
 public class CodeSqsDto {
     private String correlationId;
     private String taxId;
-    private DigitalAddress primaryDigitalAddress;
-    private PhysicalAddress primaryPhysicalAddress;
-    private List<DigitalAddress> secondaryDigitalAddresses;
-    private List<PhysicalAddress> secondaryPhysicalAddresses;
+    private PhysicalAddress physicalAddress;
+    private List<DigitalAddress> digitalAddress;
 }

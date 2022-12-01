@@ -104,7 +104,7 @@ public class AddressService {
                     .map(addressAnprConverter::convertResidence)
                     .map(this::convertAnprToPhysicalAddress)
                     .orElse(null);
-            codeSqsDto.setPrimaryPhysicalAddress(address);
+            codeSqsDto.setPhysicalAddress(address);
         }
         codeSqsDto.setTaxId(cf);
         return codeSqsDto;
@@ -121,7 +121,7 @@ public class AddressService {
                             || d.getUsageInfo().getDateEndValidity().after(now))
                     .map(this::convertInadToDigitalAddress)
                     .collect(Collectors.toList());
-            codeSqsDto.setSecondaryDigitalAddresses(address);
+            codeSqsDto.setDigitalAddress(address);
         }
         codeSqsDto.setTaxId(cf);
         return codeSqsDto;
@@ -131,7 +131,7 @@ public class AddressService {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
         if (registroImpreseDto.getProfessionalAddress() != null) {
-            codeSqsDto.setPrimaryPhysicalAddress(convertRegImpToPhysicalAddress(registroImpreseDto.getProfessionalAddress()));
+            codeSqsDto.setPhysicalAddress(convertRegImpToPhysicalAddress(registroImpreseDto.getProfessionalAddress()));
         }
         codeSqsDto.setTaxId(cf);
         return codeSqsDto;

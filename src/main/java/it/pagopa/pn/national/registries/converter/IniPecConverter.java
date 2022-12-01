@@ -21,21 +21,22 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 @Component
 public class IniPecConverter {
+
     public GetDigitalAddressIniPECOKDto convertToGetAddressIniPecOKDto(BatchRequest requestCorrelation) {
         GetDigitalAddressIniPECOKDto response = new GetDigitalAddressIniPECOKDto();
         checkCorrelationIdAndSetInResponse(requestCorrelation.getCorrelationId(), response);
         return response;
     }
-    private void checkCorrelationIdAndSetInResponse(String correlationId, GetDigitalAddressIniPECOKDto response){
-        if(!StringUtils.isNullOrEmpty(correlationId)){
+
+    private void checkCorrelationIdAndSetInResponse(String correlationId, GetDigitalAddressIniPECOKDto response) {
+        if (!StringUtils.isNullOrEmpty(correlationId)) {
             response.setCorrelationId(correlationId);
         }
     }
+
     public BatchPolling createBatchPollingByBatchIdAndPollingId(String batchId, String pollingId){
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setBatchId(batchId);
@@ -46,16 +47,16 @@ public class IniPecConverter {
     }
 
     public CodeSqsDto convertoResponsePecToCodeSqsDto(BatchRequest batchRequest, ResponsePecIniPec responsePecIniPec) {
-        List<Pec> pecs = responsePecIniPec.getElencoPec();
-        Optional<Pec> opt = pecs.stream().filter(pec1 -> pec1.getCf().equalsIgnoreCase(batchRequest.getCf())).findAny();
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        if (opt.isPresent()) {
-            codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
-            codeSqsDto.setTaxId(batchRequest.getCf());
-            codeSqsDto.setPrimaryDigitalAddress(toDigitalAddress(opt.get().getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
-            ArrayList<DigitalAddress> secondaryDigitalAddresses = opt.get().getPecProfessionistas().stream().map(s -> toDigitalAddress(s, DigitalAddressRecipientType.PROFESSIONISTA)).collect(Collectors.toCollection(ArrayList::new));
-            codeSqsDto.setSecondaryDigitalAddresses(secondaryDigitalAddresses);
-        }
+        List<Pec> pecs = responsePecIniPec.getElencoPec();
+        pecs.stream()
+                .filter(p -> p.getCf().equalsIgnoreCase(batchRequest.getCf()))
+                .findAny()
+                .ifPresent(pec -> {
+                    codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
+                    codeSqsDto.setTaxId(batchRequest.getCf());
+                    codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
+                });
         return codeSqsDto;
     }
 
@@ -69,7 +70,7 @@ public class IniPecConverter {
 
     private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImpreseResponse response) {
         GetAddressRegistroImpreseOKProfessionalAddressDto dto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
-        if(response.getAddress()!=null) {
+        if (response.getAddress() != null) {
             dto.setAddress(createLegalAddress(response.getAddress()));
             dto.setMunicipality(response.getAddress().getMunicipality());
             dto.setProvince(response.getAddress().getProvince());
@@ -79,6 +80,17 @@ public class IniPecConverter {
         return dto;
     }
 
+    private List<DigitalAddress> convertToDigitalAddress(Pec pec) {
+        List<DigitalAddress> digitalAddress = new ArrayList<>();
+        digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
+        if (pec.getPecProfessionistas() != null) {
+            pec.getPecProfessionistas().stream()
+                    .map(pecProf -> toDigitalAddress(pecProf, DigitalAddressRecipientType.PROFESSIONISTA))
+                    .forEach(digitalAddress::add);
+        }
+        return digitalAddress;
+    }
+
     private String createLegalAddress(LegalAddress address) {
         return address.getToponym() + " " + address.getStreet() + " " + address.getStreetNumber();
     }
@@ -86,5 +98,4 @@ public class IniPecConverter {
     private DigitalAddress toDigitalAddress(String address, DigitalAddressRecipientType recipient) {
         return new DigitalAddress(DigitalAddressType.PEC.getValue(), address, recipient.getValue());
     }
-
 }
