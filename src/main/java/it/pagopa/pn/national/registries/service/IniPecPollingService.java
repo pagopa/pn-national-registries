@@ -87,10 +87,7 @@ public class IniPecPollingService {
                                 .flatMap(request -> {
                                     CodeSqsDto codeSqsDto = iniPecConverter.convertoResponsePecToCodeSqsDto(request, responsePecIniPec);
                                     return sqsService.push(codeSqsDto)
-                                            .flatMap(sendMessageResult -> {
-                                                log.info("ASD");
-                                                return iniPecBatchRequestRepository.setBatchRequestsStatus(request, BatchStatus.WORKED.getValue());
-                                            });
+                                            .flatMap(sendMessageResult -> iniPecBatchRequestRepository.setBatchRequestsStatus(request, BatchStatus.WORKED.getValue()));
                                 })
                                 .then();
                     });

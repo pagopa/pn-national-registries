@@ -77,7 +77,7 @@ public class AddressService {
             default:
                 log.warn("recipientType {} is not valid", recipientType);
                 throw new PnNationalRegistriesException("recipientType not valid", HttpStatus.BAD_REQUEST.value(),
-                        HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressesErrorDto.class);
+                        HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
         }
     }
 
