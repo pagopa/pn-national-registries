@@ -1,12 +1,23 @@
 package it.pagopa.pn.national.registries.converter;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKProfessionalAddressDto;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
+import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -71,5 +82,28 @@ class IniPecConverterTest {
         CodeSqsDto codeSqsDto = iniPecConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec);
         assertNotNull(codeSqsDto);
     }
+
+    @Test
+    void testMapToResponseOk() {
+        LegalAddress legalAddress = new LegalAddress();
+        legalAddress.setAddress("42 Main St");
+        legalAddress.setMunicipality("Municipality");
+        legalAddress.setPostalCode("Postal Code");
+        legalAddress.setProvince("Province");
+        legalAddress.setStreet("Street");
+        legalAddress.setStreetNumber("42");
+        legalAddress.setToponym("Toponym");
+
+        AddressRegistroImpreseResponse addressRegistroImpreseResponse = new AddressRegistroImpreseResponse();
+        addressRegistroImpreseResponse.setAddress(legalAddress);
+        addressRegistroImpreseResponse.setDate("2020-03-01");
+        addressRegistroImpreseResponse.setTaxId("taxId");
+
+        GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = iniPecConverter
+                .mapToResponseOk(addressRegistroImpreseResponse);
+
+        assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
+    }
+
 }
 
