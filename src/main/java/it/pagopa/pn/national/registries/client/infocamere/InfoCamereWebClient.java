@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.client.inipec;
+package it.pagopa.pn.national.registries.client.infocamere;
 
 import it.pagopa.pn.national.registries.client.CommonWebClient;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +12,7 @@ import java.time.Duration;
 
 @Component
 @Slf4j
-public class IniPecWebClient extends CommonWebClient {
+public class InfoCamereWebClient extends CommonWebClient {
 
     private final String basePath;
     private final Integer tcpMaxQueuedConnections;
@@ -20,11 +20,11 @@ public class IniPecWebClient extends CommonWebClient {
     private final Integer tcpPoolIdleTimeout;
     private final Integer tcpMaxPoolSize;
 
-    public IniPecWebClient(@Value("pn.national.registries.pdnd.inipec.base-path}") String basePath,
-                         @Value("${pn.national.registries.webclient.inipec.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                         @Value("${pn.national.registries.webclient.inipec.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                         @Value("${pn.national.registries.webclient.inipec.tcp-pending-acquired-timeout}") Integer tcpPendingAcquiredTimeout,
-                         @Value("${pn.national.registries.webclient.inipec.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout) {
+    public InfoCamereWebClient(@Value("pn.national.registries.pdnd.inipec.base-path}") String basePath,
+                               @Value("${pn.national.registries.webclient.inipec.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                               @Value("${pn.national.registries.webclient.inipec.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                               @Value("${pn.national.registries.webclient.inipec.tcp-pending-acquired-timeout}") Integer tcpPendingAcquiredTimeout,
+                               @Value("${pn.national.registries.webclient.inipec.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout) {
         this.basePath = basePath;
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;

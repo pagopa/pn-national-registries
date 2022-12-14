@@ -3,16 +3,12 @@ package it.pagopa.pn.national.registries.converter;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKProfessionalAddressDto;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
@@ -28,11 +24,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ContextConfiguration(classes = {IniPecConverter.class})
+@ContextConfiguration(classes = {InfoCamereConverter.class})
 @ExtendWith(SpringExtension.class)
-class IniPecConverterTest {
+class InfoCamereConverterTest {
     @Autowired
-    private IniPecConverter iniPecConverter;
+    private InfoCamereConverter infoCamereConverter;
 
     @Test
     void testConvertToGetAddressIniPecOKDto() {
@@ -45,12 +41,12 @@ class IniPecConverterTest {
         batchRequest.setStatus("Status");
         batchRequest.setTimeStamp(LocalDateTime.now());
         batchRequest.setTtl(LocalDateTime.now());
-        assertEquals("correlationId", iniPecConverter.convertToGetAddressIniPecOKDto(batchRequest).getCorrelationId());
+        assertEquals("correlationId", infoCamereConverter.convertToGetAddressIniPecOKDto(batchRequest).getCorrelationId());
     }
 
     @Test
     void testCreateBatchPollingByBatchIdAndPollingId() {
-        BatchPolling actualCreateBatchPollingByBatchIdAndPollingIdResult = iniPecConverter
+        BatchPolling actualCreateBatchPollingByBatchIdAndPollingIdResult = infoCamereConverter
                 .createBatchPollingByBatchIdAndPollingId("batchId", "pollingId");
         assertEquals("batchId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getBatchId());
         assertEquals("NOT_WORKED", actualCreateBatchPollingByBatchIdAndPollingIdResult.getStatus());
@@ -79,7 +75,7 @@ class IniPecConverterTest {
         pecs.add(pec);
         responsePecIniPec.setElencoPec(pecs);
 
-        CodeSqsDto codeSqsDto = iniPecConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec);
         assertNotNull(codeSqsDto);
     }
 
@@ -99,7 +95,7 @@ class IniPecConverterTest {
         addressRegistroImpreseResponse.setDate("2020-03-01");
         addressRegistroImpreseResponse.setTaxId("taxId");
 
-        GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = iniPecConverter
+        GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
                 .mapToResponseOk(addressRegistroImpreseResponse);
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());

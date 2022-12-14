@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.client.inipec;
+package it.pagopa.pn.national.registries.client.infocamere;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -27,23 +27,23 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesEx
 
 @Component
 @Slf4j
-public class IniPecClient {
+public class InfoCamereClient {
 
     private final WebClient webClient;
-    private final IniPecJwsGenerator iniPecJwsGenerator;
+    private final InfoCamereJwsGenerator infoCamereJwsGenerator;
 
     private final ObjectMapper mapper;
 
-    protected IniPecClient(IniPecWebClient iniPecWebClient,
-                           IniPecJwsGenerator iniPecJwsGenerator,
-                           ObjectMapper mapper) {
-        webClient = iniPecWebClient.init();
-        this.iniPecJwsGenerator = iniPecJwsGenerator;
+    protected InfoCamereClient(InfoCamereWebClient infoCamereWebClient,
+                               InfoCamereJwsGenerator infoCamereJwsGenerator,
+                               ObjectMapper mapper) {
+        webClient = infoCamereWebClient.init();
+        this.infoCamereJwsGenerator = infoCamereJwsGenerator;
         this.mapper = mapper;
     }
 
     public Mono<ClientCredentialsResponseDto> getToken(){
-        String jws = iniPecJwsGenerator.createAuthRest();
+        String jws = infoCamereJwsGenerator.createAuthRest();
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/token")

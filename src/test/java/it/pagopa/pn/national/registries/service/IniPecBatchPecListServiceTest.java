@@ -6,8 +6,8 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
-import it.pagopa.pn.national.registries.client.inipec.IniPecClient;
-import it.pagopa.pn.national.registries.converter.IniPecConverter;
+import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
@@ -39,10 +39,10 @@ class IniPecBatchPecListServiceTest {
     private IniPecBatchRequestRepository iniPecBatchRequestRepository;
 
     @MockBean
-    private IniPecClient iniPecClient;
+    private InfoCamereClient infoCamereClient;
 
     @MockBean
-    private IniPecConverter iniPecConverter;
+    private InfoCamereConverter infoCamereConverter;
 
     @Test
     void testBatchPecListRequest() {
@@ -74,9 +74,9 @@ class IniPecBatchPecListServiceTest {
         ResponsePollingIdIniPec responsePollingIdIniPec = new ResponsePollingIdIniPec();
         responsePollingIdIniPec.setIdentificativoRichiesta("pollingId");
 
-        when(iniPecClient.callEServiceRequestId(any())).thenReturn(Mono.just(responsePollingIdIniPec));
+        when(infoCamereClient.callEServiceRequestId(any())).thenReturn(Mono.just(responsePollingIdIniPec));
 
-        when(iniPecConverter.createBatchPollingByBatchIdAndPollingId(any(), eq("pollingId"))).thenReturn(batchPolling);
+        when(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(any(), eq("pollingId"))).thenReturn(batchPolling);
 
         when(iniPecBatchPollingRepository.createBatchPolling(batchPolling)).thenReturn(Mono.just(batchPolling));
 

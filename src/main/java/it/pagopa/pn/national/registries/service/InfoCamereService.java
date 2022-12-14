@@ -1,8 +1,11 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
-import it.pagopa.pn.national.registries.converter.IniPecConverter;
+import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
@@ -14,21 +17,27 @@ import java.time.LocalDateTime;
 
 @Service
 @Slf4j
-public class IniPecService {
+public class InfoCamereService {
 
-    private final IniPecConverter iniPecConverter;
+    private final InfoCamereClient infoCamereClient;
+    private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
 
-    public IniPecService(IniPecConverter iniPecConverter,
-                         IniPecBatchRequestRepository iniPecBatchRequestRepository) {
-        this.iniPecConverter = iniPecConverter;
+    public InfoCamereService(InfoCamereClient infoCamereClient, InfoCamereConverter infoCamereConverter, IniPecBatchRequestRepository iniPecBatchRequestRepository) {
+        this.infoCamereClient = infoCamereClient;
+        this.infoCamereConverter = infoCamereConverter;
         this.iniPecBatchRequestRepository = iniPecBatchRequestRepository;
     }
 
-    public Mono<GetDigitalAddressIniPECOKDto> getDigitalAddress(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto) {
+    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto) {
         return createBatchRequestByCf(getDigitalAddressIniPECRequestBodyDto)
                 .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {}",getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId()))
-                .map(iniPecConverter::convertToGetAddressIniPecOKDto);
+                .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
+    }
+
+    public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseAddress(GetAddressRegistroImpreseRequestBodyDto request) {
+        return infoCamereClient.getLegalAddress(request.getFilter().getTaxId())
+                .map(infoCamereConverter::mapToResponseOk);
     }
 
     public Mono<BatchRequest> createBatchRequestByCf(GetDigitalAddressIniPECRequestBodyDto requestCf) {

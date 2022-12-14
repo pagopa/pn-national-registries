@@ -1,7 +1,5 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.client.inipec.IniPecClient;
-import it.pagopa.pn.national.registries.client.inipec.IniPecJwsGenerator;
 import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.SecretValue;

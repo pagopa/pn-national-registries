@@ -38,9 +38,7 @@ class AddressServiceTest {
     @MockBean
     private InadService inadService;
     @MockBean
-    private IniPecService iniPecService;
-    @MockBean
-    private RegistroImpreseService registroImpreseService;
+    private InfoCamereService infoCamereService;
     @MockBean
     private SqsService sqsService;
 
@@ -210,7 +208,7 @@ class AddressServiceTest {
         getAddressRegistroImpreseOKDto.setTaxId("COD_FISCALE_1");
         getAddressRegistroImpreseOKDto.setProfessionalAddress(getAddressRegistroImpreseOKProfessionalAddressDto);
 
-        when(registroImpreseService.getAddress(getAddressRegistroImpreseRequestBodyDto))
+        when(infoCamereService.getRegistroImpreseAddress(getAddressRegistroImpreseRequestBodyDto))
                 .thenReturn(Mono.just(getAddressRegistroImpreseOKDto));
         when(sqsService.push(regImpSqsCaptor.capture()))
                 .thenReturn(Mono.just(new SendMessageResult()));
@@ -242,7 +240,7 @@ class AddressServiceTest {
         GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
         getDigitalAddressIniPECRequestBodyDto.setFilter(getDigitalAddressIniPECRequestBodyFilterDto);
 
-        when(iniPecService.getDigitalAddress(getDigitalAddressIniPECRequestBodyDto))
+        when(infoCamereService.getIniPecDigitalAddress(getDigitalAddressIniPECRequestBodyDto))
                 .thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
 
         AddressOKDto addressOKDto = new AddressOKDto();

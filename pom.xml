@@ -172,7 +172,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/docs/openapi/PNT2Y-OpenAPI3_PN-NationalRegistries_v8.0.yaml</inputSpec>
+                            <inputSpec>${project.basedir}/docs/openapi/PNT2Y-OpenAPI3_PN-NationalRegistries_v9.0.yaml</inputSpec>
                             <generatorName>spring</generatorName>
                             <library>spring-boot</library>
                             <modelNameSuffix>Dto</modelNameSuffix>

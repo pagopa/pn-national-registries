@@ -29,8 +29,7 @@ public class AddressService {
 
     private final AnprService anprService;
     private final InadService inadService;
-    private final IniPecService iniPecService;
-    private final RegistroImpreseService registroImpreseService;
+    private final InfoCamereService infoCamereService;
     private final SqsService sqsService;
     private final AddressAnprConverter addressAnprConverter;
 
@@ -38,14 +37,12 @@ public class AddressService {
 
     public AddressService(AnprService anprService,
                           InadService inadService,
-                          IniPecService iniPecService,
-                          RegistroImpreseService registroImpreseService,
+                          InfoCamereService infoCamereService,
                           SqsService sqsService,
                           AddressAnprConverter addressAnprConverter) {
         this.anprService = anprService;
         this.inadService = inadService;
-        this.iniPecService = iniPecService;
-        this.registroImpreseService = registroImpreseService;
+        this.infoCamereService = infoCamereService;
         this.sqsService = sqsService;
         this.addressAnprConverter = addressAnprConverter;
     }
@@ -67,11 +64,11 @@ public class AddressService {
                 }
             case "PG":
                 if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
-                    return registroImpreseService.getAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
+                    return infoCamereService.getRegistroImpreseAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                             .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse))
                                     .map(sqs -> mapToAddressesOKDto(correlationId)));
                 } else {
-                    return iniPecService.getDigitalAddress(convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))
+                    return infoCamereService.getIniPecDigitalAddress(convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))
                             .map(iniPecResponse -> mapToAddressesOKDto(correlationId));
                 }
             default:

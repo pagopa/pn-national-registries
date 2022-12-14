@@ -1,11 +1,11 @@
-package it.pagopa.pn.national.registries.client.inipec;
+package it.pagopa.pn.national.registries.client.infocamere;
 
 import com.auth0.jwt.HeaderParams;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.RegisteredClaims;
 import com.auth0.jwt.algorithms.Algorithm;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.config.inipec.IniPecSecretConfig;
+import it.pagopa.pn.national.registries.config.infocamere.InfoCamereSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,24 +28,24 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesEx
 
 @Component
 @Slf4j
-public class IniPecJwsGenerator {
+public class InfoCamereJwsGenerator {
 
     private final String aud;
-    private final IniPecSecretConfig iniPecSecretConfig;
+    private final InfoCamereSecretConfig infoCamereSecretConfig;
     private final String clientId;
 
-    public IniPecJwsGenerator(@Value("${pn.national.registries.pdnd.inipec.base-path}") String aud,
-                              @Value("${pn.national.registries.pdnd.inipec.client-id}") String clientId,
-                              IniPecSecretConfig iniPecSecretConfig) {
+    public InfoCamereJwsGenerator(@Value("${pn.national.registries.pdnd.inipec.base-path}") String aud,
+                                  @Value("${pn.national.registries.pdnd.inipec.client-id}") String clientId,
+                                  InfoCamereSecretConfig infoCamereSecretConfig) {
         this.aud = aud;
-        this.iniPecSecretConfig = iniPecSecretConfig;
+        this.infoCamereSecretConfig = infoCamereSecretConfig;
         this.clientId = clientId;
     }
 
     public String createAuthRest() {
         try {
             log.info("start to createAuthRest");
-            SSLData sslData = iniPecSecretConfig.getIniPecAuthRestSecret();
+            SSLData sslData = infoCamereSecretConfig.getIniPecAuthRestSecret();
             return JWT.create().withHeader(createHeaderMap(sslData)).withPayload(createClaimMap())
                     .sign(Algorithm.RSA256(getPublicKey(sslData.getPub()), getPrivateKey(sslData.getKey())));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {

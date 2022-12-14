@@ -23,7 +23,7 @@ import java.util.Date;
 import java.util.List;
 
 @Component
-public class IniPecConverter {
+public class InfoCamereConverter {
 
     public GetDigitalAddressIniPECOKDto convertToGetAddressIniPecOKDto(BatchRequest requestCorrelation) {
         GetDigitalAddressIniPECOKDto response = new GetDigitalAddressIniPECOKDto();

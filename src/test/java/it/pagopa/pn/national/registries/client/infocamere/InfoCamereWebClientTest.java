@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.client.inipec;
+package it.pagopa.pn.national.registries.client.infocamere;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -8,15 +8,15 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
-class IniPecWebClientTest {
+class InfoCamereWebClientTest {
 
     @Test
     @DisplayName("Should return a web client when the secret value is found")
     void initWhenSecretValueIsFoundThenReturnWebClient() {
-        IniPecWebClient iniPecWebClient = new IniPecWebClient("basePath", 100,
+        InfoCamereWebClient infoCamereWebClient = new InfoCamereWebClient("basePath", 100,
                 100, 100, 100);
 
-        assertThrows(NullPointerException.class, iniPecWebClient::init, "Input stream not contain valid certificates.");
+        assertThrows(NullPointerException.class, infoCamereWebClient::init, "Input stream not contain valid certificates.");
     }
 
 }

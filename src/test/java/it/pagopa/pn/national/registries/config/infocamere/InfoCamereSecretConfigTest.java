@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.config.inipec;
+package it.pagopa.pn.national.registries.config.infocamere;
 
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import org.junit.jupiter.api.Assertions;
@@ -13,7 +13,7 @@ import java.util.Optional;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class IniPecSecretConfigTest {
+class InfoCamereSecretConfigTest {
 
     @Mock
     SecretManagerService secretManagerService;
@@ -27,7 +27,7 @@ class IniPecSecretConfigTest {
                         "}").build();
         when(secretManagerService.getSecretValue("test1"))
                 .thenReturn(Optional.of(getSecretValueResponse2));
-        IniPecSecretConfig inipecSecretConfig = new IniPecSecretConfig(secretManagerService,"test1");
+        InfoCamereSecretConfig inipecSecretConfig = new InfoCamereSecretConfig(secretManagerService,"test1");
         Assertions.assertNotNull(inipecSecretConfig.getIniPecAuthRestSecret());
     }
 

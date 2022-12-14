@@ -1,7 +1,7 @@
-package it.pagopa.pn.national.registries.client.inipec;
+package it.pagopa.pn.national.registries.client.infocamere;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.config.inipec.IniPecSecretConfig;
+import it.pagopa.pn.national.registries.config.infocamere.InfoCamereSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -14,31 +14,31 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.security.spec.InvalidKeySpecException;
 
-@ContextConfiguration(classes = {IniPecJwsGenerator.class, String.class})
+@ContextConfiguration(classes = {InfoCamereJwsGenerator.class, String.class})
 @ExtendWith(SpringExtension.class)
-class IniPecJwsGeneratorTest {
+class InfoCamereJwsGeneratorTest {
 
     @Autowired
-    private IniPecJwsGenerator authRest;
+    private InfoCamereJwsGenerator authRest;
     @MockBean
-    private IniPecSecretConfig iniPecSecretConfig;
+    private InfoCamereSecretConfig infoCamereSecretConfig;
 
     @Test
     void testCreateAuthRest() {
-        IniPecJwsGenerator authRest = new IniPecJwsGenerator("aud", "clientID", iniPecSecretConfig);
+        InfoCamereJwsGenerator authRest = new InfoCamereJwsGenerator("aud", "clientID", infoCamereSecretConfig);
 
         SSLData sslData = new SSLData();
         sslData.setCert("TestCert");
         sslData.setKey("TestKey");
         sslData.setPub("TestPub");
         sslData.setTrust("TestTrust");
-        Mockito.when(iniPecSecretConfig.getIniPecAuthRestSecret()).thenReturn(sslData);
+        Mockito.when(infoCamereSecretConfig.getIniPecAuthRestSecret()).thenReturn(sslData);
         Assertions.assertThrows(PnInternalException.class, authRest::createAuthRest);
     }
 
     @Test
     void testgetPrivateKey() {
-        IniPecJwsGenerator authRest = new IniPecJwsGenerator("secret1","",iniPecSecretConfig);
+        InfoCamereJwsGenerator authRest = new InfoCamereJwsGenerator("secret1","", infoCamereSecretConfig);
         Assertions.assertThrows(InvalidKeySpecException.class,()->authRest.getPrivateKey("dGVzdA=="));
     }
 }

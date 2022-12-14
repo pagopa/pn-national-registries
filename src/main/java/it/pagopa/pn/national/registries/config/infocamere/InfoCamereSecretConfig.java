@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.config.inipec;
+package it.pagopa.pn.national.registries.config.infocamere;
 
 import it.pagopa.pn.national.registries.config.PnNationlRegistriesSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
@@ -11,14 +11,14 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Getter
-public class IniPecSecretConfig extends PnNationlRegistriesSecretConfig {
+public class InfoCamereSecretConfig extends PnNationlRegistriesSecretConfig {
 
     private final SecretManagerService secretManagerService;
 
     private final SSLData iniPecAuthRestSecret;
 
-    public IniPecSecretConfig(SecretManagerService secretManagerService,
-                              @Value("${pn.national.registries.pdnd.inipec.secret.auth-rest}") String iniPecAuthRestSecret) {
+    public InfoCamereSecretConfig(SecretManagerService secretManagerService,
+                                  @Value("${pn.national.registries.pdnd.inipec.secret.auth-rest}") String iniPecAuthRestSecret) {
         super(secretManagerService);
         this.secretManagerService = secretManagerService;
         this.iniPecAuthRestSecret = getSslDataSecretValue(iniPecAuthRestSecret);

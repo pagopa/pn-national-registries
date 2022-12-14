@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.client.inipec.IniPecClient;
+import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
-import it.pagopa.pn.national.registries.converter.IniPecConverter;
+import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
@@ -22,22 +22,22 @@ import java.util.*;
 @Slf4j
 public class IniPecPollingService {
 
-    private final IniPecConverter iniPecConverter;
+    private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
     private final IniPecBatchPollingRepository iniPecBatchPollingRepository;
     private final SqsService sqsService;
-    private final IniPecClient iniPecClient;
+    private final InfoCamereClient infoCamereClient;
 
-    public IniPecPollingService(IniPecConverter iniPecConverter,
+    public IniPecPollingService(InfoCamereConverter infoCamereConverter,
                                 IniPecBatchRequestRepository iniPecBatchRequestRepository,
                                 IniPecBatchPollingRepository iniPecBatchPollingRepository,
                                 SqsService sqsService,
-                                IniPecClient iniPecClient) {
-        this.iniPecConverter = iniPecConverter;
+                                InfoCamereClient infoCamereClient) {
+        this.infoCamereConverter = infoCamereConverter;
         this.iniPecBatchRequestRepository = iniPecBatchRequestRepository;
         this.iniPecBatchPollingRepository = iniPecBatchPollingRepository;
         this.sqsService = sqsService;
-        this.iniPecClient = iniPecClient;
+        this.infoCamereClient = infoCamereClient;
     }
 
     @Scheduled(fixedDelay = 300000)
@@ -71,7 +71,7 @@ public class IniPecPollingService {
     }
 
     private Mono<Void> callEService(String pollingId, BatchPolling batchPollingToCall) {
-        return iniPecClient.callEServiceRequestPec(pollingId).flatMap(responsePecIniPec -> {
+        return infoCamereClient.callEServiceRequestPec(pollingId).flatMap(responsePecIniPec -> {
             batchPollingToCall.setStatus(BatchStatus.WORKED.getValue());
             return updateBatchPolling(batchPollingToCall, responsePecIniPec);
         });
@@ -85,7 +85,7 @@ public class IniPecPollingService {
                         responsePecIniPec.setIdentificativoRichiesta(batchPollingWorked.getPollingId());
                         return Flux.fromStream(batchRequests.stream())
                                 .flatMap(request -> {
-                                    CodeSqsDto codeSqsDto = iniPecConverter.convertoResponsePecToCodeSqsDto(request, responsePecIniPec);
+                                    CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(request, responsePecIniPec);
                                     return sqsService.push(codeSqsDto)
                                             .flatMap(sendMessageResult -> iniPecBatchRequestRepository.setBatchRequestsStatus(request, BatchStatus.WORKED.getValue()));
                                 })

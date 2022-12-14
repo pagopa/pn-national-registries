@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.client.inipec.IniPecClient;
-import it.pagopa.pn.national.registries.converter.IniPecConverter;
+import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
@@ -24,19 +24,19 @@ import java.util.stream.Collectors;
 @Slf4j
 public class IniPecBatchPecListService {
 
-    private final IniPecConverter iniPecConverter;
+    private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
     private final IniPecBatchPollingRepository iniPecBatchPollingRepository;
-    private final IniPecClient iniPecClient;
+    private final InfoCamereClient infoCamereClient;
 
-    public IniPecBatchPecListService(IniPecConverter iniPecConverter,
+    public IniPecBatchPecListService(InfoCamereConverter infoCamereConverter,
                                      IniPecBatchRequestRepository iniPecBatchRequestRepository,
                                      IniPecBatchPollingRepository iniPecBatchPollingRepository,
-                                     IniPecClient iniPecClient) {
-        this.iniPecConverter = iniPecConverter;
+                                     InfoCamereClient infoCamereClient) {
+        this.infoCamereConverter = infoCamereConverter;
         this.iniPecBatchRequestRepository = iniPecBatchRequestRepository;
         this.iniPecBatchPollingRepository = iniPecBatchPollingRepository;
-        this.iniPecClient = iniPecClient;
+        this.infoCamereClient = infoCamereClient;
     }
 
     @Scheduled(fixedDelay = 300000)
@@ -80,11 +80,11 @@ public class IniPecBatchPecListService {
     }
 
     private Mono<Void> callEservice(RequestCfIniPec requestCfIniPec, String batchId) {
-        return iniPecClient.callEServiceRequestId(requestCfIniPec)
+        return infoCamereClient.callEServiceRequestId(requestCfIniPec)
                 .flatMap(responsePollingIdIniPec -> {
                     String pollingId = responsePollingIdIniPec.getIdentificativoRichiesta();
                     log.info("Called ini pec with batchId: {} and response pollingId: {}", batchId, pollingId);
-                    return iniPecBatchPollingRepository.createBatchPolling(iniPecConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId))
+                    return iniPecBatchPollingRepository.createBatchPolling(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId))
                             .doOnNext(batchPolling -> log.info("Created BatchPolling with batchId: {} and pollingId: {}", batchId, pollingId))
                             .doOnError(batchPollingSignal -> log.error("Failed to create BatchPolling with batchId: {} and pollingId: {}", batchId, pollingId));
                 }).then();

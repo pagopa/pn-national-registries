@@ -1,8 +1,8 @@
-package it.pagopa.pn.national.registries.client.inipec;
+package it.pagopa.pn.national.registries.client.infocamere;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.national.registries.config.inipec.IniPecSecretConfig;
+import it.pagopa.pn.national.registries.config.infocamere.InfoCamereSecretConfig;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
@@ -26,7 +26,6 @@ import reactor.test.StepVerifier;
 import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -37,27 +36,27 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
-class IniPecClientTest {
+class InfoCamereClientTest {
 
     @MockBean
     WebClient webClient;
 
     @MockBean
-    IniPecJwsGenerator iniPecJwsGenerator;
+    InfoCamereJwsGenerator infoCamereJwsGenerator;
 
     @MockBean
-    IniPecWebClient iniPecWebClient;
+    InfoCamereWebClient infoCamereWebClient;
 
     @MockBean
-    IniPecSecretConfig iniPecSecretConfig;
+    InfoCamereSecretConfig infoCamereSecretConfig;
 
     @MockBean
     ObjectMapper mapper;
 
     @Test
     void callgetTokenTest() {
-        when(iniPecWebClient.init()).thenReturn(webClient);
-        IniPecClient iniPecClient = new IniPecClient(iniPecWebClient,iniPecJwsGenerator, mapper);
+        when(infoCamereWebClient.init()).thenReturn(webClient);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
 
         ClientCredentialsResponseDto response = new ClientCredentialsResponseDto();
         response.setAccessToken("token");
@@ -67,7 +66,7 @@ class IniPecClientTest {
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
         String jws = "jws";
-        when(iniPecJwsGenerator.createAuthRest()).thenReturn(jws);
+        when(infoCamereJwsGenerator.createAuthRest()).thenReturn(jws);
 
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
@@ -75,14 +74,14 @@ class IniPecClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(response));
 
-        StepVerifier.create(iniPecClient.getToken()).expectError();
+        StepVerifier.create(infoCamereClient.getToken()).expectError();
 
     }
 
     @Test
     void testCallEServiceRequestId(){
-        when(iniPecWebClient.init()).thenReturn(webClient);
-        IniPecClient iniPecClient = new IniPecClient(iniPecWebClient,iniPecJwsGenerator, mapper);
+        when(infoCamereWebClient.init()).thenReturn(webClient);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
 
         RequestCfIniPec request = new RequestCfIniPec();
         request.setDataOraRichiesta(LocalDateTime.now().toString());
@@ -117,7 +116,7 @@ class IniPecClientTest {
         when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(clientCredentialsResponseDto));
-        when(iniPecClient.getToken()).thenReturn(Mono.just(clientCredentialsResponseDto));
+        when(infoCamereClient.getToken()).thenReturn(Mono.just(clientCredentialsResponseDto));
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/richiestaElencoPec")).thenReturn(requestBodySpec);
@@ -127,13 +126,13 @@ class IniPecClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ResponsePollingIdIniPec.class)).thenReturn(Mono.just(responsePollingIdIniPec));
 
-        StepVerifier.create(iniPecClient.callEServiceRequestId(request)).expectNext(responsePollingIdIniPec).verifyComplete();
+        StepVerifier.create(infoCamereClient.callEServiceRequestId(request)).expectNext(responsePollingIdIniPec).verifyComplete();
     }
 
     @Test
     void testCallEServiceRequestPec() {
-        when(iniPecWebClient.init()).thenReturn(webClient);
-        IniPecClient iniPecClient = new IniPecClient(iniPecWebClient,iniPecJwsGenerator, mapper);
+        when(infoCamereWebClient.init()).thenReturn(webClient);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
 
         String request = "correlationId";
         ResponsePecIniPec response = new ResponsePecIniPec();
@@ -153,7 +152,7 @@ class IniPecClientTest {
         when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(clientCredentialsResponseDto));
-        when(iniPecClient.getToken()).thenReturn(Mono.just(clientCredentialsResponseDto));
+        when(infoCamereClient.getToken()).thenReturn(Mono.just(clientCredentialsResponseDto));
 
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
@@ -161,14 +160,14 @@ class IniPecClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ResponsePecIniPec.class)).thenReturn(Mono.just(response));
 
-        StepVerifier.create(iniPecClient.callEServiceRequestPec(request)).expectNext(response).verifyComplete();
+        StepVerifier.create(infoCamereClient.callEServiceRequestPec(request)).expectNext(response).verifyComplete();
 
     }
 
     @Test
     void testGetLegalAddress() {
-        when(iniPecWebClient.init()).thenReturn(webClient);
-        IniPecClient iniPecClient = new IniPecClient(iniPecWebClient,iniPecJwsGenerator, mapper);
+        when(infoCamereWebClient.init()).thenReturn(webClient);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
 
         String request = "taxId";
         AddressRegistroImpreseResponse response = new AddressRegistroImpreseResponse();
@@ -190,7 +189,7 @@ class IniPecClientTest {
         when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(clientCredentialsResponseDto));
-        when(iniPecClient.getToken()).thenReturn(Mono.just(clientCredentialsResponseDto));
+        when(infoCamereClient.getToken()).thenReturn(Mono.just(clientCredentialsResponseDto));
 
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
@@ -198,14 +197,14 @@ class IniPecClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(AddressRegistroImpreseResponse.class)).thenReturn(Mono.just(response));
 
-        StepVerifier.create(iniPecClient.getLegalAddress(request)).expectNext(response).verifyComplete();
+        StepVerifier.create(infoCamereClient.getLegalAddress(request)).expectNext(response).verifyComplete();
 
     }
 
 
     @Test
     void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        IniPecClient iniPecClient = new IniPecClient(iniPecWebClient,iniPecJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
         WebClientResponseException webClientResponseException =
                 new WebClientResponseException(
                         "message",
@@ -214,14 +213,14 @@ class IniPecClientTest {
                         HttpHeaders.EMPTY,
                         null,
                         null);
-        assertTrue(iniPecClient.checkExceptionType(webClientResponseException));
+        assertTrue(infoCamereClient.checkExceptionType(webClientResponseException));
     }
 
     @Test
     void checkExceptionTypeWhenNotWebClientResponseExceptionThenReturnFalse() {
-        IniPecClient iniPecClient = new IniPecClient(iniPecWebClient,iniPecJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
 
-        assertFalse(iniPecClient.checkExceptionType(new Exception()));
+        assertFalse(infoCamereClient.checkExceptionType(new Exception()));
     }
 }
 
