@@ -6,7 +6,7 @@
     <parent>
         <groupId>it.pagopa.pn</groupId>
         <artifactId>pn-parent</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>1.0.0</version>
         <relativePath/>
     </parent>
     <groupId>it.pagopa.pn.national.registries</groupId>
@@ -45,7 +45,7 @@
         <dependency>
             <groupId>it.pagopa.pn</groupId>
             <artifactId>pn-commons</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>1.0.0</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/io.swagger/swagger-annotations -->
@@ -172,7 +172,7 @@
                             <goal>generate</goal>
                         </goals>
                         <configuration>
-                            <inputSpec>${project.basedir}/docs/openapi/PNT2Y-OpenAPI3_PN-NationalRegistries_v9.0.yaml</inputSpec>
+                            <inputSpec>${project.basedir}/docs/openapi/PNT2Y-OpenAPI3_PN-NationalRegistries_v10.0.yaml</inputSpec>
                             <generatorName>spring</generatorName>
                             <library>spring-boot</library>
                             <modelNameSuffix>Dto</modelNameSuffix>

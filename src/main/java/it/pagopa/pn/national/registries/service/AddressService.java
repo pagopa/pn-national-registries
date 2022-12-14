@@ -64,7 +64,7 @@ public class AddressService {
                 }
             case "PG":
                 if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
-                    return infoCamereService.getRegistroImpreseAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
+                    return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                             .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse))
                                     .map(sqs -> mapToAddressesOKDto(correlationId)));
                 } else {

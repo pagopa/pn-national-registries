@@ -9,6 +9,8 @@ import static org.mockito.Mockito.verify;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalOKDto;
+import it.pagopa.pn.national.registries.model.infoCamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
@@ -101,5 +103,21 @@ class InfoCamereConverterTest {
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
     }
 
+    @Test
+    void testInfoCamereResponseToDto() {
+
+        InfoCamereVerificationResponse infoCamereVerificationResponse = new InfoCamereVerificationResponse();
+        infoCamereVerificationResponse.setVerificationResult(true);
+        infoCamereVerificationResponse.setVatNumber("vatNumber");
+        infoCamereVerificationResponse.setTaxId("taxId");
+
+
+        InfoCamereLegalOKDto actualResult = infoCamereConverter
+                .infoCamereResponseToDto(infoCamereVerificationResponse);
+
+        assertEquals("taxId", actualResult.getTaxId());
+        assertEquals("vatNumber", actualResult.getVatNumber());
+        assertEquals(true, actualResult.getVerificationResult());
+    }
 }
 

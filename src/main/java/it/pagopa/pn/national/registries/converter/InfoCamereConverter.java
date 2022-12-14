@@ -9,6 +9,8 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKProfessionalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalOKDto;
+import it.pagopa.pn.national.registries.model.infoCamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
@@ -97,5 +99,15 @@ public class InfoCamereConverter {
 
     private DigitalAddress toDigitalAddress(String address, DigitalAddressRecipientType recipient) {
         return new DigitalAddress(DigitalAddressType.PEC.getValue(), address, recipient.getValue());
+    }
+
+    public InfoCamereLegalOKDto infoCamereResponseToDto(InfoCamereVerificationResponse response) {
+        InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
+        infoCamereLegalOKDto.setDateTimeExtraction(new Date());
+        infoCamereLegalOKDto.setTaxId(response.getTaxId());
+        infoCamereLegalOKDto.setVatNumber(response.getVatNumber());
+        infoCamereLegalOKDto.setVerificationResult(response.isVerificationResult());
+
+        return infoCamereLegalOKDto;
     }
 }

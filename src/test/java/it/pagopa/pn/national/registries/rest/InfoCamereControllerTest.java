@@ -57,9 +57,27 @@ class InfoCamereControllerTest {
         GetAddressRegistroImpreseRequestBodyFilterDto dto = new GetAddressRegistroImpreseRequestBodyFilterDto();
         dto.setTaxId("cf");
         body.setFilter(dto);
-        when(infoCamereService.getRegistroImpreseAddress(body)).thenReturn(Mono.just(response));
+        when(infoCamereService.getRegistroImpreseLegalAddress(body)).thenReturn(Mono.just(response));
 
         StepVerifier.create(infoCamereController.addressRegistroImprese(body,serverWebExchange))
+                .expectNext(ResponseEntity.ok().body(response));
+    }
+
+    @Test
+    void checkTaxIdAndVatNumber() {
+
+        InfoCamereLegalOKDto response = new InfoCamereLegalOKDto();
+        response.setTaxId("taxId");
+        response.setVatNumber("vatNumber");
+
+        InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
+        InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
+        dto.setTaxId("taxId");
+        dto.setVatNumber("vatNumber");
+        body.setFilter(dto);
+        when(infoCamereService.checkTaxIdAndVatNumber(body)).thenReturn(Mono.just(response));
+
+        StepVerifier.create(infoCamereController.infoCamereLegal(body,serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(response));
     }
 }

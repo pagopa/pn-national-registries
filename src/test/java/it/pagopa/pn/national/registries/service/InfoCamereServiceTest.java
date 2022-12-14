@@ -5,6 +5,7 @@ import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
+import it.pagopa.pn.national.registries.model.infoCamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
@@ -81,10 +82,34 @@ class InfoCamereServiceTest {
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
         when(infoCamereConverter.mapToResponseOk(any())).thenReturn(response);
 
-        StepVerifier.create(infoCamereService.getRegistroImpreseAddress(request))
+        StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
                 .expectNext(response).verifyComplete();
     }
 
+    @Test
+    void checkTaxIdAndVatNumber() {
 
+        InfoCamereVerificationResponse response = new InfoCamereVerificationResponse();
+        response.setTaxId("taxId");
+        response.setVatNumber("vatNumber");
+
+        InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
+        InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
+        dto.setTaxId("taxId");
+        dto.setVatNumber("vatNumber");
+        body.setFilter(dto);
+
+        InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
+        infoCamereLegalOKDto.setTaxId("taxId");
+        infoCamereLegalOKDto.setVatNumber("vatNumber");
+        infoCamereLegalOKDto.setVerificationResult(true);
+
+
+        when(infoCamereClient.checkTaxIdAndVatNumber(body.getFilter())).thenReturn(Mono.just(response));
+        when(infoCamereConverter.infoCamereResponseToDto(response)).thenReturn(infoCamereLegalOKDto);
+
+        StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
+                .expectNext(infoCamereLegalOKDto);
+    }
 }
 

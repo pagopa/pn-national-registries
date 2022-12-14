@@ -4,9 +4,9 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseErrorDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECErrorDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
+import it.pagopa.pn.national.registries.model.infoCamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
@@ -131,6 +131,7 @@ public class InfoCamereClient {
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                            httpHeaders.set("scope",InipecScopeEnum.SEDE.value());
                         })
                         .retrieve()
                         .bodyToMono(AddressRegistroImpreseResponse.class)
@@ -143,7 +144,7 @@ public class InfoCamereClient {
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                        new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, retrySignal.failure())))
+                                        new PnInternalException(ERROR_MESSAGE_REGISTRO_IMPRESE, ERROR_CODE_REGISTRO_IMPRESE, retrySignal.failure())))
         );
     }
 
@@ -159,7 +160,36 @@ public class InfoCamereClient {
         try {
             return mapper.writeValueAsString(requestCfIniPec);
         } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
+            throw new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC,e);
         }
+    }
+
+
+    public Mono<InfoCamereVerificationResponse> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyFilterDto filterDto) {
+        return getToken().flatMap(accessTokenCacheEntry ->
+                webClient.get()
+                        .uri(uriBuilder -> uriBuilder
+                                .path("legaleRappresentante/{cfPersona}")
+                                .queryParam("cfImpresa", filterDto.getVatNumber())
+                                .build(filterDto.getTaxId()))
+                        .headers(httpHeaders -> {
+                            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                            httpHeaders.set("scope",InipecScopeEnum.LEGALE_RAPPRESENTANTE.value());
+
+                        })
+                        .retrieve()
+                        .bodyToMono(InfoCamereVerificationResponse.class)
+                        .doOnError(throwable -> {
+                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
+                                WebClientResponseException ex = (WebClientResponseException) throwable;
+                                throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                        ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                        Charset.defaultCharset(), InfoCamereLegalErrorDto.class);
+                            }
+                        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                        new PnInternalException(ERROR_MESSAGE_LEGALE_RAPPRESENTANTE, ERROR_CODE_LEGALE_RAPPRESENTANTE, retrySignal.failure())))
+        );
     }
 }

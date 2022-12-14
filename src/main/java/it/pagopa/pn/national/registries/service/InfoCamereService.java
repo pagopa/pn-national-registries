@@ -4,10 +4,7 @@ import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -35,7 +32,7 @@ public class InfoCamereService {
                 .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
     }
 
-    public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseAddress(GetAddressRegistroImpreseRequestBodyDto request) {
+    public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseLegalAddress(GetAddressRegistroImpreseRequestBodyDto request) {
         return infoCamereClient.getLegalAddress(request.getFilter().getTaxId())
                 .map(infoCamereConverter::mapToResponseOk);
     }
@@ -55,5 +52,10 @@ public class InfoCamereService {
         batchRequest.setLastReserved(LocalDateTime.now());
         batchRequest.setTimeStamp(LocalDateTime.now());
         return batchRequest;
+    }
+
+    public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
+        return infoCamereClient.checkTaxIdAndVatNumber(request.getFilter())
+                .map(infoCamereConverter::infoCamereResponseToDto);
     }
 }
