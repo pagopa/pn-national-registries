@@ -55,7 +55,7 @@ public class InfoCamereService {
     }
 
     public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
-        return infoCamereClient.checkTaxIdAndVatNumber(request.getFilter())
+        return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
                 .map(infoCamereConverter::infoCamereResponseToDto);
     }
 }

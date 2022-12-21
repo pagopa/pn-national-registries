@@ -6,7 +6,7 @@ import it.pagopa.pn.national.registries.config.infocamere.InfoCamereSecretConfig
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
-import it.pagopa.pn.national.registries.model.infoCamere.InfoCamereVerificationResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
@@ -248,7 +248,7 @@ class InfoCamereClientTest {
 
         when(responseSpec.bodyToMono(InfoCamereVerificationResponse.class)).thenReturn(Mono.just(response));
 
-        StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumber(requestFilter)).expectNext(response).verifyComplete();
+        StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(requestFilter)).expectNext(response).verifyComplete();
 
     }
 }

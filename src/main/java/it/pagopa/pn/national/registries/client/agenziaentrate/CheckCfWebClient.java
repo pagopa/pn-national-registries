@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.client.checkcf;
+package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import io.netty.handler.logging.LogLevel;
 import it.pagopa.pn.national.registries.client.CommonWebClient;
@@ -23,10 +23,10 @@ public class CheckCfWebClient extends CommonWebClient {
     private final String basePath;
 
     public CheckCfWebClient(@Value("${pn.national.registries.webclient.check-cf.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                         @Value("${pn.national.registries.webclient.check-cf.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                         @Value("${pn.national.registries.webclient.check-cf.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
-                         @Value("${pn.national.registries.webclient.check-cf.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                         @Value("${pn.national.registries.pdnd.agenzia-entrate.base-path}") String basePath) {
+                            @Value("${pn.national.registries.webclient.check-cf.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                            @Value("${pn.national.registries.webclient.check-cf.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                            @Value("${pn.national.registries.webclient.check-cf.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
+                            @Value("${pn.national.registries.pdnd.agenzia-entrate.base-path}") String basePath) {
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;

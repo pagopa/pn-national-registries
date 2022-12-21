@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.model.infoCamere;
+package it.pagopa.pn.national.registries.model.infocamere;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;

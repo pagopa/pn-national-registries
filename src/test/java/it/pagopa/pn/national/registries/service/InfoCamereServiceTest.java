@@ -5,7 +5,7 @@ import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
-import it.pagopa.pn.national.registries.model.infoCamere.InfoCamereVerificationResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
@@ -105,7 +105,7 @@ class InfoCamereServiceTest {
         infoCamereLegalOKDto.setVerificationResult(true);
 
 
-        when(infoCamereClient.checkTaxIdAndVatNumber(body.getFilter())).thenReturn(Mono.just(response));
+        when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
         when(infoCamereConverter.infoCamereResponseToDto(response)).thenReturn(infoCamereLegalOKDto);
 
         StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))

@@ -76,8 +76,9 @@ public class InfoCamereController  implements InfoCamereApi {
 
     @Override
     public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(InfoCamereLegalRequestBodyDto infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
+        // VATNUMBER: CHECK 11 O 16 CARATTERI
         return infoCamereService.checkTaxIdAndVatNumber(infoCamereLegalRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 
-    }
+}
