@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.client.checkcf;
+package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,8 +7,8 @@ import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
-import it.pagopa.pn.national.registries.model.checkcf.Request;
-import it.pagopa.pn.national.registries.model.checkcf.TaxIdVerification;
+import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
+import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

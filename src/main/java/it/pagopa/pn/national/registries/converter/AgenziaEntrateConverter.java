@@ -1,11 +1,11 @@
 package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
-import it.pagopa.pn.national.registries.model.checkcf.TaxIdVerification;
+import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import org.springframework.stereotype.Component;
 
 @Component
-public class CheckCfConverter {
+public class AgenziaEntrateConverter {
 
     public static final String CODICE_FISCALE_VALIDO_NON_UTILIZZABILE = "Codice fiscale valido, non più utilizzabile in quanto aggiornato in altro codice fiscale";
     public static final String CODICE_FISCALE_NON_VALIDO_AGGIORNATO_IN_ALTRO = "Codice fiscale non utilizzabile in quanto aggiornato in altro codice fiscale";

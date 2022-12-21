@@ -18,7 +18,7 @@ public class InfoCamereSecretConfig extends PnNationlRegistriesSecretConfig {
     private final SSLData iniPecAuthRestSecret;
 
     public InfoCamereSecretConfig(SecretManagerService secretManagerService,
-                                  @Value("${pn.national.registries.pdnd.inipec.secret.auth-rest}") String iniPecAuthRestSecret) {
+                                  @Value("${pn.national.registries.infocamere.secret.auth-rest}") String iniPecAuthRestSecret) {
         super(secretManagerService);
         this.secretManagerService = secretManagerService;
         this.iniPecAuthRestSecret = getSslDataSecretValue(iniPecAuthRestSecret);
