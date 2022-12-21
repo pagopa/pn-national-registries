@@ -5,31 +5,24 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalOK
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
-import it.pagopa.pn.national.registries.service.AgenziaEntrateApiService;
+import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
-import javax.validation.Valid;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.soap.SOAPException;
-import java.io.IOException;
-
 @RestController
 @Slf4j
-public class AgenziaEntrateApiController implements AgenziaEntrateApi {
+public class AgenziaEntrateController implements AgenziaEntrateApi {
 
-    private final AgenziaEntrateApiService agenziaEntrateApiService;
+    private final AgenziaEntrateService agenziaEntrateService;
     private final Scheduler scheduler;
 
 
-    public AgenziaEntrateApiController(AgenziaEntrateApiService agenziaEntrateApiService, Scheduler scheduler) {
-        this.agenziaEntrateApiService = agenziaEntrateApiService;
+    public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler) {
+        this.agenziaEntrateService = agenziaEntrateService;
         this.scheduler = scheduler;
     }
 
@@ -44,7 +37,7 @@ public class AgenziaEntrateApiController implements AgenziaEntrateApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        return agenziaEntrateApiService.callEService(checkTaxIdRequestBodyDto)
+        return agenziaEntrateService.callEService(checkTaxIdRequestBodyDto)
                     .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 
@@ -60,7 +53,7 @@ public class AgenziaEntrateApiController implements AgenziaEntrateApi {
      */
 
     public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(ADELegalRequestBodyDto adELegalRequestBodyDto,  final ServerWebExchange exchange) {
-        return agenziaEntrateApiService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
+        return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 }

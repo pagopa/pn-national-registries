@@ -19,6 +19,9 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import javax.xml.bind.JAXB;
+import java.io.StringReader;
+import java.io.StringWriter;
 import java.nio.charset.Charset;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
@@ -45,19 +48,40 @@ public class AdELegalClient {
         this.checkCfSecretConfig = checkCfSecretConfig;
     }
 
+    private String marshaller(Object object) {
+        StringWriter sw = new StringWriter();
+        JAXB.marshal(object, sw);
+        return sw.toString();
+    }
+    private SoapEnvelopeRequest unmarshaller(String string) {
+        return JAXB.unmarshal(new StringReader(string), SoapEnvelopeRequest.class);
+
+    }
     public Mono<Object> getToken(){
         return Mono.just(new Object());
     }
     public Mono<CheckValidityRappresentanteRespType> checkTaxIdAndVatNumberAdE(CheckValidityRappresentanteType request) {
         // HEADER DA COSTRUIRE O QUI O NEL COSTRUTTORE
-        SoapEnvelopeRequest soapEnvelopeRequest = new SoapEnvelopeRequest("Header", request);
+      //  SoapEnvelopeRequest soapEnvelopeRequest = new SoapEnvelopeRequest("Header", request);
         return getToken().flatMap(accessTokenCacheEntry ->
                 webClient.post()
-                        .uri("legalerappresentateAdE/check")
+                        .uri("/legalerappresentateAdE/check")
                         .contentType(MediaType.TEXT_XML)
-                        .body(Mono.just(soapEnvelopeRequest), SoapEnvelopeRequest.class)
+                        .body(Mono.just( "<?xml version=\"1.0\"?>\n" +
+                                "\n" +
+                                "<soap:Envelope\n" +
+                                "xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope/\"\n" +
+                                "soap:encodingStyle=\"http://www.w3.org/2003/05/soap-encoding\">\n" +
+                                "\n" +
+                                "<soap:Header>" + /*marshaller(HEADER)  + */  "</soap:Header>\n" +
+                                "\n" +
+                                "<soap:Body>"   + marshaller(request) + "</soap:Body>\n" +
+                                "\n" +
+                                "</soap:Envelope>"), String.class)
                         .retrieve()
-                        .bodyToMono(CheckValidityRappresentanteRespType.class)
+                        .bodyToMono(String.class)
+                        .map(this::unmarshaller)
+                        .map(SoapEnvelopeRequest::getBody)
                         .doOnError(throwable -> {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
                                 WebClientResponseException ex = (WebClientResponseException) throwable;

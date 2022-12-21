@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import io.netty.handler.logging.LogLevel;
-import it.pagopa.pn.national.registries.client.CommonWebClientSOAP;
+import it.pagopa.pn.national.registries.client.CommonWebClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,7 +14,7 @@ import java.time.Duration;
 
 @Component
 @Slf4j
-public class AgenziaEntrateWebClientSOAP extends CommonWebClientSOAP {
+public class AgenziaEntrateWebClientSOAP extends CommonWebClient {
 
     private final Integer tcpMaxPoolSize;
     private final Integer tcpMaxQueuedConnections;
@@ -31,7 +31,7 @@ public class AgenziaEntrateWebClientSOAP extends CommonWebClientSOAP {
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
         this.tcpPoolIdleTimeout = tcpPoolIdleTimeout;
-        this.basePath = basePath;
+        this.basePath = "http://0.0.0.0:3000";
     }
 
     protected WebClient init() {

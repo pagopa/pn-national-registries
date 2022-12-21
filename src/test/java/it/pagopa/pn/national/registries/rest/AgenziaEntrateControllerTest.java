@@ -3,7 +3,7 @@ package it.pagopa.pn.national.registries.rest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.service.AgenziaEntrateApiService;
+import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,13 +19,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class AgenziaEntrateApiControllerTest {
+class AgenziaEntrateControllerTest {
 
     @InjectMocks
-    AgenziaEntrateApiController agenziaEntrateAPIController;
+    AgenziaEntrateController agenziaEntrateController;
 
     @Mock
-    AgenziaEntrateApiService agenziaEntrateApiService;
+    AgenziaEntrateService agenziaEntrateService;
 
     @Mock
     ServerWebExchange serverWebExchange;
@@ -43,8 +43,8 @@ class AgenziaEntrateApiControllerTest {
         CheckTaxIdOKDto checkTaxIdOKDto = new CheckTaxIdOKDto();
         checkTaxIdOKDto.setTaxId("DDDFFF852G25H501G");
         checkTaxIdOKDto.setIsValid(true);
-        when(agenziaEntrateApiService.callEService(any())).thenReturn(Mono.just(checkTaxIdOKDto));
-        StepVerifier.create(agenziaEntrateAPIController.checkTaxId(checkTaxIdRequestBodyDto,serverWebExchange))
+        when(agenziaEntrateService.callEService(any())).thenReturn(Mono.just(checkTaxIdOKDto));
+        StepVerifier.create(agenziaEntrateController.checkTaxId(checkTaxIdRequestBodyDto,serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(checkTaxIdOKDto));
     }
 }

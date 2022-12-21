@@ -11,15 +11,15 @@ import reactor.core.publisher.Mono;
 
 @Component
 @Slf4j
-public class AgenziaEntrateApiService {
+public class AgenziaEntrateService {
 
     private final AgenziaEntrateConverter agenziaEntrateConverter;
     private final CheckCfClient checkCfClient;
 
     private final AdELegalClient adELegalClient;
 
-    public AgenziaEntrateApiService(AgenziaEntrateConverter agenziaEntrateConverter,
-                                    CheckCfClient checkCfClient, AdELegalClient adELegalClient) {
+    public AgenziaEntrateService(AgenziaEntrateConverter agenziaEntrateConverter,
+                                 CheckCfClient checkCfClient, AdELegalClient adELegalClient) {
         this.checkCfClient = checkCfClient;
         this.agenziaEntrateConverter = agenziaEntrateConverter;
         this.adELegalClient = adELegalClient;

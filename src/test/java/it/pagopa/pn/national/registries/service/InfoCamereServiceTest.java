@@ -109,7 +109,7 @@ class InfoCamereServiceTest {
         when(infoCamereConverter.infoCamereResponseToDto(response)).thenReturn(infoCamereLegalOKDto);
 
         StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
-                .expectNext(infoCamereLegalOKDto);
+                .expectNext(infoCamereLegalOKDto).verifyComplete();;
     }
 }
 

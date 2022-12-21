@@ -1,27 +1,29 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate.request;
 
+import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteRespType;
+
 import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class SoapEnvelopeRequest {
 
-    private String headerContent;
-    private Object body;
+    private String header;
+    private CheckValidityRappresentanteRespType body;
 
-    public SoapEnvelopeRequest(String headerContent, Object body) {
-        this.headerContent = headerContent;
+    public SoapEnvelopeRequest(String headerContent, CheckValidityRappresentanteRespType body) {
+        this.header = headerContent;
         this.body = body;
     }
 
-    public SoapEnvelopeRequest(Object body) {
+    public SoapEnvelopeRequest(CheckValidityRappresentanteRespType body) {
         this.body = body;
     }
 
-    public String getHeaderContent(){
-        return headerContent;
+    public String getHeader(){
+        return header;
     }
 
-    public Object getBody() {
+    public CheckValidityRappresentanteRespType getBody() {
         return body;
     }
 }

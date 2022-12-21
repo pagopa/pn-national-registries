@@ -19,9 +19,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class AgenziaEntrateApiServiceTest {
+class AgenziaEntrateServiceTest {
     @InjectMocks
-    AgenziaEntrateApiService agenziaEntrateApiService;
+    AgenziaEntrateService agenziaEntrateService;
     @Mock
     CheckCfClient checkCfClient;
     @Mock
@@ -47,7 +47,7 @@ class AgenziaEntrateApiServiceTest {
 
         when(agenziaEntrateConverter.convertToCfStatusDto(any())).thenReturn(checkTaxIdOKDto);
 
-        StepVerifier.create(agenziaEntrateApiService.callEService(requestBodyDto)).expectNext(checkTaxIdOKDto).verifyComplete();
+        StepVerifier.create(agenziaEntrateService.callEService(requestBodyDto)).expectNext(checkTaxIdOKDto).verifyComplete();
 
     }
 }
