@@ -86,17 +86,17 @@ Parameters:
     Type: String
     Description: 'INAD Purpose ID'
 
-  INIPECBaseURL:
+  InfoCamereBaseURL:
     Type: String
     Description: 'INIPEC Base URL'
 
-  INIPECCLientId:
+  InfoCamereClientId:
     Type: String
     Description: 'INIPEC Client ID'
 
   INIPECQueueName:
     Type: String
-      Description: 'INIPEC Queue name'
+    Description: 'INIPEC Queue name'
 
   # Parametro obbligatorio (ARN del secret)
   ANPRSSLSecret:
@@ -124,7 +124,7 @@ Parameters:
     Description: 'PDND ANPR Integrity certs'
 
   # Parametro obbligatorio (ARN del secret)
-  INIPECAuthSecret:
+  InfoCamereAuthSecret:
     Type: String
     Description: 'INIPEC auth cert'
 
@@ -170,14 +170,14 @@ Resources:
         ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
         ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_BASE_URL=${AgenziaEntrateBaseURL}'
         ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
-        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BASE_URL=${INIPECBaseURL}'
+        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
         ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
         ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_PURPOSE_ID=${AgenziaEntratePurposeId}'
         ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_INAD_PURPOSE_ID=${INADPurposeId}'
-        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_CLIENT_ID=${INIPECCLientId}'
+        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
         ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ANPR_AUTH_SECRET=${ANPRSSLSecret}'
         ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ANPR_INTEGRITY_SECRET=${PDNDANPRIntegritySecret}'
-        ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_AUTH_SECRET=${INIPECAuthSecret}'
+        ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
         ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_QUEUE_NAME=${INIPECQueueName}'
         ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
         MappedPaths: '/national-registries-private/*'
@@ -206,7 +206,7 @@ Resources:
               - !Ref ANPRSSLSecret
               - !Ref PDNDCheckCfSecret
               - !Ref PDNDInadSecret
-              - !Ref INIPECAuthSecret
+              - !Ref InfoCamereAuthSecret
           - Effect: Allow
             Action:
               - kms:Sign

@@ -13,7 +13,7 @@ public enum DigitalAddressType {
   REM("REM"),
   SERCQ("SERCQ");
 
-  private String value;
+  private final String value;
 
   DigitalAddressType(String value) {
     this.value = value;

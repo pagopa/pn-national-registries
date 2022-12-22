@@ -7,15 +7,15 @@
     "AgenziaEntratePurposeId": "",
     "INADBaseURL": "",
     "INADPurposeId": "",
-    "INIPECBaseURL": "",
-    "INIPECClientId": "",
+    "InfoCamereBaseURL": "",
+    "InfoCamereClientId": "",
     "INIPECQueueName": "",
     "ANPRSSLSecret": "",
     "PDNDANPRSecret": "",
     "PDNDANPRIntegritySecret": "",
     "PDNDCheckCfSecret": "",
     "PDNDInadSecret": "a",
-    "INIPECAuthSecret": "",
+    "InfoCamereAuthSecret": "",
     "ANPRTipoInvio": ""
   }
 }
