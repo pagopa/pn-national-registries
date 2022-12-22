@@ -20,11 +20,11 @@ public class InfoCamereWebClient extends CommonWebClient {
     private final Integer tcpPoolIdleTimeout;
     private final Integer tcpMaxPoolSize;
 
-    public InfoCamereWebClient(@Value("pn.national.registries.pdnd.inipec.base-path}") String basePath,
-                               @Value("${pn.national.registries.webclient.inipec.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                               @Value("${pn.national.registries.webclient.inipec.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                               @Value("${pn.national.registries.webclient.inipec.tcp-pending-acquired-timeout}") Integer tcpPendingAcquiredTimeout,
-                               @Value("${pn.national.registries.webclient.inipec.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout) {
+    public InfoCamereWebClient(@Value("${pn.national.registries.infocamere.base-path}") String basePath,
+                               @Value("${pn.national.registries.webclient.infocamere.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                               @Value("${pn.national.registries.webclient.infocamere.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                               @Value("${pn.national.registries.webclient.infocamere.tcp-pending-acquired-timeout}") Integer tcpPendingAcquiredTimeout,
+                               @Value("${pn.national.registries.webclient.infocamere.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout) {
         this.basePath = basePath;
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;

@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.client.checkcf;
+package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import it.pagopa.pn.national.registries.client.CommonWebClient;
 import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;

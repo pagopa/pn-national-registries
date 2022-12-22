@@ -4,7 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
-import it.pagopa.pn.national.registries.model.checkcf.TaxIdVerification;
+import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,13 +14,13 @@ import java.util.ArrayList;
 import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
-class CheckCfConverterTest {
+class AgenziaEntrateConverterTest {
     @InjectMocks
-    private CheckCfConverter checkCfConverter;
+    private AgenziaEntrateConverter agenziaEntrateConverter;
 
 
     /**
-     * Method under test: {@link CheckCfConverter#convertToCfStatusDto(TaxIdVerification)}
+     * Method under test: {@link AgenziaEntrateConverter#convertToCfStatusDto(TaxIdVerification)}
      */
     @Test
     void testConvertToCfStatusDto3() {
@@ -33,21 +33,21 @@ class CheckCfConverterTest {
         list.add("Codice fiscale valido, non più utilizzabile in quanto aggiornato in altro codice fiscale");
         for(String s: list){
             taxIdVerification.setMessaggio(s);
-            CheckTaxIdOKDto actualConvertToCfStatusDtoResult = checkCfConverter.convertToCfStatusDto(taxIdVerification);
+            CheckTaxIdOKDto actualConvertToCfStatusDtoResult = agenziaEntrateConverter.convertToCfStatusDto(taxIdVerification);
             assertEquals("Codice Fiscale", actualConvertToCfStatusDtoResult.getTaxId());
         }
         taxIdVerification.setMessaggio(null);
-        CheckTaxIdOKDto actualConvertToCfStatusDtoResult = checkCfConverter.convertToCfStatusDto(taxIdVerification);
+        CheckTaxIdOKDto actualConvertToCfStatusDtoResult = agenziaEntrateConverter.convertToCfStatusDto(taxIdVerification);
         assertEquals("Codice Fiscale", actualConvertToCfStatusDtoResult.getTaxId());
         assertNull(actualConvertToCfStatusDtoResult.getErrorCode());
     }
 
     /**
-     * Method under test: {@link CheckCfConverter#decodeError(String)}
+     * Method under test: {@link AgenziaEntrateConverter#decodeError(String)}
      */
     @Test
     void testDecodeError() {
-        assertNull(checkCfConverter.decodeError("Not all who wander are lost"));
+        assertNull(agenziaEntrateConverter.decodeError("Not all who wander are lost"));
     }
 }
 
