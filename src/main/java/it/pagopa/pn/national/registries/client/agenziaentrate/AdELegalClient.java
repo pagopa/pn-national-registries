@@ -5,7 +5,8 @@ import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteRespTy
 import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteType;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.client.agenziaentrate.request.SoapEnvelopeRequest;
+import it.pagopa.pn.national.registries.client.agenziaentrate.request.SoapBody;
+import it.pagopa.pn.national.registries.client.agenziaentrate.request.SoapEnvelope;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalErrorDto;
@@ -20,8 +21,13 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import javax.xml.bind.JAXB;
-import java.io.StringReader;
-import java.io.StringWriter;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Unmarshaller;
+import javax.xml.soap.MessageFactory;
+import javax.xml.soap.SOAPException;
+import javax.xml.soap.SOAPMessage;
+import java.io.*;
 import java.nio.charset.Charset;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
@@ -53,45 +59,50 @@ public class AdELegalClient {
         JAXB.marshal(object, sw);
         return sw.toString();
     }
-    private SoapEnvelopeRequest unmarshaller(String string) {
-        return JAXB.unmarshal(new StringReader(string), SoapEnvelopeRequest.class);
-
+    private CheckValidityRappresentanteRespType unmarshaller(String string) {
+        SoapBody soapEnvelope = JAXB.unmarshal(new StringReader(string), SoapBody.class);
+        CheckValidityRappresentanteRespType c = new CheckValidityRappresentanteRespType();
+        c.setCodiceRitorno(soapEnvelope.getBody().getCodiceRitorno());
+        c.setValido(soapEnvelope.getBody().getValido());
+        c.setDettaglioEsito(soapEnvelope.getBody().getDettaglioEsito());
+        return c;
     }
     public Mono<Object> getToken(){
         return Mono.just(new Object());
     }
-    public Mono<CheckValidityRappresentanteRespType> checkTaxIdAndVatNumberAdE(CheckValidityRappresentanteType request) {
+    public Mono<CheckValidityRappresentanteRespType> checkTaxIdAndVatNumberAdE(CheckValidityRappresentanteType request)  {
         // HEADER DA COSTRUIRE O QUI O NEL COSTRUTTORE
       //  SoapEnvelopeRequest soapEnvelopeRequest = new SoapEnvelopeRequest("Header", request);
-        return getToken().flatMap(accessTokenCacheEntry ->
-                webClient.post()
-                        .uri("/legalerappresentateAdE/check")
-                        .contentType(MediaType.TEXT_XML)
-                        .body(Mono.just( "<?xml version=\"1.0\"?>\n" +
-                                "\n" +
-                                "<soap:Envelope\n" +
-                                "xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope/\"\n" +
-                                "soap:encodingStyle=\"http://www.w3.org/2003/05/soap-encoding\">\n" +
-                                "\n" +
-                                "<soap:Header>" + /*marshaller(HEADER)  + */  "</soap:Header>\n" +
-                                "\n" +
-                                "<soap:Body>"   + marshaller(request) + "</soap:Body>\n" +
-                                "\n" +
-                                "</soap:Envelope>"), String.class)
-                        .retrieve()
-                        .bodyToMono(String.class)
-                        .map(this::unmarshaller)
-                        .map(SoapEnvelopeRequest::getBody)
-                        .doOnError(throwable -> {
-                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
-                                WebClientResponseException ex = (WebClientResponseException) throwable;
-                                throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                        ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), InfoCamereLegalErrorDto.class);
-                            }
-                        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                        new PnInternalException(ERROR_MESSAGE_LEGALE_RAPPRESENTANTE, ERROR_CODE_LEGALE_RAPPRESENTANTE, retrySignal.failure())))
+        return getToken().flatMap(accessTokenCacheEntry -> {
+                    return webClient.post()
+                            .uri("/legalerappresentateAdE/check")
+                            .contentType(MediaType.TEXT_XML)
+                            .body(Mono.just("<?xml version=\"1.0\"?>\n" +
+                                    "\n" +
+                                    "<soap:Envelope\n" +
+                                    "xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope/\"\n" +
+                                    "soap:encodingStyle=\"http://www.w3.org/2003/05/soap-encoding\">\n" +
+                                    "\n" +
+                                    "<soap:Header>" + /*marshaller(HEADER)  + */  "</soap:Header>\n" +
+                                    "\n" +
+                                    "<soap:Body>" + marshaller(request) + "</soap:Body>\n" +
+                                    "\n" +
+                                    "</soap:Envelope>"), String.class)
+                            .retrieve()
+                            .bodyToMono(String.class)
+                            .map(this::unmarshaller)
+
+                            .doOnError(throwable -> {
+                                if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
+                                    WebClientResponseException ex = (WebClientResponseException) throwable;
+                                    throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                            ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                            Charset.defaultCharset(), InfoCamereLegalErrorDto.class);
+                                }
+                            }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                                    .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                            new PnInternalException(ERROR_MESSAGE_LEGALE_RAPPRESENTANTE, ERROR_CODE_LEGALE_RAPPRESENTANTE, retrySignal.failure())));
+                }
         );
     }
 

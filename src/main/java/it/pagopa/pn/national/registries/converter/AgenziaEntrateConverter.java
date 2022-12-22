@@ -40,9 +40,9 @@ public class AgenziaEntrateConverter {
 
     public ADELegalOKDto adELegalResponseToDto(CheckValidityRappresentanteRespType checkValidityRappresentanteRespType) {
         ADELegalOKDto adeLegalOKDto = new ADELegalOKDto();
-        adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteRespType.getCodiceRitorno()));
+    //    adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteRespType.getCodiceRitorno()));
         adeLegalOKDto.setVerificationResult(checkValidityRappresentanteRespType.isValido());
-        adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteRespType.getDettaglioEsito()));
+    //    adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteRespType.getDettaglioEsito()));
 
 
         return adeLegalOKDto;
@@ -56,4 +56,5 @@ public class AgenziaEntrateConverter {
 
         return checkValidityRappresentanteType;
     }
+
 }
