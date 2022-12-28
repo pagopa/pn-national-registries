@@ -15,7 +15,7 @@ public enum BatchStatus {
   WORKED("WORKED"),
   ERROR("ERROR");
 
-  private String value;
+  private final String value;
 
   BatchStatus(String value) {
     this.value = value;
