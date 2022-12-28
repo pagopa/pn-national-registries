@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.client.agenziaentrate.request;
+package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPRequest;
 
 import lombok.Data;
 
@@ -9,7 +9,7 @@ import javax.xml.bind.annotation.XmlType;
 import java.util.Date;
 import java.util.List;
 
-public class SOAPResponseTemplate {
+public class SOAPRquestTemplate {
     public class CanonicalizationMethod {
         public String Algorithm;
     }
@@ -142,22 +142,23 @@ public class SOAPResponseTemplate {
         public String codiceFiscale;
     }
 
+    @Data
     public class Body {
         @Data
         @XmlAccessorType(XmlAccessType.FIELD)
-        @XmlType(name = "checkValidityRappresentanteRespType", propOrder = {
-                "valido",
-                "dettaglioEsito",
-                "codiceRitorno"
+        @XmlType(name = "checkValidityRappresentanteType", propOrder = {
+                "cfRappresentante",
+                "cfEnte"
         })
-        public class CheckValidityRappresentanteRespType {
+        public class CheckValidityRappresentanteType {
 
-            protected Boolean valido;
             @XmlElement(required = true)
-            protected String dettaglioEsito;
+            protected String cfRappresentante;
             @XmlElement(required = true)
-            protected String codiceRitorno;
+            protected String cfEnte;
         }
+
+        private CheckValidityRappresentanteType checkValidityRappresentanteType;
     }
 
     public class Envelope {
@@ -167,6 +168,4 @@ public class SOAPResponseTemplate {
         public String test;
         public String text;
     }
-
-
 }

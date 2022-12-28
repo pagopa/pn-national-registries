@@ -5,8 +5,9 @@ import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteRespTy
 import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteType;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.client.agenziaentrate.request.SoapBody;
-import it.pagopa.pn.national.registries.client.agenziaentrate.request.SoapEnvelope;
+import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPRequest.SoapBody;
+import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.Envelope;
+import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.SOAPResponseTemplate;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalErrorDto;
@@ -21,12 +22,6 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import javax.xml.bind.JAXB;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.soap.MessageFactory;
-import javax.xml.soap.SOAPException;
-import javax.xml.soap.SOAPMessage;
 import java.io.*;
 import java.nio.charset.Charset;
 
@@ -60,11 +55,11 @@ public class AdELegalClient {
         return sw.toString();
     }
     private CheckValidityRappresentanteRespType unmarshaller(String string) {
-        SoapBody soapEnvelope = JAXB.unmarshal(new StringReader(string), SoapBody.class);
+        Envelope soapEnvelope = JAXB.unmarshal(new StringReader(string), Envelope.class);
         CheckValidityRappresentanteRespType c = new CheckValidityRappresentanteRespType();
-        c.setCodiceRitorno(soapEnvelope.getBody().getCodiceRitorno());
-        c.setValido(soapEnvelope.getBody().getValido());
-        c.setDettaglioEsito(soapEnvelope.getBody().getDettaglioEsito());
+        c.setCodiceRitorno(soapEnvelope.getBody().getCheckValidityRappresentanteRespType().getCodiceRitorno());
+        c.setValido(soapEnvelope.getBody().getCheckValidityRappresentanteRespType().isValido());
+        c.setDettaglioEsito(soapEnvelope.getBody().getCheckValidityRappresentanteRespType().getDettaglioEsito());
         return c;
     }
     public Mono<Object> getToken(){
@@ -77,17 +72,7 @@ public class AdELegalClient {
                     return webClient.post()
                             .uri("/legalerappresentateAdE/check")
                             .contentType(MediaType.TEXT_XML)
-                            .body(Mono.just("<?xml version=\"1.0\"?>\n" +
-                                    "\n" +
-                                    "<soap:Envelope\n" +
-                                    "xmlns:soap=\"http://www.w3.org/2003/05/soap-envelope/\"\n" +
-                                    "soap:encodingStyle=\"http://www.w3.org/2003/05/soap-encoding\">\n" +
-                                    "\n" +
-                                    "<soap:Header>" + /*marshaller(HEADER)  + */  "</soap:Header>\n" +
-                                    "\n" +
-                                    "<soap:Body>" + marshaller(request) + "</soap:Body>\n" +
-                                    "\n" +
-                                    "</soap:Envelope>"), String.class)
+                            .body(Mono.just(marshaller(new Envelope())), String.class)
                             .retrieve()
                             .bodyToMono(String.class)
                             .map(this::unmarshaller)

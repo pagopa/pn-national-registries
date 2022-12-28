@@ -39,7 +39,7 @@ public class IniPecBatchPecListService {
         this.infoCamereClient = infoCamereClient;
     }
 
-    @Scheduled(fixedDelay = 300000)
+    //@Scheduled(fixedDelay = 300000)
     public void batchPecListRequest() {
         Map<String, AttributeValue> lastEvaluatedKeyMap = new HashMap<>();
         boolean hasNext = true;
