@@ -42,11 +42,11 @@ public class InfoCamereJwsGenerator {
         this.clientId = clientId;
     }
 
-    public String createAuthRest() {
+    public String createAuthRest(String scope) {
         try {
             log.info("start to createAuthRest");
             SSLData sslData = infoCamereSecretConfig.getIniPecAuthRestSecret();
-            return JWT.create().withHeader(createHeaderMap(sslData)).withPayload(createClaimMap())
+            return JWT.create().withHeader(createHeaderMap(sslData)).withPayload(createClaimMap(scope))
                     .sign(Algorithm.RSA256(getPublicKey(sslData.getPub()), getPrivateKey(sslData.getKey())));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
@@ -58,20 +58,22 @@ public class InfoCamereJwsGenerator {
         map.put(HeaderParams.TYPE, "JWT");
         map.put(HeaderParams.ALGORITHM, "ES256");
         map.put("x5c", List.of(sslData.getCert()));
+        map.put("use", "sig");
         log.debug("HeaderMap type: {}, alg: {}",map.get(HeaderParams.TYPE), map.get(HeaderParams.ALGORITHM));
         return map;
     }
 
-    private Map<String, Object> createClaimMap() {
+    private Map<String, Object> createClaimMap(String scope) {
         Map<String, Object> map = new HashMap<>();
         long nowSeconds = System.currentTimeMillis() / 1000L;
-        long expireSeconds = nowSeconds + 60;
+        long expireSeconds = nowSeconds + 300;
 
         map.put(RegisteredClaims.AUDIENCE, aud);
         map.put(RegisteredClaims.EXPIRES_AT, expireSeconds);
         map.put(RegisteredClaims.ISSUER, clientId);
         map.put(RegisteredClaims.SUBJECT, clientId);
         map.put(RegisteredClaims.JWT_ID, UUID.randomUUID().toString());
+        map.put("scope", scope);
 
         log.debug("ClaimMap audience: {}",map.get(RegisteredClaims.AUDIENCE));
         return map;

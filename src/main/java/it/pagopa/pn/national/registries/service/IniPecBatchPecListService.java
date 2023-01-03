@@ -39,7 +39,7 @@ public class IniPecBatchPecListService {
         this.infoCamereClient = infoCamereClient;
     }
 
-    //@Scheduled(fixedDelay = 300000)
+    @Scheduled(fixedDelay = 30000)
     public void batchPecListRequest() {
         Map<String, AttributeValue> lastEvaluatedKeyMap = new HashMap<>();
         boolean hasNext = true;
@@ -90,7 +90,7 @@ public class IniPecBatchPecListService {
                 }).then();
     }
 
-    @Scheduled(fixedDelay = 300000)
+    @Scheduled(fixedDelay = 30000)
     public void recoveryPrimoFlusso() {
         iniPecBatchRequestRepository.resetBatchIdForRecovery()
                 .doOnNext(batchRequests -> batchPecListRequest())

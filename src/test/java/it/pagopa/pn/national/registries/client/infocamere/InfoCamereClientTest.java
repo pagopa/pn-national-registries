@@ -14,6 +14,7 @@ import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImp
 import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -51,14 +52,15 @@ class InfoCamereClientTest {
 
     @MockBean
     InfoCamereSecretConfig infoCamereSecretConfig;
-
+    private final String clientId = "a7e152cac460917f3123cc2410f5a8d2a7e152cac460917f3123cc2410f5a8d2";
     @MockBean
     ObjectMapper mapper;
 
     @Test
     void callgetTokenTest() {
         when(infoCamereWebClient.init()).thenReturn(webClient);
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId,
+                infoCamereJwsGenerator, mapper);
 
         ClientCredentialsResponseDto response = new ClientCredentialsResponseDto();
         response.setAccessToken("token");
@@ -83,7 +85,7 @@ class InfoCamereClientTest {
     @Test
     void testCallEServiceRequestId(){
         when(infoCamereWebClient.init()).thenReturn(webClient);
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
         RequestCfIniPec request = new RequestCfIniPec();
         request.setDataOraRichiesta(LocalDateTime.now().toString());
@@ -133,7 +135,7 @@ class InfoCamereClientTest {
     @Test
     void testCallEServiceRequestPec() {
         when(infoCamereWebClient.init()).thenReturn(webClient);
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
         String request = "correlationId";
         ResponsePecIniPec response = new ResponsePecIniPec();
@@ -163,7 +165,7 @@ class InfoCamereClientTest {
     @Test
     void testGetLegalAddress() {
         when(infoCamereWebClient.init()).thenReturn(webClient);
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
         String request = "taxId";
         AddressRegistroImpreseResponse response = new AddressRegistroImpreseResponse();
@@ -195,7 +197,7 @@ class InfoCamereClientTest {
 
     @Test
     void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient,clientId, infoCamereJwsGenerator, mapper);
         WebClientResponseException webClientResponseException =
                 new WebClientResponseException(
                         "message",
@@ -209,7 +211,7 @@ class InfoCamereClientTest {
 
     @Test
     void checkExceptionTypeWhenNotWebClientResponseExceptionThenReturnFalse() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient,clientId, infoCamereJwsGenerator, mapper);
 
         assertFalse(infoCamereClient.checkExceptionType(new Exception()));
     }
@@ -218,7 +220,7 @@ class InfoCamereClientTest {
     @Test
     void testCheckTaxIdAndVatNumber() {
         when(infoCamereWebClient.init()).thenReturn(webClient);
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, infoCamereJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient,clientId, infoCamereJwsGenerator, mapper);
 
         InfoCamereLegalRequestBodyFilterDto requestFilter = new InfoCamereLegalRequestBodyFilterDto();
         requestFilter.setTaxId("taxId");

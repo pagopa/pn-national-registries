@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
-import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteRespType;
 import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteType;
+import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.CheckValidityRappresentanteRespType;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
@@ -40,9 +40,9 @@ public class AgenziaEntrateConverter {
 
     public ADELegalOKDto adELegalResponseToDto(CheckValidityRappresentanteRespType checkValidityRappresentanteRespType) {
         ADELegalOKDto adeLegalOKDto = new ADELegalOKDto();
-    //    adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteRespType.getCodiceRitorno()));
-        adeLegalOKDto.setVerificationResult(checkValidityRappresentanteRespType.isValido());
-    //    adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteRespType.getDettaglioEsito()));
+        adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteRespType.getCodiceRitorno()));
+        adeLegalOKDto.setVerificationResult(checkValidityRappresentanteRespType.getValido());
+        adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteRespType.getDettaglioEsito()));
 
 
         return adeLegalOKDto;
@@ -52,7 +52,6 @@ public class AgenziaEntrateConverter {
         CheckValidityRappresentanteType checkValidityRappresentanteType = new CheckValidityRappresentanteType();
         checkValidityRappresentanteType.setCfRappresentante(filter.getTaxId());
         checkValidityRappresentanteType.setCfEnte(filter.getVatNumber());
-
 
         return checkValidityRappresentanteType;
     }

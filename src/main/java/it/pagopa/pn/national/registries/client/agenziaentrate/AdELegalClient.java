@@ -1,11 +1,10 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteRespType;
 import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteType;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPRequest.SoapBody;
+import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.*;
 import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.Envelope;
 import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.SOAPResponseTemplate;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
@@ -54,18 +53,19 @@ public class AdELegalClient {
         JAXB.marshal(object, sw);
         return sw.toString();
     }
-    private CheckValidityRappresentanteRespType unmarshaller(String string) {
+    private it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.CheckValidityRappresentanteRespType unmarshaller(String string) {
         Envelope soapEnvelope = JAXB.unmarshal(new StringReader(string), Envelope.class);
-        CheckValidityRappresentanteRespType c = new CheckValidityRappresentanteRespType();
+        it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.CheckValidityRappresentanteRespType c = new CheckValidityRappresentanteRespType();
         c.setCodiceRitorno(soapEnvelope.getBody().getCheckValidityRappresentanteRespType().getCodiceRitorno());
-        c.setValido(soapEnvelope.getBody().getCheckValidityRappresentanteRespType().isValido());
+        c.setValido(soapEnvelope.getBody().getCheckValidityRappresentanteRespType().getValido());
         c.setDettaglioEsito(soapEnvelope.getBody().getCheckValidityRappresentanteRespType().getDettaglioEsito());
         return c;
     }
     public Mono<Object> getToken(){
         return Mono.just(new Object());
     }
-    public Mono<CheckValidityRappresentanteRespType> checkTaxIdAndVatNumberAdE(CheckValidityRappresentanteType request)  {
+    public Mono<it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.CheckValidityRappresentanteRespType>
+    checkTaxIdAndVatNumberAdE(CheckValidityRappresentanteType request)  {
         // HEADER DA COSTRUIRE O QUI O NEL COSTRUTTORE
       //  SoapEnvelopeRequest soapEnvelopeRequest = new SoapEnvelopeRequest("Header", request);
         return getToken().flatMap(accessTokenCacheEntry -> {
@@ -76,7 +76,6 @@ public class AdELegalClient {
                             .retrieve()
                             .bodyToMono(String.class)
                             .map(this::unmarshaller)
-
                             .doOnError(throwable -> {
                                 if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
                                     WebClientResponseException ex = (WebClientResponseException) throwable;

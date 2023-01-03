@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse;
 
-import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteRespType;
 import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteType;
 import lombok.Data;
 
@@ -15,7 +14,7 @@ import javax.xml.bind.annotation.XmlType;
         "CheckValidityRappresentanteRespType"})
 public class Body {
     @XmlElement(name = "CheckValidityRappresentanteRespType")
-    public ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteRespType CheckValidityRappresentanteRespType;
+    public it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.CheckValidityRappresentanteRespType CheckValidityRappresentanteRespType;
 
     public Body() {
        /* CheckValidityRappresentanteRespType = new CheckValidityRappresentanteRespType();
