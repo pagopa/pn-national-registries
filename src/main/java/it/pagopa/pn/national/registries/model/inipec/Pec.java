@@ -9,7 +9,7 @@ public class Pec {
 
   private String cf;
   private String pecImpresa;
-  private List<String> pecProfessionistas;
+  private List<PecProfessionista> pecProfessionistas;
 
 }
 
