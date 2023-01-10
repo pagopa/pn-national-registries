@@ -51,8 +51,7 @@ public class InadClient {
                         .retrieve()
                         .bodyToMono(ResponseRequestDigitalAddressDto.class))
                 .doOnError(throwable -> {
-                    if(!checkExceptionType(throwable) && throwable instanceof WebClientResponseException){
-                        WebClientResponseException ex = (WebClientResponseException) throwable;
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(),ex.getStatusCode().value(),
                                 ex.getStatusText(),ex.getHeaders(),ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InadResponseKO.class);
@@ -66,8 +65,7 @@ public class InadClient {
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
-        if (throwable instanceof WebClientResponseException) {
-            WebClientResponseException exception = (WebClientResponseException) throwable;
+        if (throwable instanceof WebClientResponseException exception) {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;

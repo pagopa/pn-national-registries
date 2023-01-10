@@ -76,8 +76,7 @@ public class AnprClient {
                             .retrieve()
                             .bodyToMono(ResponseE002OKDto.class);
                 }).doOnError(throwable -> {
-                    if(!checkExceptionType(throwable) && throwable instanceof WebClientResponseException){
-                        WebClientResponseException ex = (WebClientResponseException) throwable;
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(),ex.getStatusCode().value(),
                                 ex.getStatusText(),ex.getHeaders(),ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(),AnprResponseKO.class);
@@ -107,12 +106,10 @@ public class AnprClient {
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
-        if (throwable instanceof WebClientResponseException) {
-            WebClientResponseException exception = (WebClientResponseException) throwable;
+        if (throwable instanceof WebClientResponseException exception) {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;
     }
-
 
 }

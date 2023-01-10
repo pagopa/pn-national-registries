@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.config;
 
-import com.amazonaws.client.builder.AwsClientBuilder;
 import com.amazonaws.services.sqs.AmazonSQS;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import org.springframework.beans.factory.annotation.Value;

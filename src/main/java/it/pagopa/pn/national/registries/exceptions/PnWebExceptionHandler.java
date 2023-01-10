@@ -54,15 +54,14 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         DataBufferFactory bufferFactory = serverWebExchange.getResponse().bufferFactory();
         NationalRegistriesProblem nationalRegistriesProblem;
         try {
-            if (throwable instanceof PnNationalRegistriesException) {
-                PnNationalRegistriesException exception = (PnNationalRegistriesException) throwable;
+            if (throwable instanceof PnNationalRegistriesException exception) {
                 log.error("Error -> statusCode: {}, message: {}, uri: {}", exception.getStatusCode().value(), exception.getMessage(), serverWebExchange.getRequest().getURI());
                 if(exception.getStatusCode().equals(HttpStatus.UNAUTHORIZED)){
                     nationalRegistriesProblem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
                 }else {
                     nationalRegistriesProblem = createProblem(exception);
                 }
-            }else{
+            } else {
                 log.error("Error -> {}, uri : {}",throwable.getMessage(), serverWebExchange.getRequest().getURI());
                 nationalRegistriesProblem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
             }

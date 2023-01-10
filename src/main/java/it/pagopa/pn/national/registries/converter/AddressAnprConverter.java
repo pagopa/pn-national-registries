@@ -6,7 +6,6 @@ import it.pagopa.pn.national.registries.model.anpr.*;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class AddressAnprConverter {
@@ -33,7 +32,7 @@ public class AddressAnprConverter {
     public List<ResidentialAddressDto> convertResidence(List<ResidenceDto> residenza) {
         return residenza.stream()
                 .map(this::convertResidence)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public ResidentialAddressDto convertResidence(ResidenceDto dto) {

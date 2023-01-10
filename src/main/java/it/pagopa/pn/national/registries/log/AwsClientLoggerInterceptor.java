@@ -27,28 +27,23 @@ public class AwsClientLoggerInterceptor implements ExecutionInterceptor {
         final Object operationName = executionAttributes.getAttributes().get(OPERATION_NAME);
         final Object serviceName = executionAttributes.getAttributes().get(SERVICE_NAME);
 
-        if (context.response() instanceof ScanResponse) {
-            ScanResponse scanResponse = (ScanResponse) context.response();
+        if (context.response() instanceof ScanResponse scanResponse) {
             log.info("END - {}.{} request: {} count: {} timelapse: {} ms",serviceName, operationName, context.request(),
                     scanResponse.count(), elapsed);
-        } else if (context.response() instanceof QueryResponse) {
-            QueryResponse queryResponse = (QueryResponse) context.response();
+        } else if (context.response() instanceof QueryResponse queryResponse) {
             log.info("END - {}.{} request: {} count: {} timelapse: {} ms",serviceName, operationName, context.request(),
                     queryResponse.count(), elapsed);
-        } else if (context.response() instanceof GetItemResponse) {
-            GetItemResponse getItemResponse = (GetItemResponse) context.response();
+        } else if (context.response() instanceof GetItemResponse getItemResponse) {
             log.info("END - {}.{} request: {} hasItem: {} response: {} timelapse: {} ms",serviceName, operationName,
                     context.request(), getItemResponse.hasItem(), context.response(), elapsed);
         } else if (context.response() instanceof PutItemResponse
                 || context.response() instanceof UpdateItemResponse
                 || context.response() instanceof DeleteItemResponse) {
             log.info("END - {}.{} request: {} timelapse: {} ms",serviceName, operationName, context.request(), elapsed);
-        } else if (context.response() instanceof BatchGetItemResponse) {
-            BatchGetItemResponse batchGetItemResponse = (BatchGetItemResponse) context.response();
+        } else if (context.response() instanceof BatchGetItemResponse batchGetItemResponse) {
             log.info("END - {}.{} request: {} hasUnprocessedKeys: {} timelapse: {} ms",serviceName, operationName,
                     context.request(), batchGetItemResponse.hasUnprocessedKeys(), elapsed);
-        } else if (context.response() instanceof BatchWriteItemResponse) {
-            BatchWriteItemResponse batchWriteItemResponse = (BatchWriteItemResponse) context.response();
+        } else if (context.response() instanceof BatchWriteItemResponse batchWriteItemResponse) {
             log.info("END - {}.{} request: {} hasUnprocessedItems: {} timelapse: {} ms",serviceName, operationName,
                     context.request(), batchWriteItemResponse.hasUnprocessedItems(), elapsed);
         }

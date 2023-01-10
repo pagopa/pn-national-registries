@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
@@ -31,6 +32,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 @ContextConfiguration(classes = {IniPecPollingService.class})
 @ExtendWith(SpringExtension.class)
 class IniPecPollingServiceTest {
+
     @MockBean
     private IniPecBatchPollingRepository iniPecBatchPollingRepository;
 
@@ -83,8 +85,7 @@ class IniPecPollingServiceTest {
 
         when(iniPecBatchRequestRepository.setBatchRequestsStatus(batchRequest, BatchStatus.WORKED.getValue())).thenReturn(Mono.just(batchRequest));
 
-        iniPecPollingService.getPecList();
-
+        assertDoesNotThrow(() -> iniPecPollingService.getPecList());
     }
 
 }
