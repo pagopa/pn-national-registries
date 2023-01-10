@@ -56,9 +56,4 @@ public class InfoCamereService {
         batchRequest.setTimeStamp(LocalDateTime.now());
         return batchRequest;
     }
-    public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
-        return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
-                .map(infoCamereConverter::infoCamereResponseToDto);
-    }
-
 }

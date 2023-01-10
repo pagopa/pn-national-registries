@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -42,7 +43,7 @@ public class InadClient {
                         .uri(uriBuilder -> uriBuilder
                                 .queryParam("practicalReference", practicalReference)
                                 .path("/extract/{codice_fiscale}")
-                                .build(taxId))
+                                .build(Map.of("codice_fiscale", taxId)))
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());

@@ -7,7 +7,6 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
@@ -113,8 +112,8 @@ public class InfoCamereClient {
                         .uri(uriBuilder -> uriBuilder
                                 .path("/getElencoPec/{identificativoRichiesta}")
                                 .queryParamIfPresent("client_id", Optional.ofNullable(clientId))
-                                .build(correlationId)
-                        )
+                                .build(Map.of("identificativoRichiesta", correlationId))
+                )
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
@@ -177,31 +176,5 @@ public class InfoCamereClient {
         } catch (JsonProcessingException e) {
             throw new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC,e);
         }
-    }
-
-
-    public Mono<InfoCamereVerificationResponse> checkTaxIdAndVatNumberInfoCamere(InfoCamereLegalRequestBodyFilterDto filterDto) {
-        return getToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value()).flatMap(clientCredentialsResponseDto ->
-                webClient.get()
-                        .uri(uriBuilder -> uriBuilder
-                                .path("/legaleRappresentante/{cfPersona}")
-                                .queryParam("cfImpresa", filterDto.getVatNumber())
-                                .build(Map.of("cfPersona", filterDto.getTaxId())))
-                        .headers(httpHeaders -> {
-                            httpHeaders.setBearerAuth(clientCredentialsResponseDto.getAccessToken());
-                        })
-                        .retrieve()
-                        .bodyToMono(InfoCamereVerificationResponse.class)
-                        .doOnError(throwable -> {
-                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
-                                WebClientResponseException ex = (WebClientResponseException) throwable;
-                                throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                        ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), InfoCamereLegalErrorDto.class);
-                            }
-                        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                        new PnInternalException(ERROR_MESSAGE_LEGALE_RAPPRESENTANTE, ERROR_CODE_LEGALE_RAPPRESENTANTE, retrySignal.failure())))
-        );
     }
 }
