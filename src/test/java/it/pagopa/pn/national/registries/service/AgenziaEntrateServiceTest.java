@@ -1,11 +1,11 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.client.checkcf.CheckCfClient;
-import it.pagopa.pn.national.registries.converter.CheckCfConverter;
+import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfClient;
+import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.model.checkcf.TaxIdVerification;
+import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -19,13 +19,13 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class CheckCfServiceTest {
+class AgenziaEntrateServiceTest {
     @InjectMocks
-    CheckCfService checkCfService;
+    AgenziaEntrateService agenziaEntrateService;
     @Mock
     CheckCfClient checkCfClient;
     @Mock
-    CheckCfConverter checkCfConverter;
+    AgenziaEntrateConverter agenziaEntrateConverter;
 
     @Test
     void callEService() {
@@ -45,9 +45,9 @@ class CheckCfServiceTest {
         checkTaxIdOKDto.setErrorCode(CheckTaxIdOKDto.ErrorCodeEnum.ERR01);
         when(checkCfClient.callEService(any())).thenReturn(Mono.just(taxIdVerification));
 
-        when(checkCfConverter.convertToCfStatusDto(any())).thenReturn(checkTaxIdOKDto);
+        when(agenziaEntrateConverter.convertToCfStatusDto(any())).thenReturn(checkTaxIdOKDto);
 
-        StepVerifier.create(checkCfService.callEService(requestBodyDto)).expectNext(checkTaxIdOKDto).verifyComplete();
+        StepVerifier.create(agenziaEntrateService.callEService(requestBodyDto)).expectNext(checkTaxIdOKDto).verifyComplete();
 
     }
 }

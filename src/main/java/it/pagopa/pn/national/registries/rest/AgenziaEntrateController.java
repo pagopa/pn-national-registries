@@ -1,9 +1,9 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.CheckTaxIdApi;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.AgenziaEntrateApi;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
-import it.pagopa.pn.national.registries.service.CheckCfService;
+import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,14 +13,14 @@ import reactor.core.scheduler.Scheduler;
 
 @RestController
 @Slf4j
-public class CheckCfController implements CheckTaxIdApi {
+public class AgenziaEntrateController implements AgenziaEntrateApi {
 
-    private final CheckCfService checkCfService;
+    private final AgenziaEntrateService agenziaEntrateService;
     private final Scheduler scheduler;
 
 
-    public CheckCfController(CheckCfService checkCfService, Scheduler scheduler) {
-        this.checkCfService = checkCfService;
+    public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler) {
+        this.agenziaEntrateService = agenziaEntrateService;
         this.scheduler = scheduler;
     }
 
@@ -35,7 +35,7 @@ public class CheckCfController implements CheckTaxIdApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        return checkCfService.callEService(checkTaxIdRequestBodyDto)
+        return agenziaEntrateService.callEService(checkTaxIdRequestBodyDto)
                     .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 }

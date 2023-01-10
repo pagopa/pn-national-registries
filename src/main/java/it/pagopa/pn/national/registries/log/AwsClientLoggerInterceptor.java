@@ -15,16 +15,14 @@ public class AwsClientLoggerInterceptor implements ExecutionInterceptor {
     public void beforeExecution(Context.BeforeExecution context, ExecutionAttributes executionAttributes) {
         final Object operationName = executionAttributes.getAttributes().get(OPERATION_NAME);
         final Object serviceName = executionAttributes.getAttributes().get(SERVICE_NAME);
-        log.info("START - {}.{} {}",
-               serviceName, operationName,
-                context.request());
+        log.info("START - {}.{} {}", serviceName, operationName, context.request());
         executionAttributes.putAttribute(START_TIME, System.currentTimeMillis());
     }
 
     @Override
     public void afterExecution(Context.AfterExecution context, ExecutionAttributes executionAttributes) {
         Long startTime = executionAttributes.getAttribute(START_TIME);
-        Long elapsed = startTime != null ? System.currentTimeMillis() - startTime : null;
+        Long elapsed = startTime != null ? (System.currentTimeMillis() - startTime) : null;
 
         final Object operationName = executionAttributes.getAttributes().get(OPERATION_NAME);
         final Object serviceName = executionAttributes.getAttributes().get(SERVICE_NAME);
@@ -60,9 +58,7 @@ public class AwsClientLoggerInterceptor implements ExecutionInterceptor {
     public void onExecutionFailure(Context.FailedExecution context, ExecutionAttributes executionAttributes) {
         final Object serviceName = executionAttributes.getAttributes().get(SERVICE_NAME);
         final Object operationName = executionAttributes.getAttributes().get(OPERATION_NAME);
-        log.warn("{}.{}",
-               serviceName, operationName,
-                context.exception());
+        log.warn("{}.{}", serviceName, operationName, context.exception());
     }
 
 }

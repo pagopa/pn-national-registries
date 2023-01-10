@@ -34,8 +34,8 @@ public class InfoCamereJwsGenerator {
     private final InfoCamereSecretConfig infoCamereSecretConfig;
     private final String clientId;
 
-    public InfoCamereJwsGenerator(@Value("${pn.national.registries.pdnd.inipec.base-path}") String aud,
-                                  @Value("${pn.national.registries.pdnd.inipec.client-id}") String clientId,
+    public InfoCamereJwsGenerator(@Value("${pn.national.registries.infocamere.base-path}") String aud,
+                                  @Value("${pn.national.registries.infocamere.client-id}") String clientId,
                                   InfoCamereSecretConfig infoCamereSecretConfig) {
         this.aud = aud;
         this.infoCamereSecretConfig = infoCamereSecretConfig;

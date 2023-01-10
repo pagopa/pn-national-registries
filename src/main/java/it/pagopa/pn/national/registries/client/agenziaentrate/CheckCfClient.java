@@ -1,12 +1,12 @@
-package it.pagopa.pn.national.registries.client.checkcf;
+package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
-import it.pagopa.pn.national.registries.model.checkcf.Request;
-import it.pagopa.pn.national.registries.model.checkcf.TaxIdVerification;
+import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
+import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
