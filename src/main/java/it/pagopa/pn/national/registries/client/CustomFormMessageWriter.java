@@ -1,10 +1,10 @@
 package it.pagopa.pn.national.registries.client;
 
-import java.util.Objects;
-
 import org.jetbrains.annotations.NotNull;
 import org.springframework.http.MediaType;
 import org.springframework.http.codec.FormHttpMessageWriter;
+
+import java.util.Objects;
 
 public class CustomFormMessageWriter extends FormHttpMessageWriter {
 

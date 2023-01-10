@@ -30,7 +30,13 @@ public class SecretManagerService {
         }
         GetSecretValueRequest secretValueRequest = GetSecretValueRequest.builder().secretId(secretName).build();
         try {
-            return Optional.of(secretsManagerClient.getSecretValue(secretValueRequest));
+            long startTime = System.currentTimeMillis();
+            log.info("START - SecretsManager.getSecretValue Request: {}",
+                    secretValueRequest);
+            GetSecretValueResponse getSecretValueResponse = secretsManagerClient.getSecretValue(secretValueRequest);
+            log.info("END - SecretsManager.getSecretValue Response: {} Timelapse: {} ms",
+                    Optional.ofNullable(getSecretValueResponse),System.currentTimeMillis() - startTime);
+            return Optional.ofNullable(getSecretValueResponse);
         } catch (Exception e) {
             throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER,e);
         }

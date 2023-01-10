@@ -42,7 +42,7 @@ class AccessTokenExpiringMapTest {
 
         accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider,Integer.parseInt("-5000"));
 
-        when(tokenProvider.getToken(new SecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
+        when(tokenProvider.getTokenPdnd(new SecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
         StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new SecretValue())).expectNext(accessTokenCacheEntry).verifyComplete();
 
@@ -61,7 +61,7 @@ class AccessTokenExpiringMapTest {
 
         accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider,Integer.parseInt("5000"));
 
-        when(tokenProvider.getToken(new SecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
+        when(tokenProvider.getTokenPdnd(new SecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
         StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new SecretValue())).expectNext(accessTokenCacheEntry).verifyComplete();
 

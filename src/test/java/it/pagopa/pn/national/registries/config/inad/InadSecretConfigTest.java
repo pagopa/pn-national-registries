@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.config.inad;
 
-import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

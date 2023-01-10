@@ -36,8 +36,8 @@ class TokenProviderTest {
 
         TokenProvider tokenProvider =
                 new TokenProvider(
-                        assertionGenerator, pdndClient, "clientAssertionType", "grantType");
-        Mono<ClientCredentialsResponseDto> token = tokenProvider.getToken(secretValue);
+                        assertionGenerator,pdndClient,"clientAssertionType", "grantType");
+        Mono<ClientCredentialsResponseDto> token = tokenProvider.getTokenPdnd(secretValue);
 
         StepVerifier.create(token).verifyComplete();
     }
@@ -63,7 +63,7 @@ class TokenProviderTest {
                 new TokenProvider(
                         assertionGenerator, pdndClient, "clientAssertionType", "grantType");
 
-        Mono<ClientCredentialsResponseDto> tokenMono = tokenProvider.getToken(secretValue);
+        Mono<ClientCredentialsResponseDto> tokenMono = tokenProvider.getTokenPdnd(secretValue);
 
         StepVerifier.create(tokenMono)
                 .expectNextMatches(
@@ -83,7 +83,7 @@ class TokenProviderTest {
         when(assertionGenerator.generateClientAssertion(any())).thenReturn("clientAssertion");
         when(pdndClient.createToken("clientAssertion", "client_credentials",
                 "basePath", null)).thenReturn(Mono.just(clientCredentialsResponseDto));
-        StepVerifier.create(tokenProvider.getToken(new SecretValue())).expectNext(clientCredentialsResponseDto).verifyComplete();
+        StepVerifier.create(tokenProvider.getTokenPdnd(new SecretValue())).expectNext(clientCredentialsResponseDto).verifyComplete();
     }
 
     @Test
@@ -96,7 +96,7 @@ class TokenProviderTest {
         clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
         when(pdndClient.createToken(null,"test","client_credentials",null))
                 .thenReturn(Mono.just(clientCredentialsResponseDto));
-        StepVerifier.create(tokenProvider.getToken(new SecretValue())).expectNext(clientCredentialsResponseDto)
+        StepVerifier.create(tokenProvider.getTokenPdnd(new SecretValue())).expectNext(clientCredentialsResponseDto)
                 .verifyComplete();
     }
 }

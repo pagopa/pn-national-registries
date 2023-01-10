@@ -27,9 +27,10 @@ public class PnNationlRegistriesSecretConfig {
     protected SecretValue getSecretValue(String purposeId) {
         Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(purposeId);
         if(opt.isPresent()){
+            log.info("founded secret for purposeId: {}", purposeId);
             return convertToSecretValueObject(opt.get().secretString());
         }else{
-            log.info("secret value not found");
+            log.info("secret value for purposeId: {} not found", purposeId);
             throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, new Throwable());
         }
     }
@@ -40,9 +41,10 @@ public class PnNationlRegistriesSecretConfig {
             ObjectMapper mapper = new ObjectMapper();
             Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretName);
             if(opt.isPresent()){
+                log.info("founded secret value for secret: {}", secretName);
                 return mapper.readValue(opt.get().secretString(), SSLData.class);
             }else{
-                log.info("secret value not found");
+                log.info("secret value for secret: {} not found", secretName);
                 throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, new Throwable());
             }
 

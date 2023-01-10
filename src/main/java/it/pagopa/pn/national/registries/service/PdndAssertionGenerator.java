@@ -18,7 +18,8 @@ import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 import java.nio.charset.StandardCharsets;
 import java.util.regex.Pattern;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_CLIENTASSERTION;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_CLIENTASSERTION;
 
 @Slf4j
 @Component
@@ -32,11 +33,11 @@ public class PdndAssertionGenerator {
     }
 
     public String generateClientAssertion(SecretValue jwtCfg){
+        log.info("START - PdndAssertionsGenerator.generateClientAssertion");
+        long startTime = System.currentTimeMillis();
         try {
             TokenHeader th = new TokenHeader(jwtCfg.getJwtConfig());
-            log.debug("TokenHeader: {}",th);
             TokenPayload tp = new TokenPayload(jwtCfg.getJwtConfig());
-            log.debug("TokenPayload: {}",tp);
             ObjectMapper mapper = new ObjectMapper();
 
             String headerBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(th));
@@ -51,12 +52,15 @@ public class PdndAssertionGenerator {
                     .keyId(jwtCfg.getKeyId())
                     .build();
 
-            log.debug("SignRequest for KMS: {}", signRequest);
-
+            log.info("START - KmsClient.sign Request: {}",
+                    signRequest);
+            long startTimeKms = System.currentTimeMillis();
             SignResponse signResult = kmsClient.sign(signRequest);
+            log.info("END - KmsClient.sign Timelapse: {} ms", System.currentTimeMillis() - startTimeKms);
 
             byte[] signature = signResult.signature().asByteArray();
             String signatureString = bytesToUrlSafeBase64String(signature);
+            log.info("END - PdndAssertionGenerator.generateClientAssertion Timelapse: {} ms", System.currentTimeMillis() - startTime);
             return jwtContent + "." + signatureString;
 
         } catch (Exception e) {

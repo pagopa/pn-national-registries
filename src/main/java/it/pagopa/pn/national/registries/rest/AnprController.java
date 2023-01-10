@@ -27,14 +27,14 @@ public class AnprController implements AddressAnprApi {
     }
 
     /**
-     * POST /getAddressANPR : Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta
+     * POST /national-registries-private/anpr/address : Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta
      * Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta
      *
      * @param getAddressANPRRequestBodyDto Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta (required)
      * @return OK (status code 200)
-     * or Caso d&#39;uso invalido (status code 400)
-     * or Caso d&#39;uso non trovato (status code 404)
-     * or Internal server error (status code 500)
+     *         or Caso d&#39;uso invalido (status code 400)
+     *         or Caso d&#39;uso non trovato (status code 404)
+     *         or Internal server error (status code 500)
      */
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {

@@ -10,7 +10,7 @@ import reactor.core.publisher.Mono;
 
 @Service
 @Slf4j
-public class InadService{
+public class InadService {
 
     private final InadClient inadClient;
 
@@ -19,7 +19,7 @@ public class InadService{
     }
 
     public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request) {
-            return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference())
-                    .map(DigitalAddressInadConverter::mapToResponseOk);
+        return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference())
+                .map(DigitalAddressInadConverter::mapToResponseOk);
     }
 }

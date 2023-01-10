@@ -28,7 +28,7 @@ public class TokenProvider {
         this.pdndClient = pdndClient;
     }
 
-    public Mono<ClientCredentialsResponseDto> getToken(SecretValue secretValue) {
+    public Mono<ClientCredentialsResponseDto> getTokenPdnd(SecretValue secretValue) {
         String clientAssertion = assertionGenerator.generateClientAssertion(secretValue);
         return pdndClient.createToken(clientAssertion, clientAssertionType, grantType, secretValue.getClientId())
                 .map(clientCredentialsResponseDto -> clientCredentialsResponseDto);
