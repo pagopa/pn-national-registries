@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddress
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -31,12 +32,15 @@ public class InfoCamereService {
 
     public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto) {
         return createBatchRequestByCf(getDigitalAddressIniPECRequestBodyDto)
-                .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {}",getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId()))
+                .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId()),getDigitalAddressIniPECRequestBodyDto.getFilter().getCorrelationId()))
+                .doOnError(throwable -> log.info("Failed to create Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId()),getDigitalAddressIniPECRequestBodyDto.getFilter().getCorrelationId()))
                 .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
     }
 
     public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseAddress(GetAddressRegistroImpreseRequestBodyDto request) {
         return infoCamereClient.getLegalAddress(request.getFilter().getTaxId())
+                .doOnNext(address -> log.info("Got Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId())))
+                .doOnError(throwable -> log.info("Failed to get Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId())))
                 .map(infoCamereConverter::mapToResponseOk);
     }
 

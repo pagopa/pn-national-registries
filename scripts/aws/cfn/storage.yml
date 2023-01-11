@@ -101,12 +101,6 @@ Resources:
       AliasName: !Sub 'alias/${ProjectName}-national-registries-inad-pdnd'
       TargetKeyId: !Ref InadPDNDSessionTokenSigningKey
 
-  QueueSqs:
-    type: AWS::SQS:Queue
-    Properties:
-      QueueName: !Sub '${ProjectName}-inipec'
-      FifoQueue: 'false'
-
   CounterTable:
     Type: AWS::DynamoDB::Table
     Properties:

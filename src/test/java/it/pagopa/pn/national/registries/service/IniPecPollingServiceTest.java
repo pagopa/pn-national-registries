@@ -1,12 +1,10 @@
 package it.pagopa.pn.national.registries.service;
 
-import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
-import com.amazonaws.services.sqs.model.SendMessageResult;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -28,11 +26,11 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 @ContextConfiguration(classes = {IniPecPollingService.class})
 @ExtendWith(SpringExtension.class)
 class IniPecPollingServiceTest {
-
     @MockBean
     private IniPecBatchPollingRepository iniPecBatchPollingRepository;
 
@@ -72,20 +70,24 @@ class IniPecPollingServiceTest {
 
         ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
         responsePecIniPec.setIdentificativoRichiesta("correlationId");
+        responsePecIniPec.setElencoPec(new ArrayList<>());
         when(infoCamereClient.callEServiceRequestPec("pollingId")).thenReturn(Mono.just(responsePecIniPec));
 
         when(iniPecBatchPollingRepository.updateBatchPolling(batchPolling)).thenReturn(Mono.just(batchPolling));
 
         when(iniPecBatchRequestRepository.getBatchRequestsToSend("batchId")).thenReturn(Mono.just(batchRequests));
 
-        when(infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec)).thenReturn(new CodeSqsDto());
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setTaxId("taxId");
+        when(infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec)).thenReturn(codeSqsDto);
 
-        SendMessageResult sendMessageResult = new SendMessageResult();
+        SendMessageResponse sendMessageResult = SendMessageResponse.builder().build();
         when(sqsService.push(any())).thenReturn(Mono.just(sendMessageResult));
 
         when(iniPecBatchRequestRepository.setBatchRequestsStatus(batchRequest, BatchStatus.WORKED.getValue())).thenReturn(Mono.just(batchRequest));
 
-        assertDoesNotThrow(() -> iniPecPollingService.getPecList());
+        iniPecPollingService.getPecList();
+
     }
 
 }

@@ -5,6 +5,14 @@ Transform:
   - UpdateDeploymentTransform
 
 Parameters:
+  NationalRegistryGatewayOutputsQueueName:
+    Type: String
+    Description: 'The name of the queue'
+
+  NationalRegistryGatewayOutputsQueueARN:
+    Type: String
+    Description: 'Identify the resource that the policy applies to.'
+
   ProjectName:
     Type: String
     Description: 'Usually pn can be pnXYZ where XYZ are the feature number, useful to create
@@ -94,10 +102,6 @@ Parameters:
     Type: String
     Description: 'INIPEC Client ID'
 
-  INIPECQueueName:
-    Type: String
-    Description: 'INIPEC Queue name'
-
   # Parametro obbligatorio (ARN del secret)
   ANPRSSLSecret:
     Type: String
@@ -178,8 +182,9 @@ Resources:
         ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ANPR_AUTH_SECRET=${ANPRSSLSecret}'
         ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ANPR_INTEGRITY_SECRET=${PDNDANPRIntegritySecret}'
         ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
-        ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_QUEUE_NAME=${INIPECQueueName}'
-        ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
+        ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
+        ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
+        ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_QUEUE_ARN=${NationalRegistryGatewayOutputsQueueARN}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -220,3 +225,19 @@ Resources:
               - dynamodb:UpdateItem
             Resource:
               - !Ref CounterTableArn
+              -
+  NationalRegistryGatewayOutputsQueuePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${ProjectName}-NationalRegistryGatewayOutputsQueuePolicy'
+      Roles:
+        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - sqs:GetQueueUrl
+            Resource:
+              - !Ref NationalRegistryGatewayOutputsQueueARN
