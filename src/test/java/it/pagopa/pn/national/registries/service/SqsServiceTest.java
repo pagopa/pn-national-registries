@@ -22,7 +22,7 @@ class SqsServiceTest {
 
         when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
 
-        SqsService sqsService = new SqsService("","", amazonSQS, new ObjectMapper());
+        SqsService sqsService = new SqsService("queueNameTest", amazonSQS, new ObjectMapper());
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setTaxId("taxId");

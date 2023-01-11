@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -70,7 +69,7 @@ public class IniPecBatchPecListService {
                     requestCfIniPec.setElencoCf(batchRequestWithNewBatchId.stream()
                             .filter(batchRequest -> batchRequest.getRetry() <= 3)
                             .map(BatchRequest::getCf)
-                            .collect(Collectors.toList()));
+                            .toList());
                     requestCfIniPec.setDataOraRichiesta(LocalDateTime.now().toString());
                     log.info("Calling ini pec with cf size: {} and batchId: {}", requestCfIniPec.getElencoCf().size(), batchId);
                     return callEservice(requestCfIniPec, batchId);

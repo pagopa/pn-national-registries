@@ -18,6 +18,7 @@ import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -87,6 +88,8 @@ class IniPecPollingServiceTest {
         when(iniPecBatchRequestRepository.setBatchRequestsStatus(batchRequest, BatchStatus.WORKED.getValue())).thenReturn(Mono.just(batchRequest));
 
         iniPecPollingService.getPecList();
+
+        Assertions.assertEquals("WORKED", batchPolling.getStatus());
 
     }
 

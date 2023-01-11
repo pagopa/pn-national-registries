@@ -24,17 +24,14 @@ public class SqsService {
     private final SqsClient sqsClient;
     private final ObjectMapper mapper;
     private final String queueName;
-    private final String queueArn;
 
     public SqsService(
             @Value("${pn.national.registries.sqs.queue.name}")String queueName,
-            @Value("${pn.national.registries.sqs.queue.arn}")String queueArn,
             SqsClient sqsClient,
             ObjectMapper mapper) {
         this.sqsClient = sqsClient;
         this.mapper = mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.queueName = queueName;
-        this.queueArn = queueArn;
     }
 
     public Mono<SendMessageResponse> push(CodeSqsDto msges) {
