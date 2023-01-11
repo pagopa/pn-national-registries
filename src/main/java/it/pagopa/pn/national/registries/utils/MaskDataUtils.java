@@ -10,14 +10,12 @@ public class MaskDataUtils {
     public static String maskInformation(String dataBuffered){
         Pattern elencoCf = Pattern.compile("(\"elencoCf\")\\s*:\\s*\\[\"(.*?)\"");
         Pattern patternTaxId = Pattern.compile("(\"taxId\")\\s*:\\s*\"(.*?)\"");
-        Pattern patternCorrelationId = Pattern.compile("(\"taxId\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAddress = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\"|\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|\"digitalAddress\")\\s*:\\s*\"(.*?)\"");
-        Pattern patternIdentity = Pattern.compile("(\"cf\"|\"codFiscale\"|\"codiceFiscale\"|\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
+        Pattern patternIdentity = Pattern.compile("(\"pecProfessionista\"|\"cf\"|\"codFiscale\"|\"codiceFiscale\"|\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAccessToken = Pattern.compile("(\"access_token\")\\s*:\\s*\"(.*?)\"");
 
         dataBuffered = maskMatcher(elencoCf, dataBuffered);
         dataBuffered = maskMatcher(patternTaxId, dataBuffered);
-        dataBuffered = maskMatcher(patternCorrelationId,dataBuffered);
         dataBuffered = maskMatcher(patternAddress, dataBuffered);
         dataBuffered = maskMatcher(patternIdentity, dataBuffered);
         dataBuffered = maskMatcher(patternAccessToken, dataBuffered);

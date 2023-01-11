@@ -184,7 +184,6 @@ Resources:
         ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
         ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
         ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
-        ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_QUEUE_ARN=${NationalRegistryGatewayOutputsQueueARN}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -225,7 +224,8 @@ Resources:
               - dynamodb:UpdateItem
             Resource:
               - !Ref CounterTableArn
-              -
+
+
   NationalRegistryGatewayOutputsQueuePolicy:
     Type: AWS::IAM::Policy
     Properties:
