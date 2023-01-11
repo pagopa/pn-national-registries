@@ -26,14 +26,14 @@ class InfoCamereJwsGeneratorTest {
     @Test
     void testCreateAuthRest() {
         InfoCamereJwsGenerator authRest = new InfoCamereJwsGenerator("aud", "clientID", infoCamereSecretConfig);
-
+        String scope = "test_scope";
         SSLData sslData = new SSLData();
         sslData.setCert("TestCert");
         sslData.setKey("TestKey");
         sslData.setPub("TestPub");
         sslData.setTrust("TestTrust");
         Mockito.when(infoCamereSecretConfig.getIniPecAuthRestSecret()).thenReturn(sslData);
-        Assertions.assertThrows(PnInternalException.class, authRest::createAuthRest);
+        Assertions.assertThrows(PnInternalException.class, () -> authRest.createAuthRest(scope));
     }
 
     @Test

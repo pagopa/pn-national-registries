@@ -58,7 +58,6 @@ public class InfoCamereClient {
                         .build())
                 .headers(httpHeaders -> {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-           //        httpHeaders.setBearerAuth(jws);
                 })
                 .body(Mono.just(jws), String.class)
                 .retrieve()
@@ -113,8 +112,8 @@ public class InfoCamereClient {
                         .uri(uriBuilder -> uriBuilder
                                 .path("/getElencoPec/{identificativoRichiesta}")
                                 .queryParamIfPresent("client_id", Optional.ofNullable(clientId))
-                                .build(correlationId)
-                        )
+                                .build(Map.of("identificativoRichiesta", correlationId))
+                )
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());

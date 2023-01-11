@@ -6,5 +6,5 @@ import lombok.Data;
 @Data
 public class PecProfessionista {
 
-        private String pecProfessionista;
+    private String pecProfessionista;
 }

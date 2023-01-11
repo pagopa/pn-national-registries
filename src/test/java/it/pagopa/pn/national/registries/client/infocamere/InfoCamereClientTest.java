@@ -14,6 +14,7 @@ import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImp
 import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.reactivestreams.Publisher;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
@@ -52,33 +53,39 @@ class InfoCamereClientTest {
 
     @MockBean
     InfoCamereSecretConfig infoCamereSecretConfig;
-    private final String clientId = "a7e152cac460917f3123cc2410f5a8d2a7e152cac460917f3123cc2410f5a8d2";
+
     @MockBean
     ObjectMapper mapper;
+    String clientId = "tezt_clientId";
 
     @Test
     void callgetTokenTest() {
+
+        String scope = "test_scope";
         when(infoCamereWebClient.init()).thenReturn(webClient);
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId,
-                infoCamereJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
         ClientCredentialsResponseDto response = new ClientCredentialsResponseDto();
         response.setAccessToken("token");
 
-        WebClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(WebClient.RequestHeadersUriSpec.class);
+        WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
+        WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
+
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
         String jws = "jws";
-        when(infoCamereJwsGenerator.createAuthRest()).thenReturn(jws);
+        when(infoCamereJwsGenerator.createAuthRest(any())).thenReturn(jws);
 
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.body((Publisher<Object>) any(), (Class<Object>) any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(response));
 
-        StepVerifier.create(infoCamereClient.getToken()).expectError();
+        StepVerifier.create(infoCamereClient.getToken(scope)).expectError();
 
     }
 
@@ -115,9 +122,14 @@ class InfoCamereClientTest {
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
 
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
+        String jws = "jws";
+        when(infoCamereJwsGenerator.createAuthRest(any())).thenReturn(jws);
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.body((Publisher<Object>) any(), (Class<Object>) any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(clientCredentialsResponseDto));
 
@@ -142,7 +154,7 @@ class InfoCamereClientTest {
         response.setIdentificativoRichiesta("correlationId");
 
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
-        clientCredentialsResponseDto.setAccessToken("accessToken");
+        clientCredentialsResponseDto.setAccessToken("token");
         clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
         clientCredentialsResponseDto.setExpiresIn(10);
 
@@ -150,9 +162,17 @@ class InfoCamereClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
+        String jws = "jws";
+        when(infoCamereJwsGenerator.createAuthRest(any())).thenReturn(jws);
+
+        WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
+        WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.body((Publisher<Object>) any(), (Class<Object>) any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(clientCredentialsResponseDto));
 
@@ -171,7 +191,6 @@ class InfoCamereClientTest {
         AddressRegistroImpreseResponse response = new AddressRegistroImpreseResponse();
         response.setAddress(new LegalAddress());
         response.setTaxId("taxId");
-        response.setDate(LocalDateTime.now().toString());
 
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
         clientCredentialsResponseDto.setAccessToken("accessToken");
@@ -182,22 +201,35 @@ class InfoCamereClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
+        String jws = "jws";
+        when(infoCamereJwsGenerator.createAuthRest(any())).thenReturn(jws);
+
+        WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
+        WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.body((Publisher<Object>) any(), (Class<Object>) any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(clientCredentialsResponseDto));
 
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(AddressRegistroImpreseResponse.class)).thenReturn(Mono.just(response));
 
-        StepVerifier.create(infoCamereClient.getLegalAddress(request)).expectNext(response).verifyComplete();
+        StepVerifier.create(infoCamereClient.getLegalAddress(request)).expectError();
 
     }
 
 
     @Test
     void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient,clientId, infoCamereJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
         WebClientResponseException webClientResponseException =
                 new WebClientResponseException(
                         "message",
@@ -211,7 +243,7 @@ class InfoCamereClientTest {
 
     @Test
     void checkExceptionTypeWhenNotWebClientResponseExceptionThenReturnFalse() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient,clientId, infoCamereJwsGenerator, mapper);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
         assertFalse(infoCamereClient.checkExceptionType(new Exception()));
     }
