@@ -25,35 +25,26 @@ public class SqsService {
     private final ObjectMapper mapper;
     private final String queueName;
 
-    public SqsService(
-            @Value("${pn.national.registries.sqs.queue.name}")String queueName,
-            SqsClient sqsClient,
-            ObjectMapper mapper) {
+    public SqsService(@Value("${pn.national.registries.sqs.queue.name}") String queueName,
+                      SqsClient sqsClient,
+                      ObjectMapper mapper) {
         this.sqsClient = sqsClient;
         this.mapper = mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.queueName = queueName;
     }
 
-    public Mono<SendMessageResponse> push(CodeSqsDto msges) {
-        log.info("Creating QueueRequest");
-        CreateQueueRequest request = CreateQueueRequest.builder()
-                .queueName(queueName)
-                .build();
-        sqsClient.createQueue(request);
-        log.info("Created QueueRequest");
-
+    public Mono<SendMessageResponse> push(CodeSqsDto msg) {
         GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
                 .queueName(queueName)
                 .build();
         String queueUrl = sqsClient.getQueueUrl(getQueueRequest).queueUrl();
 
-        log.info("Creating MessageRequest for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msges.getTaxId()),msges.getCorrelationId());
+        log.info("Creating MessageRequest for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msg.getTaxId()), msg.getCorrelationId());
         SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
                 .queueUrl(queueUrl)
-                .messageBody(toJson(msges))
-                .delaySeconds(5)
+                .messageBody(toJson(msg))
                 .build();
-        log.info("Created MessageRequest for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msges.getTaxId()),msges.getCorrelationId());
+        log.info("Created MessageRequest for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msg.getTaxId()), msg.getCorrelationId());
 
         return Mono.fromCallable(() -> sqsClient.sendMessage(sendMsgRequest));
     }
