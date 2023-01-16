@@ -120,11 +120,7 @@ Resources:
       AttributeDefinitions:
         - AttributeName: "correlationId"
           AttributeType: "S"
-        - AttributeName: "cf"
-          AttributeType: "S"
         - AttributeName: "batchId"
-          AttributeType: "S"
-        - AttributeName: "retry"
           AttributeType: "S"
         - AttributeName: "ttl"
           AttributeType: "S"
@@ -142,10 +138,14 @@ Resources:
               KeyType: HASH
             - AttributeName: lastReserved
               KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
         - IndexName: "status-index"
           KeySchema:
             - AttributeName: status
               KeyType: HASH
+          Projection:
+            ProjectionType: ALL
       BillingMode: "PAY_PER_REQUEST"
 
   BatchPollingTable:
@@ -154,8 +154,6 @@ Resources:
       TableName: !Sub '${ProjectName}-batchPolling'
       AttributeDefinitions:
         - AttributeName: "batchId"
-          AttributeType: "S"
-        - AttributeName: "pollingId"
           AttributeType: "S"
         - AttributeName: "status"
           AttributeType: "S"
@@ -167,6 +165,8 @@ Resources:
           KeySchema:
             - AttributeName: status
               KeyType: HASH
+          Projection:
+            ProjectionType: ALL
       BillingMode: "PAY_PER_REQUEST"
 
 #Necessario a causa di bug script deploy
