@@ -122,8 +122,6 @@ Resources:
           AttributeType: "S"
         - AttributeName: "batchId"
           AttributeType: "S"
-        - AttributeName: "ttl"
-          AttributeType: "S"
         - AttributeName: "status"
           AttributeType: "S"
         - AttributeName: "lastReserved"
@@ -146,6 +144,9 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
       BillingMode: "PAY_PER_REQUEST"
 
   BatchPollingTable:
