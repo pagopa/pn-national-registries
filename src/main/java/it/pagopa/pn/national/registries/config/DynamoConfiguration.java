@@ -4,7 +4,7 @@ import it.pagopa.pn.national.registries.log.AwsClientLoggerInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.auth.credentials.EnvironmentVariableCredentialsProvider;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.core.client.config.ClientOverrideConfiguration;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.regions.Region;
@@ -23,7 +23,7 @@ public class DynamoConfiguration {
     public DynamoDbEnhancedAsyncClient dynamoDb() {
         DynamoDbAsyncClient asyncClient = DynamoDbAsyncClient.builder()
                 .region(Region.of(awsRegion))
-                .credentialsProvider(EnvironmentVariableCredentialsProvider.create())
+                .credentialsProvider(DefaultCredentialsProvider.create())
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
                         .addExecutionInterceptor(new AwsClientLoggerInterceptor())
                         .build())
