@@ -7,13 +7,14 @@
     "AgenziaEntratePurposeId": "",
     "INADBaseURL": "",
     "INADPurposeId": "",
-    "INIPECBaseURL": "",
-    "INIPECPurposeId": "",
-    "ANPRSSLSecretName": "",
-    "PDNDANPRClientAssertionSecretName": "",
-    "PDNDANPRIntegritySecretName": "",
-    "PDNDCheckCfClientAssertionSecretName": "",
-    "PDNDInadClientAssertionSecretName": "",
-    "ANPRTipoInvio": "TEST"
+    "InfoCamereBaseURL": "",
+    "InfoCamereClientId": "",
+    "ANPRSSLSecret": "",
+    "PDNDANPRSecret": "",
+    "PDNDANPRIntegritySecret": "",
+    "PDNDCheckCfSecret": "",
+    "PDNDInadSecret": "a",
+    "InfoCamereAuthSecret": "",
+    "ANPRTipoInvio": ""
   }
 }

@@ -113,6 +113,62 @@ Resources:
           KeyType: "HASH"
       BillingMode: "PAY_PER_REQUEST"
 
+  BatchRequestTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-batchRequests'
+      AttributeDefinitions:
+        - AttributeName: "correlationId"
+          AttributeType: "S"
+        - AttributeName: "cf"
+          AttributeType: "S"
+        - AttributeName: "batchId"
+          AttributeType: "S"
+        - AttributeName: "retry"
+          AttributeType: "S"
+        - AttributeName: "ttl"
+          AttributeType: "S"
+        - AttributeName: "status"
+          AttributeType: "S"
+        - AttributeName: "lastReserved"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "correlationId"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "batchId-lastReserved-index"
+          KeySchema:
+            - AttributeName: batchId
+              KeyType: HASH
+            - AttributeName: lastReserved
+              KeyType: RANGE
+        - IndexName: "status-index"
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+      BillingMode: "PAY_PER_REQUEST"
+
+  BatchPollingTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${ProjectName}-batchPolling'
+      AttributeDefinitions:
+        - AttributeName: "batchId"
+          AttributeType: "S"
+        - AttributeName: "pollingId"
+          AttributeType: "S"
+        - AttributeName: "status"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "batchId"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "status-index"
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+      BillingMode: "PAY_PER_REQUEST"
+
 #Necessario a causa di bug script deploy
 Outputs:
   PDNDSessionTokenSigningKeyARN:
@@ -127,6 +183,12 @@ Outputs:
   CounterTableArn:
     Description: ARN Dynamo Name used by application to access the key-value store of CounterTable
     Value: !Sub '${CounterTable.Arn}'
+  BatchRequestTableArn:
+    Description: ARM Dynamo Name used by application to access the key-value store of BatchRequestTable
+    Value: !Sub '${BatchRequestTable.Arn}'
+  BatchPollingTableArn:
+    Description: ARM Dynamo Name used by application to access the key-value store of BatchPollingTable
+    Value: !Sub '${BatchPollingTable.Arn}'
 
 
 

@@ -16,6 +16,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
+import java.util.Map;
 
 @Component
 @Slf4j
@@ -42,7 +43,7 @@ public class InadClient {
                         .uri(uriBuilder -> uriBuilder
                                 .queryParam("practicalReference", practicalReference)
                                 .path("/extract/{codice_fiscale}")
-                                .build(taxId))
+                                .build(Map.of("codice_fiscale", taxId)))
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
@@ -50,8 +51,7 @@ public class InadClient {
                         .retrieve()
                         .bodyToMono(ResponseRequestDigitalAddressDto.class))
                 .doOnError(throwable -> {
-                    if(!checkExceptionType(throwable) && throwable instanceof WebClientResponseException){
-                        WebClientResponseException ex = (WebClientResponseException) throwable;
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(),ex.getStatusCode().value(),
                                 ex.getStatusText(),ex.getHeaders(),ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InadResponseKO.class);
@@ -65,8 +65,7 @@ public class InadClient {
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
-        if (throwable instanceof WebClientResponseException) {
-            WebClientResponseException exception = (WebClientResponseException) throwable;
+        if (throwable instanceof WebClientResponseException exception) {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;

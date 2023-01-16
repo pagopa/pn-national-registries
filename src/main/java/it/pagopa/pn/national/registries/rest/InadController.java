@@ -22,12 +22,17 @@ public class InadController implements DigitalAddressInadApi {
     }
 
     /**
-     * POST /extractDigitalAddress
+     * POST /national-registries-private/inad/digital-address : Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata.
+     * Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata.
      *
-     * @param extractDigitalAddressINADRequestBodyDto Effettua la ricerca dei Domicili Digitali di uno specifico Codice Fiscale (required)
-     * @return JSON di risposta che restituisce il domicilio digitale estratto. Per domicilio digitale eletto in qualità di Professionista è estratta anche l&#39;attività professionale esercitata. (status code 200)
-     *         or Bad request (status code 400)
+     * @param extractDigitalAddressINADRequestBodyDto Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata. (required)
+     * @return OK (status code 200)
+     *         or Bad Request (status code 400)
+     *         or Unauthorized (status code 401)
+     *         or Forbidden (status code 403)
+     *         or Not found (status code 404)
      *         or Internal server error (status code 500)
+     *         or Service Unavailable (status code 503)
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {

@@ -5,6 +5,14 @@ Transform:
   - UpdateDeploymentTransform
 
 Parameters:
+  NationalRegistryGatewayOutputsQueueName:
+    Type: String
+    Description: 'The name of the queue'
+
+  NationalRegistryGatewayOutputsQueueARN:
+    Type: String
+    Description: 'Identify the resource that the policy applies to.'
+
   ProjectName:
     Type: String
     Description: 'Usually pn can be pnXYZ where XYZ are the feature number, useful to create
@@ -86,38 +94,43 @@ Parameters:
     Type: String
     Description: 'INAD Purpose ID'
 
-  INIPECBaseURL:
+  InfoCamereBaseURL:
     Type: String
     Description: 'INIPEC Base URL'
 
-  INIPECPurposeId:
+  InfoCamereClientId:
     Type: String
-    Description: 'INIPEC Purpose ID'
+    Description: 'INIPEC Client ID'
 
   # Parametro obbligatorio (ARN del secret)
-  ANPRSSLSecretName:
+  ANPRSSLSecret:
     Type: String
     Description: 'ANPR SecretName'
 
   # Parametro obbligatorio (ARN del secret)
-  PDNDANPRClientAssertionSecretName:
+  PDNDANPRSecret:
     Type: String
     Description: 'PDND ANPR Client assertion claims'
 
   # Parametro obbligatorio (ARN del secret)
-  PDNDCheckCfClientAssertionSecretName:
+  PDNDCheckCfSecret:
     Type: String
     Description: 'PDND CheckCf Client assertion claims'
 
   # Parametro obbligatorio (ARN del secret)
-  PDNDInadClientAssertionSecretName:
+  PDNDInadSecret:
     Type: String
     Description: 'PDND INAD Client assertion claims'
 
   # Parametro obbligatorio (ARN del secret)
-  PDNDANPRIntegritySecretName:
+  PDNDANPRIntegritySecret:
     Type: String
     Description: 'PDND ANPR Integrity certs'
+
+  # Parametro obbligatorio (ARN del secret)
+  InfoCamereAuthSecret:
+    Type: String
+    Description: 'INIPEC auth cert'
 
   PDNDSessionTokenSigningKeyARN:
     Type: String
@@ -157,16 +170,20 @@ Resources:
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
-        ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_API_BASE_URL=${PDNDBaseURL}'
-        ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_API_BASE_URL=${ANPRBaseURL}'
-        ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
-        ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_API_BASE_URL=${AgenziaEntrateBaseURL}'
-        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_PURPOSE_ID=${AgenziaEntratePurposeId}'
-        ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_INAD_API_BASE_URL=${INADBaseURL}'
-        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_INAD_PURPOSE_ID=${INADPurposeId}'
-        ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_API_BASE_URL=${INIPECBaseURL}'
-        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_PURPOSE_ID=${INIPECPurposeId}'
-        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
+        ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_BASE_URL=${PDNDBaseURL}'
+        ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
+        ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_BASE_URL=${AgenziaEntrateBaseURL}'
+        ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
+        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
+        ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
+        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_PURPOSE_ID=${AgenziaEntratePurposeId}'
+        ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_INAD_PURPOSE_ID=${INADPurposeId}'
+        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
+        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ANPR_AUTH_SECRET=${ANPRSSLSecret}'
+        ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ANPR_INTEGRITY_SECRET=${PDNDANPRIntegritySecret}'
+        ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
+        ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
+        ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -188,11 +205,12 @@ Resources:
             Action:
               - secretsmanager:GetSecretValue
             Resource:
-              - !Ref PDNDANPRIntegritySecretName
-              - !Ref PDNDANPRClientAssertionSecretName
-              - !Ref ANPRSSLSecretName
-              - !Ref PDNDCheckCfClientAssertionSecretName
-              - !Ref PDNDInadClientAssertionSecretName
+              - !Ref PDNDANPRIntegritySecret
+              - !Ref PDNDANPRSecret
+              - !Ref ANPRSSLSecret
+              - !Ref PDNDCheckCfSecret
+              - !Ref PDNDInadSecret
+              - !Ref InfoCamereAuthSecret
           - Effect: Allow
             Action:
               - kms:Sign
@@ -206,3 +224,20 @@ Resources:
               - dynamodb:UpdateItem
             Resource:
               - !Ref CounterTableArn
+
+
+  NationalRegistryGatewayOutputsQueuePolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub '${ProjectName}-NationalRegistryGatewayOutputsQueuePolicy'
+      Roles:
+        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - sqs:GetQueueUrl
+            Resource:
+              - !Ref NationalRegistryGatewayOutputsQueueARN

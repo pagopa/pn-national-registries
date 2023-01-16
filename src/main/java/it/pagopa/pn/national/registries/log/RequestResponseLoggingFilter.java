@@ -29,6 +29,7 @@ public class RequestResponseLoggingFilter implements WebFilter {
     public @NotNull Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest httpRequest = exchange.getRequest();
         final String httpUrl = httpRequest.getURI().toString();
+        Long startTime = System.currentTimeMillis();
         ServerHttpRequestDecorator loggingServerHttpRequestDecorator = new ServerHttpRequestDecorator(exchange.getRequest()) {
             String requestBody = "";
 
@@ -55,9 +56,11 @@ public class RequestResponseLoggingFilter implements WebFilter {
                     try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
                         Channels.newChannel(byteArrayOutputStream).write(dataBuffer.asByteBuffer().asReadOnlyBuffer());
                         responseBody = byteArrayOutputStream.toString(StandardCharsets.UTF_8);
-                        log.info("Response from {} - body: {}", httpUrl, MaskDataUtils.maskInformation(responseBody));
+                        log.info("Response from {} - body: {} - timelapse: {}ms", httpUrl, MaskDataUtils.maskInformation(responseBody),
+                                System.currentTimeMillis() - startTime);
                     } catch (Exception e) {
-                        log.info("Response from {} - body: {}", httpUrl, MaskDataUtils.maskInformation(responseBody));
+                        log.info("Response from {} - body: {} - timelapse: {}ms", httpUrl, MaskDataUtils.maskInformation(responseBody),
+                                System.currentTimeMillis() - startTime);
                     }
                 }));
             }

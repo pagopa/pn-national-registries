@@ -5,7 +5,6 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.Residentia
 import it.pagopa.pn.national.registries.model.anpr.*;
 import org.springframework.stereotype.Component;
 
-import java.util.ArrayList;
 import java.util.List;
 
 @Component
@@ -13,7 +12,7 @@ public class AddressAnprConverter {
 
     public GetAddressANPROKDto convertToGetAddressANPROKDto(ResponseE002OKDto responseE002OKDto, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
-        if(responseE002OKDto!=null && responseE002OKDto.getTestataRisposta()!=null){
+        if (responseE002OKDto != null && responseE002OKDto.getTestataRisposta() != null) {
             response.setClientOperationId(responseE002OKDto.getTestataRisposta().getIdOperazioneClient());
         }
         if (responseE002OKDto != null && responseE002OKDto.getListaSoggetti() != null
@@ -30,28 +29,32 @@ public class AddressAnprConverter {
         return response;
     }
 
-    private List<ResidentialAddressDto> convertResidence(List<ResidenceDto> residenza) {
-        List<ResidentialAddressDto> list = new ArrayList<>();
-        for (ResidenceDto dto : residenza) {
-            ResidentialAddressDto innerDto = new ResidentialAddressDto();
-            innerDto.setAt(dto.getPresso());
-            innerDto.setDescription(dto.getTipoIndirizzo());
-            if (dto.getIndirizzo() != null) {
-                mapToResidence(dto.getIndirizzo(),innerDto);
-                if (dto.getLocalitaEstera() != null && dto.getLocalitaEstera().getIndirizzoEstero() != null
-                        && dto.getLocalitaEstera().getIndirizzoEstero().getLocalita() != null) {
-                    innerDto.setForeignState(dto.getLocalitaEstera().getIndirizzoEstero().getLocalita().getDescrizioneStato());
-                }
+    public List<ResidentialAddressDto> convertResidence(List<ResidenceDto> residenza) {
+        return residenza.stream()
+                .map(this::convertResidence)
+                .toList();
+    }
 
-            } else if(dto.getLocalitaEstera()!=null){
-                mapToForeignResidence(dto.getLocalitaEstera(),innerDto);
+    public ResidentialAddressDto convertResidence(ResidenceDto dto) {
+        ResidentialAddressDto innerDto = new ResidentialAddressDto();
+        innerDto.setAt(dto.getPresso());
+        innerDto.setDescription(dto.getTipoIndirizzo());
+        if (dto.getIndirizzo() != null) {
+            mapToResidence(dto.getIndirizzo(), innerDto);
+            if (dto.getLocalitaEstera() != null && dto.getLocalitaEstera().getIndirizzoEstero() != null
+                    && dto.getLocalitaEstera().getIndirizzoEstero().getLocalita() != null) {
+                innerDto.setForeignState(dto.getLocalitaEstera().getIndirizzoEstero().getLocalita().getDescrizioneStato());
             }
-            list.add(innerDto);
+
+        } else if (dto.getLocalitaEstera() != null) {
+            mapToForeignResidence(dto.getLocalitaEstera(), innerDto);
         }
-        return list;
+        return innerDto;
     }
 
     private void mapToResidence(AddressDto indirizzo, ResidentialAddressDto innerDto) {
+        if(indirizzo.getNumeroCivico()!=null && indirizzo.getNumeroCivico().getCivicoInterno()!=null)
+           innerDto.setAddressDetail(indirizzo.getNumeroCivico().getCivicoInterno().getScala());
         innerDto.setAddress(createAddressString(indirizzo));
         innerDto.setZip(indirizzo.getCap());
         innerDto.setMunicipalityDetails(indirizzo.getFrazione());
@@ -60,8 +63,6 @@ public class AddressAnprConverter {
             innerDto.setMunicipality(indirizzo.getComune().getNomeComune());
             innerDto.setProvince(indirizzo.getComune().getSiglaProvinciaIstat());
         }
-
-
     }
 
     private void mapToForeignResidence(ForeignLocation1Dto localitaEstera, ResidentialAddressDto innerDto) {
