@@ -11,10 +11,12 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigital
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 
 @Service
 @Slf4j
@@ -23,11 +25,16 @@ public class InfoCamereService {
     private final InfoCamereClient infoCamereClient;
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
+    private final Long iniPecTtl;
 
-    public InfoCamereService(InfoCamereClient infoCamereClient, InfoCamereConverter infoCamereConverter, IniPecBatchRequestRepository iniPecBatchRequestRepository) {
+    public InfoCamereService(InfoCamereClient infoCamereClient,
+                             InfoCamereConverter infoCamereConverter,
+                             IniPecBatchRequestRepository iniPecBatchRequestRepository,
+                             @Value("${pn.national.registries.inipec.ttl}") Long iniPecTtl) {
         this.infoCamereClient = infoCamereClient;
         this.infoCamereConverter = infoCamereConverter;
         this.iniPecBatchRequestRepository = iniPecBatchRequestRepository;
+        this.iniPecTtl = iniPecTtl;
     }
 
     public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto) {
@@ -51,13 +58,14 @@ public class InfoCamereService {
         return iniPecBatchRequestRepository.createBatchRequest(batchRequest);
     }
 
-    private BatchRequest createNewStartBatchRequest(){
+    private BatchRequest createNewStartBatchRequest() {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
         batchRequest.setStatus(BatchStatus.NOT_WORKED.getValue());
         batchRequest.setRetry(0);
         batchRequest.setLastReserved(LocalDateTime.now());
         batchRequest.setTimeStamp(LocalDateTime.now());
+        batchRequest.setTtl(LocalDateTime.now(ZoneOffset.UTC).plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
         return batchRequest;
     }
 }

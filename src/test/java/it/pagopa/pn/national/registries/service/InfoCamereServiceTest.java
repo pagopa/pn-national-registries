@@ -15,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -25,6 +26,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @Slf4j
 class InfoCamereServiceTest {
+
     @InjectMocks
     InfoCamereService infoCamereService;
     @Mock
@@ -37,6 +39,8 @@ class InfoCamereServiceTest {
 
     @Test
     void testGetDigitalAddress() {
+        ReflectionTestUtils.setField(infoCamereService, "iniPecTtl", 0L);
+
         GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
         GetDigitalAddressIniPECRequestBodyFilterDto dto = new GetDigitalAddressIniPECRequestBodyFilterDto();
         dto.setCorrelationId("correlationId");

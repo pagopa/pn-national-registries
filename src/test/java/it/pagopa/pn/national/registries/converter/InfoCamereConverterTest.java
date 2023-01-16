@@ -37,7 +37,7 @@ class InfoCamereConverterTest {
         batchRequest.setRetry(1);
         batchRequest.setStatus("Status");
         batchRequest.setTimeStamp(LocalDateTime.now());
-        batchRequest.setTtl(LocalDateTime.now());
+        batchRequest.setTtl(0L);
         assertEquals("correlationId", infoCamereConverter.convertToGetAddressIniPecOKDto(batchRequest).getCorrelationId());
     }
 
@@ -61,7 +61,7 @@ class InfoCamereConverterTest {
         batchRequest.setRetry(1);
         batchRequest.setStatus("Status");
         batchRequest.setTimeStamp(LocalDateTime.now());
-        batchRequest.setTtl(LocalDateTime.now());
+        batchRequest.setTtl(0L);
 
         ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
         Pec pec = new Pec();
