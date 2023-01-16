@@ -150,7 +150,15 @@ Parameters:
 
   CounterTableArn:
     Type: String
-    Description: 'ARN of dynamodb table containing eservice counter information'
+    Description: 'ARN of DynamoDB table containing eservice counter information'
+
+  BatchRequestTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table BatchRequest'
+
+  BatchPollingTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table BatchPolling'
 
 Resources:
 
@@ -221,9 +229,16 @@ Resources:
           - Effect: Allow
             Action:
               - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:Scan
               - dynamodb:UpdateItem
+              - dynamodb:PutItem
             Resource:
               - !Ref CounterTableArn
+              - !Ref BatchRequestTableArn
+              - !Ref BatchPollingTableArn
+              - !Sub '${BatchRequestTableArn}/index/*'
+              - !Sub '${BatchPollingTableArn}/index/*'
 
 
   NationalRegistryGatewayOutputsQueuePolicy:
