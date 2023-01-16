@@ -23,7 +23,7 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
     private final DynamoDbAsyncTable<BatchPolling> tablePolling;
 
     public IniPecBatchPollingRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient){
-        this.tablePolling = dynamoDbEnhancedAsyncClient.table("pn-BatchPolling", TableSchema.fromClass(BatchPolling.class));
+        this.tablePolling = dynamoDbEnhancedAsyncClient.table("pn-batchPolling", TableSchema.fromClass(BatchPolling.class));
     }
 
     @Override
