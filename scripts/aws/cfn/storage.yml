@@ -31,8 +31,8 @@ Resources:
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
-      Description: RSA-2048 key to encrypt table
-      KeySpec: RSA_2048
+      Description: Symmetric default key to encrypt table
+      KeySpec: SYMMETRIC_DEFAULT
       KeyUsage: ENCRYPT_DECRYPT
       KeyPolicy:
         Version: 2012-10-17
