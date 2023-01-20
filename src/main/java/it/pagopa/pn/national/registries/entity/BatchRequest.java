@@ -32,7 +32,7 @@ public class BatchRequest {
         private Integer retry;
 
         @Getter(onMethod=@__({@DynamoDbAttribute("ttl")}))
-        private LocalDateTime ttl;
+        private Long ttl;
 
         @Getter(onMethod=@__({
                 @DynamoDbAttribute("status"),

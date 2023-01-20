@@ -18,7 +18,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -41,6 +40,7 @@ public class IniPecBatchPecListService {
 
     @Scheduled(fixedDelay = 30000)
     public void batchPecListRequest() {
+        log.trace("batchPecListRequest start");
         Map<String, AttributeValue> lastEvaluatedKeyMap = new HashMap<>();
         boolean hasNext = true;
 
@@ -57,6 +57,7 @@ public class IniPecBatchPecListService {
                 setNewBatchId(batchRequestPage.items(), batchId).block();
             }
         }
+        log.trace("batcPecListRequest end");
     }
 
 
@@ -68,13 +69,13 @@ public class IniPecBatchPecListService {
                     requestCfIniPec.setElencoCf(batchRequestWithNewBatchId.stream()
                             .filter(batchRequest -> batchRequest.getRetry() <= 3)
                             .map(BatchRequest::getCf)
-                            .collect(Collectors.toList()));
-                    log.info("Calling ini pec with cf size: {} and batchId: {}", requestCfIniPec.getElencoCf().size(), batchId);
+                            .toList());
                     requestCfIniPec.setDataOraRichiesta(LocalDateTime.now().toString());
+                    log.info("Calling ini pec with cf size: {} and batchId: {}", requestCfIniPec.getElencoCf().size(), batchId);
                     return callEservice(requestCfIniPec, batchId);
                 })
-                .doOnNext(batchPolling -> log.info("Created {} BatchRequests with batchId: {}", items.size(), batchId))
-                .doOnError(batchPollingSignal -> log.error("Failed to create {} BatchRequests with batchId: {}", items.size(), batchId))
+                .doOnNext(batchPolling -> log.info("Set batchId: {} to {} BatchRequests",batchId,items.size()))
+                .doOnNext(batchPolling -> log.info("Failed to set batchId: {} to {} BatchRequests",batchId,items.size()))
                 .onErrorContinue((throwable, o) -> {
                 });
     }

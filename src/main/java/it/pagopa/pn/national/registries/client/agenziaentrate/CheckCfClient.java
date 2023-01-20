@@ -66,8 +66,7 @@ public class CheckCfClient {
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
-        if (throwable instanceof WebClientResponseException) {
-            WebClientResponseException exception = (WebClientResponseException) throwable;
+        if (throwable instanceof WebClientResponseException exception) {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;

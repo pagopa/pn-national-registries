@@ -2,9 +2,6 @@ package it.pagopa.pn.national.registries.converter;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -14,8 +11,8 @@ import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationR
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
-import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
-import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
+import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -42,7 +39,7 @@ class InfoCamereConverterTest {
         batchRequest.setRetry(1);
         batchRequest.setStatus("Status");
         batchRequest.setTimeStamp(LocalDateTime.now());
-        batchRequest.setTtl(LocalDateTime.now());
+        batchRequest.setTtl(0L);
         assertEquals("correlationId", infoCamereConverter.convertToGetAddressIniPecOKDto(batchRequest).getCorrelationId());
     }
 
@@ -66,7 +63,7 @@ class InfoCamereConverterTest {
         batchRequest.setRetry(1);
         batchRequest.setStatus("Status");
         batchRequest.setTimeStamp(LocalDateTime.now());
-        batchRequest.setTtl(LocalDateTime.now());
+        batchRequest.setTtl(0L);
 
         ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
         Pec pec = new Pec();

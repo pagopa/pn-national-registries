@@ -21,7 +21,6 @@ import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 @Slf4j
@@ -52,7 +51,7 @@ public class AddressService {
         String cf = addressRequestBodyDto.getFilter().getTaxId();
         log.info("recipientType {} and domicileType {}", recipientType, addressRequestBodyDto.getFilter().getDomicileType());
         switch (recipientType) {
-            case "PF":
+            case "PF" -> {
                 if (AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.equals(addressRequestBodyDto.getFilter().getDomicileType())) {
                     return anprService.getRawAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
                             .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, cf, anprResponse))
@@ -62,7 +61,8 @@ public class AddressService {
                             .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, cf, inadResponse))
                                     .map(sqs -> mapToAddressesOKDto(correlationId)));
                 }
-            case "PG":
+            }
+            case "PG" -> {
                 if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
                     return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                             .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse))
@@ -71,10 +71,12 @@ public class AddressService {
                     return infoCamereService.getIniPecDigitalAddress(convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))
                             .map(iniPecResponse -> mapToAddressesOKDto(correlationId));
                 }
-            default:
+            }
+            default -> {
                 log.warn("recipientType {} is not valid", recipientType);
                 throw new PnNationalRegistriesException("recipientType not valid", HttpStatus.BAD_REQUEST.value(),
                         HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
+            }
         }
     }
 
@@ -117,7 +119,7 @@ public class AddressService {
                             || d.getUsageInfo().getDateEndValidity() == null
                             || d.getUsageInfo().getDateEndValidity().after(now))
                     .map(this::convertInadToDigitalAddress)
-                    .collect(Collectors.toList());
+                    .toList();
             codeSqsDto.setDigitalAddress(address);
         }
         codeSqsDto.setTaxId(cf);

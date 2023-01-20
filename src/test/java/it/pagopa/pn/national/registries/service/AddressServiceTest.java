@@ -3,7 +3,6 @@ package it.pagopa.pn.national.registries.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-import com.amazonaws.services.sqs.model.SendMessageResult;
 import it.pagopa.pn.national.registries.converter.AddressAnprConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
@@ -26,6 +25,7 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 @ContextConfiguration(classes = {AddressService.class})
 @ExtendWith(SpringExtension.class)
@@ -113,7 +113,7 @@ class AddressServiceTest {
         when(addressAnprConverter.convertResidence(residenceDto2))
                 .thenReturn(new ResidentialAddressDto());
         when(sqsService.push(anprSqsCaptor.capture()))
-                .thenReturn(Mono.just(new SendMessageResult()));
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId("correlationId");
@@ -166,7 +166,7 @@ class AddressServiceTest {
         when(inadService.callEService(getDigitalAddressINADRequestBodyDto))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
         when(sqsService.push(inadSqsCaptor.capture()))
-                .thenReturn(Mono.just(new SendMessageResult()));
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId("correlationId");
@@ -211,7 +211,7 @@ class AddressServiceTest {
         when(infoCamereService.getRegistroImpreseLegalAddress(getAddressRegistroImpreseRequestBodyDto))
                 .thenReturn(Mono.just(getAddressRegistroImpreseOKDto));
         when(sqsService.push(regImpSqsCaptor.capture()))
-                .thenReturn(Mono.just(new SendMessageResult()));
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId("correlationId");

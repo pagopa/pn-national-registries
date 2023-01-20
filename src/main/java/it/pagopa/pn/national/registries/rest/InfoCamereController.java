@@ -54,7 +54,7 @@ public class InfoCamereController  implements InfoCamereApi {
      *         or Internal server error (status code 500)
      *         or Service Unavailable (status code 503)
      */
-
+    @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(GetAddressRegistroImpreseRequestBodyDto getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
         return infoCamereService.getRegistroImpreseLegalAddress(getAddressRegistroImpreseRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);

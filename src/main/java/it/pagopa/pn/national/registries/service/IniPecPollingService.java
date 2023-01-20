@@ -8,6 +8,7 @@ import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -42,6 +43,7 @@ public class IniPecPollingService {
 
     @Scheduled(fixedDelay = 30000)
     public void getPecList() {
+        log.trace("getPecList start");
         Map<String, AttributeValue> lastEvaluatedKeyMap = new HashMap<>();
         boolean hasNext = true;
 
@@ -58,6 +60,7 @@ public class IniPecPollingService {
                 }
             }
         }
+        log.trace("getPecList end");
     }
 
 
@@ -66,12 +69,14 @@ public class IniPecPollingService {
                 .flatMap(batchPollingWithReservationId -> {
                     BatchPolling batchPollingToCall = batchPollingWithReservationId.get(0);
                     String pollingId = batchPollingToCall.getPollingId();
+                    log.info("Calling ini pec with pollingId: {}",pollingId);
                     return callEService(pollingId, batchPollingToCall);
                 });
     }
 
     private Mono<Void> callEService(String pollingId, BatchPolling batchPollingToCall) {
         return infoCamereClient.callEServiceRequestPec(pollingId).flatMap(responsePecIniPec -> {
+            log.info("Called ini pec with pollingId: {} and pecs size: {}",pollingId,responsePecIniPec.getElencoPec().size());
             batchPollingToCall.setStatus(BatchStatus.WORKED.getValue());
             return updateBatchPolling(batchPollingToCall, responsePecIniPec);
         });
@@ -87,7 +92,9 @@ public class IniPecPollingService {
                                 .flatMap(request -> {
                                     CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(request, responsePecIniPec);
                                     return sqsService.push(codeSqsDto)
-                                            .flatMap(sendMessageResult -> iniPecBatchRequestRepository.setBatchRequestsStatus(request, BatchStatus.WORKED.getValue()));
+                                            .flatMap(sendMessageResult -> iniPecBatchRequestRepository.setBatchRequestsStatus(request, BatchStatus.WORKED.getValue()))
+                                            .doOnNext(batchRequest -> log.info("Pushed Message with correlationId: {} and taxId: {}",codeSqsDto.getCorrelationId(), MaskDataUtils.maskString(codeSqsDto.getTaxId())))
+                                            .doOnError(throwable -> log.info("Failed to push Message with correlationId: {} and taxId: {} pushed",codeSqsDto.getCorrelationId(), MaskDataUtils.maskString(codeSqsDto.getTaxId())));
                                 })
                                 .then();
                     });

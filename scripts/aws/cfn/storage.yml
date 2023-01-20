@@ -26,6 +26,24 @@ Resources:
   ###   La chiave viene impiegata per firmare il client assertion che serve          ###
   ###   per richedere a PDND il JWT da utilizzare per invocare i servizi M2M di PDND ###
   ######################################################################################
+  PnBatchRequestEncryptKey:
+    Type: 'AWS::KMS::Key'
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      Description: Symmetric default key to encrypt table
+      KeySpec: SYMMETRIC_DEFAULT
+      KeyUsage: ENCRYPT_DECRYPT
+      KeyPolicy:
+        Version: 2012-10-17
+        Statement:
+          - Sid: Enable IAM User Permissions
+            Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+            Action: 'kms:*'
+            Resource: '*'
+
   PDNDSessionTokenSigningKey:
     Type: 'AWS::KMS::Key'
     DeletionPolicy: Retain
@@ -101,12 +119,6 @@ Resources:
       AliasName: !Sub 'alias/${ProjectName}-national-registries-inad-pdnd'
       TargetKeyId: !Ref InadPDNDSessionTokenSigningKey
 
-  QueueSqs:
-    type: AWS::SQS:Queue
-    Properties:
-      QueueName: !Sub '${ProjectName}-inipec'
-      FifoQueue: 'false'
-
   CounterTable:
     Type: AWS::DynamoDB::Table
     Properties:
@@ -126,13 +138,7 @@ Resources:
       AttributeDefinitions:
         - AttributeName: "correlationId"
           AttributeType: "S"
-        - AttributeName: "cf"
-          AttributeType: "S"
         - AttributeName: "batchId"
-          AttributeType: "S"
-        - AttributeName: "retry"
-          AttributeType: "S"
-        - AttributeName: "ttl"
           AttributeType: "S"
         - AttributeName: "status"
           AttributeType: "S"
@@ -148,11 +154,22 @@ Resources:
               KeyType: HASH
             - AttributeName: lastReserved
               KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
         - IndexName: "status-index"
           KeySchema:
             - AttributeName: status
               KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
       BillingMode: "PAY_PER_REQUEST"
+      SSESpecification:
+        KMSMasterKeyId: !Ref PnBatchRequestEncryptKey
+        SSEEnabled: true
+        SSEType: KMS
 
   BatchPollingTable:
     Type: AWS::DynamoDB::Table
@@ -160,8 +177,6 @@ Resources:
       TableName: !Sub '${ProjectName}-batchPolling'
       AttributeDefinitions:
         - AttributeName: "batchId"
-          AttributeType: "S"
-        - AttributeName: "pollingId"
           AttributeType: "S"
         - AttributeName: "status"
           AttributeType: "S"
@@ -173,6 +188,8 @@ Resources:
           KeySchema:
             - AttributeName: status
               KeyType: HASH
+          Projection:
+            ProjectionType: ALL
       BillingMode: "PAY_PER_REQUEST"
 
 #Necessario a causa di bug script deploy

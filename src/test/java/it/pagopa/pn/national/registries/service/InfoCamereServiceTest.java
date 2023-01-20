@@ -5,9 +5,8 @@ import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
-import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
-import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
+import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -16,6 +15,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -26,6 +26,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @Slf4j
 class InfoCamereServiceTest {
+
     @InjectMocks
     InfoCamereService infoCamereService;
     @Mock
@@ -38,6 +39,8 @@ class InfoCamereServiceTest {
 
     @Test
     void testGetDigitalAddress() {
+        ReflectionTestUtils.setField(infoCamereService, "iniPecTtl", 0L);
+
         GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
         GetDigitalAddressIniPECRequestBodyFilterDto dto = new GetDigitalAddressIniPECRequestBodyFilterDto();
         dto.setCorrelationId("correlationId");
@@ -82,7 +85,7 @@ class InfoCamereServiceTest {
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
         when(infoCamereConverter.mapToResponseOk(any())).thenReturn(response);
 
-        StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
+        StepVerifier.create(infoCamereService.getRegistroImpreseAddress(request))
                 .expectNext(response).verifyComplete();
     }
 

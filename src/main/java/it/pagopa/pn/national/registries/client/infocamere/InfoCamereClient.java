@@ -10,7 +10,7 @@ import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationR
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
-import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -39,6 +39,9 @@ public class InfoCamereClient {
 
     private final ObjectMapper mapper;
 
+    private static final String CLIENT_ID = "client_id";
+    private static final String SCOPE = "scope";
+
     protected InfoCamereClient(InfoCamereWebClient infoCamereWebClient,
                                @Value("${pn.national.registries.infocamere.client-id}") String clientId,
                                InfoCamereJwsGenerator infoCamereJwsGenerator,
@@ -54,17 +57,14 @@ public class InfoCamereClient {
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/authentication")
-                        .queryParamIfPresent("client_id", Optional.ofNullable(clientId))
+                        .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                         .build())
-                .headers(httpHeaders -> {
-                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                })
+                .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_JSON))
                 .body(Mono.just(jws), String.class)
                 .retrieve()
                 .bodyToMono(ClientCredentialsResponseDto.class)
                 .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
-                        WebClientResponseException ex = (WebClientResponseException) throwable;
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
@@ -81,20 +81,19 @@ public class InfoCamereClient {
                 webClient.post()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/richiestaElencoPec")
-                                .queryParamIfPresent("client_id", Optional.ofNullable(clientId))
+                                .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                                 .build())
                         .contentType(MediaType.APPLICATION_JSON)
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                            httpHeaders.set("scope", InipecScopeEnum.PEC.value());
+                            httpHeaders.set(SCOPE, InipecScopeEnum.PEC.value());
                         })
                         .bodyValue(requestJson)
                         .retrieve()
                         .bodyToMono(ResponsePollingIdIniPec.class)
                         .doOnError(throwable -> {
-                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
-                                WebClientResponseException ex = (WebClientResponseException) throwable;
+                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                         Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
@@ -111,19 +110,18 @@ public class InfoCamereClient {
                 webClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/getElencoPec/{identificativoRichiesta}")
-                                .queryParamIfPresent("client_id", Optional.ofNullable(clientId))
+                                .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                                 .build(Map.of("identificativoRichiesta", correlationId))
                 )
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                            httpHeaders.set("scope",InipecScopeEnum.PEC.value());
+                            httpHeaders.set(SCOPE,InipecScopeEnum.PEC.value());
                         })
                         .retrieve()
                         .bodyToMono(ResponsePecIniPec.class)
                         .doOnError(throwable -> {
-                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
-                                WebClientResponseException ex = (WebClientResponseException) throwable;
+                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                         Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
@@ -140,18 +138,17 @@ public class InfoCamereClient {
                 webClient.post()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/sede/{cf}")
-                                .queryParamIfPresent("client_id", Optional.ofNullable(clientId))
+                                .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                                 .build(Map.of("cf", taxId)))
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                             httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                            httpHeaders.set("scope",InipecScopeEnum.SEDE.value());
+                            httpHeaders.set(SCOPE,InipecScopeEnum.SEDE.value());
                         })
                         .retrieve()
                         .bodyToMono(AddressRegistroImpreseResponse.class)
                         .doOnError(throwable -> {
-                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
-                                WebClientResponseException ex = (WebClientResponseException) throwable;
+                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                         Charset.defaultCharset(), GetAddressRegistroImpreseErrorDto.class);
@@ -163,8 +160,7 @@ public class InfoCamereClient {
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
-        if (throwable instanceof WebClientResponseException) {
-            WebClientResponseException exception = (WebClientResponseException) throwable;
+        if (throwable instanceof WebClientResponseException exception) {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;

@@ -15,8 +15,8 @@ import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
-import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
-import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
+import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -87,7 +87,7 @@ public class InfoCamereConverter {
         digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
         if (pec.getPecProfessionistas() != null) {
             pec.getPecProfessionistas().stream()
-                    .map(pecProf -> toDigitalAddress(pecProf.getPecProfessionista(), DigitalAddressRecipientType.PROFESSIONISTA))
+                    .map(pecProf -> toDigitalAddress(pecProf.getPec(), DigitalAddressRecipientType.PROFESSIONISTA))
                     .forEach(digitalAddress::add);
         }
         return digitalAddress;
