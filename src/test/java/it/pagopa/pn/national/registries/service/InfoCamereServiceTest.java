@@ -5,8 +5,9 @@ import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
-import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
+import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
@@ -85,7 +86,7 @@ class InfoCamereServiceTest {
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
         when(infoCamereConverter.mapToResponseOk(any())).thenReturn(response);
 
-        StepVerifier.create(infoCamereService.getRegistroImpreseAddress(request))
+        StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
                 .expectNext(response).verifyComplete();
     }
 
@@ -112,7 +113,7 @@ class InfoCamereServiceTest {
         when(infoCamereConverter.infoCamereResponseToDto(response)).thenReturn(infoCamereLegalOKDto);
 
         StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
-                .expectNext(infoCamereLegalOKDto).verifyComplete();;
+                .expectNext(infoCamereLegalOKDto).verifyComplete();
     }
 }
 

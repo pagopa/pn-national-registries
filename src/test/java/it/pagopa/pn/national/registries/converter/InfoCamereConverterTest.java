@@ -11,12 +11,13 @@ import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationR
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
-import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
+
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 
+import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;

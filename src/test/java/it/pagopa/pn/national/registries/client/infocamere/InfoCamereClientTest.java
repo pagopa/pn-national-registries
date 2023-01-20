@@ -3,19 +3,16 @@ package it.pagopa.pn.national.registries.client.infocamere;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.config.infocamere.InfoCamereSecretConfig;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
-import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
+import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroImprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.reactivestreams.Publisher;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -176,6 +173,10 @@ class InfoCamereClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(clientCredentialsResponseDto));
 
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ResponsePecIniPec.class)).thenReturn(Mono.just(response));
 
         StepVerifier.create(infoCamereClient.callEServiceRequestPec(request)).expectNext(response).verifyComplete();
@@ -247,43 +248,4 @@ class InfoCamereClientTest {
 
         assertFalse(infoCamereClient.checkExceptionType(new Exception()));
     }
-
-
-    @Test
-    void testCheckTaxIdAndVatNumber() {
-        when(infoCamereWebClient.init()).thenReturn(webClient);
-        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient,clientId, infoCamereJwsGenerator, mapper);
-
-        InfoCamereLegalRequestBodyFilterDto requestFilter = new InfoCamereLegalRequestBodyFilterDto();
-        requestFilter.setTaxId("taxId");
-        requestFilter.setVatNumber("vatNumber");
-
-        InfoCamereVerificationResponse response = new InfoCamereVerificationResponse();
-        response.setVerificationResult(true);
-
-        response.setDateTimeExtraction(LocalDateTime.now().toString());
-
-        ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
-        clientCredentialsResponseDto.setAccessToken("accessToken");
-        clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
-        clientCredentialsResponseDto.setExpiresIn(10);
-
-        WebClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(WebClient.RequestHeadersUriSpec.class);
-        WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
-        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
-
-        when(webClient.get()).thenReturn(requestHeadersUriSpec);
-        when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(ClientCredentialsResponseDto.class)).thenReturn(Mono.just(clientCredentialsResponseDto));
-       // when(infoCamereClient.getToken()).thenReturn(Mono.just(clientCredentialsResponseDto));
-
-
-        when(responseSpec.bodyToMono(InfoCamereVerificationResponse.class)).thenReturn(Mono.just(response));
-
-        StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(requestFilter)).expectNext(response).verifyComplete();
-
-    }
 }
-

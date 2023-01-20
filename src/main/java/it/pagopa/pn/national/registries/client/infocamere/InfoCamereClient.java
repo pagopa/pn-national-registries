@@ -10,8 +10,8 @@ import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationR
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
+import it.pagopa.pn.national.registries.model.registroImprese.AddressRegistroImpreseResponse;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -182,14 +182,11 @@ public class InfoCamereClient {
                                 .path("/legaleRappresentante/{cfPersona}")
                                 .queryParam("cfImpresa", filterDto.getVatNumber())
                                 .build(Map.of("cfPersona", filterDto.getTaxId())))
-                        .headers(httpHeaders -> {
-                            httpHeaders.setBearerAuth(clientCredentialsResponseDto.getAccessToken());
-                        })
+                        .headers(httpHeaders -> httpHeaders.setBearerAuth(clientCredentialsResponseDto.getAccessToken()))
                         .retrieve()
                         .bodyToMono(InfoCamereVerificationResponse.class)
                         .doOnError(throwable -> {
-                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException) {
-                                WebClientResponseException ex = (WebClientResponseException) throwable;
+                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                         Charset.defaultCharset(), InfoCamereLegalErrorDto.class);
