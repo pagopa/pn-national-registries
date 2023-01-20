@@ -41,7 +41,7 @@ public class IniPecPollingService {
         this.infoCamereClient = infoCamereClient;
     }
 
-    @Scheduled(fixedDelay = 300000)
+    @Scheduled(fixedDelay = 30000)
     public void getPecList() {
         log.trace("getPecList start");
         Map<String, AttributeValue> lastEvaluatedKeyMap = new HashMap<>();

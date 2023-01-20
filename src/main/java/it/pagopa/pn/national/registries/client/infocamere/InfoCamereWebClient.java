@@ -15,6 +15,7 @@ import java.time.Duration;
 public class InfoCamereWebClient extends CommonWebClient {
 
     private final String basePath;
+
     private final Integer tcpMaxQueuedConnections;
     private final Integer tcpPendingAcquiredTimeout;
     private final Integer tcpPoolIdleTimeout;
@@ -25,7 +26,7 @@ public class InfoCamereWebClient extends CommonWebClient {
                                @Value("${pn.national.registries.webclient.infocamere.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
                                @Value("${pn.national.registries.webclient.infocamere.tcp-pending-acquired-timeout}") Integer tcpPendingAcquiredTimeout,
                                @Value("${pn.national.registries.webclient.infocamere.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout) {
-        this.basePath = basePath;
+        this.basePath = "http://0.0.0.0:3001";//basePath;
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
         this.tcpPendingAcquiredTimeout = tcpPendingAcquiredTimeout;

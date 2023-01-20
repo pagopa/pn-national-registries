@@ -1,10 +1,7 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.InfoCamereApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +56,29 @@ public class InfoCamereController  implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(GetAddressRegistroImpreseRequestBodyDto getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
-        return infoCamereService.getRegistroImpreseAddress(getAddressRegistroImpreseRequestBodyDto)
+        return infoCamereService.getRegistroImpreseLegalAddress(getAddressRegistroImpreseRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
+
+
+    /**
+     * POST /national-registries-private/infocamere/legal : Questo servizio Il servizio consente di verificare se il codice fiscale della persona risulta legale rappresentante dell’impresa passata come parametro.
+     * Questo servizio Il servizio consente di verificare se il codice fiscale della persona risulta legale rappresentante dell’impresa passata come parametro.
+     *
+     * @param infoCamereLegalRequestBodyDto  (required)
+     * @return OK (status code 200)
+     *         or Bad request (status code 400)
+     *         or Unauthorized (status code 401)
+     *         or Not Found (status code 404)
+     *         or Internal server error (status code 500)
+     *         or Service Unavailable (status code 503)
+     */
+
+    @Override
+    public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(InfoCamereLegalRequestBodyDto infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
+        // VATNUMBER: CHECK 11 O 16 CARATTERI
+        return infoCamereService.checkTaxIdAndVatNumber(infoCamereLegalRequestBodyDto)
+                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+    }
+
 }

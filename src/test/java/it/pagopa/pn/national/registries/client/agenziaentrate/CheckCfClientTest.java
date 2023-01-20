@@ -50,7 +50,7 @@ class CheckCfClientTest {
     void callEService() throws JsonProcessingException {
         when(checkCfWebClient.init()).thenReturn(webClient);
         CheckCfClient checkCfClient = new CheckCfClient(
-                accessTokenExpiringMap,checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
+                accessTokenExpiringMap, checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
         );
         Request richiesta = new Request();
         richiesta.setCodiceFiscale("cf");
@@ -90,7 +90,7 @@ class CheckCfClientTest {
     void callEServiceThrowsJsonProcessingException() throws JsonProcessingException {
         when(checkCfWebClient.init()).thenReturn(webClient);
         CheckCfClient checkCfClient = new CheckCfClient(
-                accessTokenExpiringMap,checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
+                accessTokenExpiringMap, checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
         );
         Request richiesta = new Request();
         Mockito.when( objectMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("") {});

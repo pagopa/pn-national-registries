@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.AgenziaEntrateApi;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
@@ -37,5 +39,21 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
         return agenziaEntrateService.callEService(checkTaxIdRequestBodyDto)
                     .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+    }
+
+    /**
+     * POST /national-registries-private/agenzia-entrate/legal : Il servizio consente la verifica di corrispondenza fra il codice fiscale del rappresentante legale di un soggetto giuridico e il soggetto giuridico stesso.
+     * Il servizio consente la verifica di corrispondenza fra il codice fiscale del rappresentante legale di un soggetto giuridico e il soggetto giuridico stesso.
+     *
+     * @param adELegalRequestBodyDto  (required)
+     * @return OK (status code 200)
+     *         or Unauthorized (status code 401)
+     *         or Internal server error (status code 500)
+     *         or Service Unavailable (status code 503)
+     */
+
+    public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(ADELegalRequestBodyDto adELegalRequestBodyDto,  final ServerWebExchange exchange) {
+        return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
+                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
 }

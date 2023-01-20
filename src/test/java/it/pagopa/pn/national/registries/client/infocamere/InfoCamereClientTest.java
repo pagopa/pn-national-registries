@@ -249,4 +249,3 @@ class InfoCamereClientTest {
         assertFalse(infoCamereClient.checkExceptionType(new Exception()));
     }
 }
-

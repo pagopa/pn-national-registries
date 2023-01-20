@@ -4,10 +4,7 @@ import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -44,7 +41,7 @@ public class InfoCamereService {
                 .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
     }
 
-    public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseAddress(GetAddressRegistroImpreseRequestBodyDto request) {
+    public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseLegalAddress(GetAddressRegistroImpreseRequestBodyDto request) {
         return infoCamereClient.getLegalAddress(request.getFilter().getTaxId())
                 .doOnNext(address -> log.info("Got Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId())))
                 .doOnError(throwable -> log.info("Failed to get Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId())))
@@ -67,5 +64,10 @@ public class InfoCamereService {
         batchRequest.setTimeStamp(LocalDateTime.now());
         batchRequest.setTtl(LocalDateTime.now(ZoneOffset.UTC).plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
         return batchRequest;
+    }
+
+    public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
+        return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
+                .map(infoCamereConverter::infoCamereResponseToDto);
     }
 }

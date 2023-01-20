@@ -208,7 +208,7 @@ class AddressServiceTest {
         getAddressRegistroImpreseOKDto.setTaxId("COD_FISCALE_1");
         getAddressRegistroImpreseOKDto.setProfessionalAddress(getAddressRegistroImpreseOKProfessionalAddressDto);
 
-        when(infoCamereService.getRegistroImpreseAddress(getAddressRegistroImpreseRequestBodyDto))
+        when(infoCamereService.getRegistroImpreseLegalAddress(getAddressRegistroImpreseRequestBodyDto))
                 .thenReturn(Mono.just(getAddressRegistroImpreseOKDto));
         when(sqsService.push(regImpSqsCaptor.capture()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
