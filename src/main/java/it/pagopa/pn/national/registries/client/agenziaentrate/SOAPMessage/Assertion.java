@@ -1,5 +1,6 @@
-package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse;
+package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPMessage;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
 
 import javax.xml.bind.annotation.*;
@@ -7,6 +8,7 @@ import java.util.Date;
 
 @Data
 @XmlAccessorType(XmlAccessType.FIELD)
+
 @XmlType(name = "Assertion", namespace = "saml2", propOrder = {
         "Issuer",
         "Signature",
@@ -14,6 +16,7 @@ import java.util.Date;
         "Conditions",
         "AuthnStatement",
         "AttributeStatement"})
+@AllArgsConstructor
 public class Assertion {
     @XmlElement(name = "Issuer", namespace = "saml2")
     public String Issuer;

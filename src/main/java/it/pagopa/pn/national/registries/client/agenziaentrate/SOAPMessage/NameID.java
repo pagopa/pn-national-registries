@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse;
+package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPMessage;
 
 import lombok.Data;
 

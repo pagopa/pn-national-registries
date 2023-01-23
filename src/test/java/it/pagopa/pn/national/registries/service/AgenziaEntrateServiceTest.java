@@ -1,10 +1,12 @@
 package it.pagopa.pn.national.registries.service;
 
+import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteRespType;
+import it.pagopa.pn.national.registries.client.agenziaentrate.AdELegalClient;
 import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfClient;
+import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPMessage.ResponseBody;
+import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPMessage.ResponseEnvelope;
 import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +26,8 @@ class AgenziaEntrateServiceTest {
     AgenziaEntrateService agenziaEntrateService;
     @Mock
     CheckCfClient checkCfClient;
+    @Mock
+    AdELegalClient adELegalClient;
     @Mock
     AgenziaEntrateConverter agenziaEntrateConverter;
 
@@ -50,4 +54,33 @@ class AgenziaEntrateServiceTest {
         StepVerifier.create(agenziaEntrateService.callEService(requestBodyDto)).expectNext(checkTaxIdOKDto).verifyComplete();
 
     }
+    @Test
+    void checkTaxIdAndVatNumber() {
+        ADELegalRequestBodyDto adeLegalRequestBodyDto = new ADELegalRequestBodyDto();
+        ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
+        adeLegalRequestBodyFilterDto.setTaxId("testTaxId");
+        adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
+        adeLegalRequestBodyDto.setFilter(adeLegalRequestBodyFilterDto);
+
+        CheckValidityRappresentanteRespType checkValidityRappresentanteRespType = new CheckValidityRappresentanteRespType();
+        checkValidityRappresentanteRespType.setCodiceRitorno("00");
+        checkValidityRappresentanteRespType.setDettaglioEsito("XX00");
+        checkValidityRappresentanteRespType.setValido(true);
+
+        ResponseEnvelope responseEnvelope = new ResponseEnvelope(new ResponseBody(checkValidityRappresentanteRespType));
+
+        String response = agenziaEntrateService.marshaller(responseEnvelope);
+
+        ADELegalOKDto adeLegalOKDto = new ADELegalOKDto();
+        adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteRespType.getCodiceRitorno()));
+        adeLegalOKDto.setVerificationResult(checkValidityRappresentanteRespType.isValido());
+        adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteRespType.getDettaglioEsito()));
+        when(adELegalClient.checkTaxIdAndVatNumberAdE(any())).thenReturn(Mono.just(response));
+
+        when(agenziaEntrateConverter.adELegalResponseToDto(any(CheckValidityRappresentanteRespType.class))).thenReturn(adeLegalOKDto);
+
+        StepVerifier.create(agenziaEntrateService.checkTaxIdAndVatNumber(adeLegalRequestBodyDto)).expectNext(adeLegalOKDto).verifyComplete();
+
+    }
+
 }

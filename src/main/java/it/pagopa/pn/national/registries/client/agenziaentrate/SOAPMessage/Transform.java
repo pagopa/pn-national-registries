@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse;
+package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPMessage;
 
 import lombok.Data;
 
@@ -9,8 +9,8 @@ import javax.xml.bind.annotation.XmlType;
 
 @Data
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "DigestMethod")
-public class DigestMethod {
+@XmlType(name = "Transform")
+public class Transform {
     @XmlAttribute(name = "Algorithm")
     public String Algorithm;
 }

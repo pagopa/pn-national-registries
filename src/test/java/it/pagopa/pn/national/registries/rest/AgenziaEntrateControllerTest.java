@@ -1,8 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -46,5 +44,24 @@ class AgenziaEntrateControllerTest {
         when(agenziaEntrateService.callEService(any())).thenReturn(Mono.just(checkTaxIdOKDto));
         StepVerifier.create(agenziaEntrateController.checkTaxId(checkTaxIdRequestBodyDto,serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(checkTaxIdOKDto));
+    }
+
+    @Test
+    void checkTaxIdAndVatNumber() {
+
+        ADELegalRequestBodyDto adeLegalRequestBodyDto = new ADELegalRequestBodyDto();
+        ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
+        adeLegalRequestBodyFilterDto.setTaxId("testTaxId");
+        adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
+        adeLegalRequestBodyDto.setFilter(adeLegalRequestBodyFilterDto);
+
+
+        ADELegalOKDto adeLegalOKDto = new ADELegalOKDto();
+        adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue("00"));
+        adeLegalOKDto.setVerificationResult(true);
+        adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue("XX00"));
+        when(agenziaEntrateService.checkTaxIdAndVatNumber(any())).thenReturn(Mono.just(adeLegalOKDto));
+        StepVerifier.create(agenziaEntrateController.adeLegal(adeLegalRequestBodyDto,serverWebExchange))
+                .expectNext(ResponseEntity.ok().body(adeLegalOKDto));
     }
 }

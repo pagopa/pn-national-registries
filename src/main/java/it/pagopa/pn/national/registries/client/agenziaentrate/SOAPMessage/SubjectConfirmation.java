@@ -1,9 +1,8 @@
-package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse;
+package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPMessage;
 
 import lombok.Data;
 
 import javax.xml.bind.annotation.*;
-import java.util.Date;
 
 @Data
 @XmlAccessorType(XmlAccessType.FIELD)
