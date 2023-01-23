@@ -51,7 +51,6 @@
             <version>1.6.5</version>
         </dependency>
 
-        <!-- ?????????? -->
         <!-- https://mvnrepository.com/artifact/com.sun.xml.bind/jaxb-impl -->
         <dependency>
             <groupId>com.sun.xml.bind</groupId>
@@ -107,9 +106,6 @@
             <version>${cxf.version}</version>
         </dependency>
 
-        <!-- ????????????????????????? -->
-
-        <!-- Jetty is needed if you're are not using the CXFServlet -->
         <dependency>
             <groupId>org.apache.cxf</groupId>
             <artifactId>cxf-rt-transports-http-jetty</artifactId>
