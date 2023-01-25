@@ -194,6 +194,9 @@ Resources:
 
 #Necessario a causa di bug script deploy
 Outputs:
+  PnBatchRequestEncryptKeyARN:
+    Description: PnBatchRequestEncryptKeyARN
+    Value: !Sub '${PnBatchRequestEncryptKey.Arn}'
   PDNDSessionTokenSigningKeyARN:
     Description: PDNDSessionTokenSigningKeyARN
     Value: !Sub '${PDNDSessionTokenSigningKey.Arn}'

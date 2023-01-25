@@ -21,6 +21,8 @@
         <sonar.coverage.exclusions>
             **/it/pagopa/pn/national/registries/model/**,
             **/it/pagopa/pn/national/registries/entity/**,
+            **/it/pagopa/pn/national/registries/client/agenziaentrate/SOAPRequest/**,
+            **/it/pagopa/pn/national/registries/client/agenziaentrate/SOAPResponse/**,
         </sonar.coverage.exclusions>
     </properties>
 
@@ -289,10 +291,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>16</source>
-                    <target>16</target>
-                </configuration>
             </plugin>
         </plugins>
     </build>
