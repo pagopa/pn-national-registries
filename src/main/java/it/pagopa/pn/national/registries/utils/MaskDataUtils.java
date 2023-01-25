@@ -7,13 +7,22 @@ public class MaskDataUtils {
 
     private MaskDataUtils(){}
 
-    public static String maskInformation(String dataBuffered){
+    public static String maskInformation(String dataBuffered) {
+        if (dataBuffered == null) {
+            return null;
+        }
+        Pattern inadPath = Pattern.compile("(.*/extract/)(.*?)(\\?)");
+        Pattern infocamereLegaleRapprPath = Pattern.compile("(.*/legaleRappresentante/)(.*?)(\\?)");
+        Pattern infocamereSedeLegalePath = Pattern.compile("(.*/sede/)(.*?)(\\?)");
         Pattern elencoCf = Pattern.compile("(\"elencoCf\")\\s*:\\s*\\[\"(.*?)\"");
         Pattern patternTaxId = Pattern.compile("(\"taxId\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAddress = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\"|\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|\"digitalAddress\")\\s*:\\s*\"(.*?)\"");
         Pattern patternIdentity = Pattern.compile("(\"pecProfessionista\"|\"cf\"|\"codFiscale\"|\"codiceFiscale\"|\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAccessToken = Pattern.compile("(\"access_token\")\\s*:\\s*\"(.*?)\"");
 
+        dataBuffered = maskMatcher(inadPath, dataBuffered);
+        dataBuffered = maskMatcher(infocamereLegaleRapprPath, dataBuffered);
+        dataBuffered = maskMatcher(infocamereSedeLegalePath, dataBuffered);
         dataBuffered = maskMatcher(elencoCf, dataBuffered);
         dataBuffered = maskMatcher(patternTaxId, dataBuffered);
         dataBuffered = maskMatcher(patternAddress, dataBuffered);
@@ -23,19 +32,19 @@ public class MaskDataUtils {
         return dataBuffered;
     }
 
-    private static String maskMatcher(Pattern pattern, String dataBuffered){
+    private static String maskMatcher(Pattern pattern, String dataBuffered) {
         Matcher matcher = pattern.matcher(dataBuffered);
         while(matcher.find()){
             String toBeMasked = matcher.group(2);
             String valueMasked = mask(toBeMasked);
             if(!toBeMasked.isBlank()){
-                dataBuffered = dataBuffered.replace("\""+toBeMasked+"\"","\""+valueMasked+"\"");
+                dataBuffered = dataBuffered.replace(toBeMasked, valueMasked);
             }
         }
         return dataBuffered;
     }
 
-    private static String mask(String unmasked){
+    private static String mask(String unmasked) {
         if(unmasked.contains(","))
             return maskAddress(unmasked);
         else if(unmasked.contains("@"))
@@ -45,8 +54,7 @@ public class MaskDataUtils {
 
     }
 
-
-    private static String maskAddress(String strAddress){
+    private static String maskAddress(String strAddress) {
         String[] parts = strAddress.split(",");
         StringBuilder masked = new StringBuilder();
         for (String part : parts) {

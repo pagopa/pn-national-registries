@@ -23,6 +23,8 @@
             **/it/pagopa/pn/national/registries/entity/**,
             **/it/pagopa/pn/national/registries/client/agenziaentrate/SOAPRequest/**,
             **/it/pagopa/pn/national/registries/client/agenziaentrate/SOAPResponse/**,
+            **/it/pagopa/pn/national/registries/client/agenziaentrate/AgenziaEntrateWebClientSOAP.java,
+            **/it/pagopa/pn/national/registries/client/agenziaentrate/AdELegalClient.java,
         </sonar.coverage.exclusions>
     </properties>
 

@@ -10,6 +10,7 @@ import it.pagopa.pn.commons.exceptions.ExceptionHelper;
 import it.pagopa.pn.national.registries.model.NationalRegistriesProblem;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.anpr.ResponseKO;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
@@ -55,14 +56,14 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         NationalRegistriesProblem nationalRegistriesProblem;
         try {
             if (throwable instanceof PnNationalRegistriesException exception) {
-                log.error("Error -> statusCode: {}, message: {}, uri: {}", exception.getStatusCode().value(), exception.getMessage(), serverWebExchange.getRequest().getURI());
+                log.error("Error -> statusCode: {}, message: {}, uri: {}", exception.getStatusCode().value(), MaskDataUtils.maskInformation(exception.getMessage()), serverWebExchange.getRequest().getURI());
                 if(exception.getStatusCode().equals(HttpStatus.UNAUTHORIZED)){
                     nationalRegistriesProblem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
                 }else {
                     nationalRegistriesProblem = createProblem(exception);
                 }
             } else {
-                log.error("Error -> {}, uri : {}",throwable.getMessage(), serverWebExchange.getRequest().getURI());
+                log.error("Error -> {}, uri : {}", MaskDataUtils.maskInformation(throwable.getMessage()), serverWebExchange.getRequest().getURI());
                 nationalRegistriesProblem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
             }
             nationalRegistriesProblem.setTraceId(MDC.get("trace_id"));

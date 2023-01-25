@@ -38,7 +38,7 @@ public class ResponseExchangeFilter implements ExchangeFilterFunction {
     public void logResponseBody(long startTime, DataBuffer dataBuffer, ClientResponse response, ClientRequest request) {
         long duration = System.currentTimeMillis() - startTime;
         log.info("Response HTTP from {} {} {} - body: {} - timelapse: {}ms",
-                request.url(),
+                MaskDataUtils.maskInformation(request.url().toString()),
                 response.statusCode().value(),
                 Objects.requireNonNull(response.statusCode().name()),
                 MaskDataUtils.maskInformation(dataBuffer.toString(StandardCharsets.UTF_8)),
@@ -59,7 +59,7 @@ public class ResponseExchangeFilter implements ExchangeFilterFunction {
     public void logRequestBody(DataBuffer dataBuffer, ClientRequest request) {
         log.info("Request HTTP {} to: {} - body: {}",
                 request.method().name(),
-                request.url(),
+                MaskDataUtils.maskInformation(request.url().toString()),
                 MaskDataUtils.maskInformation(dataBuffer.toString(StandardCharsets.UTF_8)));
     }
 
