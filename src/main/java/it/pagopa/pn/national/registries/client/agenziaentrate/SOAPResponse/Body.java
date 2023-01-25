@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse;
 
-import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteType;
 import lombok.Data;
 
 import javax.xml.bind.annotation.XmlAccessType;

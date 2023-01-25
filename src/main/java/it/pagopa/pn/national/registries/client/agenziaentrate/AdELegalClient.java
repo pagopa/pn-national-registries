@@ -1,12 +1,10 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteType;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.*;
 import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.Envelope;
-import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.SOAPResponseTemplate;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalErrorDto;
