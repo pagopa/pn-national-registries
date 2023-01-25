@@ -179,6 +179,7 @@ public class InfoCamereClient {
                 webClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/legaleRappresentante/{cfPersona}")
+                                .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                                 .queryParam("cfImpresa", filterDto.getVatNumber())
                                 .build(Map.of("cfPersona", filterDto.getTaxId())))
                         .headers(httpHeaders -> httpHeaders.setBearerAuth(clientCredentialsResponseDto))
