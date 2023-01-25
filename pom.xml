@@ -21,8 +21,7 @@
         <sonar.coverage.exclusions>
             **/it/pagopa/pn/national/registries/model/**,
             **/it/pagopa/pn/national/registries/entity/**,
-            **/it/pagopa/pn/national/registries/client/agenziaentrate/SOAPRequest/**,
-            **/it/pagopa/pn/national/registries/client/agenziaentrate/SOAPResponse/**,
+            **/it/pagopa/pn/national/registries/client/agenziaentrate/SOAPMessage/**,
         </sonar.coverage.exclusions>
     </properties>
 
