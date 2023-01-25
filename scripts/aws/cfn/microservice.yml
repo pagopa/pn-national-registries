@@ -144,6 +144,10 @@ Parameters:
     Type: String
     Description: 'PDND Session Token Signing Key for eservice INAD'
 
+  PnBatchRequestEncryptKeyARN:
+    Type: String
+    Description: 'ARN Key DynamoDB batchRequest table'
+
   ANPRTipoInvio:
     Type: String
     Description: 'Input parameter for eservice C001'
@@ -226,6 +230,11 @@ Resources:
               - !Ref PDNDSessionTokenSigningKeyARN
               - !Ref CheckCfPDNDSessionTokenSigningKeyARN
               - !Ref InadPDNDSessionTokenSigningKeyARN
+          - Effect: Allow
+            Action:
+              - kms:GenerateDataKey
+            Resource:
+              - !Ref PnBatchRequestEncryptKeyARN
           - Effect: Allow
             Action:
               - dynamodb:GetItem
