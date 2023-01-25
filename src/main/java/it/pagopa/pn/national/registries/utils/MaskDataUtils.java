@@ -7,7 +7,10 @@ public class MaskDataUtils {
 
     private MaskDataUtils(){}
 
-    public static String maskInformation(String dataBuffered){
+    public static String maskInformation(String dataBuffered) {
+        if (dataBuffered == null) {
+            return null;
+        }
         Pattern inadPath = Pattern.compile("(.*/extract/)(.*?)(\\?)");
         Pattern infocamereLegaleRapprPath = Pattern.compile("(.*/legaleRappresentante/)(.*?)(\\?)");
         Pattern infocamereSedeLegalePath = Pattern.compile("(.*/sede/)(.*?)(\\?)");
@@ -29,7 +32,7 @@ public class MaskDataUtils {
         return dataBuffered;
     }
 
-    private static String maskMatcher(Pattern pattern, String dataBuffered){
+    private static String maskMatcher(Pattern pattern, String dataBuffered) {
         Matcher matcher = pattern.matcher(dataBuffered);
         while(matcher.find()){
             String toBeMasked = matcher.group(2);
@@ -41,7 +44,7 @@ public class MaskDataUtils {
         return dataBuffered;
     }
 
-    private static String mask(String unmasked){
+    private static String mask(String unmasked) {
         if(unmasked.contains(","))
             return maskAddress(unmasked);
         else if(unmasked.contains("@"))
@@ -51,8 +54,7 @@ public class MaskDataUtils {
 
     }
 
-
-    private static String maskAddress(String strAddress){
+    private static String maskAddress(String strAddress) {
         String[] parts = strAddress.split(",");
         StringBuilder masked = new StringBuilder();
         for (String part : parts) {
