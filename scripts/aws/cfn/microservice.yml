@@ -232,7 +232,8 @@ Resources:
               - !Ref InadPDNDSessionTokenSigningKeyARN
           - Effect: Allow
             Action:
-              - kms:GenerateDataKey
+              - kms:Encrypt
+              - kms:Decrypt
             Resource:
               - !Ref PnBatchRequestEncryptKeyARN
           - Effect: Allow
