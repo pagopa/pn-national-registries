@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
-import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
@@ -52,7 +51,7 @@ public class InfoCamereClient {
         this.mapper = mapper;
     }
 
-    public Mono<ClientCredentialsResponseDto> getToken(String scope){
+    public Mono<String> getToken(String scope){
         String jws = infoCamereJwsGenerator.createAuthRest(scope);
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
@@ -60,9 +59,9 @@ public class InfoCamereClient {
                         .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                         .build())
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_JSON))
-                .body(Mono.just(jws), String.class)
+                .bodyValue(jws)
                 .retrieve()
-                .bodyToMono(ClientCredentialsResponseDto.class)
+                .bodyToMono(String.class)
                 .doOnError(throwable -> {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
@@ -86,7 +85,7 @@ public class InfoCamereClient {
                         .contentType(MediaType.APPLICATION_JSON)
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                            httpHeaders.setBearerAuth(accessTokenCacheEntry);
                             httpHeaders.set(SCOPE, InipecScopeEnum.PEC.value());
                         })
                         .bodyValue(requestJson)
@@ -112,10 +111,10 @@ public class InfoCamereClient {
                                 .path("/getElencoPec/{identificativoRichiesta}")
                                 .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                                 .build(Map.of("identificativoRichiesta", correlationId))
-                )
+                        )
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                            httpHeaders.setBearerAuth(accessTokenCacheEntry);
                             httpHeaders.set(SCOPE,InipecScopeEnum.PEC.value());
                         })
                         .retrieve()
@@ -142,7 +141,7 @@ public class InfoCamereClient {
                                 .build(Map.of("cf", taxId)))
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                            httpHeaders.setBearerAuth(accessTokenCacheEntry);
                             httpHeaders.set(SCOPE,InipecScopeEnum.SEDE.value());
                         })
                         .retrieve()
@@ -182,7 +181,7 @@ public class InfoCamereClient {
                                 .path("/legaleRappresentante/{cfPersona}")
                                 .queryParam("cfImpresa", filterDto.getVatNumber())
                                 .build(Map.of("cfPersona", filterDto.getTaxId())))
-                        .headers(httpHeaders -> httpHeaders.setBearerAuth(clientCredentialsResponseDto.getAccessToken()))
+                        .headers(httpHeaders -> httpHeaders.setBearerAuth(clientCredentialsResponseDto))
                         .retrieve()
                         .bodyToMono(InfoCamereVerificationResponse.class)
                         .doOnError(throwable -> {

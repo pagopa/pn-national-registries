@@ -5,7 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
+import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdResponseKO;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -17,6 +19,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import java.nio.charset.Charset;
 import java.util.List;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
@@ -57,7 +60,14 @@ public class CheckCfClient {
                             })
                             .bodyValue(s)
                             .retrieve()
-                            .bodyToMono(TaxIdVerification.class);
+                            .bodyToMono(TaxIdVerification.class)
+                            .doOnError(throwable -> {
+                                if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
+                                    throw new PnNationalRegistriesException(ex.getMessage(),ex.getStatusCode().value(),
+                                            ex.getStatusText(),ex.getHeaders(),ex.getResponseBodyAsByteArray(),
+                                            Charset.defaultCharset(), TaxIdResponseKO.class);
+                                }
+                            });
                 }).retryWhen(Retry.max(1).filter(throwable -> {
                             log.debug("Try Retry call to CheckCf");
                             return checkExceptionType(throwable);
