@@ -11,18 +11,14 @@ public class MaskDataUtils {
         if (dataBuffered == null) {
             return null;
         }
-        Pattern inadPath = Pattern.compile("(.*/extract/)(.*?)(\\?)");
-        Pattern infocamereLegaleRapprPath = Pattern.compile("(.*/legaleRappresentante/)(.*?)(\\?)");
-        Pattern infocamereSedeLegalePath = Pattern.compile("(.*/sede/)(.*?)(\\?)");
+        Pattern uriCfPath = Pattern.compile("(/extract/|/legaleRappresentante/|/sede/)(.*?)(\\?)");
         Pattern elencoCf = Pattern.compile("(\"elencoCf\")\\s*:\\s*\\[\"(.*?)\"");
-        Pattern patternTaxId = Pattern.compile("(\"taxId\")\\s*:\\s*\"(.*?)\"");
+        Pattern patternTaxId = Pattern.compile("(\"taxId\"|\"cfPersona\"|\"cfImpresa\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAddress = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\"|\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|\"digitalAddress\")\\s*:\\s*\"(.*?)\"");
         Pattern patternIdentity = Pattern.compile("(\"pecProfessionista\"|\"cf\"|\"codFiscale\"|\"codiceFiscale\"|\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAccessToken = Pattern.compile("(\"access_token\")\\s*:\\s*\"(.*?)\"");
 
-        dataBuffered = maskMatcher(inadPath, dataBuffered);
-        dataBuffered = maskMatcher(infocamereLegaleRapprPath, dataBuffered);
-        dataBuffered = maskMatcher(infocamereSedeLegalePath, dataBuffered);
+        dataBuffered = maskMatcher(uriCfPath, dataBuffered);
         dataBuffered = maskMatcher(elencoCf, dataBuffered);
         dataBuffered = maskMatcher(patternTaxId, dataBuffered);
         dataBuffered = maskMatcher(patternAddress, dataBuffered);
