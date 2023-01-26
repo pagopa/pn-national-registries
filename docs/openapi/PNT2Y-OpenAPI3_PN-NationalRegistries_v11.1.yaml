@@ -787,7 +787,7 @@ components:
         traceId:
           type: string
         timestamp:
-          type: integer
+          type: string
         errors:
           type: array
           items:
