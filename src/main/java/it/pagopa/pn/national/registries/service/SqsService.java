@@ -13,6 +13,9 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_INI_PEC;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_INI_PEC;
 
@@ -42,11 +45,19 @@ public class SqsService {
         log.info("Creating MessageRequest for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msg.getTaxId()), msg.getCorrelationId());
         SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
                 .queueUrl(queueUrl)
+                .messageAttributes(buildMessageAttributeMap())
                 .messageBody(toJson(msg))
                 .build();
+
         log.info("Created MessageRequest for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msg.getTaxId()), msg.getCorrelationId());
 
         return Mono.fromCallable(() -> sqsClient.sendMessage(sendMsgRequest));
+    }
+
+    private Map<String, MessageAttributeValue> buildMessageAttributeMap() {
+        Map<String, MessageAttributeValue> attributes = new HashMap<>();
+        attributes.put("eventType", MessageAttributeValue.builder().stringValue("NR_GATEWAY_RESPONSE").dataType("String").build());
+        return attributes;
     }
 
     private String toJson(CodeSqsDto codeSqsDto) {
