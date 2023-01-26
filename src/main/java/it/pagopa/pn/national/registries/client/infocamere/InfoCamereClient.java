@@ -6,6 +6,7 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
@@ -66,7 +67,7 @@ public class InfoCamereClient {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
+                                Charset.defaultCharset(), InfocamereResponseKO.class);
                     }
                 }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -95,7 +96,7 @@ public class InfoCamereClient {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
+                                        Charset.defaultCharset(), InfocamereResponseKO.class);
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -123,7 +124,7 @@ public class InfoCamereClient {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
+                                        Charset.defaultCharset(), InfocamereResponseKO.class);
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -150,7 +151,7 @@ public class InfoCamereClient {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), GetAddressRegistroImpreseErrorDto.class);
+                                        Charset.defaultCharset(), InfocamereResponseKO.class);
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -189,7 +190,7 @@ public class InfoCamereClient {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), InfoCamereLegalErrorDto.class);
+                                        Charset.defaultCharset(), InfocamereResponseKO.class);
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->

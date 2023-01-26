@@ -21,7 +21,9 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ServerWebExchange;
+import reactor.core.Exceptions;
 import reactor.core.publisher.Mono;
 import reactor.util.annotation.NonNull;
 
@@ -62,6 +64,9 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
                 }else {
                     nationalRegistriesProblem = createProblem(exception);
                 }
+            } else if (Exceptions.isRetryExhausted(throwable) && throwable.getCause() instanceof WebClientResponseException.ServiceUnavailable exception) {
+                log.error("Error -> statusCode: {}, message: {}, uri: {}", exception.getStatusCode().value(), MaskDataUtils.maskInformation(exception.getMessage()), serverWebExchange.getRequest().getURI());
+                nationalRegistriesProblem = createProblem(exception);
             } else {
                 log.error("Error -> {}, uri : {}", MaskDataUtils.maskInformation(throwable.getMessage()), serverWebExchange.getRequest().getURI());
                 nationalRegistriesProblem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
@@ -101,6 +106,15 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         } else {
             problemDef.setErrors(new ArrayList<>());
         }
+        return problemDef;
+    }
+
+    private NationalRegistriesProblem createProblem(WebClientResponseException.ServiceUnavailable exception) {
+        NationalRegistriesProblem problemDef = new NationalRegistriesProblem();
+        problemDef.setStatus(exception.getStatusCode().value());
+        problemDef.setTitle(exception.getStatusText());
+        problemDef.setDetail(exception.getMessage());
+        problemDef.setErrors(new ArrayList<>());
         return problemDef;
     }
 
