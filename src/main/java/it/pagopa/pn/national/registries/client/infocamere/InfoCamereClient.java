@@ -5,8 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
-import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
@@ -52,7 +52,7 @@ public class InfoCamereClient {
         this.mapper = mapper;
     }
 
-    public Mono<ClientCredentialsResponseDto> getToken(String scope){
+    public Mono<String> getToken(String scope){
         String jws = infoCamereJwsGenerator.createAuthRest(scope);
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
@@ -60,14 +60,14 @@ public class InfoCamereClient {
                         .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                         .build())
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_JSON))
-                .body(Mono.just(jws), String.class)
+                .bodyValue(jws)
                 .retrieve()
-                .bodyToMono(ClientCredentialsResponseDto.class)
+                .bodyToMono(String.class)
                 .doOnError(throwable -> {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
+                                Charset.defaultCharset(), InfocamereResponseKO.class);
                     }
                 }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -86,7 +86,7 @@ public class InfoCamereClient {
                         .contentType(MediaType.APPLICATION_JSON)
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                            httpHeaders.setBearerAuth(accessTokenCacheEntry);
                             httpHeaders.set(SCOPE, InipecScopeEnum.PEC.value());
                         })
                         .bodyValue(requestJson)
@@ -96,7 +96,7 @@ public class InfoCamereClient {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
+                                        Charset.defaultCharset(), InfocamereResponseKO.class);
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -112,10 +112,10 @@ public class InfoCamereClient {
                                 .path("/getElencoPec/{identificativoRichiesta}")
                                 .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                                 .build(Map.of("identificativoRichiesta", correlationId))
-                )
+                        )
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                            httpHeaders.setBearerAuth(accessTokenCacheEntry);
                             httpHeaders.set(SCOPE,InipecScopeEnum.PEC.value());
                         })
                         .retrieve()
@@ -124,7 +124,7 @@ public class InfoCamereClient {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), GetDigitalAddressIniPECErrorDto.class);
+                                        Charset.defaultCharset(), InfocamereResponseKO.class);
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -142,7 +142,7 @@ public class InfoCamereClient {
                                 .build(Map.of("cf", taxId)))
                         .headers(httpHeaders -> {
                             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
+                            httpHeaders.setBearerAuth(accessTokenCacheEntry);
                             httpHeaders.set(SCOPE,InipecScopeEnum.SEDE.value());
                         })
                         .retrieve()
@@ -151,7 +151,7 @@ public class InfoCamereClient {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), GetAddressRegistroImpreseErrorDto.class);
+                                        Charset.defaultCharset(), InfocamereResponseKO.class);
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -180,16 +180,17 @@ public class InfoCamereClient {
                 webClient.get()
                         .uri(uriBuilder -> uriBuilder
                                 .path("/legaleRappresentante/{cfPersona}")
+                                .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                                 .queryParam("cfImpresa", filterDto.getVatNumber())
                                 .build(Map.of("cfPersona", filterDto.getTaxId())))
-                        .headers(httpHeaders -> httpHeaders.setBearerAuth(clientCredentialsResponseDto.getAccessToken()))
+                        .headers(httpHeaders -> httpHeaders.setBearerAuth(clientCredentialsResponseDto))
                         .retrieve()
                         .bodyToMono(InfoCamereVerificationResponse.class)
                         .doOnError(throwable -> {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                         ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), InfoCamereLegalErrorDto.class);
+                                        Charset.defaultCharset(), InfocamereResponseKO.class);
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
