@@ -1,10 +1,8 @@
 package it.pagopa.pn.national.registries.converter;
 
-import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteRespType;
-import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteType;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
+import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import org.springframework.stereotype.Component;
 
@@ -38,21 +36,14 @@ public class AgenziaEntrateConverter {
         }
     }
 
-    public ADELegalOKDto adELegalResponseToDto(CheckValidityRappresentanteRespType checkValidityRappresentanteRespType) {
+    public ADELegalOKDto adELegalResponseToDto(CheckValidityRappresentanteResp checkValidityRappresentanteResp) {
         ADELegalOKDto adeLegalOKDto = new ADELegalOKDto();
-        adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteRespType.getCodiceRitorno()));
-        adeLegalOKDto.setVerificationResult(checkValidityRappresentanteRespType.isValido());
-        adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteRespType.getDettaglioEsito()));
+        adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteResp.getCodiceRitorno()));
+        adeLegalOKDto.setVerificationResult(checkValidityRappresentanteResp.getValido());
+        adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteResp.getDettaglioEsito()));
 
         return adeLegalOKDto;
     }
 
-    public CheckValidityRappresentanteType toEnvelopeBody(ADELegalRequestBodyFilterDto filter) {
-        CheckValidityRappresentanteType checkValidityRappresentanteType = new CheckValidityRappresentanteType();
-        checkValidityRappresentanteType.setCfRappresentante(filter.getTaxId());
-        checkValidityRappresentanteType.setCfEnte(filter.getVatNumber());
-
-        return checkValidityRappresentanteType;
-    }
 
 }

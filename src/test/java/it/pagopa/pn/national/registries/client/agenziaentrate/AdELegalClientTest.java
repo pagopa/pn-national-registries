@@ -1,18 +1,13 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteRespType;
-import ente.rappresentante.verifica.anagrafica.CheckValidityRappresentanteType;
-import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPMessage.RequestEnvelope;
-import it.pagopa.pn.national.registries.model.TokenTypeDto;
-import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
+
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -52,16 +47,15 @@ class AdELegalClientTest {
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(webClient);
         AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
 
-        CheckValidityRappresentanteType checkValidityRappresentanteType = new CheckValidityRappresentanteType();
-        checkValidityRappresentanteType.setCfEnte("testVatNumber");
-        checkValidityRappresentanteType.setCfRappresentante("setTaxId");
-        RequestEnvelope requestEnvelope = new RequestEnvelope(checkValidityRappresentanteType);
+        ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
+        adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
+        adeLegalRequestBodyFilterDto.setTaxId("setTaxId");
 
         StringWriter requestSW = new StringWriter();
-        JAXB.marshal(checkValidityRappresentanteType, requestSW);
+        JAXB.marshal(adeLegalRequestBodyFilterDto, requestSW);
         String request = requestSW.toString();
 
-        CheckValidityRappresentanteRespType checkValidityRappresentanteRespType = new CheckValidityRappresentanteRespType();
+        CheckValidityRappresentanteResp checkValidityRappresentanteRespType = new CheckValidityRappresentanteResp();
         checkValidityRappresentanteRespType.setValido(true);
         checkValidityRappresentanteRespType.setDettaglioEsito("XX00");
         checkValidityRappresentanteRespType.setCodiceRitorno("00");
@@ -84,7 +78,7 @@ class AdELegalClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(response));
 
-        StepVerifier.create(adELegalClient.checkTaxIdAndVatNumberAdE(checkValidityRappresentanteType)).expectNext(response).verifyComplete();
+        StepVerifier.create(adELegalClient.checkTaxIdAndVatNumberAdE(adeLegalRequestBodyFilterDto)).expectNext(response).verifyComplete();
 
     }
 
