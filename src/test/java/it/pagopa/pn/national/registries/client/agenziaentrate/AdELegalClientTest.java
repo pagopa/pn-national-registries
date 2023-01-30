@@ -53,7 +53,6 @@ class AdELegalClientTest {
 
         StringWriter requestSW = new StringWriter();
         JAXB.marshal(adeLegalRequestBodyFilterDto, requestSW);
-        String request = requestSW.toString();
 
         CheckValidityRappresentanteResp checkValidityRappresentanteRespType = new CheckValidityRappresentanteResp();
         checkValidityRappresentanteRespType.setValido(true);
@@ -82,7 +81,6 @@ class AdELegalClientTest {
 
     }
 
-
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
     void checkExceptionTypeWhenNotWebClientResponseExceptionThenReturnFalse() {
@@ -106,5 +104,4 @@ class AdELegalClientTest {
                         null);
         assertTrue(adELegalClient.checkExceptionType(webClientResponseException));
     }
-
 }

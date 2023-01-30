@@ -46,7 +46,6 @@ public class AgenziaEntrateService {
         return richiesta;
     }
 
-
     public CheckValidityRappresentanteResp unmarshaller(String response) throws JAXBException {
 
         JAXBContext jaxbContext = JAXBContext.newInstance(CheckValidityRappresentanteResp.class);

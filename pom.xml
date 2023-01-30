@@ -16,7 +16,6 @@
 
     <properties>
         <awssdk.version>2.18.3</awssdk.version>
-        <cxf.version>3.5.5</cxf.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <sonar.coverage.exclusions>
             **/it/pagopa/pn/national/registries/model/**,
@@ -51,47 +50,18 @@
             <artifactId>swagger-annotations</artifactId>
             <version>1.6.5</version>
         </dependency>
-
         <!-- https://mvnrepository.com/artifact/com.sun.xml.bind/jaxb-impl -->
         <dependency>
             <groupId>com.sun.xml.bind</groupId>
             <artifactId>jaxb-impl</artifactId>
             <version>2.3.1</version>
         </dependency>
-
         <!-- https://mvnrepository.com/artifact/org.glassfish.jaxb/jaxb-core -->
         <dependency>
             <groupId>org.glassfish.jaxb</groupId>
             <artifactId>jaxb-core</artifactId>
             <version>2.3.0.1</version>
         </dependency>
-
-        <!-- https://mvnrepository.com/artifact/org.springframework.ws/spring-ws -->
-        <dependency>
-            <groupId>org.springframework.ws</groupId>
-            <artifactId>spring-ws</artifactId>
-            <version>4.0.0</version>
-            <type>pom</type>
-        </dependency>
-
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-webflux</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.glassfish.jaxb</groupId>
-            <artifactId>jaxb-runtime</artifactId>
-        </dependency>
-
-        <!-- https://mvnrepository.com/artifact/javax.xml.ws/jaxws-api -->
-        <dependency>
-            <groupId>javax.xml.ws</groupId>
-            <artifactId>jaxws-api</artifactId>
-            <version>2.2.6</version>
-        </dependency>
-
-
         <dependency>
             <groupId>net.logstash.logback</groupId>
             <artifactId>logstash-logback-encoder</artifactId>

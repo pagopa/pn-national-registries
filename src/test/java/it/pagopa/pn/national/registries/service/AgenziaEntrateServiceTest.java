@@ -4,7 +4,9 @@ import it.pagopa.pn.national.registries.client.agenziaentrate.AdELegalClient;
 import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfClient;
 import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -14,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import javax.xml.bind.JAXBException;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -51,7 +54,7 @@ class AgenziaEntrateServiceTest {
         StepVerifier.create(agenziaEntrateService.callEService(requestBodyDto)).expectNext(checkTaxIdOKDto).verifyComplete();
 
     }
-  /*  @Test
+    @Test
     void checkTaxIdAndVatNumber() {
         ADELegalRequestBodyDto adeLegalRequestBodyDto = new ADELegalRequestBodyDto();
         ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
@@ -59,25 +62,53 @@ class AgenziaEntrateServiceTest {
         adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
         adeLegalRequestBodyDto.setFilter(adeLegalRequestBodyFilterDto);
 
-        CheckValidityRappresentanteRespType checkValidityRappresentanteRespType = new CheckValidityRappresentanteRespType();
+        CheckValidityRappresentanteResp checkValidityRappresentanteRespType = new CheckValidityRappresentanteResp();
         checkValidityRappresentanteRespType.setCodiceRitorno("00");
         checkValidityRappresentanteRespType.setDettaglioEsito("XX00");
         checkValidityRappresentanteRespType.setValido(true);
 
-        //ResponseEnvelope responseEnvelope = new ResponseEnvelope(new ResponseBody(checkValidityRappresentanteRespType));
-
-     //   String response = agenziaEntrateService.marshaller(responseEnvelope);
-
         ADELegalOKDto adeLegalOKDto = new ADELegalOKDto();
         adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteRespType.getCodiceRitorno()));
-        adeLegalOKDto.setVerificationResult(checkValidityRappresentanteRespType.isValido());
+        adeLegalOKDto.setVerificationResult(checkValidityRappresentanteRespType.getValido());
         adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteRespType.getDettaglioEsito()));
-        when(adELegalClient.checkTaxIdAndVatNumberAdE(any())).thenReturn(Mono.just(response));
+        when(adELegalClient.checkTaxIdAndVatNumberAdE(any())).thenReturn(Mono.just("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                                                                        "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:anag=\"http://anagrafica.verifica.rappresentante.ente\">" +
+                                                                            "<soapenv:Header/>" +
+                                                                            "<soapenv:Body>" +
+                                                                                "<checkValidityRappresentanteResp>" +
+                                                                                    "<valido>true</valido>" +
+                                                                                    "<dettaglioEsito>XX00</dettaglioEsito>" +
+                                                                                    "<codiceRitorno>00</codiceRitorno>" +
+                                                                                "</checkValidityRappresentanteResp>" +
+                                                                            "</soapenv:Body>" +
+                                                                        "</soapenv:Envelope>"));
 
-        when(agenziaEntrateConverter.adELegalResponseToDto(any(CheckValidityRappresentanteRespType.class))).thenReturn(adeLegalOKDto);
+        when(agenziaEntrateConverter.adELegalResponseToDto(any())).thenReturn(adeLegalOKDto);
 
         StepVerifier.create(agenziaEntrateService.checkTaxIdAndVatNumber(adeLegalRequestBodyDto)).expectNext(adeLegalOKDto).verifyComplete();
+    }
 
-    } */
+    @Test
+    void unmarshallerSuccess() throws JAXBException {
+        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+                            "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:anag=\"http://anagrafica.verifica.rappresentante.ente\">" +
+                                "<soapenv:Header/>" +
+                                "<soapenv:Body>" +
+                                    "<checkValidityRappresentanteResp>" +
+                                        "<valido>true</valido>" +
+                                        "<dettaglioEsito>XX00</dettaglioEsito>" +
+                                        "<codiceRitorno>00</codiceRitorno>" +
+                                    "</checkValidityRappresentanteResp>" +
+                                "</soapenv:Body>" +
+                            "</soapenv:Envelope>";
 
+        CheckValidityRappresentanteResp checkValidityRappresentanteResp = new CheckValidityRappresentanteResp();
+        checkValidityRappresentanteResp.setValido(true);
+        checkValidityRappresentanteResp.setDettaglioEsito("XX00");
+        checkValidityRappresentanteResp.setCodiceRitorno("00");
+
+        CheckValidityRappresentanteResp responseObj = agenziaEntrateService.unmarshaller(response);
+
+        Assertions.assertEquals(responseObj, checkValidityRappresentanteResp);
+    }
 }
