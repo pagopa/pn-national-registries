@@ -3,8 +3,10 @@ package it.pagopa.pn.national.registries.client.infocamere;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.config.infocamere.InfoCamereSecretConfig;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
@@ -24,8 +26,10 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.net.URI;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -220,6 +224,53 @@ class InfoCamereClientTest {
         StepVerifier.create(infoCamereClient.getLegalAddress(request)).expectError();
     }
 
+    @Test
+    void testCheckTaxIdAndVatNumberInfoCamere() {
+        when(infoCamereWebClient.init()).thenReturn(webClient);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
+
+        InfoCamereLegalRequestBodyFilterDto filter = new InfoCamereLegalRequestBodyFilterDto();
+        filter.setTaxId("taxId");
+        filter.setVatNumber("vatNumber");
+
+        InfoCamereVerificationResponse infoCamereVerificationResponse = new InfoCamereVerificationResponse();
+        infoCamereVerificationResponse.setTaxId("taxId");
+        infoCamereVerificationResponse.setVatNumber("vatNumber");
+        infoCamereVerificationResponse.setVerificationResult(true);
+        infoCamereVerificationResponse.setDateTimeExtraction(Date.from(Instant.now()).toString());
+
+        ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
+        clientCredentialsResponseDto.setAccessToken("accessToken");
+        clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
+        clientCredentialsResponseDto.setExpiresIn(10);
+
+        WebClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(WebClient.RequestHeadersUriSpec.class);
+        WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
+        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+
+        String jws = "jws";
+        when(infoCamereJwsGenerator.createAuthRest(any())).thenReturn(jws);
+
+        WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
+        WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(jws));
+        when(infoCamereClient.getToken(anyString())).thenReturn(Mono.just(jws));
+
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestBodyUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(InfoCamereVerificationResponse.class)).thenReturn(Mono.just(infoCamereVerificationResponse));
+
+        StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(filter)).expectError(); //(infoCamereVerificationResponse);
+    }
     @Test
     void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
