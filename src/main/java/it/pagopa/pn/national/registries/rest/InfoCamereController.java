@@ -36,8 +36,8 @@ public class InfoCamereController  implements InfoCamereApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto, final ServerWebExchange exchange) {
-        return infoCamereService.getIniPecDigitalAddress(getDigitalAddressIniPECRequestBodyDto)
+    public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
+        return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, getDigitalAddressIniPECRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

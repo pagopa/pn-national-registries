@@ -21,33 +21,31 @@ import java.util.HashMap;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-@ContextConfiguration(classes = {IniPecPollingService.class})
 @ExtendWith(SpringExtension.class)
 class IniPecPollingServiceTest {
-    @MockBean
+    @Mock
     private IniPecBatchPollingRepository iniPecBatchPollingRepository;
 
-    @MockBean
+    @Mock
     private IniPecBatchRequestRepository iniPecBatchRequestRepository;
 
-    @MockBean
+    @Mock
     private InfoCamereClient infoCamereClient;
 
-    @MockBean
+    @Mock
     private InfoCamereConverter infoCamereConverter;
 
-    @Autowired
+    @InjectMocks
     private IniPecPollingService iniPecPollingService;
 
-    @MockBean
+    @Mock
     private SqsService sqsService;
 
     @Test
@@ -83,7 +81,7 @@ class IniPecPollingServiceTest {
         when(infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec)).thenReturn(codeSqsDto);
 
         SendMessageResponse sendMessageResult = SendMessageResponse.builder().build();
-        when(sqsService.push(any())).thenReturn(Mono.just(sendMessageResult));
+        when(sqsService.push(any(),any())).thenReturn(Mono.just(sendMessageResult));
 
         when(iniPecBatchRequestRepository.setBatchRequestsStatus(batchRequest, BatchStatus.WORKED.getValue())).thenReturn(Mono.just(batchRequest));
 

@@ -10,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
 
 import static org.mockito.Mockito.when;
@@ -26,9 +25,6 @@ class InfoCamereControllerTest {
     InfoCamereService infoCamereService;
 
     @Mock
-    Scheduler scheduler;
-
-    @Mock
     ServerWebExchange serverWebExchange;
 
     @Test
@@ -41,9 +37,9 @@ class InfoCamereControllerTest {
         GetDigitalAddressIniPECOKDto getDigitalAddressINADOKDto = new GetDigitalAddressIniPECOKDto();
         getDigitalAddressINADOKDto.setCorrelationId("correlationId");
 
-        when(infoCamereService.getIniPecDigitalAddress(requestBodyDto)).thenReturn(Mono.just(getDigitalAddressINADOKDto));
+        when(infoCamereService.getIniPecDigitalAddress("clientId",requestBodyDto)).thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
-        StepVerifier.create(infoCamereController.digitalAddressIniPEC(requestBodyDto,serverWebExchange))
+        StepVerifier.create(infoCamereController.digitalAddressIniPEC(requestBodyDto,"clientId",serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(getDigitalAddressINADOKDto));
     }
 

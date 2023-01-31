@@ -34,6 +34,9 @@ public class BatchRequest {
         @Getter(onMethod=@__({@DynamoDbAttribute("ttl")}))
         private Long ttl;
 
+        @Getter(onMethod=@__({@DynamoDbAttribute("clientId")}))
+        private String clientId;
+
         @Getter(onMethod=@__({
                 @DynamoDbAttribute("status"),
                 @DynamoDbSecondaryPartitionKey(indexNames = BatchRequestConstant.GSI_S)

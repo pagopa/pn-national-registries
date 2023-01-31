@@ -14,16 +14,12 @@ import it.pagopa.pn.national.registries.model.SecretValue;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkClientException;
-import software.amazon.awssdk.services.kms.KmsClient;
 
 @ExtendWith(MockitoExtension.class)
 class PdndAssertionGeneratorTest {
-    @Mock
-    private KmsClient kmsClient;
 
     @InjectMocks
     private PdndAssertionGenerator pdndAssertionGenerator;

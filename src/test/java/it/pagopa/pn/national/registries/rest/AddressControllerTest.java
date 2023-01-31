@@ -11,7 +11,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
 
 import static org.mockito.Mockito.when;
@@ -25,17 +24,15 @@ class AddressControllerTest {
     @Mock
     AddressService addressService;
     @Mock
-    Scheduler scheduler;
-    @Mock
     ServerWebExchange serverWebExchange;
 
     @Test
     void testGetAddress() {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         AddressOKDto addressOKDto = new AddressOKDto();
-        when(addressService.retrieveDigitalOrPhysicalAddress("", addressRequestBodyDto))
+        when(addressService.retrieveDigitalOrPhysicalAddress("", "clientId",addressRequestBodyDto))
                 .thenReturn(Mono.just(addressOKDto));
-        StepVerifier.create(addressController.getAddresses("", addressRequestBodyDto, serverWebExchange))
+        StepVerifier.create(addressController.getAddresses("",addressRequestBodyDto, "clientId", serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(addressOKDto));
     }
 

@@ -27,7 +27,7 @@ class SqsServiceTest {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setTaxId("taxId");
         codeSqsDto.setCorrelationId("corelationId");
-        assertDoesNotThrow(() -> sqsService.push(codeSqsDto));
+        assertDoesNotThrow(() -> sqsService.push(codeSqsDto,"clientId"));
     }
 
 }

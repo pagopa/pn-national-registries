@@ -20,14 +20,12 @@ import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImp
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
+import org.mockito.InjectMocks;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-@ContextConfiguration(classes = {InfoCamereConverter.class})
 @ExtendWith(SpringExtension.class)
 class InfoCamereConverterTest {
-    @Autowired
+    @InjectMocks
     private InfoCamereConverter infoCamereConverter;
 
     @Test
@@ -105,7 +103,7 @@ class InfoCamereConverterTest {
     void testInfoCamereResponseToDto() {
 
         InfoCamereVerificationResponse infoCamereVerificationResponse = new InfoCamereVerificationResponse();
-        infoCamereVerificationResponse.setVerificationResult(true);
+        infoCamereVerificationResponse.setVerificationResult("true");
         infoCamereVerificationResponse.setVatNumber("vatNumber");
         infoCamereVerificationResponse.setTaxId("taxId");
 
@@ -115,7 +113,7 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", actualResult.getTaxId());
         assertEquals("vatNumber", actualResult.getVatNumber());
-        assertEquals(true, actualResult.getVerificationResult());
+        assertEquals("true", actualResult.getVerificationResult());
     }
 }
 

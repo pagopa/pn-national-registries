@@ -36,8 +36,8 @@ public class AddressController implements AddressApi {
      * or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, AddressRequestBodyDto addressRequestBodyDto, final ServerWebExchange exchange) {
-        return addressService.retrieveDigitalOrPhysicalAddress(recipientType, addressRequestBodyDto)
+    public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, AddressRequestBodyDto addressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
+        return addressService.retrieveDigitalOrPhysicalAddress(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto)
                 .map(s -> ResponseEntity.ok().body(s))
                 .publishOn(scheduler);
     }

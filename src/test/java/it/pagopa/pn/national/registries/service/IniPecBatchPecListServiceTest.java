@@ -19,29 +19,27 @@ import java.util.HashMap;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
-@ContextConfiguration(classes = {IniPecBatchPecListService.class})
 @ExtendWith(SpringExtension.class)
 class IniPecBatchPecListServiceTest {
-    @Autowired
+    @InjectMocks
     private IniPecBatchPecListService iniPecBatchPecListService;
 
-    @MockBean
+    @Mock
     private IniPecBatchPollingRepository iniPecBatchPollingRepository;
 
-    @MockBean
+    @Mock
     private IniPecBatchRequestRepository iniPecBatchRequestRepository;
 
-    @MockBean
+    @Mock
     private InfoCamereClient infoCamereClient;
 
-    @MockBean
+    @Mock
     private InfoCamereConverter infoCamereConverter;
 
     @Test

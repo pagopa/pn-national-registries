@@ -16,5 +16,5 @@ public class InfoCamereVerificationResponse {
     private String vatNumber;
 
     @JsonProperty("esitoVerifica")
-    private boolean verificationResult;
+    private String verificationResult;
 }

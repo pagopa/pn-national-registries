@@ -107,7 +107,7 @@ public class InfoCamereConverter {
         infoCamereLegalOKDto.setDateTimeExtraction(new Date());
         infoCamereLegalOKDto.setTaxId(response.getTaxId());
         infoCamereLegalOKDto.setVatNumber(response.getVatNumber());
-        infoCamereLegalOKDto.setVerificationResult(response.isVerificationResult());
+        infoCamereLegalOKDto.setVerificationResult(response.getVerificationResult());
 
         return infoCamereLegalOKDto;
     }

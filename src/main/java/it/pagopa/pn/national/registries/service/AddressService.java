@@ -10,6 +10,7 @@ import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -31,6 +32,7 @@ public class AddressService {
     private final InfoCamereService infoCamereService;
     private final SqsService sqsService;
     private final AddressAnprConverter addressAnprConverter;
+    private final Boolean pnNationalRegistriesCxIdFlag;
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -38,15 +40,18 @@ public class AddressService {
                           InadService inadService,
                           InfoCamereService infoCamereService,
                           SqsService sqsService,
-                          AddressAnprConverter addressAnprConverter) {
+                          AddressAnprConverter addressAnprConverter,
+                          @Value("${pn.national.registries.cx.id.boolean}") Boolean pnNationalRegistriesCxIdFlag) {
         this.anprService = anprService;
         this.inadService = inadService;
         this.infoCamereService = infoCamereService;
         this.sqsService = sqsService;
         this.addressAnprConverter = addressAnprConverter;
+        this.pnNationalRegistriesCxIdFlag = pnNationalRegistriesCxIdFlag;
     }
 
-    public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddress(String recipientType, AddressRequestBodyDto addressRequestBodyDto) {
+    public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddress(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
+        checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
         String cf = addressRequestBodyDto.getFilter().getTaxId();
         log.info("recipientType {} and domicileType {}", recipientType, addressRequestBodyDto.getFilter().getDomicileType());
@@ -54,21 +59,24 @@ public class AddressService {
             case "PF" -> {
                 if (AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.equals(addressRequestBodyDto.getFilter().getDomicileType())) {
                     return anprService.getRawAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
-                            .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, cf, anprResponse))
-                                    .map(sqs -> mapToAddressesOKDto(correlationId)));
+                            .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, cf, anprResponse),pnNationalRegistriesCxId)
+                                    .map(sqs -> mapToAddressesOKDto(correlationId)))
+                            .doOnError(throwable -> sqsService.push(errorToSqsDto(correlationId, cf, throwable.getMessage()), pnNationalRegistriesCxId).subscribe());
                 } else {
                     return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
-                            .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, cf, inadResponse))
-                                    .map(sqs -> mapToAddressesOKDto(correlationId)));
+                            .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, cf, inadResponse),pnNationalRegistriesCxId)
+                                    .map(sqs -> mapToAddressesOKDto(correlationId)))
+                            .doOnError(throwable -> sqsService.push(errorToSqsDto(correlationId, cf, throwable.getMessage()), pnNationalRegistriesCxId).subscribe());
                 }
             }
             case "PG" -> {
                 if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
                     return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
-                            .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse))
-                                    .map(sqs -> mapToAddressesOKDto(correlationId)));
+                            .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse),pnNationalRegistriesCxId)
+                                    .map(sqs -> mapToAddressesOKDto(correlationId)))
+                            .doOnError(throwable -> sqsService.push(errorToSqsDto(correlationId, cf, throwable.getMessage()), pnNationalRegistriesCxId).subscribe());
                 } else {
-                    return infoCamereService.getIniPecDigitalAddress(convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))
+                    return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))
                             .map(iniPecResponse -> mapToAddressesOKDto(correlationId));
                 }
             }
@@ -78,6 +86,21 @@ public class AddressService {
                         HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
             }
         }
+    }
+
+    private void checkFlagPnNationalRegistriesCxId(String pnNationalRegistriesCxId){
+        if(pnNationalRegistriesCxIdFlag && pnNationalRegistriesCxId==null){
+            throw new PnNationalRegistriesException("pnNationalRegistriesCxId required", HttpStatus.BAD_REQUEST.value(),
+                    HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
+        }
+    }
+
+    private CodeSqsDto errorToSqsDto(String correlationId, String cf, String error){
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setCorrelationId(correlationId);
+        codeSqsDto.setTaxId(cf);
+        codeSqsDto.setError(error);
+        return codeSqsDto;
     }
 
     private AddressOKDto mapToAddressesOKDto(String correlationId) {
