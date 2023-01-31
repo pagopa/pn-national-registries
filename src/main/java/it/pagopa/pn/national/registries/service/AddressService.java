@@ -61,20 +61,22 @@ public class AddressService {
                     return anprService.getRawAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
                             .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, cf, anprResponse),pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
-                            .doOnError(throwable -> sqsService.push(errorToSqsDto(correlationId, cf, throwable.getMessage()), pnNationalRegistriesCxId).subscribe());
+                            .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
+                                    .then(Mono.error(e)));
                 } else {
                     return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
                             .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, cf, inadResponse),pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
-                            .doOnError(throwable -> sqsService.push(errorToSqsDto(correlationId, cf, throwable.getMessage()), pnNationalRegistriesCxId).subscribe());
-                }
+                            .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
+                                    .then(Mono.error(e)));                }
             }
             case "PG" -> {
                 if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
                     return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                             .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse),pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
-                            .doOnError(throwable -> sqsService.push(errorToSqsDto(correlationId, cf, throwable.getMessage()), pnNationalRegistriesCxId).subscribe());
+                            .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
+                                    .then(Mono.error(e)));
                 } else {
                     return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))
                             .map(iniPecResponse -> mapToAddressesOKDto(correlationId));
