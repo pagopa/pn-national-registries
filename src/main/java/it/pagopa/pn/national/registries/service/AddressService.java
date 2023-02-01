@@ -2,24 +2,18 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
-import it.pagopa.pn.national.registries.converter.AddressAnprConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
-import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.Charset;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
-import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 
 @Service
@@ -30,20 +24,15 @@ public class AddressService {
     private final InadService inadService;
     private final InfoCamereService infoCamereService;
     private final SqsService sqsService;
-    private final AddressAnprConverter addressAnprConverter;
-
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public AddressService(AnprService anprService,
                           InadService inadService,
                           InfoCamereService infoCamereService,
-                          SqsService sqsService,
-                          AddressAnprConverter addressAnprConverter) {
+                          SqsService sqsService) {
         this.anprService = anprService;
         this.inadService = inadService;
         this.infoCamereService = infoCamereService;
         this.sqsService = sqsService;
-        this.addressAnprConverter = addressAnprConverter;
     }
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddress(String recipientType, AddressRequestBodyDto addressRequestBodyDto) {
@@ -53,7 +42,7 @@ public class AddressService {
         switch (recipientType) {
             case "PF" -> {
                 if (AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.equals(addressRequestBodyDto.getFilter().getDomicileType())) {
-                    return anprService.getRawAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
+                    return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
                             .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, cf, anprResponse))
                                     .map(sqs -> mapToAddressesOKDto(correlationId)));
                 } else {
@@ -86,24 +75,11 @@ public class AddressService {
         return dto;
     }
 
-    private CodeSqsDto anprToSqsDto(String correlationId, String cf, ResponseE002OKDto anprResponse) {
+    private CodeSqsDto anprToSqsDto(String correlationId, String cf, GetAddressANPROKDto anprResponse) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
-        if (anprResponse != null
-                && anprResponse.getListaSoggetti() != null
-                && anprResponse.getListaSoggetti().getDatiSoggetto() != null) {
-            PhysicalAddress address = anprResponse.getListaSoggetti().getDatiSoggetto().stream()
-                    .filter(subject -> subject.getResidenza() != null
-                            && subject.getGeneralita() != null
-                            && subject.getGeneralita().getCodiceFiscale() != null
-                            && subject.getGeneralita().getCodiceFiscale().getCodFiscale() != null
-                            && subject.getGeneralita().getCodiceFiscale().getCodFiscale().equalsIgnoreCase(cf))
-                    .flatMap(subject -> subject.getResidenza().stream())
-                    .max(Comparator.comparing(r -> parseStringToDate(r.getDataDecorrenzaResidenza())))
-                    .map(addressAnprConverter::convertResidence)
-                    .map(this::convertAnprToPhysicalAddress)
-                    .orElse(null);
-            codeSqsDto.setPhysicalAddress(address);
+        if (anprResponse != null && !CollectionUtils.isEmpty(anprResponse.getResidentialAddresses())) {
+            codeSqsDto.setPhysicalAddress(convertAnprToPhysicalAddress(anprResponse.getResidentialAddresses().get(0)));
         }
         codeSqsDto.setTaxId(cf);
         return codeSqsDto;
@@ -112,12 +88,8 @@ public class AddressService {
     private CodeSqsDto inadToSqsDto(String correlationId, String cf, GetDigitalAddressINADOKDto inadDto) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
-        Date now = new Date();
         if (inadDto != null && inadDto.getDigitalAddress() != null) {
             List<DigitalAddress> address = inadDto.getDigitalAddress().stream()
-                    .filter(d -> d.getUsageInfo() == null
-                            || d.getUsageInfo().getDateEndValidity() == null
-                            || d.getUsageInfo().getDateEndValidity().after(now))
                     .map(this::convertInadToDigitalAddress)
                     .toList();
             codeSqsDto.setDigitalAddress(address);
@@ -205,18 +177,5 @@ public class AddressService {
 
         dto.setFilter(filterDto);
         return dto;
-    }
-
-    private LocalDate parseStringToDate(String str) {
-        if (str == null) {
-            log.warn("can not parse a null date");
-            return LocalDate.EPOCH;
-        }
-        try {
-            return LocalDate.parse(str, formatter);
-        } catch (DateTimeParseException e) {
-            log.warn("can not parse date {}", str, e);
-            return LocalDate.EPOCH;
-        }
     }
 }

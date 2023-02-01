@@ -3,12 +3,20 @@ package it.pagopa.pn.national.registries.converter;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ResidentialAddressDto;
 import it.pagopa.pn.national.registries.model.anpr.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
+import java.util.Comparator;
 import java.util.List;
 
+@Slf4j
 @Component
 public class AddressAnprConverter {
+
+    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
     public GetAddressANPROKDto convertToGetAddressANPROKDto(ResponseE002OKDto responseE002OKDto, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
@@ -17,25 +25,22 @@ public class AddressAnprConverter {
         }
         if (responseE002OKDto != null && responseE002OKDto.getListaSoggetti() != null
                 && responseE002OKDto.getListaSoggetti().getDatiSoggetto() != null) {
-            for (SubjectsInstitutionDataDto item : responseE002OKDto.getListaSoggetti().getDatiSoggetto()) {
-                if (item.getGeneralita() != null && item.getGeneralita().getCodiceFiscale() != null
-                        && item.getGeneralita().getCodiceFiscale().getCodFiscale() != null
-                        && item.getGeneralita().getCodiceFiscale().getCodFiscale().equalsIgnoreCase(cf)
-                        && item.getResidenza() != null) {
-                    response.setResidentialAddresses(convertResidence(item.getResidenza()));
-                }
-            }
+            response.setResidentialAddresses(responseE002OKDto.getListaSoggetti().getDatiSoggetto().stream()
+                    .filter(soggetto -> soggetto.getResidenza() != null
+                            && soggetto.getGeneralita() != null
+                            && soggetto.getGeneralita().getCodiceFiscale() != null
+                            && soggetto.getGeneralita().getCodiceFiscale().getCodFiscale() != null
+                            && soggetto.getGeneralita().getCodiceFiscale().getCodFiscale().equalsIgnoreCase(cf))
+                    .flatMap(soggetto -> soggetto.getResidenza().stream())
+                    .max(Comparator.comparing(r -> parseStringToDate(r.getDataDecorrenzaResidenza())))
+                    .map(this::convertResidence)
+                    .map(List::of)
+                    .orElse(null));
         }
         return response;
     }
 
-    public List<ResidentialAddressDto> convertResidence(List<ResidenceDto> residenza) {
-        return residenza.stream()
-                .map(this::convertResidence)
-                .toList();
-    }
-
-    public ResidentialAddressDto convertResidence(ResidenceDto dto) {
+    private ResidentialAddressDto convertResidence(ResidenceDto dto) {
         ResidentialAddressDto innerDto = new ResidentialAddressDto();
         innerDto.setAt(dto.getPresso());
         innerDto.setDescription(dto.getTipoIndirizzo());
@@ -90,6 +95,19 @@ public class AddressAnprConverter {
                     + indirizzo.getNumeroCivico().getNumero() + indirizzo.getNumeroCivico().getLettera();
         } else {
             return "";
+        }
+    }
+
+    private LocalDate parseStringToDate(String str) {
+        if (str == null) {
+            log.warn("can not parse a null date");
+            return LocalDate.EPOCH;
+        }
+        try {
+            return LocalDate.parse(str, formatter);
+        } catch (DateTimeParseException e) {
+            log.warn("can not parse date {}", str, e);
+            return LocalDate.EPOCH;
         }
     }
 }

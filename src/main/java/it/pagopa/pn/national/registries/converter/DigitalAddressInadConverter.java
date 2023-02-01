@@ -7,11 +7,15 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.UsageInfoD
 import it.pagopa.pn.national.registries.model.inad.ElementDigitalAddressDto;
 import it.pagopa.pn.national.registries.model.inad.MotivationTerminationDto;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+
+import java.util.Date;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_INAD;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_INAD;
 
+@Slf4j
 @Component
 public class DigitalAddressInadConverter {
 
@@ -26,8 +30,15 @@ public class DigitalAddressInadConverter {
             response.setSince(elementDigitalAddressDto.getSince());
             response.setTaxId(elementDigitalAddressDto.getTaxId());
 
-            for (ElementDigitalAddressDto item : elementDigitalAddressDto.getDigitalAddress()) {
-                response.addDigitalAddressItem(convertToGetDigitalAddressINADOKDigitalAddressInnerDto(item));
+            if (elementDigitalAddressDto.getDigitalAddress() != null) {
+                Date now = new Date();
+                response.setDigitalAddress(elementDigitalAddressDto.getDigitalAddress().stream()
+                        .filter(a -> isValid(a, now))
+                        .map(DigitalAddressInadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
+                        .toList());
+                log.info("inad digital addresses: {} - valid at {}: {}", response.getDigitalAddress().size(), now, elementDigitalAddressDto.getDigitalAddress().size());
+            } else {
+                log.info("inad digital addresses is null");
             }
         }
         return response;
@@ -53,14 +64,17 @@ public class DigitalAddressInadConverter {
     }
 
     private static UsageInfoDto.MotivationEnum convertMotivation(MotivationTerminationDto motivation) {
-        switch (motivation) {
-            case UFFICIO:
-                return UsageInfoDto.MotivationEnum.UFFICIO;
-            case VOLONTARIA:
-                return UsageInfoDto.MotivationEnum.VOLONTARIA;
-            default:
-                throw new PnInternalException(ERROR_MESSAGE_INAD + " Invalid motivation for", ERROR_CODE_INAD);
-        }
+        return switch (motivation) {
+            case UFFICIO -> UsageInfoDto.MotivationEnum.UFFICIO;
+            case VOLONTARIA -> UsageInfoDto.MotivationEnum.VOLONTARIA;
+            default -> throw new PnInternalException(ERROR_MESSAGE_INAD + " Invalid motivation for", ERROR_CODE_INAD);
+        };
     }
 
+    private static boolean isValid(ElementDigitalAddressDto dto, Date date) {
+        return dto.getUsageInfo() == null
+                || dto.getUsageInfo().getDateEndValidity() == null
+                || dto.getUsageInfo().getDateEndValidity().equals(date)
+                || dto.getUsageInfo().getDateEndValidity().after(date);
+    }
 }

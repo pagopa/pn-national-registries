@@ -3,16 +3,11 @@ package it.pagopa.pn.national.registries.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-import it.pagopa.pn.national.registries.converter.AddressAnprConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.util.Date;
 import java.util.List;
 
-import it.pagopa.pn.national.registries.model.anpr.*;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -31,8 +26,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 @ExtendWith(SpringExtension.class)
 class AddressServiceTest {
 
-    @MockBean
-    private AddressAnprConverter addressAnprConverter;
     @MockBean
     private AnprService anprService;
     @MockBean
@@ -81,37 +74,14 @@ class AddressServiceTest {
         GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto = new GetAddressANPRRequestBodyDto();
         getAddressANPRRequestBodyDto.setFilter(getAddressANPRRequestBodyFilterDto);
 
-        ResidenceDto residenceDto1 = new ResidenceDto();
-        residenceDto1.setNoteIndirizzo("r1");
-        residenceDto1.setDataDecorrenzaResidenza("2022-11-01");
-        ResidenceDto residenceDto2 = new ResidenceDto();
-        residenceDto2.setNoteIndirizzo("r2");
-        residenceDto2.setDataDecorrenzaResidenza("2022-12-01");
-        ResidenceDto residenceDto3 = new ResidenceDto();
-        residenceDto3.setDataDecorrenzaResidenza("");
-        ResidenceDto residenceDto4 = new ResidenceDto();
-        TaxIdDto taxIdDto1 = new TaxIdDto();
-        taxIdDto1.setCodFiscale("COD_FISCALE_1");
-        GeneralInformationDto generalInformationDto1 = new GeneralInformationDto();
-        generalInformationDto1.setCodiceFiscale(taxIdDto1);
-        TaxIdDto taxIdDto2 = new TaxIdDto();
-        taxIdDto2.setCodFiscale("COD_FISCALE_2");
-        GeneralInformationDto generalInformationDto2 = new GeneralInformationDto();
-        generalInformationDto2.setCodiceFiscale(taxIdDto2);
-        SubjectsInstitutionDataDto subjectsInstitutionDataDto1 = new SubjectsInstitutionDataDto();
-        subjectsInstitutionDataDto1.setResidenza(List.of(residenceDto1, residenceDto2, residenceDto3, residenceDto4));
-        subjectsInstitutionDataDto1.setGeneralita(generalInformationDto1);
-        SubjectsInstitutionDataDto subjectsInstitutionDataDto2 = new SubjectsInstitutionDataDto();
-        subjectsInstitutionDataDto2.setGeneralita(generalInformationDto2);
-        SubjectsListDto subjectsListDto = new SubjectsListDto();
-        subjectsListDto.setDatiSoggetto(List.of(subjectsInstitutionDataDto1, subjectsInstitutionDataDto2));
-        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
-        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        ResidentialAddressDto residentialAddressDto = new ResidentialAddressDto();
+        residentialAddressDto.setAddress("address");
 
-        when(anprService.getRawAddressANPR(getAddressANPRRequestBodyDto))
-                .thenReturn(Mono.just(responseE002OKDto));
-        when(addressAnprConverter.convertResidence(residenceDto2))
-                .thenReturn(new ResidentialAddressDto());
+        GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
+        getAddressANPROKDto.setResidentialAddresses(List.of(residentialAddressDto));
+
+        when(anprService.getAddressANPR(getAddressANPRRequestBodyDto))
+                .thenReturn(Mono.just(getAddressANPROKDto));
         when(sqsService.push(anprSqsCaptor.capture()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
@@ -132,7 +102,7 @@ class AddressServiceTest {
      */
     @Test
     @DisplayName("Test retrieve from INAD")
-    void testRetrieveDigitalOrPhysicalAddress3() {
+    void testRetrieveDigitalOrPhysicalAddressINAD() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");
@@ -147,21 +117,11 @@ class AddressServiceTest {
         GetDigitalAddressINADRequestBodyDto getDigitalAddressINADRequestBodyDto = new GetDigitalAddressINADRequestBodyDto();
         getDigitalAddressINADRequestBodyDto.setFilter(getDigitalAddressINADRequestBodyFilterDto);
 
-        UsageInfoDto usageInfoDto1 = new UsageInfoDto();
-        usageInfoDto1.setDateEndValidity(Date.from(LocalDate.EPOCH.atStartOfDay(ZoneOffset.UTC).toInstant()));
-        DigitalAddressDto digitalAddressDto1 = new DigitalAddressDto();
-        digitalAddressDto1.setDigitalAddress("a1");
-        digitalAddressDto1.setUsageInfo(usageInfoDto1);
-        UsageInfoDto usageInfoDto2 = new UsageInfoDto();
-        usageInfoDto2.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
-        DigitalAddressDto digitalAddressDto2 = new DigitalAddressDto();
-        digitalAddressDto2.setDigitalAddress("a2");
-        digitalAddressDto2.setUsageInfo(usageInfoDto2);
-        DigitalAddressDto digitalAddressDto3 = new DigitalAddressDto();
-        digitalAddressDto3.setDigitalAddress("a3");
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("DA");
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
         getDigitalAddressINADOKDto.setTaxId("COD_FISCALE_1");
-        getDigitalAddressINADOKDto.setDigitalAddress(List.of(digitalAddressDto1, digitalAddressDto2, digitalAddressDto3));
+        getDigitalAddressINADOKDto.setDigitalAddress(List.of(digitalAddressDto));
 
         when(inadService.callEService(getDigitalAddressINADRequestBodyDto))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
@@ -175,9 +135,9 @@ class AddressServiceTest {
                 .expectNext(addressOKDto)
                 .verifyComplete();
         assertNotNull(inadSqsCaptor.getValue().getDigitalAddress());
-        assertEquals(2, inadSqsCaptor.getValue().getDigitalAddress().size());
-        assertFalse(inadSqsCaptor.getValue().getDigitalAddress().stream()
-                .anyMatch(a -> a.getAddress().equals("a1")));
+        assertEquals(1, inadSqsCaptor.getValue().getDigitalAddress().size());
+        assertTrue(inadSqsCaptor.getValue().getDigitalAddress().stream()
+                .anyMatch(a -> a.getAddress().equals("DA")));
     }
 
     @Captor
@@ -188,7 +148,7 @@ class AddressServiceTest {
      */
     @Test
     @DisplayName("Test retrieve from Registro Imprese")
-    void testRetrieveDigitalOrPhysicalAddress4() {
+    void testRetrieveDigitalOrPhysicalAddressRegImp() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");
@@ -224,8 +184,8 @@ class AddressServiceTest {
     }
 
     @Test
-    @DisplayName("Test retrieve from ")
-    void testRetrieveDigitalOrPhysicalAddress5() {
+    @DisplayName("Test retrieve from INIPEC")
+    void testRetrieveDigitalOrPhysicalAddressINIPEC() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");
