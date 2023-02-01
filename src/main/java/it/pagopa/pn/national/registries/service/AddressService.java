@@ -62,13 +62,14 @@ public class AddressService {
                             .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, cf, anprResponse),pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
                             .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
-                                    .then(Mono.error(e)));
+                                    .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
                 } else {
                     return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
                             .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, cf, inadResponse),pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
                             .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
-                                    .then(Mono.error(e)));                }
+                                    .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
+                }
             }
             case "PG" -> {
                 if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
@@ -76,7 +77,7 @@ public class AddressService {
                             .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse),pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
                             .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
-                                    .then(Mono.error(e)));
+                                    .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
                 } else {
                     return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))
                             .map(iniPecResponse -> mapToAddressesOKDto(correlationId));
