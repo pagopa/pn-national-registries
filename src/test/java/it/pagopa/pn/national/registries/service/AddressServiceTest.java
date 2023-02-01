@@ -3,13 +3,11 @@ package it.pagopa.pn.national.registries.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
 
-import it.pagopa.pn.national.registries.converter.AddressAnprConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 
 import java.util.List;
 
-import it.pagopa.pn.national.registries.model.anpr.*;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,8 +26,6 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 @ExtendWith(SpringExtension.class)
 class AddressServiceTest {
 
-    @MockBean
-    private AddressAnprConverter addressAnprConverter;
     @MockBean
     private AnprService anprService;
     @MockBean
@@ -78,37 +74,14 @@ class AddressServiceTest {
         GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto = new GetAddressANPRRequestBodyDto();
         getAddressANPRRequestBodyDto.setFilter(getAddressANPRRequestBodyFilterDto);
 
-        ResidenceDto residenceDto1 = new ResidenceDto();
-        residenceDto1.setNoteIndirizzo("r1");
-        residenceDto1.setDataDecorrenzaResidenza("2022-11-01");
-        ResidenceDto residenceDto2 = new ResidenceDto();
-        residenceDto2.setNoteIndirizzo("r2");
-        residenceDto2.setDataDecorrenzaResidenza("2022-12-01");
-        ResidenceDto residenceDto3 = new ResidenceDto();
-        residenceDto3.setDataDecorrenzaResidenza("");
-        ResidenceDto residenceDto4 = new ResidenceDto();
-        TaxIdDto taxIdDto1 = new TaxIdDto();
-        taxIdDto1.setCodFiscale("COD_FISCALE_1");
-        GeneralInformationDto generalInformationDto1 = new GeneralInformationDto();
-        generalInformationDto1.setCodiceFiscale(taxIdDto1);
-        TaxIdDto taxIdDto2 = new TaxIdDto();
-        taxIdDto2.setCodFiscale("COD_FISCALE_2");
-        GeneralInformationDto generalInformationDto2 = new GeneralInformationDto();
-        generalInformationDto2.setCodiceFiscale(taxIdDto2);
-        SubjectsInstitutionDataDto subjectsInstitutionDataDto1 = new SubjectsInstitutionDataDto();
-        subjectsInstitutionDataDto1.setResidenza(List.of(residenceDto1, residenceDto2, residenceDto3, residenceDto4));
-        subjectsInstitutionDataDto1.setGeneralita(generalInformationDto1);
-        SubjectsInstitutionDataDto subjectsInstitutionDataDto2 = new SubjectsInstitutionDataDto();
-        subjectsInstitutionDataDto2.setGeneralita(generalInformationDto2);
-        SubjectsListDto subjectsListDto = new SubjectsListDto();
-        subjectsListDto.setDatiSoggetto(List.of(subjectsInstitutionDataDto1, subjectsInstitutionDataDto2));
-        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
-        responseE002OKDto.setListaSoggetti(subjectsListDto);
+        ResidentialAddressDto residentialAddressDto = new ResidentialAddressDto();
+        residentialAddressDto.setAddress("address");
 
-        when(anprService.getRawAddressANPR(getAddressANPRRequestBodyDto))
-                .thenReturn(Mono.just(responseE002OKDto));
-        when(addressAnprConverter.convertResidence(residenceDto2))
-                .thenReturn(new ResidentialAddressDto());
+        GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
+        getAddressANPROKDto.setResidentialAddresses(List.of(residentialAddressDto));
+
+        when(anprService.getAddressANPR(getAddressANPRRequestBodyDto))
+                .thenReturn(Mono.just(getAddressANPROKDto));
         when(sqsService.push(anprSqsCaptor.capture()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
