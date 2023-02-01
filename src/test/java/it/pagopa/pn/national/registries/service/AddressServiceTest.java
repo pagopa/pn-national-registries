@@ -7,9 +7,6 @@ import it.pagopa.pn.national.registries.converter.AddressAnprConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.util.Date;
 import java.util.List;
 
 import it.pagopa.pn.national.registries.model.anpr.*;
@@ -132,7 +129,7 @@ class AddressServiceTest {
      */
     @Test
     @DisplayName("Test retrieve from INAD")
-    void testRetrieveDigitalOrPhysicalAddress3() {
+    void testRetrieveDigitalOrPhysicalAddressINAD() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");
@@ -147,21 +144,11 @@ class AddressServiceTest {
         GetDigitalAddressINADRequestBodyDto getDigitalAddressINADRequestBodyDto = new GetDigitalAddressINADRequestBodyDto();
         getDigitalAddressINADRequestBodyDto.setFilter(getDigitalAddressINADRequestBodyFilterDto);
 
-        UsageInfoDto usageInfoDto1 = new UsageInfoDto();
-        usageInfoDto1.setDateEndValidity(Date.from(LocalDate.EPOCH.atStartOfDay(ZoneOffset.UTC).toInstant()));
-        DigitalAddressDto digitalAddressDto1 = new DigitalAddressDto();
-        digitalAddressDto1.setDigitalAddress("a1");
-        digitalAddressDto1.setUsageInfo(usageInfoDto1);
-        UsageInfoDto usageInfoDto2 = new UsageInfoDto();
-        usageInfoDto2.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
-        DigitalAddressDto digitalAddressDto2 = new DigitalAddressDto();
-        digitalAddressDto2.setDigitalAddress("a2");
-        digitalAddressDto2.setUsageInfo(usageInfoDto2);
-        DigitalAddressDto digitalAddressDto3 = new DigitalAddressDto();
-        digitalAddressDto3.setDigitalAddress("a3");
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("DA");
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
         getDigitalAddressINADOKDto.setTaxId("COD_FISCALE_1");
-        getDigitalAddressINADOKDto.setDigitalAddress(List.of(digitalAddressDto1, digitalAddressDto2, digitalAddressDto3));
+        getDigitalAddressINADOKDto.setDigitalAddress(List.of(digitalAddressDto));
 
         when(inadService.callEService(getDigitalAddressINADRequestBodyDto))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
@@ -175,9 +162,9 @@ class AddressServiceTest {
                 .expectNext(addressOKDto)
                 .verifyComplete();
         assertNotNull(inadSqsCaptor.getValue().getDigitalAddress());
-        assertEquals(2, inadSqsCaptor.getValue().getDigitalAddress().size());
-        assertFalse(inadSqsCaptor.getValue().getDigitalAddress().stream()
-                .anyMatch(a -> a.getAddress().equals("a1")));
+        assertEquals(1, inadSqsCaptor.getValue().getDigitalAddress().size());
+        assertTrue(inadSqsCaptor.getValue().getDigitalAddress().stream()
+                .anyMatch(a -> a.getAddress().equals("DA")));
     }
 
     @Captor
@@ -188,7 +175,7 @@ class AddressServiceTest {
      */
     @Test
     @DisplayName("Test retrieve from Registro Imprese")
-    void testRetrieveDigitalOrPhysicalAddress4() {
+    void testRetrieveDigitalOrPhysicalAddressRegImp() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");
@@ -224,8 +211,8 @@ class AddressServiceTest {
     }
 
     @Test
-    @DisplayName("Test retrieve from ")
-    void testRetrieveDigitalOrPhysicalAddress5() {
+    @DisplayName("Test retrieve from INIPEC")
+    void testRetrieveDigitalOrPhysicalAddressINIPEC() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");

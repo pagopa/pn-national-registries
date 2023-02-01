@@ -53,14 +53,11 @@ public class DigitalAddressInadConverter {
     }
 
     private static UsageInfoDto.MotivationEnum convertMotivation(MotivationTerminationDto motivation) {
-        switch (motivation) {
-            case UFFICIO:
-                return UsageInfoDto.MotivationEnum.UFFICIO;
-            case VOLONTARIA:
-                return UsageInfoDto.MotivationEnum.VOLONTARIA;
-            default:
-                throw new PnInternalException(ERROR_MESSAGE_INAD + " Invalid motivation for", ERROR_CODE_INAD);
-        }
+        return switch (motivation) {
+            case UFFICIO -> UsageInfoDto.MotivationEnum.UFFICIO;
+            case VOLONTARIA -> UsageInfoDto.MotivationEnum.VOLONTARIA;
+            default -> throw new PnInternalException(ERROR_MESSAGE_INAD + " Invalid motivation for", ERROR_CODE_INAD);
+        };
     }
 
 }
