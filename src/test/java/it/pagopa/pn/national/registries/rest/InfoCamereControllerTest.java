@@ -31,7 +31,7 @@ class InfoCamereControllerTest {
     void getDigitalAddressINAD() {
         GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
         GetDigitalAddressIniPECRequestBodyFilterDto dto = new GetDigitalAddressIniPECRequestBodyFilterDto();
-        dto.setTaxId("DDDFGF52F52H501S");
+        dto.setTaxId("PPPPLT80A01H501V");
         requestBodyDto.setFilter(dto);
 
         GetDigitalAddressIniPECOKDto getDigitalAddressINADOKDto = new GetDigitalAddressIniPECOKDto();
@@ -47,11 +47,11 @@ class InfoCamereControllerTest {
     void addressRegistroImprese() {
 
         GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
-        response.setTaxId("cf");
+        response.setTaxId("PPPPLT80A01H501V");
 
         GetAddressRegistroImpreseRequestBodyDto body = new GetAddressRegistroImpreseRequestBodyDto();
         GetAddressRegistroImpreseRequestBodyFilterDto dto = new GetAddressRegistroImpreseRequestBodyFilterDto();
-        dto.setTaxId("cf");
+        dto.setTaxId("PPPPLT80A01H501V");
         body.setFilter(dto);
         when(infoCamereService.getRegistroImpreseLegalAddress(body)).thenReturn(Mono.just(response));
 
@@ -63,12 +63,12 @@ class InfoCamereControllerTest {
     void checkTaxIdAndVatNumber() {
 
         InfoCamereLegalOKDto response = new InfoCamereLegalOKDto();
-        response.setTaxId("taxId");
+        response.setTaxId("PPPPLT80A01H501V");
         response.setVatNumber("vatNumber");
 
         InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
         InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
-        dto.setTaxId("taxId");
+        dto.setTaxId("PPPPLT80A01H501V");
         dto.setVatNumber("vatNumber");
         body.setFilter(dto);
         when(infoCamereService.checkTaxIdAndVatNumber(body)).thenReturn(Mono.just(response));

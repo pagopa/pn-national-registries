@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRe
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,6 +38,7 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
+        ValidateTaxIdUtils.validateTaxId(checkTaxIdRequestBodyDto.getFilter().getTaxId());
         return agenziaEntrateService.callEService(checkTaxIdRequestBodyDto)
                     .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }
@@ -53,6 +55,7 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
 
     public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(ADELegalRequestBodyDto adELegalRequestBodyDto,  final ServerWebExchange exchange) {
+        ValidateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId());
         return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
     }

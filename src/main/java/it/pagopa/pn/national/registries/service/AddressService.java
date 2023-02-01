@@ -22,6 +22,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
@@ -35,6 +37,9 @@ public class AddressService {
     private final Boolean pnNationalRegistriesCxIdFlag;
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+
+    private final ExecutorService threadPoolExecutor = Executors.newCachedThreadPool();
+
 
     public AddressService(AnprService anprService,
                           InadService inadService,
@@ -50,8 +55,17 @@ public class AddressService {
         this.pnNationalRegistriesCxIdFlag = pnNationalRegistriesCxIdFlag;
     }
 
-    public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddress(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
+    public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
+        String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
+
+        Runnable r = () -> retrieveDigitalOrPhysicalAddress(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto).subscribe();
+        threadPoolExecutor.submit(r);
+
+        return Mono.just(mapToAddressesOKDto(correlationId));
+    }
+
+    public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddress(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
         String cf = addressRequestBodyDto.getFilter().getTaxId();
         log.info("recipientType {} and domicileType {}", recipientType, addressRequestBodyDto.getFilter().getDomicileType());
