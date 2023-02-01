@@ -4,6 +4,7 @@ import it.pagopa.pn.national.registries.client.agenziaentrate.AdELegalClient;
 import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfClient;
 
 import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
+import it.pagopa.pn.national.registries.exceptions.RuntimeJAXBException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
@@ -63,7 +64,7 @@ public class AgenziaEntrateService {
                     try {
                         return agenziaEntrateConverter.adELegalResponseToDto(unmarshaller(response));
                     } catch (JAXBException e) {
-                        throw new IllegalArgumentException(e);
+                        throw new RuntimeJAXBException(e.getMessage());
                     }
                 });
     }

@@ -1,16 +1,15 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -24,13 +23,16 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ContextConfiguration(classes = {AdELegalClient.class})
 @ExtendWith(SpringExtension.class)
 class AdELegalClientTest {
 
-    @MockBean
-    AccessTokenExpiringMap accessTokenExpiringMap;
+    @Autowired
+    private AdELegalClient adELegalClient;
+
 
     @MockBean
     WebClient webClient;
@@ -38,9 +40,37 @@ class AdELegalClientTest {
     @MockBean
     AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP;
 
-    @MockBean
-    ObjectMapper objectMapper;
 
+    /**
+     * Method under test: {@link AdELegalClient#getToken()}
+     */
+    @Test
+    void testGetToken2() {
+        //   Diffblue Cover was unable to write a Spring test,
+        //   so wrote a non-Spring test instead.
+        //   Diffblue AI was unable to find a test
+
+        AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = mock(AgenziaEntrateWebClientSOAP.class);
+        when(agenziaEntrateWebClientSOAP.init()).thenReturn(null);
+        (new AdELegalClient(agenziaEntrateWebClientSOAP)).getToken();
+        verify(agenziaEntrateWebClientSOAP).init();
+    }
+
+    /**
+     * Method under test: {@link AdELegalClient#checkTaxIdAndVatNumberAdE(ADELegalRequestBodyFilterDto)}
+     */
+    @Test
+    void testCheckTaxIdAndVatNumberAdE2() {
+        //   Diffblue Cover was unable to write a Spring test,
+        //   so wrote a non-Spring test instead.
+        //   Diffblue AI was unable to find a test
+
+        AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = mock(AgenziaEntrateWebClientSOAP.class);
+        when(agenziaEntrateWebClientSOAP.init()).thenReturn(null);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
+        adELegalClient.checkTaxIdAndVatNumberAdE(new ADELegalRequestBodyFilterDto());
+        verify(agenziaEntrateWebClientSOAP).init();
+    }
 
     @Test
     void checkTaxIdAndVatNumberTest() {
@@ -103,5 +133,13 @@ class AdELegalClientTest {
                         null,
                         null);
         assertTrue(adELegalClient.checkExceptionType(webClientResponseException));
+    }
+
+    /**
+     * Method under test: {@link AdELegalClient#checkExceptionType(Throwable)}
+     */
+    @Test
+    void testCheckExceptionType() {
+        assertFalse(adELegalClient.checkExceptionType(new Throwable()));
     }
 }
