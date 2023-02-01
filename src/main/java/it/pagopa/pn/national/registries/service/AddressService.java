@@ -19,7 +19,6 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 
 @Service
@@ -112,12 +111,8 @@ public class AddressService {
     private CodeSqsDto inadToSqsDto(String correlationId, String cf, GetDigitalAddressINADOKDto inadDto) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
-        Date now = new Date();
         if (inadDto != null && inadDto.getDigitalAddress() != null) {
             List<DigitalAddress> address = inadDto.getDigitalAddress().stream()
-                    .filter(d -> d.getUsageInfo() == null
-                            || d.getUsageInfo().getDateEndValidity() == null
-                            || d.getUsageInfo().getDateEndValidity().after(now))
                     .map(this::convertInadToDigitalAddress)
                     .toList();
             codeSqsDto.setDigitalAddress(address);
