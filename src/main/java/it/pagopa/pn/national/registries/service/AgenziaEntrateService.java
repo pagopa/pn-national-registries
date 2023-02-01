@@ -63,7 +63,7 @@ public class AgenziaEntrateService {
                     try {
                         return agenziaEntrateConverter.adELegalResponseToDto(unmarshaller(response));
                     } catch (JAXBException e) {
-                        throw new RuntimeException(e);
+                        throw new IllegalArgumentException(e);
                     }
                 });
     }
