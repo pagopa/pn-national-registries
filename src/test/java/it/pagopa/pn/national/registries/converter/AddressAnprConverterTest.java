@@ -1,8 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.model.anpr.*;
 
 import java.util.ArrayList;
@@ -12,6 +10,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
 class AddressAnprConverterTest {
@@ -366,6 +366,51 @@ class AddressAnprConverterTest {
         assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
+    @Test
+    void testConvertConFiltroPerDataDecorrenza() {
+        ResidenceDto residenceDto1 = new ResidenceDto();
+        residenceDto1.setTipoIndirizzo("t1");
+        residenceDto1.setDataDecorrenzaResidenza("2022-11-01");
+        ResidenceDto residenceDto2 = new ResidenceDto();
+        residenceDto2.setTipoIndirizzo("t2");
+        residenceDto2.setDataDecorrenzaResidenza("2022-12-01");
+        ResidenceDto residenceDto3 = new ResidenceDto();
+        residenceDto3.setDataDecorrenzaResidenza("");
+        residenceDto3.setTipoIndirizzo("t3");
+        ResidenceDto residenceDto4 = new ResidenceDto();
+        residenceDto4.setTipoIndirizzo("t4");
+        // mi aspetto che venga selezionata la residence_2 che contiene la data di decorrenza più recente
 
+        TaxIdDto taxIdDto1 = new TaxIdDto();
+        taxIdDto1.setCodFiscale("COD_FISCALE_1");
+
+        GeneralInformationDto generalInformationDto1 = new GeneralInformationDto();
+        generalInformationDto1.setCodiceFiscale(taxIdDto1);
+
+        SubjectsInstitutionDataDto subjectsInstitutionDataDto1 = new SubjectsInstitutionDataDto();
+        subjectsInstitutionDataDto1.setResidenza(List.of(residenceDto1, residenceDto2, residenceDto3, residenceDto4));
+        subjectsInstitutionDataDto1.setGeneralita(generalInformationDto1);
+
+        TaxIdDto taxIdDto2 = new TaxIdDto();
+        taxIdDto2.setCodFiscale("COD_FISCALE_2");
+
+        GeneralInformationDto generalInformationDto2 = new GeneralInformationDto();
+        generalInformationDto2.setCodiceFiscale(taxIdDto2);
+
+        SubjectsInstitutionDataDto subjectsInstitutionDataDto2 = new SubjectsInstitutionDataDto();
+        subjectsInstitutionDataDto2.setGeneralita(generalInformationDto2);
+        // mi aspetto che questo subject venga scartato perché il CF non combacia
+
+        SubjectsListDto subjectsListDto = new SubjectsListDto();
+        subjectsListDto.setDatiSoggetto(List.of(subjectsInstitutionDataDto1, subjectsInstitutionDataDto2));
+
+        ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
+        responseE002OKDto.setListaSoggetti(subjectsListDto);
+
+        GetAddressANPROKDto response = addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "COD_FISCALE_1");
+        assertNotNull(response);
+        assertNotNull(response.getResidentialAddresses());
+        assertEquals(1, response.getResidentialAddresses().size());
+        assertEquals("t2", response.getResidentialAddresses().get(0).getDescription());
+    }
 }
-
