@@ -65,7 +65,8 @@ public class AddressService {
         if (emitResult != Sinks.EmitResult.OK) {
             log.error("can not submit task: {}", emitResult);
             sqsService.push(errorToSqsDto(correlationId, cf, "can not submit task"), pnNationalRegistriesCxId)
-                    .subscribe(ok -> {}, e -> log.error("can not send message to SQS queue", e));
+                    .subscribe(ok -> {
+                    }, e -> log.error("can not send message to SQS queue", e));
         }
 
         return Mono.just(mapToAddressesOKDto(correlationId));
@@ -79,13 +80,13 @@ public class AddressService {
             case "PF" -> {
                 if (AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.equals(addressRequestBodyDto.getFilter().getDomicileType())) {
                     return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
-                            .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, cf, anprResponse),pnNationalRegistriesCxId)
+                            .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, cf, anprResponse), pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
                             .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
                                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
                 } else {
                     return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
-                            .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, cf, inadResponse),pnNationalRegistriesCxId)
+                            .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, cf, inadResponse), pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
                             .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
                                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
@@ -94,7 +95,7 @@ public class AddressService {
             case "PG" -> {
                 if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
                     return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
-                            .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse),pnNationalRegistriesCxId)
+                            .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse), pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
                             .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
                                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
@@ -111,14 +112,14 @@ public class AddressService {
         }
     }
 
-    private void checkFlagPnNationalRegistriesCxId(String pnNationalRegistriesCxId){
-        if(pnNationalRegistriesCxIdFlag && pnNationalRegistriesCxId==null){
+    private void checkFlagPnNationalRegistriesCxId(String pnNationalRegistriesCxId) {
+        if (pnNationalRegistriesCxIdFlag && pnNationalRegistriesCxId == null) {
             throw new PnNationalRegistriesException("pnNationalRegistriesCxId required", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
         }
     }
 
-    private CodeSqsDto errorToSqsDto(String correlationId, String cf, String error){
+    private CodeSqsDto errorToSqsDto(String correlationId, String cf, String error) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
         codeSqsDto.setTaxId(cf);
@@ -237,13 +238,15 @@ public class AddressService {
     }
 
     private Context enrichFluxContext(Context ctx, Map<String, String> mdcCtx) {
-        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_TRACE_ID_KEY, mdcCtx.get(MDCWebFilter.MDC_TRACE_ID_KEY));
-        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_JTI_KEY, mdcCtx.get(MDCWebFilter.MDC_JTI_KEY));
-        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_UID_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_UID_KEY));
-        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_CX_ID_KEY, mdcCtx.get(MDCWebFilter.MDC_CX_ID_KEY));
-        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_TYPE_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_TYPE_KEY));
-        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_GROUPS_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_GROUPS_KEY));
-        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_ROLE_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_ROLE_KEY));
+        if (mdcCtx != null) {
+            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_TRACE_ID_KEY, mdcCtx.get(MDCWebFilter.MDC_TRACE_ID_KEY));
+            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_JTI_KEY, mdcCtx.get(MDCWebFilter.MDC_JTI_KEY));
+            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_UID_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_UID_KEY));
+            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_CX_ID_KEY, mdcCtx.get(MDCWebFilter.MDC_CX_ID_KEY));
+            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_TYPE_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_TYPE_KEY));
+            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_GROUPS_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_GROUPS_KEY));
+            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_ROLE_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_ROLE_KEY));
+        }
         return ctx;
     }
 
