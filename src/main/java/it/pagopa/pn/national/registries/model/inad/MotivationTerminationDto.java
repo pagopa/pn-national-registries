@@ -25,7 +25,7 @@ public enum MotivationTerminationDto {
   
   VOLONTARIA("CESSAZIONE_VOLONTARIA");
 
-  private String value;
+  private final String value;
 
   MotivationTerminationDto(String value) {
     this.value = value;
