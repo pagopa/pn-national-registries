@@ -1,8 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -30,21 +27,33 @@ class AgenziaEntrateControllerTest {
     @Mock
     ServerWebExchange serverWebExchange;
 
-    @Mock
-    Scheduler scheduler;
-
     @Test
     void checkTaxId() {
         CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto = new CheckTaxIdRequestBodyDto();
         CheckTaxIdRequestBodyFilterDto dto = new CheckTaxIdRequestBodyFilterDto();
-        dto.setTaxId("DDDFFF852G25H501G");
+        dto.setTaxId("PPPPLT80A01H501V");
         checkTaxIdRequestBodyDto.setFilter(dto);
 
         CheckTaxIdOKDto checkTaxIdOKDto = new CheckTaxIdOKDto();
-        checkTaxIdOKDto.setTaxId("DDDFFF852G25H501G");
+        checkTaxIdOKDto.setTaxId("PPPPLT80A01H501V");
         checkTaxIdOKDto.setIsValid(true);
         when(agenziaEntrateService.callEService(any())).thenReturn(Mono.just(checkTaxIdOKDto));
-        StepVerifier.create(agenziaEntrateController.checkTaxId(checkTaxIdRequestBodyDto,serverWebExchange))
+        StepVerifier.create(agenziaEntrateController.checkTaxId(checkTaxIdRequestBodyDto, serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(checkTaxIdOKDto));
+    }
+
+    @Test
+    void checkTaxIdAndVatNumber() {
+        ADELegalRequestBodyDto adeLegalRequestBodyDto = new ADELegalRequestBodyDto();
+        ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
+        adeLegalRequestBodyFilterDto.setTaxId("PPPPLT80A01H501V");
+        adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
+        adeLegalRequestBodyDto.setFilter(adeLegalRequestBodyFilterDto);
+        ADELegalOKDto adeLegalOKDto = new ADELegalOKDto();
+        adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue("00"));
+        adeLegalOKDto.setVerificationResult(true);
+        adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue("XX00"));
+        when(agenziaEntrateService.checkTaxIdAndVatNumber(any())).thenReturn(Mono.just(adeLegalOKDto));
+        StepVerifier.create(agenziaEntrateController.adeLegal(adeLegalRequestBodyDto, serverWebExchange)).expectNext(ResponseEntity.ok().body(adeLegalOKDto));
     }
 }

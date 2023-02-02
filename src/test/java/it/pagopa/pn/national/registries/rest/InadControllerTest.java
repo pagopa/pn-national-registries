@@ -12,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
 
 import java.util.Date;
@@ -29,16 +28,13 @@ class InadControllerTest {
     InadService inadService;
 
     @Mock
-    Scheduler scheduler;
-
-    @Mock
     ServerWebExchange serverWebExchange;
 
     @Test
     void getDigitalAddressINAD() {
         GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto = new GetDigitalAddressINADRequestBodyDto();
         GetDigitalAddressINADRequestBodyFilterDto dto = new GetDigitalAddressINADRequestBodyFilterDto();
-        dto.setTaxId("DDDFGF52F52H501S");
+        dto.setTaxId("PPPPLT80A01H501V");
         extractDigitalAddressINADRequestBodyDto.setFilter(dto);
 
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
