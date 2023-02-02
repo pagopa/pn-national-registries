@@ -18,27 +18,33 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
+@TestPropertySource(properties = {
+        "pn.national.registries.cx.id.boolean=true"
+})
+@ContextConfiguration(classes = {AddressService.class})
 @ExtendWith(SpringExtension.class)
 class AddressServiceTest {
 
-    @Mock
+    @MockBean
     private AnprService anprService;
-    @Mock
+    @MockBean
     private InadService inadService;
-    @Mock
+    @MockBean
     private InfoCamereService infoCamereService;
-    @Mock
+    @MockBean
     private SqsService sqsService;
 
-    @InjectMocks
+    @Autowired
     private AddressService addressService;
 
     @Test

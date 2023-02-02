@@ -34,7 +34,6 @@ public class AddressService {
     private final SqsService sqsService;
     private final boolean pnNationalRegistriesCxIdFlag;
 
-
     public AddressService(AnprService anprService,
                           InadService inadService,
                           InfoCamereService infoCamereService,
