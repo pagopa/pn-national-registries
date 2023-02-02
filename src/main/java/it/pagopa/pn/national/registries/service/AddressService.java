@@ -15,13 +15,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.core.publisher.Sinks;
 import reactor.util.context.Context;
+import reactor.util.function.Tuple3;
+import reactor.util.function.Tuples;
 
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Service
 @Slf4j
@@ -32,9 +33,6 @@ public class AddressService {
     private final InfoCamereService infoCamereService;
     private final SqsService sqsService;
     private final boolean pnNationalRegistriesCxIdFlag;
-
-
-    private final ExecutorService threadPoolExecutor = Executors.newCachedThreadPool();
 
 
     public AddressService(AnprService anprService,
@@ -56,23 +54,22 @@ public class AddressService {
         String cf = addressRequestBodyDto.getFilter().getTaxId();
 
         Map<String, String> copyOfContext = MDCUtils.retrieveMDCContextMap();
-        Runnable r = () -> {
-            MDCUtils.enrichWithMDC("", copyOfContext);
-            retrieveDigitalOrPhysicalAddress(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto)
-                    .contextWrite(ctx -> enrichFluxContext(ctx, copyOfContext))
-                    .subscribe();
-        };
 
-        Mono<AddressOKDto> result = Mono.just(mapToAddressesOKDto(correlationId));
-        try {
-            threadPoolExecutor.submit(r);
-        } catch (Exception e) {
-            log.error("can not submit task", e);
-            result = sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
-                    .map(sqs -> mapToAddressesOKDto(correlationId));
+        Sinks.One<Tuple3<String, String, AddressRequestBodyDto>> sink = Sinks.one();
+
+        sink.asMono()
+                .flatMap(t -> retrieveDigitalOrPhysicalAddress(t.getT1(), t.getT2(), t.getT3()))
+                .contextWrite(ctx -> enrichFluxContext(ctx, copyOfContext))
+                .subscribe();
+
+        var emitResult = sink.tryEmitValue(Tuples.of(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto));
+        if (emitResult != Sinks.EmitResult.OK) {
+            log.error("can not submit task: {}", emitResult);
+            sqsService.push(errorToSqsDto(correlationId, cf, "can not submit task"), pnNationalRegistriesCxId)
+                    .subscribe(ok -> {}, e -> log.error("can not send message to SQS queue", e));
         }
 
-        return result;
+        return Mono.just(mapToAddressesOKDto(correlationId));
     }
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddress(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
