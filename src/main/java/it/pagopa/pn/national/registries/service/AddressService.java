@@ -1,5 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.MDCWebFilter;
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -13,9 +15,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 
 import java.nio.charset.Charset;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -27,7 +31,7 @@ public class AddressService {
     private final InadService inadService;
     private final InfoCamereService infoCamereService;
     private final SqsService sqsService;
-    private final Boolean pnNationalRegistriesCxIdFlag;
+    private final boolean pnNationalRegistriesCxIdFlag;
 
 
     private final ExecutorService threadPoolExecutor = Executors.newCachedThreadPool();
@@ -37,7 +41,7 @@ public class AddressService {
                           InadService inadService,
                           InfoCamereService infoCamereService,
                           SqsService sqsService,
-                          @Value("${pn.national.registries.cx.id.boolean}") Boolean pnNationalRegistriesCxIdFlag) {
+                          @Value("${pn.national.registries.cx.id.boolean}") boolean pnNationalRegistriesCxIdFlag) {
         this.anprService = anprService;
         this.inadService = inadService;
         this.infoCamereService = infoCamereService;
@@ -47,12 +51,28 @@ public class AddressService {
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
+
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
+        String cf = addressRequestBodyDto.getFilter().getTaxId();
 
-        Runnable r = () -> retrieveDigitalOrPhysicalAddress(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto).subscribe();
-        threadPoolExecutor.submit(r);
+        Map<String, String> copyOfContext = MDCUtils.retrieveMDCContextMap();
+        Runnable r = () -> {
+            MDCUtils.enrichWithMDC("", copyOfContext);
+            retrieveDigitalOrPhysicalAddress(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto)
+                    .contextWrite(ctx -> enrichFluxContext(ctx, copyOfContext))
+                    .subscribe();
+        };
 
-        return Mono.just(mapToAddressesOKDto(correlationId));
+        Mono<AddressOKDto> result = Mono.just(mapToAddressesOKDto(correlationId));
+        try {
+            threadPoolExecutor.submit(r);
+        } catch (Exception e) {
+            log.error("can not submit task", e);
+            result = sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
+                    .map(sqs -> mapToAddressesOKDto(correlationId));
+        }
+
+        return result;
     }
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddress(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
@@ -220,4 +240,21 @@ public class AddressService {
         return dto;
     }
 
+    private Context enrichFluxContext(Context ctx, Map<String, String> mdcCtx) {
+        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_TRACE_ID_KEY, mdcCtx.get(MDCWebFilter.MDC_TRACE_ID_KEY));
+        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_JTI_KEY, mdcCtx.get(MDCWebFilter.MDC_JTI_KEY));
+        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_UID_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_UID_KEY));
+        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_CX_ID_KEY, mdcCtx.get(MDCWebFilter.MDC_CX_ID_KEY));
+        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_TYPE_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_TYPE_KEY));
+        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_GROUPS_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_GROUPS_KEY));
+        ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_ROLE_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_ROLE_KEY));
+        return ctx;
+    }
+
+    private Context addToFluxContext(Context ctx, String key, String value) {
+        if (value != null) {
+            ctx = ctx.put(key, value);
+        }
+        return ctx;
+    }
 }
