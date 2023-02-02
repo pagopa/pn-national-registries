@@ -50,7 +50,6 @@ class AddressServiceTest {
     @Test
     @DisplayName("Test recipientType not valid")
     void testCheckFlag() {
-        ReflectionTestUtils.setField(addressService, "pnNationalRegistriesCxIdFlag", true);
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.filter(new AddressRequestBodyFilterDto());
         assertThrows(PnNationalRegistriesException.class,
@@ -60,7 +59,6 @@ class AddressServiceTest {
     @Test
     @DisplayName("Test recipientType not valid")
     void testRetrieveDigitalOrPhysicalAddress() {
-        ReflectionTestUtils.setField(addressService, "pnNationalRegistriesCxIdFlag", true);
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.filter(new AddressRequestBodyFilterDto());
         assertThrows(PnNationalRegistriesException.class,
@@ -70,7 +68,6 @@ class AddressServiceTest {
     @Test
     @DisplayName("Test CxId required")
     void testRetrieveDigitalOrPhysicalAddressThrow() {
-        ReflectionTestUtils.setField(addressService, "pnNationalRegistriesCxIdFlag", true);
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.filter(new AddressRequestBodyFilterDto());
         assertThrows(PnNationalRegistriesException.class,
@@ -84,7 +81,6 @@ class AddressServiceTest {
     @Test
     @DisplayName("Test retrieve from ANPR")
     void testRetrieveDigitalOrPhysicalAddressAnpr() {
-        ReflectionTestUtils.setField(addressService, "pnNationalRegistriesCxIdFlag", true);
 
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
@@ -127,7 +123,6 @@ class AddressServiceTest {
     @Test
     @DisplayName("Test retrieve from INAD")
     void testRetrieveDigitalOrPhysicalAddress3() {
-        ReflectionTestUtils.setField(addressService, "pnNationalRegistriesCxIdFlag", true);
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");
@@ -181,7 +176,6 @@ class AddressServiceTest {
     @Test
     @DisplayName("Test retrieve from Registro Imprese")
     void testRetrieveDigitalOrPhysicalAddress4() {
-        ReflectionTestUtils.setField(addressService, "pnNationalRegistriesCxIdFlag", true);
 
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
@@ -220,7 +214,6 @@ class AddressServiceTest {
     @Test
     @DisplayName("Test retrieve from ")
     void testRetrieveDigitalOrPhysicalAddress5() {
-        ReflectionTestUtils.setField(addressService, "pnNationalRegistriesCxIdFlag", true);
 
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
