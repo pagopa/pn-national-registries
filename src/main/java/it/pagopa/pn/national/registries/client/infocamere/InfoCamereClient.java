@@ -52,7 +52,7 @@ public class InfoCamereClient {
         this.mapper = mapper;
     }
 
-    public Mono<String> getToken(String scope){
+    public Mono<String> getToken(String scope) {
         String jws = infoCamereJwsGenerator.createAuthRest(scope);
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
