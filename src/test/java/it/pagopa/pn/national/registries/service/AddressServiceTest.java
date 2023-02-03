@@ -33,7 +33,7 @@ import reactor.test.StepVerifier;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 @TestPropertySource(properties = {
-        "pn.national.registries.cx.id.boolean=true"
+        "pn.national.registries.val.cx.id.enabled=true"
 })
 @ContextConfiguration(classes = {AddressService.class})
 @ExtendWith(SpringExtension.class)

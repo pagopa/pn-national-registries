@@ -38,7 +38,7 @@ public class AddressService {
                           InadService inadService,
                           InfoCamereService infoCamereService,
                           SqsService sqsService,
-                          @Value("${pn.national.registries.cx.id.boolean}") boolean pnNationalRegistriesCxIdFlag) {
+                          @Value("${pn.national.registries.val.cx.id.enabled}") boolean pnNationalRegistriesCxIdFlag) {
         this.anprService = anprService;
         this.inadService = inadService;
         this.infoCamereService = infoCamereService;

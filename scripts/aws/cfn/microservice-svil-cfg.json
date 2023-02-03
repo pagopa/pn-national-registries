@@ -15,6 +15,7 @@
     "PDNDCheckCfSecret": "",
     "PDNDInadSecret": "a",
     "InfoCamereAuthSecret": "",
-    "ANPRTipoInvio": ""
+    "ANPRTipoInvio": "",
+    "PnCxIdValidationEnabled": ""
   }
 }

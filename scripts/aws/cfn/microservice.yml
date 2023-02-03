@@ -164,6 +164,10 @@ Parameters:
     Type: String
     Description: 'ARN of DynamoDB table BatchPolling'
 
+  PnCxIdValidationEnabled:
+    Type: String
+    Description: 'Validazione del pn-national-registries cx id'
+
 Resources:
 
   # PN-National-Registry microservice
@@ -196,7 +200,7 @@ Resources:
         ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
         ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
         ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
-        ContainerEnvEntry16: 'PN_NATIONAL_REGISTRY_CX_ID_BOOLEAN=true'
+        ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
