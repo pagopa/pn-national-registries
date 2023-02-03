@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
@@ -56,8 +57,9 @@ public class SqsService {
 
     private Map<String, MessageAttributeValue> buildMessageAttributeMap(String pnNationalRegistriesCxId) {
         Map<String, MessageAttributeValue> attributes = new HashMap<>();
-        if(pnNationalRegistriesCxId!=null)
+        if (StringUtils.hasText(pnNationalRegistriesCxId)) {
             attributes.put("clientId", MessageAttributeValue.builder().stringValue(pnNationalRegistriesCxId).dataType("String").build());
+        }
         attributes.put("eventType", MessageAttributeValue.builder().stringValue("NR_GATEWAY_RESPONSE").dataType("String").build());
         return attributes;
     }
