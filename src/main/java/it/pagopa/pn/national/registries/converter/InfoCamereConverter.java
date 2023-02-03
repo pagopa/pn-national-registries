@@ -85,7 +85,9 @@ public class InfoCamereConverter {
 
     private List<DigitalAddress> convertToDigitalAddress(Pec pec) {
         List<DigitalAddress> digitalAddress = new ArrayList<>();
-        digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
+        if (!StringUtils.isNullOrEmpty(pec.getPecImpresa())) {
+            digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
+        }
         if (pec.getPecProfessionistas() != null) {
             pec.getPecProfessionistas().stream()
                     .map(pecProf -> toDigitalAddress(pecProf.getPec(), DigitalAddressRecipientType.PROFESSIONISTA))

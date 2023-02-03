@@ -14,6 +14,7 @@ import org.apache.cxf.common.util.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.context.Context;
@@ -88,7 +89,7 @@ public class AddressService {
                     return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
                             .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, cf, inadResponse), pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
-                            .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
+                            .onErrorResume(e -> sqsService.push(errorInadToSqsDto(correlationId, cf, e), pnNationalRegistriesCxId)
                                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
                 }
             }
@@ -97,7 +98,7 @@ public class AddressService {
                     return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                             .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse), pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
-                            .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
+                            .onErrorResume(e -> sqsService.push(errorInfoCamereToSqsDto(correlationId, cf, e), pnNationalRegistriesCxId)
                                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
                 } else {
                     return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))
@@ -124,6 +125,37 @@ public class AddressService {
         codeSqsDto.setCorrelationId(correlationId);
         codeSqsDto.setTaxId(cf);
         codeSqsDto.setError(error);
+        return codeSqsDto;
+    }
+
+    private CodeSqsDto errorInadToSqsDto(String correlationId, String cf, Throwable error) {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setCorrelationId(correlationId);
+        codeSqsDto.setTaxId(cf);
+        // per INAD CF non trovato corrisponde a HTTP Status 404 e nel body deve essere contenuta la stringa "CF non trovato"
+        if (error instanceof PnNationalRegistriesException exception
+                && exception.getStatusCode() == HttpStatus.NOT_FOUND
+                && StringUtils.hasText(exception.getResponseBodyAsString())
+                && exception.getResponseBodyAsString().toUpperCase().contains("CF NON TROVATO")) {
+            log.info("correlationId: {} - INAD - CF non trovato", correlationId);
+        } else {
+            codeSqsDto.setError(error.getMessage());
+        }
+        return codeSqsDto;
+    }
+
+    private CodeSqsDto errorInfoCamereToSqsDto(String correlationId, String cf, Throwable error) {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setCorrelationId(correlationId);
+        codeSqsDto.setTaxId(cf);
+        // per InfoCamere CF non trovato corrisponde a HTTP Status 404 e body vuoto
+        if (error instanceof PnNationalRegistriesException exception
+                && exception.getStatusCode() == HttpStatus.NOT_FOUND
+                && !StringUtils.hasText(exception.getResponseBodyAsString())) {
+            log.info("correlationId: {} - InfoCamere sede legale - CF non trovato", correlationId);
+        } else {
+            codeSqsDto.setError(error.getMessage());
+        }
         return codeSqsDto;
     }
 
