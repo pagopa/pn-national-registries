@@ -88,7 +88,7 @@ public class AddressService {
                     return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
                             .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, cf, inadResponse), pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
-                            .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
+                            .onErrorResume(e -> sqsService.push(errorInadToSqsDto(correlationId, cf, e), pnNationalRegistriesCxId)
                                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
                 }
             }
@@ -97,7 +97,7 @@ public class AddressService {
                     return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                             .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse), pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
-                            .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
+                            .onErrorResume(e -> sqsService.push(errorInfoCamereToSqsDto(correlationId, cf, e), pnNationalRegistriesCxId)
                                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
                 } else {
                     return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))
@@ -124,6 +124,32 @@ public class AddressService {
         codeSqsDto.setCorrelationId(correlationId);
         codeSqsDto.setTaxId(cf);
         codeSqsDto.setError(error);
+        return codeSqsDto;
+    }
+
+    private CodeSqsDto errorInadToSqsDto(String correlationId, String cf, Throwable error) {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setCorrelationId(correlationId);
+        codeSqsDto.setTaxId(cf);
+        codeSqsDto.setError(error.getMessage());
+        if (error instanceof PnNationalRegistriesException exception) {
+            if (exception.getStatusCode().value() == 404 && exception.getResponseBodyAsString().contains("CF NON TROVATO")) {
+                codeSqsDto.setError(null);
+            }
+        }
+        return codeSqsDto;
+    }
+
+    private CodeSqsDto errorInfoCamereToSqsDto(String correlationId, String cf, Throwable error) {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setCorrelationId(correlationId);
+        codeSqsDto.setTaxId(cf);
+        codeSqsDto.setError(error.getMessage());
+        if (error instanceof PnNationalRegistriesException exception) {
+            if (exception.getStatusCode().value() == 404 && exception.getResponseBodyAsString().isEmpty()) {
+                codeSqsDto.setError(null);
+            }
+        }
         return codeSqsDto;
     }
 
