@@ -61,7 +61,7 @@ public class AddressService {
                 .contextWrite(ctx -> enrichFluxContext(ctx, copyOfContext))
                 .subscribe();
 
-        var emitResult = sink.tryEmitValue(Tuples.of(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto));
+        var emitResult = sink.tryEmitValue(Tuples.of(recipientType, pnNationalRegistriesCxId != null ? pnNationalRegistriesCxId : "", addressRequestBodyDto));
         if (emitResult != Sinks.EmitResult.OK) {
             log.error("can not submit task: {}", emitResult);
             sqsService.push(errorToSqsDto(correlationId, cf, "can not submit task"), pnNationalRegistriesCxId)
