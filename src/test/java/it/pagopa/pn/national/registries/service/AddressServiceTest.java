@@ -5,17 +5,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+import it.pagopa.pn.commons.log.MDCWebFilter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyFilterDto;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
+import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
+import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,6 +29,7 @@ import org.mockito.Captor;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -83,9 +88,8 @@ class AddressServiceTest {
     ArgumentCaptor<CodeSqsDto> anprSqsCaptor;
 
     @Test
-    @DisplayName("Test retrieve from ANPR")
+    @DisplayName("Test retrieve from ANPR Async")
     void testRetrieveDigitalOrPhysicalAddressAsync() {
-
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");
@@ -110,13 +114,13 @@ class AddressServiceTest {
         when(anprService.getAddressANPR(getAddressANPRRequestBodyDto))
                 .thenReturn(Mono.just(getAddressANPROKDto));
 
-        when(sqsService.push(anprSqsCaptor.capture(), any()))
+        when(sqsService.push(any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId("correlationId");
 
-        MDC.setContextMap(Collections.emptyMap());
+        MDC.setContextMap(Map.of(MDCWebFilter.MDC_TRACE_ID_KEY, "traceId"));
 
         StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddressAsync("PF", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
@@ -127,7 +131,6 @@ class AddressServiceTest {
     @Test
     @DisplayName("Test retrieve from ANPR")
     void testRetrieveDigitalOrPhysicalAddressAnpr() {
-
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");
@@ -163,12 +166,36 @@ class AddressServiceTest {
                 .verifyComplete();
     }
 
+    @Test
+    void testRetrieveDigitalOrPhysicalAddressAnprError() {
+        AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
+        filterDto.setTaxId("COD_FISCALE_1");
+        filterDto.setCorrelationId("correlationId");
+        filterDto.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
+        filterDto.setReferenceRequestDate("refReqDate");
+        AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
+        addressRequestBodyDto.setFilter(filterDto);
+
+        when(anprService.getAddressANPR(any()))
+                .thenReturn(Mono.error(new RuntimeException()));
+
+        when(sqsService.push(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId("correlationId");
+
+        StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
     @Captor
     ArgumentCaptor<CodeSqsDto> inadSqsCaptor;
 
     @Test
     @DisplayName("Test retrieve from INAD")
-    void testRetrieveDigitalOrPhysicalAddress3() {
+    void testRetrieveDigitalOrPhysicalAddressInad() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");
@@ -216,13 +243,62 @@ class AddressServiceTest {
                 .anyMatch(a -> a.getAddress().equals("a1")));
     }
 
+    @Test
+    void testRetrieveDigitalOrPhysicalAddressInadError() {
+        AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
+        filterDto.setTaxId("COD_FISCALE_1");
+        filterDto.setCorrelationId("correlationId");
+        filterDto.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+        filterDto.setReferenceRequestDate("refReqDate");
+        AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
+        addressRequestBodyDto.setFilter(filterDto);
+
+        when(inadService.callEService(any()))
+                .thenReturn(Mono.error(new RuntimeException()));
+        when(sqsService.push(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId("correlationId");
+
+        StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
+    @Test
+    void testRetrieveDigitalOrPhysicalAddressInadCfNotFound() {
+        AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
+        filterDto.setTaxId("COD_FISCALE_1");
+        filterDto.setCorrelationId("correlationId");
+        filterDto.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+        filterDto.setReferenceRequestDate("refReqDate");
+        AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
+        addressRequestBodyDto.setFilter(filterDto);
+
+        PnNationalRegistriesException pnNationalRegistriesException = new PnNationalRegistriesException("", HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(), null,
+                "TxT Cf non trovato ...".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8,
+                InadResponseKO.class);
+        when(inadService.callEService(any()))
+                .thenReturn(Mono.error(pnNationalRegistriesException));
+        when(sqsService.push(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId("correlationId");
+
+        StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
     @Captor
     ArgumentCaptor<CodeSqsDto> regImpSqsCaptor;
 
     @Test
     @DisplayName("Test retrieve from Registro Imprese")
-    void testRetrieveDigitalOrPhysicalAddress4() {
-
+    void testRetrieveDigitalOrPhysicalAddressRegImp() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");
@@ -258,9 +334,56 @@ class AddressServiceTest {
     }
 
     @Test
-    @DisplayName("Test retrieve from ")
-    void testRetrieveDigitalOrPhysicalAddress5() {
+    void testRetrieveDigitalOrPhysicalAddressRegImpError() {
+        AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
+        filterDto.setTaxId("COD_FISCALE_1");
+        filterDto.setCorrelationId("correlationId");
+        filterDto.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
+        filterDto.setReferenceRequestDate("refReqDate");
+        AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
+        addressRequestBodyDto.setFilter(filterDto);
 
+        when(infoCamereService.getRegistroImpreseLegalAddress(any()))
+                .thenReturn(Mono.error(new RuntimeException()));
+        when(sqsService.push(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId("correlationId");
+
+        StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
+    @Test
+    void testRetrieveDigitalOrPhysicalAddressRegImpCfNotFound() {
+        AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
+        filterDto.setTaxId("COD_FISCALE_1");
+        filterDto.setCorrelationId("correlationId");
+        filterDto.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
+        filterDto.setReferenceRequestDate("refReqDate");
+        AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
+        addressRequestBodyDto.setFilter(filterDto);
+
+        PnNationalRegistriesException pnNationalRegistriesException = new PnNationalRegistriesException("", HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, StandardCharsets.UTF_8, InfocamereResponseKO.class);
+        when(infoCamereService.getRegistroImpreseLegalAddress(any()))
+                .thenReturn(Mono.error(pnNationalRegistriesException));
+        when(sqsService.push(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId("correlationId");
+
+        StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Test retrieve from IniPEC")
+    void testRetrieveDigitalOrPhysicalAddressIniPEC() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
         filterDto.setCorrelationId("correlationId");

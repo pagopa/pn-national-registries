@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.service;
 
-import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.commons.log.MDCWebFilter;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
@@ -15,6 +14,7 @@ import org.apache.cxf.common.util.CollectionUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import reactor.core.publisher.Sinks;
 import reactor.util.context.Context;
@@ -132,9 +132,14 @@ public class AddressService {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
         codeSqsDto.setTaxId(cf);
-        codeSqsDto.setError(error.getMessage());
-        if (error instanceof PnNationalRegistriesException exception && exception.getStatusCode().value() == 404 && !StringUtils.isNullOrEmpty(exception.getResponseBodyAsString()) && exception.getResponseBodyAsString().toUpperCase().contains("CF NON TROVATO")) {
-            codeSqsDto.setError(null);
+        // per INAD CF non trovato corrisponde a HTTP Status 404 e nel body deve essere contenuta la stringa "CF non trovato"
+        if (error instanceof PnNationalRegistriesException exception
+                && exception.getStatusCode() == HttpStatus.NOT_FOUND
+                && StringUtils.hasText(exception.getResponseBodyAsString())
+                && exception.getResponseBodyAsString().toUpperCase().contains("CF NON TROVATO")) {
+            log.info("correlationId: {} - INAD - CF non trovato", correlationId);
+        } else {
+            codeSqsDto.setError(error.getMessage());
         }
         return codeSqsDto;
     }
@@ -143,9 +148,13 @@ public class AddressService {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
         codeSqsDto.setTaxId(cf);
-        codeSqsDto.setError(error.getMessage());
-        if (error instanceof PnNationalRegistriesException exception && exception.getStatusCode().value() == 404 && StringUtils.isNullOrEmpty(exception.getResponseBodyAsString())) {
-            codeSqsDto.setError(null);
+        // per InfoCamere CF non trovato corrisponde a HTTP Status 404 e body vuoto
+        if (error instanceof PnNationalRegistriesException exception
+                && exception.getStatusCode() == HttpStatus.NOT_FOUND
+                && !StringUtils.hasText(exception.getResponseBodyAsString())) {
+            log.info("correlationId: {} - InfoCamere sede legale - CF non trovato", correlationId);
+        } else {
+            codeSqsDto.setError(error.getMessage());
         }
         return codeSqsDto;
     }
