@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.commons.log.MDCWebFilter;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
@@ -132,10 +133,8 @@ public class AddressService {
         codeSqsDto.setCorrelationId(correlationId);
         codeSqsDto.setTaxId(cf);
         codeSqsDto.setError(error.getMessage());
-        if (error instanceof PnNationalRegistriesException exception) {
-            if (exception.getStatusCode().value() == 404 && exception.getResponseBodyAsString().contains("CF NON TROVATO")) {
-                codeSqsDto.setError(null);
-            }
+        if (error instanceof PnNationalRegistriesException exception && exception.getStatusCode().value() == 404 && !StringUtils.isNullOrEmpty(exception.getResponseBodyAsString()) && exception.getResponseBodyAsString().toUpperCase().contains("CF NON TROVATO")) {
+            codeSqsDto.setError(null);
         }
         return codeSqsDto;
     }
@@ -145,10 +144,8 @@ public class AddressService {
         codeSqsDto.setCorrelationId(correlationId);
         codeSqsDto.setTaxId(cf);
         codeSqsDto.setError(error.getMessage());
-        if (error instanceof PnNationalRegistriesException exception) {
-            if (exception.getStatusCode().value() == 404 && exception.getResponseBodyAsString().isEmpty()) {
-                codeSqsDto.setError(null);
-            }
+        if (error instanceof PnNationalRegistriesException exception && exception.getStatusCode().value() == 404 && StringUtils.isNullOrEmpty(exception.getResponseBodyAsString())) {
+            codeSqsDto.setError(null);
         }
         return codeSqsDto;
     }
