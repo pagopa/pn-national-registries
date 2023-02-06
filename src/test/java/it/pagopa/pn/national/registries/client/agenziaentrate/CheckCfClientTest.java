@@ -22,6 +22,8 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.nio.charset.Charset;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
@@ -84,6 +86,49 @@ class CheckCfClientTest {
 
         StepVerifier.create(checkCfClient.callEService(richiesta)).expectNext(taxIdVerification).verifyComplete();
 
+    }
+    @Test
+    void checkTaxIdAndVatNumberErrorTest() throws JsonProcessingException {
+        when(checkCfWebClient.init()).thenReturn(webClient);
+        CheckCfClient checkCfClient = new CheckCfClient(
+                accessTokenExpiringMap, checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
+        );
+        HttpHeaders headers = mock(HttpHeaders.class);
+        byte[] testByteArray = new byte[0];
+        String test = "test";
+        WebClientResponseException webClientResponseException = new WebClientResponseException(test, 500, test, headers, testByteArray, Charset.defaultCharset());
+
+        Request richiesta = new Request();
+        richiesta.setCodiceFiscale("cf");
+
+        String richiestaJson = "{\"codiceFiscale\": \"cf\"}";
+        when( objectMapper.writeValueAsString(any())).thenReturn(richiestaJson);
+
+        TaxIdVerification taxIdVerification = new TaxIdVerification();
+        taxIdVerification.setCodiceFiscale("cf");
+        taxIdVerification.setValido(true);
+        taxIdVerification.setMessaggio("valid");
+
+        AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
+        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
+
+        WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
+        WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
+        WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
+        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+
+
+        when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri("/verifica")).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(TaxIdVerification.class)).thenReturn(Mono.error(webClientResponseException));
+
+        StepVerifier.create(checkCfClient.callEService(richiesta)).expectError(WebClientResponseException.class).verify();
     }
 
     @Test
