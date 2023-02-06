@@ -3,7 +3,7 @@ info:
   title: PN-NationalRegistries REST APIs
   description: |-
     Nell’ambito del progetto Piattaforme Notifiche, il componente PN-NationalRegistries si occuperà di recuperare i dati dalle banche dati esterne previste. Tali banche dati esporranno delle interfacce web verso il componente PN-NationalRegistries, accessibili tramite piattaforma di interoperabilità.
-  version: 1.0.0
+  version: 0.11.2
 servers:
   - url: http://127.0.0.1
 tags:
