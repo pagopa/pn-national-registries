@@ -21,7 +21,6 @@ public class AgenziaEntrateWebClientSOAP extends CommonWebClient {
     private final Integer tcpPendingAcquireTimeout;
     private final Integer tcpPoolIdleTimeout;
     private final String basePath;
-
     public AgenziaEntrateWebClientSOAP(@Value("${pn.national.registries.webclient.check-cf.tcp-max-poolsize}") Integer tcpMaxPoolSize,
                                        @Value("${pn.national.registries.webclient.check-cf.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
                                        @Value("${pn.national.registries.webclient.check-cf.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,

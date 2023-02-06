@@ -54,6 +54,7 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      *         or Service Unavailable (status code 503)
      */
 
+    @Override
     public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(ADELegalRequestBodyDto adELegalRequestBodyDto,  final ServerWebExchange exchange) {
         ValidateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId());
         return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)

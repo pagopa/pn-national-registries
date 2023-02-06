@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.client.agenziaentrate.SOAPRequest;
+package it.pagopa.pn.national.registries.model.agenziaentrate;
 
 import lombok.Data;
 
@@ -6,12 +6,13 @@ import javax.xml.bind.annotation.*;
 
 @Data
 @XmlAccessorType(XmlAccessType.FIELD)
-@XmlType(name = "checkValidityRappresentanteRespType", propOrder = {
+@XmlType(name = "checkValidityRappresentanteResp", propOrder = {
         "valido",
         "dettaglioEsito",
         "codiceRitorno"
 })
-public class SoapEnvelope {
+@XmlRootElement
+public class CheckValidityRappresentanteResp {
 
     protected Boolean valido;
     @XmlElement(required = true)
