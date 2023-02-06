@@ -18,6 +18,7 @@ import reactor.test.StepVerifier;
 
 import javax.xml.bind.JAXB;
 import java.io.StringWriter;
+import java.nio.charset.Charset;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -108,6 +109,45 @@ class AdELegalClientTest {
         when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(response));
 
         StepVerifier.create(adELegalClient.checkTaxIdAndVatNumberAdE(adeLegalRequestBodyFilterDto)).expectNext(response).verifyComplete();
+
+    }
+
+    @Test
+    void checkTaxIdAndVatNumberErrorTest() {
+        when(agenziaEntrateWebClientSOAP.init()).thenReturn(webClient);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
+
+        HttpHeaders headers = mock(HttpHeaders.class);
+        byte[] testByteArray = new byte[0];
+        String test = "test";
+        WebClientResponseException webClientResponseException = new WebClientResponseException(test, 500, test, headers, testByteArray, Charset.defaultCharset());
+
+        ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
+        adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
+        adeLegalRequestBodyFilterDto.setTaxId("setTaxId");
+
+        StringWriter requestSW = new StringWriter();
+        JAXB.marshal(adeLegalRequestBodyFilterDto, requestSW);
+
+        CheckValidityRappresentanteResp checkValidityRappresentanteRespType = new CheckValidityRappresentanteResp();
+        checkValidityRappresentanteRespType.setValido(true);
+        checkValidityRappresentanteRespType.setDettaglioEsito("XX00");
+        checkValidityRappresentanteRespType.setCodiceRitorno("00");
+
+        WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
+        WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
+        WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
+        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri("/legalerappresentateAdE/check")).thenReturn(requestBodySpec);
+        when(requestBodySpec.contentType(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.error(webClientResponseException));
+
+        StepVerifier.create(adELegalClient.checkTaxIdAndVatNumberAdE(adeLegalRequestBodyFilterDto)).expectError(WebClientResponseException.class).verify();
 
     }
 
