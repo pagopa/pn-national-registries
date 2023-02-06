@@ -1,6 +1,6 @@
 {
   "Parameters" : {
-    "PDNDBaseURL": "https://uat.gateway.test.pdnd-interop.pagopa.it",
+    "PDNDBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "ANPRBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "ANPRPurposeId": "fa2aa359-ab78-45b2-aa55-977d8ddb7d2b",
     "AgenziaEntrateBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
