@@ -208,13 +208,14 @@ Resources:
         EcsDefaultSecurityGroup: !Ref EcsDefaultSecurityGroup
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
+        TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskPolicy
 
   NationalRegistryMicroserviceTaskPolicy:
-    Type: AWS::IAM::Policy
+    Type: AWS::IAM::ManagedPolicy
     Properties:
-      PolicyName: !Sub '${ProjectName}-NationalRegistryMicroserviceSecretsPolicy'
-      Roles:
-        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+      #PolicyName: !Sub '${ProjectName}-NationalRegistryMicroserviceSecretsPolicy'
+      #Roles:
+      #  - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -254,17 +255,15 @@ Resources:
               - !Ref BatchPollingTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
-
-
-  NationalRegistryGatewayOutputsQueuePolicy:
-    Type: AWS::IAM::Policy
-    Properties:
-      PolicyName: !Sub '${ProjectName}-NationalRegistryGatewayOutputsQueuePolicy'
-      Roles:
-        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
-      PolicyDocument:
-        Version: 2012-10-17
-        Statement:
+  # NationalRegistryGatewayOutputsQueuePolicy:
+  #   Type: AWS::IAM::Policy
+  #   Properties:
+  #     PolicyName: !Sub '${ProjectName}-NationalRegistryGatewayOutputsQueuePolicy'
+  #     Roles:
+  #       - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
+  #     PolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
           - Effect: Allow
             Action:
               - sqs:SendMessage
