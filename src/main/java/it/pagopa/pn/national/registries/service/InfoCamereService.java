@@ -34,8 +34,8 @@ public class InfoCamereService {
         this.iniPecTtl = iniPecTtl;
     }
 
-    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto) {
-        return createBatchRequestByCf(getDigitalAddressIniPECRequestBodyDto)
+    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto) {
+        return createBatchRequestByCf(pnNationalRegistriesCxId, getDigitalAddressIniPECRequestBodyDto)
                 .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId()),getDigitalAddressIniPECRequestBodyDto.getFilter().getCorrelationId()))
                 .doOnError(throwable -> log.info("Failed to create Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId()),getDigitalAddressIniPECRequestBodyDto.getFilter().getCorrelationId()))
                 .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
@@ -48,10 +48,11 @@ public class InfoCamereService {
                 .map(infoCamereConverter::mapToResponseOk);
     }
 
-    public Mono<BatchRequest> createBatchRequestByCf(GetDigitalAddressIniPECRequestBodyDto requestCf) {
+    public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto requestCf) {
         BatchRequest batchRequest = createNewStartBatchRequest();
         batchRequest.setCorrelationId(requestCf.getFilter().getCorrelationId());
         batchRequest.setCf(requestCf.getFilter().getTaxId());
+        batchRequest.setClientId(pnNationalRegistriesCxId);
         return iniPecBatchRequestRepository.createBatchRequest(batchRequest);
     }
 

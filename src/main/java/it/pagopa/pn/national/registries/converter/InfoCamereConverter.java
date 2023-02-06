@@ -85,7 +85,9 @@ public class InfoCamereConverter {
 
     private List<DigitalAddress> convertToDigitalAddress(Pec pec) {
         List<DigitalAddress> digitalAddress = new ArrayList<>();
-        digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
+        if (!StringUtils.isNullOrEmpty(pec.getPecImpresa())) {
+            digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
+        }
         if (pec.getPecProfessionistas() != null) {
             pec.getPecProfessionistas().stream()
                     .map(pecProf -> toDigitalAddress(pecProf.getPec(), DigitalAddressRecipientType.PROFESSIONISTA))
@@ -107,7 +109,7 @@ public class InfoCamereConverter {
         infoCamereLegalOKDto.setDateTimeExtraction(new Date());
         infoCamereLegalOKDto.setTaxId(response.getTaxId());
         infoCamereLegalOKDto.setVatNumber(response.getVatNumber());
-        infoCamereLegalOKDto.setVerificationResult(response.isVerificationResult());
+        infoCamereLegalOKDto.setVerificationResult(response.getVerificationResult());
 
         return infoCamereLegalOKDto;
     }

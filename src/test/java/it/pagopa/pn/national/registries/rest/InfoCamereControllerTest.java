@@ -10,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
 
 import static org.mockito.Mockito.when;
@@ -26,24 +25,21 @@ class InfoCamereControllerTest {
     InfoCamereService infoCamereService;
 
     @Mock
-    Scheduler scheduler;
-
-    @Mock
     ServerWebExchange serverWebExchange;
 
     @Test
     void getDigitalAddressINAD() {
         GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
         GetDigitalAddressIniPECRequestBodyFilterDto dto = new GetDigitalAddressIniPECRequestBodyFilterDto();
-        dto.setTaxId("DDDFGF52F52H501S");
+        dto.setTaxId("PPPPLT80A01H501V");
         requestBodyDto.setFilter(dto);
 
         GetDigitalAddressIniPECOKDto getDigitalAddressINADOKDto = new GetDigitalAddressIniPECOKDto();
         getDigitalAddressINADOKDto.setCorrelationId("correlationId");
 
-        when(infoCamereService.getIniPecDigitalAddress(requestBodyDto)).thenReturn(Mono.just(getDigitalAddressINADOKDto));
+        when(infoCamereService.getIniPecDigitalAddress("clientId",requestBodyDto)).thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
-        StepVerifier.create(infoCamereController.digitalAddressIniPEC(requestBodyDto,serverWebExchange))
+        StepVerifier.create(infoCamereController.digitalAddressIniPEC(requestBodyDto,"clientId",serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(getDigitalAddressINADOKDto));
     }
 
@@ -51,11 +47,11 @@ class InfoCamereControllerTest {
     void addressRegistroImprese() {
 
         GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
-        response.setTaxId("cf");
+        response.setTaxId("PPPPLT80A01H501V");
 
         GetAddressRegistroImpreseRequestBodyDto body = new GetAddressRegistroImpreseRequestBodyDto();
         GetAddressRegistroImpreseRequestBodyFilterDto dto = new GetAddressRegistroImpreseRequestBodyFilterDto();
-        dto.setTaxId("cf");
+        dto.setTaxId("PPPPLT80A01H501V");
         body.setFilter(dto);
         when(infoCamereService.getRegistroImpreseLegalAddress(body)).thenReturn(Mono.just(response));
 
@@ -67,12 +63,12 @@ class InfoCamereControllerTest {
     void checkTaxIdAndVatNumber() {
 
         InfoCamereLegalOKDto response = new InfoCamereLegalOKDto();
-        response.setTaxId("taxId");
+        response.setTaxId("PPPPLT80A01H501V");
         response.setVatNumber("vatNumber");
 
         InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
         InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
-        dto.setTaxId("taxId");
+        dto.setTaxId("PPPPLT80A01H501V");
         dto.setVatNumber("vatNumber");
         body.setFilter(dto);
         when(infoCamereService.checkTaxIdAndVatNumber(body)).thenReturn(Mono.just(response));

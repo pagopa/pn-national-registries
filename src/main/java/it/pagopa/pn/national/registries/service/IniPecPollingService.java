@@ -91,7 +91,7 @@ public class IniPecPollingService {
                         return Flux.fromStream(batchRequests.stream())
                                 .flatMap(request -> {
                                     CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(request, responsePecIniPec);
-                                    return sqsService.push(codeSqsDto)
+                                    return sqsService.push(codeSqsDto,request.getClientId())
                                             .flatMap(sendMessageResult -> iniPecBatchRequestRepository.setBatchRequestsStatus(request, BatchStatus.WORKED.getValue()))
                                             .doOnNext(batchRequest -> log.info("Pushed Message with correlationId: {} and taxId: {}",codeSqsDto.getCorrelationId(), MaskDataUtils.maskString(codeSqsDto.getTaxId())))
                                             .doOnError(throwable -> log.info("Failed to push Message with correlationId: {} and taxId: {} pushed",codeSqsDto.getCorrelationId(), MaskDataUtils.maskString(codeSqsDto.getTaxId())));

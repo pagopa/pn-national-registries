@@ -15,19 +15,19 @@ import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.List;
 
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
+import org.mockito.InjectMocks;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.util.CollectionUtils;
 
-@ContextConfiguration(classes = {InfoCamereConverter.class})
 @ExtendWith(SpringExtension.class)
 class InfoCamereConverterTest {
-    @Autowired
+    @InjectMocks
     private InfoCamereConverter infoCamereConverter;
 
     @Test
@@ -51,6 +51,24 @@ class InfoCamereConverterTest {
         assertEquals("batchId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getBatchId());
         assertEquals("NOT_WORKED", actualCreateBatchPollingByBatchIdAndPollingIdResult.getStatus());
         assertEquals("pollingId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getPollingId());
+    }
+
+    @Test
+    void testConvertResponsePecToCodeSqsDtoCfNotFound() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId");
+        batchRequest.setCf("cf");
+
+        Pec pec = new Pec();
+        pec.setCf("cf");
+        ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
+        responsePecIniPec.setElencoPec(List.of(pec));
+
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec);
+        assertEquals("correlationId", codeSqsDto.getCorrelationId());
+        assertEquals("cf", codeSqsDto.getTaxId());
+        assertNull(codeSqsDto.getError());
+        assertTrue(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()));
     }
 
     @Test
@@ -105,7 +123,7 @@ class InfoCamereConverterTest {
     void testInfoCamereResponseToDto() {
 
         InfoCamereVerificationResponse infoCamereVerificationResponse = new InfoCamereVerificationResponse();
-        infoCamereVerificationResponse.setVerificationResult(true);
+        infoCamereVerificationResponse.setVerificationResult("true");
         infoCamereVerificationResponse.setVatNumber("vatNumber");
         infoCamereVerificationResponse.setTaxId("taxId");
 
@@ -115,7 +133,7 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", actualResult.getTaxId());
         assertEquals("vatNumber", actualResult.getVatNumber());
-        assertEquals(true, actualResult.getVerificationResult());
+        assertEquals("true", actualResult.getVerificationResult());
     }
 }
 

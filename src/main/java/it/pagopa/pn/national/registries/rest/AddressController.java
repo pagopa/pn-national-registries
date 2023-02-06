@@ -4,6 +4,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.AddressApi
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AddressService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -36,8 +37,9 @@ public class AddressController implements AddressApi {
      * or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, AddressRequestBodyDto addressRequestBodyDto, final ServerWebExchange exchange) {
-        return addressService.retrieveDigitalOrPhysicalAddress(recipientType, addressRequestBodyDto)
+    public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, AddressRequestBodyDto addressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
+        ValidateTaxIdUtils.validateTaxId(addressRequestBodyDto.getFilter().getTaxId());
+        return addressService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto)
                 .map(s -> ResponseEntity.ok().body(s))
                 .publishOn(scheduler);
     }

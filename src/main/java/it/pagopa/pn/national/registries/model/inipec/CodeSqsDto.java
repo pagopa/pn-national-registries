@@ -10,4 +10,5 @@ public class CodeSqsDto {
     private String taxId;
     private PhysicalAddress physicalAddress;
     private List<DigitalAddress> digitalAddress;
+    private String error;
 }

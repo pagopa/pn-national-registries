@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.sqs.SqsClient;
 import software.amazon.awssdk.services.sqs.model.*;
@@ -36,7 +37,7 @@ public class SqsService {
         this.queueName = queueName;
     }
 
-    public Mono<SendMessageResponse> push(CodeSqsDto msg) {
+    public Mono<SendMessageResponse> push(CodeSqsDto msg, String pnNationalRegistriesCxId) {
         GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
                 .queueName(queueName)
                 .build();
@@ -45,7 +46,7 @@ public class SqsService {
         log.info("Creating MessageRequest for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msg.getTaxId()), msg.getCorrelationId());
         SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
                 .queueUrl(queueUrl)
-                .messageAttributes(buildMessageAttributeMap())
+                .messageAttributes(buildMessageAttributeMap(pnNationalRegistriesCxId))
                 .messageBody(toJson(msg))
                 .build();
 
@@ -54,8 +55,11 @@ public class SqsService {
         return Mono.fromCallable(() -> sqsClient.sendMessage(sendMsgRequest));
     }
 
-    private Map<String, MessageAttributeValue> buildMessageAttributeMap() {
+    private Map<String, MessageAttributeValue> buildMessageAttributeMap(String pnNationalRegistriesCxId) {
         Map<String, MessageAttributeValue> attributes = new HashMap<>();
+        if (StringUtils.hasText(pnNationalRegistriesCxId)) {
+            attributes.put("clientId", MessageAttributeValue.builder().stringValue(pnNationalRegistriesCxId).dataType("String").build());
+        }
         attributes.put("eventType", MessageAttributeValue.builder().stringValue("NR_GATEWAY_RESPONSE").dataType("String").build());
         return attributes;
     }

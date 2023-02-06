@@ -12,7 +12,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
@@ -30,16 +29,13 @@ class AnprControllerTest {
     AnprService anprService;
 
     @Mock
-    Scheduler scheduler;
-
-    @Mock
     ServerWebExchange serverWebExchange;
 
     @Test
     void testGetAddressANPR() {
         GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto dto = new GetAddressANPRRequestBodyFilterDto();
-        dto.setTaxId("DDDFFF92G52H501H");
+        dto.setTaxId("PPPPLT80A01H501V");
         getAddressANPRRequestBodyDto.setFilter(dto);
 
         GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();

@@ -59,7 +59,7 @@ class InfoCamereServiceTest {
         getDigitalAddressIniPECOKDto.setCorrelationId("correlationId");
         when(infoCamereConverter.convertToGetAddressIniPecOKDto(any()))
                 .thenReturn(getDigitalAddressIniPECOKDto);
-        StepVerifier.create( infoCamereService.getIniPecDigitalAddress(requestBodyDto))
+        StepVerifier.create( infoCamereService.getIniPecDigitalAddress("clientId",requestBodyDto))
                 .expectNext(getDigitalAddressIniPECOKDto).verifyComplete();
     }
 
@@ -106,7 +106,7 @@ class InfoCamereServiceTest {
         InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
         infoCamereLegalOKDto.setTaxId("taxId");
         infoCamereLegalOKDto.setVatNumber("vatNumber");
-        infoCamereLegalOKDto.setVerificationResult(true);
+        infoCamereLegalOKDto.setVerificationResult("true");
 
 
         when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
