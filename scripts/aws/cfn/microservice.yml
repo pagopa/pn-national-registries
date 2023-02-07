@@ -208,9 +208,9 @@ Resources:
         EcsDefaultSecurityGroup: !Ref EcsDefaultSecurityGroup
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
-        TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskPolicy
+        TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskManagedPolicy
 
-  NationalRegistryMicroserviceTaskPolicy:
+  NationalRegistryMicroserviceTaskManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       #PolicyName: !Sub '${ProjectName}-NationalRegistryMicroserviceSecretsPolicy'
