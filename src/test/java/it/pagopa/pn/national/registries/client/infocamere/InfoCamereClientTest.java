@@ -128,9 +128,11 @@ class InfoCamereClientTest {
         when(infoCamereWebClient.init()).thenReturn(webClient);
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
+        RequestCfIniPec.IniPecCf iniPecCf = new RequestCfIniPec.IniPecCf();
+        iniPecCf.setCf("taxId");
         RequestCfIniPec request = new RequestCfIniPec();
         request.setDataOraRichiesta(LocalDateTime.now().toString());
-        request.setElencoCf(List.of("taxId"));
+        request.setElencoCf(List.of(iniPecCf));
 
         ResponsePollingIdIniPec responsePollingIdIniPec = new ResponsePollingIdIniPec();
         responsePollingIdIniPec.setIdentificativoRichiesta("correlationId");
@@ -161,9 +163,11 @@ class InfoCamereClientTest {
         when(infoCamereWebClient.init()).thenReturn(webClient);
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
+        RequestCfIniPec.IniPecCf iniPecCf = new RequestCfIniPec.IniPecCf();
+        iniPecCf.setCf("taxId");
         RequestCfIniPec request = new RequestCfIniPec();
         request.setDataOraRichiesta(LocalDateTime.now().toString());
-        request.setElencoCf(List.of("taxId"));
+        request.setElencoCf(List.of(iniPecCf));
 
         String requestJson = "requestJson";
         try {
