@@ -68,7 +68,11 @@ public class IniPecBatchPecListService {
                     RequestCfIniPec requestCfIniPec = new RequestCfIniPec();
                     requestCfIniPec.setElencoCf(batchRequestWithNewBatchId.stream()
                             .filter(batchRequest -> batchRequest.getRetry() <= 3)
-                            .map(BatchRequest::getCf)
+                            .map(request -> {
+                                RequestCfIniPec.IniPecCf iniPecCf = new RequestCfIniPec.IniPecCf();
+                                iniPecCf.setCf(request.getCf());
+                                return iniPecCf;
+                            })
                             .toList());
                     requestCfIniPec.setDataOraRichiesta(LocalDateTime.now().toString());
                     log.info("Calling ini pec with cf size: {} and batchId: {}", requestCfIniPec.getElencoCf().size(), batchId);
