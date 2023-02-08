@@ -34,10 +34,12 @@ public class InfoCamereService {
         this.iniPecTtl = iniPecTtl;
     }
 
-    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto) {
-        return createBatchRequestByCf(pnNationalRegistriesCxId, getDigitalAddressIniPECRequestBodyDto)
-                .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId()),getDigitalAddressIniPECRequestBodyDto.getFilter().getCorrelationId()))
-                .doOnError(throwable -> log.info("Failed to create Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId()),getDigitalAddressIniPECRequestBodyDto.getFilter().getCorrelationId()))
+    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto) {
+        String cf = dto.getFilter().getTaxId();
+        String correlationId = dto.getFilter().getCorrelationId();
+        return createBatchRequestByCf(pnNationalRegistriesCxId, dto)
+                .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(cf), correlationId))
+                .doOnError(throwable -> log.info("Failed to create Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(cf), correlationId))
                 .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
     }
 
@@ -48,10 +50,10 @@ public class InfoCamereService {
                 .map(infoCamereConverter::mapToResponseOk);
     }
 
-    public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto requestCf) {
+    public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto) {
         BatchRequest batchRequest = createNewStartBatchRequest();
-        batchRequest.setCorrelationId(requestCf.getFilter().getCorrelationId());
-        batchRequest.setCf(requestCf.getFilter().getTaxId());
+        batchRequest.setCorrelationId(dto.getFilter().getCorrelationId());
+        batchRequest.setCf(dto.getFilter().getTaxId());
         batchRequest.setClientId(pnNationalRegistriesCxId);
         return iniPecBatchRequestRepository.createBatchRequest(batchRequest);
     }
@@ -64,6 +66,7 @@ public class InfoCamereService {
         batchRequest.setLastReserved(LocalDateTime.now());
         batchRequest.setTimeStamp(LocalDateTime.now());
         batchRequest.setTtl(LocalDateTime.now(ZoneOffset.UTC).plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
+        log.trace("New Batch Request: {}", batchRequest);
         return batchRequest;
     }
 

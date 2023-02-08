@@ -10,17 +10,18 @@ import java.util.Map;
 
 public interface IniPecBatchRequestRepository {
 
+    Mono<BatchRequest> update(BatchRequest batchRequest);
+
     Mono<BatchRequest> createBatchRequest(BatchRequest batchRequest);
 
-    Mono<Page<BatchRequest>> getBatchRequestByNotBatchIdPageable(Map<String, AttributeValue> lastKey);
+    Mono<Page<BatchRequest>> getBatchRequestByNotBatchId(Map<String, AttributeValue> lastKey, int limit);
 
     Mono<List<BatchRequest>> getBatchRequestsToSend(String batchId);
 
     Mono<BatchRequest> setBatchRequestsStatus(BatchRequest batchRequest, String status);
 
-    Mono<List<BatchRequest>> setNewBatchIdToBatchRequests(List<BatchRequest> batchRequest, String batchId);
+    Mono<BatchRequest> setNewBatchIdToBatchRequest(BatchRequest batchRequest);
 
-    Mono<List<BatchRequest>> resetBatchIdForRecovery();
+    Mono<List<BatchRequest>> getBatchRequestToRecovery();
 
-    Mono<List<BatchRequest>> resetBatchIdToBatchRequests(List<BatchRequest> batchRequests);
 }

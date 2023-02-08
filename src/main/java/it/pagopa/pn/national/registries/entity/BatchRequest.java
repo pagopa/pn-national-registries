@@ -8,49 +8,59 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
 import java.time.LocalDateTime;
 
+import static it.pagopa.pn.national.registries.constant.BatchRequestConstant.*;
+
 @Data
 @ToString
 @DynamoDbBean
 public class BatchRequest {
 
-        @Getter(onMethod=@__({
+        @Getter(onMethod = @__({
                 @DynamoDbPartitionKey,
-                @DynamoDbAttribute(BatchRequestConstant.PK)
+                @DynamoDbAttribute(PK)
         }))
         private String correlationId;
 
-        @Getter(onMethod=@__({@DynamoDbAttribute("cf")}))
+        @Getter(onMethod = @__({
+                @DynamoDbAttribute(COL_CF)
+        }))
         private String cf;
 
         @Getter(onMethod = @__({
-                @DynamoDbAttribute("batchId"),
-                @DynamoDbSecondaryPartitionKey(indexNames = BatchRequestConstant.GSI_BL)
+                @DynamoDbAttribute(COL_BATCH_ID),
+                @DynamoDbSecondaryPartitionKey(indexNames = GSI_BL)
         }))
         private String batchId;
 
-        @Getter(onMethod=@__({@DynamoDbAttribute("retry")}))
+        @Getter(onMethod = @__({
+                @DynamoDbAttribute(COL_RETRY)
+        }))
         private Integer retry;
 
-        @Getter(onMethod=@__({@DynamoDbAttribute("ttl")}))
+        @Getter(onMethod = @__({
+                @DynamoDbAttribute(COL_TTL)
+        }))
         private Long ttl;
 
-        @Getter(onMethod=@__({@DynamoDbAttribute("clientId")}))
+        @Getter(onMethod = @__({
+                @DynamoDbAttribute(COL_CLIENT_ID)
+        }))
         private String clientId;
 
-        @Getter(onMethod=@__({
-                @DynamoDbAttribute("status"),
+        @Getter(onMethod = @__({
+                @DynamoDbAttribute(COL_STATUS),
                 @DynamoDbSecondaryPartitionKey(indexNames = BatchRequestConstant.GSI_S)
         }))
         private String status;
 
-        @Getter(onMethod=@__({
-                @DynamoDbAttribute("lastReserved"),
-                @DynamoDbSecondarySortKey(indexNames = BatchRequestConstant.GSI_BL)
+        @Getter(onMethod = @__({
+                @DynamoDbAttribute(COL_LAST_RESERVED),
+                @DynamoDbSecondarySortKey(indexNames = GSI_BL)
         }))
         private LocalDateTime lastReserved;
 
-        @Getter(onMethod=@__({
-                @DynamoDbAttribute("timeStamp")
+        @Getter(onMethod = @__({
+                @DynamoDbAttribute(COL_TIMESTAMP)
         }))
         private LocalDateTime timeStamp;
 }
