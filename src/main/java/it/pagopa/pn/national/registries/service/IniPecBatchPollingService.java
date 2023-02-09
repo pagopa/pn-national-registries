@@ -85,9 +85,11 @@ public class IniPecBatchPollingService {
                     polling.setStatus(BatchStatus.NOT_WORKED.getValue());
                     polling.setReservationId(null);
                 })
-                .flatMap(batchPollingRepository::update)
+                .flatMap(polling -> batchPollingRepository.resetBatchPollingForRecovery(polling)
+                        .doOnError(ConditionalCheckFailedException.class,
+                                e -> log.info("IniPEC - conditional check failed - skip recovery pollingId {} and batchId {}", polling.getPollingId(), polling.getBatchId(), e))
+                        .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .count()
-                .doOnError(e -> log.error("IniPEC - can not recover polling", e))
                 .doOnNext(v -> batchPecPolling())
                 .subscribe(c -> log.info("IniPEC - executed batch recovery on {} polling", c),
                         e -> log.error("IniPEC - failed execution of batch polling recovery"));
@@ -116,11 +118,10 @@ public class IniPecBatchPollingService {
                                 e -> log.info("IniPEC - conditional check failed - skip pollingId: {}", item.getPollingId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .flatMap(item -> callEService(item.getPollingId())
+                        .doOnNext(response -> log.info("IniPEC - batchId {} - pollingId {} - called EService", item.getBatchId(), item.getPollingId()))
                         .onErrorResume(e -> incrementRetry(item)
                                 .then(Mono.empty()))
-                        .flatMap(response -> sendToQueueAndUpdateStatus(item, response))
-                        .thenReturn(item))
-                .doOnNext(item -> log.info("IniPEC - batchId {} - pollingId {} - called EService", item.getBatchId(), item.getPollingId()))
+                        .flatMap(response -> sendToQueueAndUpdateStatus(item, response)))
                 .doOnError(e -> log.error("IniPEC - failed to execute polling", e))
                 .onErrorResume(e -> Mono.empty())
                 .then();

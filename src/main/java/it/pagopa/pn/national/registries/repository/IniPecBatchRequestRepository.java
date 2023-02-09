@@ -20,6 +20,8 @@ public interface IniPecBatchRequestRepository {
 
     Mono<BatchRequest> setNewBatchIdToBatchRequest(BatchRequest batchRequest);
 
+    Mono<BatchRequest> resetBatchRequestForRecovery(BatchRequest batchRequest);
+
     Mono<List<BatchRequest>> getBatchRequestToRecovery();
 
 }

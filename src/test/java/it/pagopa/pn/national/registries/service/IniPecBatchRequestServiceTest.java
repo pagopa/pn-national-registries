@@ -195,17 +195,22 @@ class IniPecBatchRequestServiceTest {
 
     @Test
     void testRecoveryBatchRequest() {
-        BatchRequest batchRequestToRecover = new BatchRequest();
+        BatchRequest batchRequestToRecover1 = new BatchRequest();
+        BatchRequest batchRequestToRecover2 = new BatchRequest();
+
         when(batchRequestRepository.getBatchRequestToRecovery())
-                .thenReturn(Mono.just(List.of(batchRequestToRecover)));
+                .thenReturn(Mono.just(List.of(batchRequestToRecover1, batchRequestToRecover2)));
+        when(batchRequestRepository.resetBatchRequestForRecovery(same(batchRequestToRecover1)))
+                .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
+        when(batchRequestRepository.resetBatchRequestForRecovery(same(batchRequestToRecover2)))
+                .thenReturn(Mono.just(batchRequestToRecover2));
 
         testBatchPecRequest();
 
         assertDoesNotThrow(() -> iniPecBatchRequestService.recoveryBatchRequest());
 
-        verify(batchRequestRepository).update(any());
-        assertEquals(BatchStatus.NOT_WORKED.getValue(), batchRequestToRecover.getStatus());
-        assertEquals(BatchStatus.NO_BATCH_ID.getValue(), batchRequestToRecover.getBatchId());
+        assertEquals(BatchStatus.NOT_WORKED.getValue(), batchRequestToRecover2.getStatus());
+        assertEquals(BatchStatus.NO_BATCH_ID.getValue(), batchRequestToRecover2.getBatchId());
     }
 
     @Test

@@ -437,16 +437,31 @@ class IniPecBatchPollingServiceTest {
 
     @Test
     void testRecoveryBatchPolling() {
-        BatchPolling batchPollingToRecover = new BatchPolling();
+        BatchPolling batchPollingToRecover1 = new BatchPolling();
+        BatchPolling batchPollingToRecover2 = new BatchPolling();
+
         when(batchPollingRepository.getBatchPollingToRecover())
-                .thenReturn(Mono.just(List.of(batchPollingToRecover)));
+                .thenReturn(Mono.just(List.of(batchPollingToRecover1, batchPollingToRecover2)));
+        when(batchPollingRepository.resetBatchPollingForRecovery(same(batchPollingToRecover1)))
+                .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
+        when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPollingToRecover2)))
+                .thenReturn(Mono.just(batchPollingToRecover2));
 
         testBatchPecPolling();
 
         assertDoesNotThrow(() -> iniPecBatchPollingService.recoveryBatchPolling());
 
-        verify(batchPollingRepository).update(same(batchPollingToRecover));
-        assertEquals(BatchStatus.NOT_WORKED.getValue(), batchPollingToRecover.getStatus());
-        assertNull(batchPollingToRecover.getReservationId());
+        assertEquals(BatchStatus.NOT_WORKED.getValue(), batchPollingToRecover2.getStatus());
+        assertNull(batchPollingToRecover2.getReservationId());
+    }
+
+    @Test
+    void testRecoveryBatchPollingEmpty() {
+        when(batchPollingRepository.getBatchPollingToRecover())
+                .thenReturn(Mono.just(Collections.emptyList()));
+        assertDoesNotThrow(() -> iniPecBatchPollingService.recoveryBatchPolling());
+        verify(batchPollingRepository, never()).setNewReservationIdToBatchPolling(any());
+        verifyNoInteractions(sqsService);
+        verifyNoInteractions(infoCamereClient);
     }
 }

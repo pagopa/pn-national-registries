@@ -87,6 +87,26 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
     }
 
     @Override
+    public Mono<BatchPolling> resetBatchPollingForRecovery(BatchPolling batchPolling) {
+        Map<String, String> expressionNames = new HashMap<>();
+        expressionNames.put("#lastReserved", COL_LAST_RESERVED);
+
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
+        AttributeValue lastReserved = AttributeValue.builder()
+                .s(batchPolling.getLastReserved() != null ? batchPolling.getLastReserved().toString() : "")
+                .build();
+        expressionValues.put(":lastReserved", lastReserved);
+
+        String expression = "#lastReserved = :lastReserved OR attribute_not_exists(#lastReserved)";
+        UpdateItemEnhancedRequest<BatchPolling> updateItemEnhancedRequest = UpdateItemEnhancedRequest.builder(BatchPolling.class)
+                .item(batchPolling)
+                .conditionExpression(expressionBuilder(expression, expressionValues, expressionNames))
+                .build();
+
+        return Mono.fromFuture(table.updateItem(updateItemEnhancedRequest));
+    }
+
+    @Override
     public Mono<List<BatchPolling>> getBatchPollingToRecover() {
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put("#retry", COL_RETRY);
@@ -96,7 +116,7 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
         expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(maxRetry)).build());
         expressionValues.put(":lastReserved", AttributeValue.builder().s(LocalDateTime.now(ZoneOffset.UTC).minusHours(1).toString()).build());
 
-        String expression = "#retry < :retry AND :lastReserved > #lastReserved";
+        String expression = "#retry < :retry AND (:lastReserved > #lastReserved OR attribute_not_exists(#lastReserved))";
 
         QueryConditional queryConditional = QueryConditional.keyEqualTo(keyBuilder(BatchStatus.WORKING.getValue()));
 

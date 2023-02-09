@@ -86,9 +86,11 @@ public class IniPecBatchRequestService {
                     request.setStatus(BatchStatus.NOT_WORKED.getValue());
                     request.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
                 })
-                .flatMap(batchRequestRepository::update)
+                .flatMap(request -> batchRequestRepository.resetBatchRequestForRecovery(request)
+                        .doOnError(ConditionalCheckFailedException.class,
+                                e -> log.info("IniPEC - conditional check failed - skip recovery correlationId: {}", request.getCorrelationId(), e))
+                        .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .count()
-                .doOnError(e -> log.error("IniPEC - can not recover batch", e))
                 .doOnNext(v -> batchPecRequest())
                 .subscribe(c -> log.info("IniPEC - executed batch recovery on {} requests", c),
                         e -> log.error("IniPEC - failed execution of batch request recovery", e));

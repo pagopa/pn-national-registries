@@ -14,6 +14,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -114,6 +115,39 @@ class IniPecBatchRequestRepositoryImplTest {
                 .thenReturn(CompletableFuture.completedFuture(batchRequest));
 
         StepVerifier.create(batchRequestRepository.setNewBatchIdToBatchRequest(batchRequest))
+                .expectNext(batchRequest)
+                .verifyComplete();
+    }
+
+    @Test
+    void testResetBatchRequestForRecovery1() {
+        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
+                .thenReturn(dynamoDbAsyncTable);
+        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, 3);
+
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setLastReserved(LocalDateTime.now());
+
+        when(dynamoDbAsyncTable.updateItem((UpdateItemEnhancedRequest) any()))
+                .thenReturn(CompletableFuture.completedFuture(batchRequest));
+
+        StepVerifier.create(batchRequestRepository.resetBatchRequestForRecovery(batchRequest))
+                .expectNext(batchRequest)
+                .verifyComplete();
+    }
+
+    @Test
+    void testResetBatchRequestForRecovery2() {
+        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
+                .thenReturn(dynamoDbAsyncTable);
+        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, 3);
+
+        BatchRequest batchRequest = new BatchRequest();
+
+        when(dynamoDbAsyncTable.updateItem((UpdateItemEnhancedRequest) any()))
+                .thenReturn(CompletableFuture.completedFuture(batchRequest));
+
+        StepVerifier.create(batchRequestRepository.resetBatchRequestForRecovery(batchRequest))
                 .expectNext(batchRequest)
                 .verifyComplete();
     }

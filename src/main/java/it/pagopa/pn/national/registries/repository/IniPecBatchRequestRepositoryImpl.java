@@ -30,7 +30,12 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     private final int maxRetry;
 
     private static final String STATUS_ALIAS = "#status";
-    private static final String STATYS_PLACEHOLDER = ":status";
+    private static final String STATUS_PLACEHOLDER = ":status";
+    private static final String STATUS_EQ = STATUS_ALIAS + " = " + STATUS_PLACEHOLDER;
+
+    private static final String LAST_RESERVED_ALIAS = "#lastReserved";
+    private static final String LAST_RESERVED_PLACEHOLDER = ":lastReserved";
+    private static final String LAST_RESERVED_EQ = LAST_RESERVED_ALIAS + " = " + LAST_RESERVED_PLACEHOLDER;
 
     public IniPecBatchRequestRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                                             @Value("${pn.national-registries.inipec.batch.request.max-retry}") int maxRetry) {
@@ -54,11 +59,10 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         expressionNames.put(STATUS_ALIAS, COL_STATUS);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(STATYS_PLACEHOLDER, AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
+        expressionValues.put(STATUS_PLACEHOLDER, AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
 
-        String expression = STATUS_ALIAS + " = " + STATYS_PLACEHOLDER;
         QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
-                .filterExpression(expressionBuilder(expression, expressionValues, expressionNames))
+                .filterExpression(expressionBuilder(STATUS_EQ, expressionValues, expressionNames))
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(BatchStatus.NO_BATCH_ID.getValue())))
                 .limit(limit);
 
@@ -77,11 +81,10 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         expressionNames.put(STATUS_ALIAS, COL_STATUS);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(STATYS_PLACEHOLDER, AttributeValue.builder().s(BatchStatus.WORKING.getValue()).build());
+        expressionValues.put(STATUS_PLACEHOLDER, AttributeValue.builder().s(BatchStatus.WORKING.getValue()).build());
 
-        String expression = STATUS_ALIAS + " = " + STATYS_PLACEHOLDER;
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
-                .filterExpression(expressionBuilder(expression, expressionValues, expressionNames))
+                .filterExpression(expressionBuilder(STATUS_EQ, expressionValues, expressionNames))
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(batchId)))
                 .build();
 
@@ -97,9 +100,29 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":batchId", AttributeValue.builder().s(BatchStatus.NO_BATCH_ID.getValue()).build());
-        expressionValues.put(STATYS_PLACEHOLDER, AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
+        expressionValues.put(STATUS_PLACEHOLDER, AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
 
-        String expression = "#batchId = :batchId AND " + STATUS_ALIAS + " = " + STATYS_PLACEHOLDER;
+        String expression = "#batchId = :batchId AND " + STATUS_EQ;
+        UpdateItemEnhancedRequest<BatchRequest> updateItemEnhancedRequest = UpdateItemEnhancedRequest.builder(BatchRequest.class)
+                .item(batchRequest)
+                .conditionExpression(expressionBuilder(expression, expressionValues, expressionNames))
+                .build();
+
+        return Mono.fromFuture(table.updateItem(updateItemEnhancedRequest));
+    }
+
+    @Override
+    public Mono<BatchRequest> resetBatchRequestForRecovery(BatchRequest batchRequest) {
+        Map<String, String> expressionNames = new HashMap<>();
+        expressionNames.put(LAST_RESERVED_ALIAS, COL_LAST_RESERVED);
+
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
+        AttributeValue lastReserved = AttributeValue.builder()
+                .s(batchRequest.getLastReserved() != null ? batchRequest.getLastReserved().toString() : "")
+                .build();
+        expressionValues.put(LAST_RESERVED_PLACEHOLDER, lastReserved);
+
+        String expression = LAST_RESERVED_EQ + " OR attribute_not_exists(" + LAST_RESERVED_ALIAS + ")";
         UpdateItemEnhancedRequest<BatchRequest> updateItemEnhancedRequest = UpdateItemEnhancedRequest.builder(BatchRequest.class)
                 .item(batchRequest)
                 .conditionExpression(expressionBuilder(expression, expressionValues, expressionNames))
@@ -112,11 +135,11 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     public Mono<List<BatchRequest>> getBatchRequestToRecovery() {
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put("#retry", COL_RETRY);
-        expressionNames.put("#lastReserved", COL_LAST_RESERVED);
+        expressionNames.put(LAST_RESERVED_ALIAS, COL_LAST_RESERVED);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(maxRetry)).build());
-        expressionValues.put(":lastReserved", AttributeValue.builder().s(LocalDateTime.now(ZoneOffset.UTC).minusHours(1).toString()).build());
+        expressionValues.put(LAST_RESERVED_PLACEHOLDER, AttributeValue.builder().s(LocalDateTime.now(ZoneOffset.UTC).minusHours(1).toString()).build());
 
         String expression = "#retry < :retry AND :lastReserved > #lastReserved";
 

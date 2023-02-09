@@ -14,6 +14,7 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,6 +98,39 @@ class IniPecBatchPollingRepositoryImplTest {
                 .thenReturn(CompletableFuture.completedFuture(batchPolling));
 
         StepVerifier.create(batchPollingRepository.setNewReservationIdToBatchPolling(batchPolling))
+                .expectNext(batchPolling)
+                .verifyComplete();
+    }
+
+    @Test
+    void testResetBatchRequestForRecovery1() {
+        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
+                .thenReturn(dynamoDbAsyncTable);
+        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, 3);
+
+        BatchPolling batchPolling = new BatchPolling();
+        batchPolling.setLastReserved(LocalDateTime.now());
+
+        when(dynamoDbAsyncTable.updateItem((UpdateItemEnhancedRequest) any()))
+                .thenReturn(CompletableFuture.completedFuture(batchPolling));
+
+        StepVerifier.create(batchPollingRepository.resetBatchPollingForRecovery(batchPolling))
+                .expectNext(batchPolling)
+                .verifyComplete();
+    }
+
+    @Test
+    void testResetBatchRequestForRecovery2() {
+        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
+                .thenReturn(dynamoDbAsyncTable);
+        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, 3);
+
+        BatchPolling batchPolling = new BatchPolling();
+
+        when(dynamoDbAsyncTable.updateItem((UpdateItemEnhancedRequest) any()))
+                .thenReturn(CompletableFuture.completedFuture(batchPolling));
+
+        StepVerifier.create(batchPollingRepository.resetBatchPollingForRecovery(batchPolling))
                 .expectNext(batchPolling)
                 .verifyComplete();
     }

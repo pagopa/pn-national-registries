@@ -190,6 +190,9 @@ Resources:
               KeyType: HASH
           Projection:
             ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
       BillingMode: "PAY_PER_REQUEST"
 
 #Necessario a causa di bug script deploy

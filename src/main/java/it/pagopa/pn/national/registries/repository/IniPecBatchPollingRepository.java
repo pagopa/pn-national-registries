@@ -18,5 +18,7 @@ public interface IniPecBatchPollingRepository {
 
     Mono<BatchPolling> setNewReservationIdToBatchPolling(BatchPolling batchPolling);
 
+    Mono<BatchPolling> resetBatchPollingForRecovery(BatchPolling batchPolling);
+
     Mono<List<BatchPolling>> getBatchPollingToRecover();
 }
