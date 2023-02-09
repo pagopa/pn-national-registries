@@ -10,8 +10,8 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRespon
 
 import java.util.Optional;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_SECRET_MANAGER;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_SECRET_MANAGER;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_SECRET_MANAGER;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_SECRET_MANAGER;
 
 @Slf4j
 @Service

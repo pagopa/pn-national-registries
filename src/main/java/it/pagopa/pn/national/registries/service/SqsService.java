@@ -17,8 +17,8 @@ import software.amazon.awssdk.services.sqs.model.*;
 import java.util.HashMap;
 import java.util.Map;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_INI_PEC;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_INI_PEC;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_INIPEC;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC;
 
 
 @Slf4j
@@ -68,7 +68,7 @@ public class SqsService {
         try {
             return mapper.writeValueAsString(codeSqsDto);
         } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, e);
+            throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, e);
         }
     }
 }

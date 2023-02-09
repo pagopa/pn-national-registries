@@ -12,13 +12,11 @@ public interface IniPecBatchRequestRepository {
 
     Mono<BatchRequest> update(BatchRequest batchRequest);
 
-    Mono<BatchRequest> createBatchRequest(BatchRequest batchRequest);
+    Mono<BatchRequest> create(BatchRequest batchRequest);
 
     Mono<Page<BatchRequest>> getBatchRequestByNotBatchId(Map<String, AttributeValue> lastKey, int limit);
 
-    Mono<List<BatchRequest>> getBatchRequestsToSend(String batchId);
-
-    Mono<BatchRequest> setBatchRequestsStatus(BatchRequest batchRequest, String status);
+    Mono<List<BatchRequest>> getBatchRequestByBatchId(String batchId);
 
     Mono<BatchRequest> setNewBatchIdToBatchRequest(BatchRequest batchRequest);
 

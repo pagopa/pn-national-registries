@@ -8,40 +8,41 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigital
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
-import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
+import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {InfoCamereService.class})
-@ExtendWith(MockitoExtension.class)
 @Slf4j
+@TestPropertySource(properties = {
+        "pn.national.registries.inipec.ttl=0"
+})
+@ContextConfiguration(classes = {InfoCamereService.class})
+@ExtendWith(SpringExtension.class)
 class InfoCamereServiceTest {
 
-    @InjectMocks
+    @Autowired
     InfoCamereService infoCamereService;
-    @Mock
-    InfoCamereConverter infoCamereConverter;
 
-    @Mock
+    @MockBean
+    InfoCamereConverter infoCamereConverter;
+    @MockBean
     InfoCamereClient infoCamereClient;
-    @Mock
-    IniPecBatchRequestRepositoryImpl iniPecBatchRequestRepository;
+    @MockBean
+    IniPecBatchRequestRepository batchRequestRepository;
 
     @Test
     void testGetDigitalAddress() {
-        ReflectionTestUtils.setField(infoCamereService, "iniPecTtl", 0L);
-
         GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
         GetDigitalAddressIniPECRequestBodyFilterDto dto = new GetDigitalAddressIniPECRequestBodyFilterDto();
         dto.setCorrelationId("correlationId");
@@ -51,21 +52,21 @@ class InfoCamereServiceTest {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCf("taxId");
         batchRequest.setCorrelationId("correlationId");
-        when(iniPecBatchRequestRepository.createBatchRequest(any()))
+        when(batchRequestRepository.create(any()))
                 .thenReturn(Mono.just(batchRequest));
-
 
         GetDigitalAddressIniPECOKDto getDigitalAddressIniPECOKDto = new GetDigitalAddressIniPECOKDto();
         getDigitalAddressIniPECOKDto.setCorrelationId("correlationId");
         when(infoCamereConverter.convertToGetAddressIniPecOKDto(any()))
                 .thenReturn(getDigitalAddressIniPECOKDto);
-        StepVerifier.create( infoCamereService.getIniPecDigitalAddress("clientId",requestBodyDto))
-                .expectNext(getDigitalAddressIniPECOKDto).verifyComplete();
+
+        StepVerifier.create(infoCamereService.getIniPecDigitalAddress("clientId", requestBodyDto))
+                .expectNext(getDigitalAddressIniPECOKDto)
+                .verifyComplete();
     }
 
     @Test
     void getAddress() {
-
         GetAddressRegistroImpreseRequestBodyDto request = new GetAddressRegistroImpreseRequestBodyDto();
         GetAddressRegistroImpreseRequestBodyFilterDto dto = new GetAddressRegistroImpreseRequestBodyFilterDto();
         dto.setTaxId("cf");
@@ -87,12 +88,12 @@ class InfoCamereServiceTest {
         when(infoCamereConverter.mapToResponseOk(any())).thenReturn(response);
 
         StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
-                .expectNext(response).verifyComplete();
+                .expectNext(response)
+                .verifyComplete();
     }
 
     @Test
     void checkTaxIdAndVatNumber() {
-
         InfoCamereVerificationResponse response = new InfoCamereVerificationResponse();
         response.setTaxId("taxId");
         response.setVatNumber("vatNumber");
@@ -113,7 +114,8 @@ class InfoCamereServiceTest {
         when(infoCamereConverter.infoCamereResponseToDto(response)).thenReturn(infoCamereLegalOKDto);
 
         StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
-                .expectNext(infoCamereLegalOKDto).verifyComplete();
+                .expectNext(infoCamereLegalOKDto)
+                .verifyComplete();
     }
 }
 

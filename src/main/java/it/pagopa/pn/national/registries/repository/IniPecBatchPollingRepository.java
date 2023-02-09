@@ -10,13 +10,13 @@ import java.util.Map;
 
 public interface IniPecBatchPollingRepository {
 
-    Mono<BatchPolling> createBatchPolling(BatchPolling batchPolling);
+    Mono<BatchPolling> create(BatchPolling batchPolling);
 
-    Mono<BatchPolling> updateBatchPolling(BatchPolling batchPolling);
+    Mono<BatchPolling> update(BatchPolling batchPolling);
 
-    Mono<Page<BatchPolling>> getBatchPollingWithoutReservationIdAndStatusNotWork(Map<String, AttributeValue> lastKey);
+    Mono<Page<BatchPolling>> getBatchPollingWithoutReservationIdAndStatusNotWorked(Map<String, AttributeValue> lastKey, int limit);
 
-    Mono<List<BatchPolling>> setReservationIdToAndStatusWorkingBatchPolling(List<BatchPolling> batchPollings, String reservationId);
+    Mono<BatchPolling> setNewReservationIdToBatchPolling(BatchPolling batchPolling);
 
-    Mono<List<BatchPolling>> getBatchPollingByReservationIdAndStatusWorking(String reservationId);
+    Mono<List<BatchPolling>> getBatchPollingToRecover();
 }

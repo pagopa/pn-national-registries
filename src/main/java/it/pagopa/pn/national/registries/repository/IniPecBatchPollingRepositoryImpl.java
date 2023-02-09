@@ -1,98 +1,128 @@
 package it.pagopa.pn.national.registries.repository;
 
-import it.pagopa.pn.national.registries.constant.BatchRequestConstant;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.*;
-import software.amazon.awssdk.enhanced.dynamodb.model.Page;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
-import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
-import software.amazon.awssdk.enhanced.dynamodb.model.ScanEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static it.pagopa.pn.national.registries.constant.BatchPollingConstant.*;
+
 @Component
-public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepository{
+public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepository {
 
-    private final DynamoDbAsyncTable<BatchPolling> tablePolling;
+    private final DynamoDbAsyncTable<BatchPolling> table;
 
-    public IniPecBatchPollingRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient){
-        this.tablePolling = dynamoDbEnhancedAsyncClient.table("pn-batchPolling", TableSchema.fromClass(BatchPolling.class));
+    private final int maxRetry;
+
+    public IniPecBatchPollingRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
+                                            @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry) {
+        this.table = dynamoDbEnhancedAsyncClient.table("pn-batchPolling", TableSchema.fromClass(BatchPolling.class));
+        this.maxRetry = maxRetry;
     }
 
     @Override
-    public Mono<BatchPolling> createBatchPolling(BatchPolling batchPolling){
-        return Mono.fromFuture(tablePolling.putItem(batchPolling)).thenReturn(batchPolling);
+    public Mono<BatchPolling> create(BatchPolling batchPolling) {
+        return Mono.fromFuture(table.putItem(batchPolling)).thenReturn(batchPolling);
     }
 
     @Override
-    public Mono<BatchPolling> updateBatchPolling(BatchPolling batchPolling){
-        return Mono.fromFuture(tablePolling.updateItem(batchPolling)).thenReturn(batchPolling);
+    public Mono<BatchPolling> update(BatchPolling batchPolling) {
+        return Mono.fromFuture(table.updateItem(batchPolling));
     }
 
     @Override
-    public Mono<Page<BatchPolling>> getBatchPollingWithoutReservationIdAndStatusNotWork(Map<String, AttributeValue> lastKey){
+    public Mono<Page<BatchPolling>> getBatchPollingWithoutReservationIdAndStatusNotWorked(Map<String, AttributeValue> lastKey, int limit) {
         Map<String, String> expressionNames = new HashMap<>();
+        expressionNames.put("#reservationId", COL_RESERVATION_ID);
 
-        expressionNames.put("#reservationId","reservationId");
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
+        expressionValues.put(":zero", AttributeValue.builder().n("0").build());
 
         QueryConditional queryConditional = QueryConditional.keyEqualTo(keyBuilder(BatchStatus.NOT_WORKED.getValue()));
 
+        String expression = "attribute_not_exists(#reservationId) OR size(#reservationId) = :zero";
         QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)
-                .filterExpression(expressionBuilder("attribute_not_exists(#reservationId)",null,expressionNames))
-                .limit(1);
+                .filterExpression(expressionBuilder(expression, expressionValues, expressionNames))
+                .limit(limit);
 
-        if(lastKey.size()!=0)
+        if (!CollectionUtils.isEmpty(lastKey)) {
             queryEnhancedRequestBuilder.exclusiveStartKey(lastKey);
+        }
 
-        return Mono.from(tablePolling.index(BatchRequestConstant.GSI_S).query(queryEnhancedRequestBuilder.build()));
+        QueryEnhancedRequest queryEnhancedRequest = queryEnhancedRequestBuilder.build();
+
+        return Mono.from(table.index(GSI_S).query(queryEnhancedRequest));
     }
 
     @Override
-    public Mono<List<BatchPolling>> setReservationIdToAndStatusWorkingBatchPolling(List<BatchPolling> batchPollings, String reservationId){
-        return Flux.fromIterable(batchPollings)
-                .flatMap(batchPolling -> {
-                    batchPolling.setStatus(BatchStatus.WORKING.getValue());
-                    batchPolling.setReservationId(reservationId);
-                    return Mono.fromFuture(tablePolling.updateItem(batchPolling));
-                })
-                .collectList()
-                .flatMap(batchPollingWithReservationId -> getBatchPollingByReservationIdAndStatusWorking(reservationId));
-    }
-
-    @Override
-    public Mono<List<BatchPolling>> getBatchPollingByReservationIdAndStatusWorking(String reservationId){
+    public Mono<BatchPolling> setNewReservationIdToBatchPolling(BatchPolling batchPolling) {
         Map<String, String> expressionNames = new HashMap<>();
-        expressionNames.put("#reservationId","reservationId");
-        expressionNames.put("#status","status");
+        expressionNames.put("#reservationId", COL_RESERVATION_ID);
+        expressionNames.put("#status", COL_STATUS);
+
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":reservationId",AttributeValue.builder().s(reservationId).build());
-        expressionValues.put(":status",AttributeValue.builder().s(BatchStatus.WORKING.getValue()).build());
-        ScanEnhancedRequest scanEnhancedRequest = ScanEnhancedRequest.builder()
-                .filterExpression(expressionBuilder("#reservationId = :reservationId AND #status = :status",expressionValues,expressionNames))
+        expressionValues.put(":status", AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
+
+        String expression = "(attribute_not_exists(#reservationId) OR size(#reservationId) = 0) AND #status = :status";
+        UpdateItemEnhancedRequest<BatchPolling> updateItemEnhancedRequest = UpdateItemEnhancedRequest.builder(BatchPolling.class)
+                .item(batchPolling)
+                .conditionExpression(expressionBuilder(expression, expressionValues, expressionNames))
                 .build();
-        return Mono.from(tablePolling.scan(scanEnhancedRequest)).map(Page::items);
+
+        return Mono.fromFuture(table.updateItem(updateItemEnhancedRequest));
     }
 
-    private Key keyBuilder(String key){
+    @Override
+    public Mono<List<BatchPolling>> getBatchPollingToRecover() {
+        Map<String, String> expressionNames = new HashMap<>();
+        expressionNames.put("#retry", COL_RETRY);
+        expressionNames.put("#lastReserved", COL_LAST_RESERVED);
+
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
+        expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(maxRetry)).build());
+        expressionValues.put(":lastReserved", AttributeValue.builder().s(LocalDateTime.now(ZoneOffset.UTC).minusHours(1).toString()).build());
+
+        String expression = "#retry < :retry AND :lastReserved > #lastReserved";
+
+        QueryConditional queryConditional = QueryConditional.keyEqualTo(keyBuilder(BatchStatus.WORKING.getValue()));
+
+        QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
+                .queryConditional(queryConditional)
+                .filterExpression(expressionBuilder(expression, expressionValues, expressionNames))
+                .build();
+
+        return Flux.from(table.index(GSI_S).query(queryEnhancedRequest).flatMapIterable(Page::items))
+                .collectList();
+    }
+
+    private Key keyBuilder(String key) {
         return Key.builder().partitionValue(key).build();
     }
 
-    private Expression expressionBuilder(String expression, Map<String, AttributeValue> expressionValues, Map<String, String> expressionNames){
+    private Expression expressionBuilder(String expression, Map<String, AttributeValue> expressionValues, Map<String, String> expressionNames) {
         Expression.Builder expressionBuilder = Expression.builder();
-        if(expression!=null)
+        if (expression != null) {
             expressionBuilder.expression(expression);
-        if(expressionValues!=null)
+        }
+        if (expressionValues != null) {
             expressionBuilder.expressionValues(expressionValues);
-        if(expressionNames!=null)
+        }
+        if (expressionNames != null) {
             expressionBuilder.expressionNames(expressionNames);
+        }
         return expressionBuilder.build();
     }
 }

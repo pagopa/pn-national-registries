@@ -12,7 +12,7 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRespon
 
 import java.util.Optional;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 
 @Slf4j
 @Component

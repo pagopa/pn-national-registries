@@ -5,10 +5,12 @@ import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
+import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -24,6 +26,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
+
 @Service
 @Slf4j
 public class IniPecBatchPecListService {
@@ -32,6 +36,7 @@ public class IniPecBatchPecListService {
     private final IniPecBatchRequestRepository batchRequestRepository;
     private final IniPecBatchPollingRepository batchPollingRepository;
     private final InfoCamereClient infoCamereClient;
+    private final SqsService sqsService;
 
     private final int maxRetry;
 
@@ -41,33 +46,37 @@ public class IniPecBatchPecListService {
                                      IniPecBatchRequestRepository batchRequestRepository,
                                      IniPecBatchPollingRepository batchPollingRepository,
                                      InfoCamereClient infoCamereClient,
+                                     SqsService sqsService,
                                      @Value("${pn.national-registries.inipec.batch.request.max-retry}") int maxRetry) {
         this.infoCamereConverter = infoCamereConverter;
         this.batchRequestRepository = batchRequestRepository;
         this.batchPollingRepository = batchPollingRepository;
         this.infoCamereClient = infoCamereClient;
+        this.sqsService = sqsService;
         this.maxRetry = maxRetry;
     }
 
     @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
-    public void batchPecListRequest() {
-        log.trace("IniPEC - batchPecListRequest start");
+    public void batchPecRequest() {
+        log.trace("IniPEC - batchPecRequest start");
         Page<BatchRequest> page;
         Map<String, AttributeValue> lastEvaluatedKey = new HashMap<>();
         do {
             page = getBatchRequest(lastEvaluatedKey);
+            lastEvaluatedKey = page.lastEvaluatedKey();
             if (!page.items().isEmpty()) {
                 String batchId = UUID.randomUUID().toString();
-                setNewBatchId(page.items(), batchId).block();
+                execBatchRequest(page.items(), batchId).block();
             } else {
                 log.info("IniPEC - no batch request available");
             }
-        } while (!CollectionUtils.isEmpty(page.lastEvaluatedKey()));
-        log.trace("IniPEC - batchPecListRequest end");
+        } while (!CollectionUtils.isEmpty(lastEvaluatedKey));
+        log.trace("IniPEC - batchPecRequest end");
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.request.recovery.delay}")
-    public void recoveryPrimoFlusso() {
+    public void recoveryBatchRequest() {
+        log.trace("IniPEC - recoveryBatchRequest start");
         batchRequestRepository.getBatchRequestToRecovery()
                 .flatMapIterable(requests -> requests)
                 .doOnNext(request -> {
@@ -75,10 +84,11 @@ public class IniPecBatchPecListService {
                     request.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
                 })
                 .flatMap(batchRequestRepository::update)
-                .then()
+                .count()
                 .doOnError(e -> log.error("IniPEC - can not recover batch", e))
-                .doOnNext(t -> batchPecListRequest())
-                .subscribe();
+                .doOnNext(v -> batchPecRequest())
+                .subscribe(c -> log.info("IniPEC - executed batch recovery on {} requests", c),
+                        e -> log.error("IniPEC - failed execution of batch request recovery", e));
     }
 
     private Page<BatchRequest> getBatchRequest(Map<String, AttributeValue> lastEvaluatedKey) {
@@ -90,7 +100,7 @@ public class IniPecBatchPecListService {
                 });
     }
 
-    private Mono<Void> setNewBatchId(List<BatchRequest> items, String batchId) {
+    private Mono<Void> execBatchRequest(List<BatchRequest> items, String batchId) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return Flux.fromStream(items.stream())
                 .map(item -> {
@@ -101,7 +111,7 @@ public class IniPecBatchPecListService {
                 })
                 .flatMap(item -> batchRequestRepository.setNewBatchIdToBatchRequest(item)
                         .doOnError(ConditionalCheckFailedException.class,
-                                e -> log.info("IniPEC - conditional check failed - skip batch element: {}", item.getCorrelationId(), e))
+                                e -> log.info("IniPEC - conditional check failed - skip correlationId: {}", item.getCorrelationId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .collectList()
                 .filter(requests -> !requests.isEmpty())
@@ -115,10 +125,8 @@ public class IniPecBatchPecListService {
                             .thenReturn(requests);
                 })
                 .doOnNext(requests -> log.info("IniPEC - batchId {} - called EService and batch size is: {}", batchId, requests.size()))
-                .onErrorResume(e -> {
-                    log.error("IniPEC - batchId {} - failed to execute batch", batchId);
-                    return Mono.empty();
-                })
+                .doOnError(e -> log.error("IniPEC - batchId {} - failed to execute batch", batchId, e))
+                .onErrorResume(e -> Mono.empty())
                 .then();
     }
 
@@ -139,7 +147,7 @@ public class IniPecBatchPecListService {
     private Mono<Void> createPolling(ResponsePollingIdIniPec response, String batchId) {
         String pollingId = response.getIdentificativoRichiesta();
         log.info("IniPEC - batchId {} - called EService and response pollingId is {}", batchId, pollingId);
-        return batchPollingRepository.createBatchPolling(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId))
+        return batchPollingRepository.create(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId))
                 .doOnNext(batchPolling -> log.debug("IniPEC - batchId {} - created BatchPolling with pollingId: {}", batchId, pollingId))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to create BatchPolling with pollingId: {}", batchId, pollingId, e))
                 .then();
@@ -157,6 +165,14 @@ public class IniPecBatchPecListService {
                     return r;
                 })
                 .flatMap(batchRequestRepository::update)
+                .filter(r -> BatchStatus.ERROR.getValue().equals(r.getStatus()))
+                .flatMap(r -> {
+                    CodeSqsDto sqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(r, ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS);
+                    return sqsService.push(sqsDto, r.getClientId())
+                            .doOnNext(sqsResponse -> log.info("IniPEC - pushed message to SQS with correlationId: {} and taxId: {}", sqsDto.getCorrelationId(), MaskDataUtils.maskString(sqsDto.getTaxId())))
+                            .doOnError(e -> log.error("IniPEC - failed to push message to SQS with correlationId: {} and taxId: {}", sqsDto.getCorrelationId(), MaskDataUtils.maskString(sqsDto.getTaxId()), e))
+                            .onErrorResume(e -> Mono.empty());
+                })
                 .then()
                 .doOnNext(t -> log.debug("IniPEC - batchId {} - retry incremented", batchId))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to increment retry", batchId, e));

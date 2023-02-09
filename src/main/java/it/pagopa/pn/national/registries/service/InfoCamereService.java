@@ -22,12 +22,12 @@ public class InfoCamereService {
     private final InfoCamereClient infoCamereClient;
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
-    private final Long iniPecTtl;
+    private final long iniPecTtl;
 
     public InfoCamereService(InfoCamereClient infoCamereClient,
                              InfoCamereConverter infoCamereConverter,
                              IniPecBatchRequestRepository iniPecBatchRequestRepository,
-                             @Value("${pn.national.registries.inipec.ttl}") Long iniPecTtl) {
+                             @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
         this.infoCamereClient = infoCamereClient;
         this.infoCamereConverter = infoCamereConverter;
         this.iniPecBatchRequestRepository = iniPecBatchRequestRepository;
@@ -55,17 +55,18 @@ public class InfoCamereService {
         batchRequest.setCorrelationId(dto.getFilter().getCorrelationId());
         batchRequest.setCf(dto.getFilter().getTaxId());
         batchRequest.setClientId(pnNationalRegistriesCxId);
-        return iniPecBatchRequestRepository.createBatchRequest(batchRequest);
+        return iniPecBatchRequestRepository.create(batchRequest);
     }
 
     private BatchRequest createNewStartBatchRequest() {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
         batchRequest.setStatus(BatchStatus.NOT_WORKED.getValue());
         batchRequest.setRetry(0);
-        batchRequest.setLastReserved(LocalDateTime.now());
-        batchRequest.setTimeStamp(LocalDateTime.now());
-        batchRequest.setTtl(LocalDateTime.now(ZoneOffset.UTC).plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
+        batchRequest.setLastReserved(now);
+        batchRequest.setCreatedAt(now);
+        batchRequest.setTtl(now.plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
         log.trace("New Batch Request: {}", batchRequest);
         return batchRequest;
     }

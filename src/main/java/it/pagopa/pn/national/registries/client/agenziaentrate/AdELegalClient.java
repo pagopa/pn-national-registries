@@ -14,8 +14,8 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 import java.nio.charset.Charset;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_LEGALE_RAPPRESENTANTE;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_LEGALE_RAPPRESENTANTE;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_LEGALE_RAPPRESENTANTE;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_LEGALE_RAPPRESENTANTE;
 
 @Component
 @Slf4j

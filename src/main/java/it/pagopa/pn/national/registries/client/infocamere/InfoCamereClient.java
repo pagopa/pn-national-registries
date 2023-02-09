@@ -26,7 +26,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Optional;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.*;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 
 @Component
 @Slf4j
@@ -71,7 +71,7 @@ public class InfoCamereClient {
                     }
                 }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, retrySignal.failure()))
+                                new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, retrySignal.failure()))
                 );
     }
 
@@ -100,7 +100,7 @@ public class InfoCamereClient {
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                        new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, retrySignal.failure()))
+                                        new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, retrySignal.failure()))
                         )
         );
     }
@@ -128,7 +128,7 @@ public class InfoCamereClient {
                             }
                         }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                        new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, retrySignal.failure()))
+                                        new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, retrySignal.failure()))
                         )
         );
     }
@@ -170,7 +170,7 @@ public class InfoCamereClient {
         try {
             return mapper.writeValueAsString(requestCfIniPec);
         } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC,e);
+            throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC,e);
         }
     }
 

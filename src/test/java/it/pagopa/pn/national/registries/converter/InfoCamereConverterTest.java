@@ -12,35 +12,34 @@ import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.CollectionUtils;
 
+@TestPropertySource(properties = {
+        "pn.national.registries.inipec.ttl=0"
+})
+@ContextConfiguration(classes = InfoCamereConverter.class)
 @ExtendWith(SpringExtension.class)
 class InfoCamereConverterTest {
-    @InjectMocks
+
+    @Autowired
     private InfoCamereConverter infoCamereConverter;
 
     @Test
     void testConvertToGetAddressIniPecOKDto() {
         BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setBatchId("batchId");
         batchRequest.setCf("Cf");
         batchRequest.setCorrelationId("correlationId");
-        batchRequest.setLastReserved(LocalDateTime.now());
-        batchRequest.setRetry(1);
-        batchRequest.setStatus("Status");
-        batchRequest.setTimeStamp(LocalDateTime.now());
-        batchRequest.setTtl(0L);
         assertEquals("correlationId", infoCamereConverter.convertToGetAddressIniPecOKDto(batchRequest).getCorrelationId());
     }
 
@@ -72,29 +71,62 @@ class InfoCamereConverterTest {
     }
 
     @Test
-    void testConvertoResponsePecToCodeSqsDto5() {
+    void testConvertoResponsePecToCodeSqsDto1() {
         BatchRequest batchRequest = new BatchRequest();
-
-        batchRequest.setBatchId("batchId");
         batchRequest.setCf("Cf");
         batchRequest.setCorrelationId("correlationId");
-        batchRequest.setLastReserved(LocalDateTime.now());
-        batchRequest.setRetry(1);
-        batchRequest.setStatus("Status");
-        batchRequest.setTimeStamp(LocalDateTime.now());
-        batchRequest.setTtl(0L);
 
-        ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
         Pec pec = new Pec();
         pec.setCf("Cf");
         pec.setPecImpresa("pecImpresa");
-        pec.setPecProfessionistas(new ArrayList<>());
-        ArrayList<Pec> pecs = new ArrayList<>();
-        pecs.add(pec);
-        responsePecIniPec.setElencoPec(pecs);
+        pec.setPecProfessionistas(Collections.emptyList());
+        ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
+        responsePecIniPec.setElencoPec(List.of(pec));
 
         CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec);
         assertNotNull(codeSqsDto);
+    }
+
+    @Test
+    void testConvertoResponsePecToCodeSqsDto2() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCf("cf");
+        batchRequest.setCorrelationId("correlationId");
+
+        Pec pec = new Pec();
+        pec.setCf("altro-cf");
+        ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
+        responsePecIniPec.setElencoPec(List.of(pec));
+
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec);
+        assertEquals("cf", codeSqsDto.getTaxId());
+        assertEquals("correlationId", codeSqsDto.getCorrelationId());
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void testConvertIniPecRequestToSqsDto1() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId");
+        batchRequest.setCf("cf");
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, null);
+        assertEquals("correlationId", codeSqsDto.getCorrelationId());
+        assertEquals("cf", codeSqsDto.getTaxId());
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void testConvertIniPecRequestToSqsDto2() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId");
+        batchRequest.setCf("cf");
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, "error");
+        assertEquals("correlationId", codeSqsDto.getCorrelationId());
+        assertEquals("cf", codeSqsDto.getTaxId());
+        assertNull(codeSqsDto.getDigitalAddress());
+        assertEquals("error", codeSqsDto.getError());
     }
 
     @Test
@@ -121,12 +153,10 @@ class InfoCamereConverterTest {
 
     @Test
     void testInfoCamereResponseToDto() {
-
         InfoCamereVerificationResponse infoCamereVerificationResponse = new InfoCamereVerificationResponse();
         infoCamereVerificationResponse.setVerificationResult("true");
         infoCamereVerificationResponse.setVatNumber("vatNumber");
         infoCamereVerificationResponse.setTaxId("taxId");
-
 
         InfoCamereLegalOKDto actualResult = infoCamereConverter
                 .infoCamereResponseToDto(infoCamereVerificationResponse);
@@ -136,4 +166,3 @@ class InfoCamereConverterTest {
         assertEquals("true", actualResult.getVerificationResult());
     }
 }
-

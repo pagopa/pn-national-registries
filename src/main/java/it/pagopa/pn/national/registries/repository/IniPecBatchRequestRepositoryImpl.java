@@ -1,11 +1,11 @@
 package it.pagopa.pn.national.registries.repository;
 
-import it.pagopa.pn.national.registries.constant.BatchRequestConstant;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -20,8 +20,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static it.pagopa.pn.national.registries.constant.BatchRequestConstant.COL_BATCH_ID;
-import static it.pagopa.pn.national.registries.constant.BatchRequestConstant.COL_STATUS;
+import static it.pagopa.pn.national.registries.constant.BatchRequestConstant.*;
 
 @Component
 public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepository {
@@ -42,16 +41,16 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     }
 
     @Override
-    public Mono<BatchRequest> createBatchRequest(BatchRequest batchRequest) {
+    public Mono<BatchRequest> create(BatchRequest batchRequest) {
         return Mono.fromFuture(table.putItem(batchRequest)).thenReturn(batchRequest);
     }
 
     @Override
     public Mono<Page<BatchRequest>> getBatchRequestByNotBatchId(Map<String, AttributeValue> lastKey, int limit) {
-        Map<String, AttributeValue> expressionValues = new HashMap<>();
         Map<String, String> expressionNames = new HashMap<>();
-
         expressionNames.put("#status", COL_STATUS);
+
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":status", AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
 
         QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
@@ -65,32 +64,26 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
         QueryEnhancedRequest queryEnhancedRequest = queryEnhancedRequestBuilder.build();
 
-        return Mono.from(table.index(BatchRequestConstant.GSI_BL).query(queryEnhancedRequest));
+        return Mono.from(table.index(GSI_BL).query(queryEnhancedRequest));
     }
 
     @Override
-    public Mono<List<BatchRequest>> getBatchRequestsToSend(String batchId) {
+    public Mono<List<BatchRequest>> getBatchRequestByBatchId(String batchId) {
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(batchId)))
                 .build();
 
-        return Mono.from(table.index(BatchRequestConstant.GSI_BL).query(queryEnhancedRequest)).map(Page::items);
-    }
-
-    @Override
-    public Mono<BatchRequest> setBatchRequestsStatus(BatchRequest batchRequest, String status) {
-        batchRequest.setStatus(status);
-        return Mono.fromFuture(table.updateItem(batchRequest));
+        return Flux.from(table.index(GSI_BL).query(queryEnhancedRequest).flatMapIterable(Page::items))
+                .collectList();
     }
 
     @Override
     public Mono<BatchRequest> setNewBatchIdToBatchRequest(BatchRequest batchRequest) {
-        Map<String, AttributeValue> expressionValues = new HashMap<>();
         Map<String, String> expressionNames = new HashMap<>();
-
         expressionNames.put("#batchId", COL_BATCH_ID);
         expressionNames.put("#status", COL_STATUS);
 
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":batchId", AttributeValue.builder().s(BatchStatus.NO_BATCH_ID.getValue()).build());
         expressionValues.put(":status", AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
 
@@ -98,17 +91,17 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
                 .item(batchRequest)
                 .conditionExpression(expressionBuilder("#batchId = :batchId AND #status = :status", expressionValues, expressionNames))
                 .build();
+
         return Mono.fromFuture(table.updateItem(updateItemEnhancedRequest));
     }
 
     @Override
     public Mono<List<BatchRequest>> getBatchRequestToRecovery() {
-        Map<String, AttributeValue> expressionValues = new HashMap<>();
         Map<String, String> expressionNames = new HashMap<>();
+        expressionNames.put("#retry", COL_RETRY);
+        expressionNames.put("#lastReserved", COL_LAST_RESERVED);
 
-        expressionNames.put("#retry", BatchRequestConstant.COL_RETRY);
-        expressionNames.put("#lastReserved", BatchRequestConstant.COL_LAST_RESERVED);
-
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(maxRetry)).build());
         expressionValues.put(":lastReserved", AttributeValue.builder().s(LocalDateTime.now(ZoneOffset.UTC).minusHours(1).toString()).build());
 
@@ -121,7 +114,8 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
                 .filterExpression(expressionBuilder(expression, expressionValues, expressionNames))
                 .build();
 
-        return Mono.from(table.index(BatchRequestConstant.GSI_S).query(queryEnhancedRequest)).map(Page::items);
+        return Flux.from(table.index(GSI_S).query(queryEnhancedRequest).flatMapIterable(Page::items))
+                .collectList();
     }
 
     private Key keyBuilder(String key) {

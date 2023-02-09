@@ -18,15 +18,25 @@ import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
 
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 @Component
 public class InfoCamereConverter {
+
+    private final long iniPecTtl;
+
+    public InfoCamereConverter(@Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
+        this.iniPecTtl = iniPecTtl;
+    }
 
     public GetDigitalAddressIniPECOKDto convertToGetAddressIniPecOKDto(BatchRequest requestCorrelation) {
         GetDigitalAddressIniPECOKDto response = new GetDigitalAddressIniPECOKDto();
@@ -40,26 +50,41 @@ public class InfoCamereConverter {
         }
     }
 
-    public BatchPolling createBatchPollingByBatchIdAndPollingId(String batchId, String pollingId){
+    public BatchPolling createBatchPollingByBatchIdAndPollingId(String batchId, String pollingId) {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setBatchId(batchId);
         batchPolling.setPollingId(pollingId);
         batchPolling.setStatus(BatchStatus.NOT_WORKED.getValue());
-        batchPolling.setTimeStamp(LocalDateTime.now());
+        batchPolling.setRetry(0);
+        batchPolling.setCreatedAt(now);
+        batchPolling.setTtl(now.plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
         return batchPolling;
     }
 
     public CodeSqsDto convertoResponsePecToCodeSqsDto(BatchRequest batchRequest, ResponsePecIniPec responsePecIniPec) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
+        codeSqsDto.setTaxId(batchRequest.getCf());
         List<Pec> pecs = responsePecIniPec.getElencoPec();
         pecs.stream()
                 .filter(p -> p.getCf().equalsIgnoreCase(batchRequest.getCf()))
                 .findAny()
-                .ifPresent(pec -> {
-                    codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
-                    codeSqsDto.setTaxId(batchRequest.getCf());
-                    codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
-                });
+                .ifPresentOrElse(
+                        pec -> codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec)),
+                        () -> codeSqsDto.setDigitalAddress(Collections.emptyList()));
+        return codeSqsDto;
+    }
+
+    public CodeSqsDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setCorrelationId(request.getCorrelationId());
+        codeSqsDto.setTaxId(request.getCf());
+        if (error != null) {
+            codeSqsDto.setError(error);
+        } else {
+            codeSqsDto.setDigitalAddress(Collections.emptyList());
+        }
         return codeSqsDto;
     }
 
