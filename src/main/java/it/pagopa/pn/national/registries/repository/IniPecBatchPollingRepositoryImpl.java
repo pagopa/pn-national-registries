@@ -75,8 +75,9 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":status", AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
+        expressionValues.put(":zero", AttributeValue.builder().n("0").build());
 
-        String expression = "(attribute_not_exists(#reservationId) OR size(#reservationId) = 0) AND #status = :status";
+        String expression = "(attribute_not_exists(#reservationId) OR size(#reservationId) = :zero) AND #status = :status";
         UpdateItemEnhancedRequest<BatchPolling> updateItemEnhancedRequest = UpdateItemEnhancedRequest.builder(BatchPolling.class)
                 .item(batchPolling)
                 .conditionExpression(expressionBuilder(expression, expressionValues, expressionNames))

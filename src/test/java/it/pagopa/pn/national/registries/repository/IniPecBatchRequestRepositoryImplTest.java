@@ -97,7 +97,7 @@ class IniPecBatchRequestRepositoryImplTest {
         when(index.query((QueryEnhancedRequest) any()))
                 .thenReturn(SdkPublisher.adapt(Mono.empty()));
 
-        StepVerifier.create(batchRequestRepository.getBatchRequestByBatchId("batchId"))
+        StepVerifier.create(batchRequestRepository.getBatchRequestByBatchIdAndStatusWorking("batchId"))
                 .expectNext(Collections.emptyList())
                 .verifyComplete();
     }

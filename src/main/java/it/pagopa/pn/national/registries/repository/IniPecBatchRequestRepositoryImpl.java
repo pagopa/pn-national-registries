@@ -29,6 +29,9 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
     private final int maxRetry;
 
+    private static final String STATUS_ALIAS = "#status";
+    private static final String STATYS_PLACEHOLDER = ":status";
+
     public IniPecBatchRequestRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                                             @Value("${pn.national-registries.inipec.batch.request.max-retry}") int maxRetry) {
         this.table = dynamoDbEnhancedAsyncClient.table("pn-batchRequests", TableSchema.fromClass(BatchRequest.class));
@@ -48,13 +51,14 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     @Override
     public Mono<Page<BatchRequest>> getBatchRequestByNotBatchId(Map<String, AttributeValue> lastKey, int limit) {
         Map<String, String> expressionNames = new HashMap<>();
-        expressionNames.put("#status", COL_STATUS);
+        expressionNames.put(STATUS_ALIAS, COL_STATUS);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":status", AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
+        expressionValues.put(STATYS_PLACEHOLDER, AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
 
+        String expression = STATUS_ALIAS + " = " + STATYS_PLACEHOLDER;
         QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
-                .filterExpression(expressionBuilder("#status = :status", expressionValues, expressionNames))
+                .filterExpression(expressionBuilder(expression, expressionValues, expressionNames))
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(BatchStatus.NO_BATCH_ID.getValue())))
                 .limit(limit);
 
@@ -68,8 +72,16 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     }
 
     @Override
-    public Mono<List<BatchRequest>> getBatchRequestByBatchId(String batchId) {
+    public Mono<List<BatchRequest>> getBatchRequestByBatchIdAndStatusWorking(String batchId) {
+        Map<String, String> expressionNames = new HashMap<>();
+        expressionNames.put(STATUS_ALIAS, COL_STATUS);
+
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
+        expressionValues.put(STATYS_PLACEHOLDER, AttributeValue.builder().s(BatchStatus.WORKING.getValue()).build());
+
+        String expression = STATUS_ALIAS + " = " + STATYS_PLACEHOLDER;
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
+                .filterExpression(expressionBuilder(expression, expressionValues, expressionNames))
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(batchId)))
                 .build();
 
@@ -81,15 +93,16 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     public Mono<BatchRequest> setNewBatchIdToBatchRequest(BatchRequest batchRequest) {
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put("#batchId", COL_BATCH_ID);
-        expressionNames.put("#status", COL_STATUS);
+        expressionNames.put(STATUS_ALIAS, COL_STATUS);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":batchId", AttributeValue.builder().s(BatchStatus.NO_BATCH_ID.getValue()).build());
-        expressionValues.put(":status", AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
+        expressionValues.put(STATYS_PLACEHOLDER, AttributeValue.builder().s(BatchStatus.NOT_WORKED.getValue()).build());
 
+        String expression = "#batchId = :batchId AND " + STATUS_ALIAS + " = " + STATYS_PLACEHOLDER;
         UpdateItemEnhancedRequest<BatchRequest> updateItemEnhancedRequest = UpdateItemEnhancedRequest.builder(BatchRequest.class)
                 .item(batchRequest)
-                .conditionExpression(expressionBuilder("#batchId = :batchId AND #status = :status", expressionValues, expressionNames))
+                .conditionExpression(expressionBuilder(expression, expressionValues, expressionNames))
                 .build();
 
         return Mono.fromFuture(table.updateItem(updateItemEnhancedRequest));

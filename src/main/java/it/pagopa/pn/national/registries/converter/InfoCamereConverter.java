@@ -14,7 +14,7 @@ import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationR
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
+import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
@@ -62,11 +62,11 @@ public class InfoCamereConverter {
         return batchPolling;
     }
 
-    public CodeSqsDto convertoResponsePecToCodeSqsDto(BatchRequest batchRequest, ResponsePecIniPec responsePecIniPec) {
+    public CodeSqsDto convertoResponsePecToCodeSqsDto(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
         codeSqsDto.setTaxId(batchRequest.getCf());
-        List<Pec> pecs = responsePecIniPec.getElencoPec();
+        List<Pec> pecs = iniPecPollingResponse.getElencoPec();
         pecs.stream()
                 .filter(p -> p.getCf().equalsIgnoreCase(batchRequest.getCf()))
                 .findAny()
@@ -113,8 +113,8 @@ public class InfoCamereConverter {
         if (!StringUtils.isNullOrEmpty(pec.getPecImpresa())) {
             digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
         }
-        if (pec.getPecProfessionistas() != null) {
-            pec.getPecProfessionistas().stream()
+        if (pec.getPecProfessionista() != null) {
+            pec.getPecProfessionista().stream()
                     .map(pecProf -> toDigitalAddress(pecProf.getPec(), DigitalAddressRecipientType.PROFESSIONISTA))
                     .forEach(digitalAddress::add);
         }

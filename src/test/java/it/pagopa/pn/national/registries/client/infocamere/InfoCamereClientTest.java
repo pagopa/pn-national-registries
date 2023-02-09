@@ -7,9 +7,9 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamere
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
-import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
+import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.BeforeAll;
@@ -128,15 +128,15 @@ class InfoCamereClientTest {
         when(infoCamereWebClient.init()).thenReturn(webClient);
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
-        RequestCfIniPec.IniPecCf iniPecCf = new RequestCfIniPec.IniPecCf();
+        IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
         iniPecCf.setCf("taxId");
-        RequestCfIniPec request = new RequestCfIniPec();
+        IniPecBatchRequest request = new IniPecBatchRequest();
         request.setDataOraRichiesta(LocalDateTime.now().toString());
         request.setElencoCf(List.of(iniPecCf));
 
-        ResponsePollingIdIniPec responsePollingIdIniPec = new ResponsePollingIdIniPec();
-        responsePollingIdIniPec.setIdentificativoRichiesta("correlationId");
-        responsePollingIdIniPec.setDataOraRichiesta(LocalDateTime.now().toString());
+        IniPecBatchResponse iniPecBatchResponse = new IniPecBatchResponse();
+        iniPecBatchResponse.setIdentificativoRichiesta("correlationId");
+        iniPecBatchResponse.setDataOraRichiesta(LocalDateTime.now().toString());
 
         String requestJson = "requestJson";
         try {
@@ -153,9 +153,9 @@ class InfoCamereClientTest {
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(ResponsePollingIdIniPec.class)).thenReturn(Mono.just(responsePollingIdIniPec));
+        when(responseSpec.bodyToMono(IniPecBatchResponse.class)).thenReturn(Mono.just(iniPecBatchResponse));
 
-        StepVerifier.create(infoCamereClient.callEServiceRequestId(request)).expectNext(responsePollingIdIniPec).verifyComplete();
+        StepVerifier.create(infoCamereClient.callEServiceRequestId(request)).expectNext(iniPecBatchResponse).verifyComplete();
     }
 
     @Test
@@ -163,9 +163,9 @@ class InfoCamereClientTest {
         when(infoCamereWebClient.init()).thenReturn(webClient);
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
-        RequestCfIniPec.IniPecCf iniPecCf = new RequestCfIniPec.IniPecCf();
+        IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
         iniPecCf.setCf("taxId");
-        RequestCfIniPec request = new RequestCfIniPec();
+        IniPecBatchRequest request = new IniPecBatchRequest();
         request.setDataOraRichiesta(LocalDateTime.now().toString());
         request.setElencoCf(List.of(iniPecCf));
 
@@ -201,7 +201,7 @@ class InfoCamereClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         WebClientResponseException exception = new WebClientResponseException(HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, null);
-        when(responseSpec.bodyToMono(ResponsePollingIdIniPec.class)).thenReturn(Mono.error(exception));
+        when(responseSpec.bodyToMono(IniPecBatchResponse.class)).thenReturn(Mono.error(exception));
 
         StepVerifier.create(infoCamereClient.callEServiceRequestId(request))
                 .expectError(PnNationalRegistriesException.class)
@@ -214,7 +214,7 @@ class InfoCamereClientTest {
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
         String request = "correlationId";
-        ResponsePecIniPec response = new ResponsePecIniPec();
+        IniPecPollingResponse response = new IniPecPollingResponse();
         response.setIdentificativoRichiesta("correlationId");
 
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
@@ -228,7 +228,7 @@ class InfoCamereClientTest {
         when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(ResponsePecIniPec.class)).thenReturn(Mono.just(response));
+        when(responseSpec.bodyToMono(IniPecPollingResponse.class)).thenReturn(Mono.just(response));
 
         StepVerifier.create(infoCamereClient.callEServiceRequestPec(request)).expectNext(response).verifyComplete();
     }
@@ -261,7 +261,7 @@ class InfoCamereClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         WebClientResponseException exception = new WebClientResponseException(HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, null);
-        when(responseSpec.bodyToMono(ResponsePecIniPec.class)).thenReturn(Mono.error(exception));
+        when(responseSpec.bodyToMono(IniPecPollingResponse.class)).thenReturn(Mono.error(exception));
 
         StepVerifier.create(infoCamereClient.callEServiceRequestPec(request))
                 .expectError(PnNationalRegistriesException.class)

@@ -10,7 +10,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamere
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
+import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 
 import java.util.Collections;
 import java.util.List;
@@ -60,10 +60,10 @@ class InfoCamereConverterTest {
 
         Pec pec = new Pec();
         pec.setCf("cf");
-        ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
-        responsePecIniPec.setElencoPec(List.of(pec));
+        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        iniPecPollingResponse.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertEquals("cf", codeSqsDto.getTaxId());
         assertNull(codeSqsDto.getError());
@@ -79,11 +79,11 @@ class InfoCamereConverterTest {
         Pec pec = new Pec();
         pec.setCf("Cf");
         pec.setPecImpresa("pecImpresa");
-        pec.setPecProfessionistas(Collections.emptyList());
-        ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
-        responsePecIniPec.setElencoPec(List.of(pec));
+        pec.setPecProfessionista(Collections.emptyList());
+        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        iniPecPollingResponse.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
         assertNotNull(codeSqsDto);
     }
 
@@ -95,10 +95,10 @@ class InfoCamereConverterTest {
 
         Pec pec = new Pec();
         pec.setCf("altro-cf");
-        ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
-        responsePecIniPec.setElencoPec(List.of(pec));
+        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        iniPecPollingResponse.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
         assertEquals("cf", codeSqsDto.getTaxId());
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getDigitalAddress());

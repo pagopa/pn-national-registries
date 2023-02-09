@@ -6,8 +6,8 @@ import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
@@ -26,11 +26,12 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
+import static it.pagopa.pn.commons.log.MDCWebFilter.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 
 @Service
 @Slf4j
-public class IniPecBatchPecListService {
+public class IniPecBatchRequestService {
 
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository batchRequestRepository;
@@ -42,7 +43,7 @@ public class IniPecBatchPecListService {
 
     private static final int MAX_BATCH_REQUEST_SIZE = 100;
 
-    public IniPecBatchPecListService(InfoCamereConverter infoCamereConverter,
+    public IniPecBatchRequestService(InfoCamereConverter infoCamereConverter,
                                      IniPecBatchRequestRepository batchRequestRepository,
                                      IniPecBatchPollingRepository batchPollingRepository,
                                      InfoCamereClient infoCamereClient,
@@ -66,7 +67,9 @@ public class IniPecBatchPecListService {
             lastEvaluatedKey = page.lastEvaluatedKey();
             if (!page.items().isEmpty()) {
                 String batchId = UUID.randomUUID().toString();
-                execBatchRequest(page.items(), batchId).block();
+                execBatchRequest(page.items(), batchId)
+                        .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + batchId))
+                        .block();
             } else {
                 log.info("IniPEC - no batch request available");
             }
@@ -116,9 +119,9 @@ public class IniPecBatchPecListService {
                 .collectList()
                 .filter(requests -> !requests.isEmpty())
                 .flatMap(requests -> {
-                    RequestCfIniPec requestCfIniPec = createIniPecRequest(requests);
-                    log.info("IniPEC - batchId {} - calling with {} cf", batchId, requestCfIniPec.getElencoCf().size());
-                    return callEService(requestCfIniPec, batchId)
+                    IniPecBatchRequest iniPecBatchRequest = createIniPecRequest(requests);
+                    log.info("IniPEC - batchId {} - calling with {} cf", batchId, iniPecBatchRequest.getElencoCf().size());
+                    return callEService(iniPecBatchRequest, batchId)
                             .onErrorResume(e -> incrementRetry(requests, batchId)
                                     .then(Mono.error(e)))
                             .flatMap(response -> createPolling(response, batchId))
@@ -130,25 +133,25 @@ public class IniPecBatchPecListService {
                 .then();
     }
 
-    private Mono<ResponsePollingIdIniPec> callEService(RequestCfIniPec requestCfIniPec, String batchId) {
-        return infoCamereClient.callEServiceRequestId(requestCfIniPec)
+    private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
+        return infoCamereClient.callEServiceRequestId(iniPecBatchRequest)
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to call EService", batchId, e));
     }
 
-    private RequestCfIniPec createIniPecRequest(List<BatchRequest> requests) {
-        RequestCfIniPec requestCfIniPec = new RequestCfIniPec();
-        requestCfIniPec.setElencoCf(requests.stream()
+    private IniPecBatchRequest createIniPecRequest(List<BatchRequest> requests) {
+        IniPecBatchRequest iniPecBatchRequest = new IniPecBatchRequest();
+        iniPecBatchRequest.setElencoCf(requests.stream()
                 .map(request -> {
-                    RequestCfIniPec.IniPecCf iniPecCf = new RequestCfIniPec.IniPecCf();
+                    IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
                     iniPecCf.setCf(request.getCf());
                     return iniPecCf;
                 })
                 .toList());
-        requestCfIniPec.setDataOraRichiesta(LocalDateTime.now().toString());
-        return requestCfIniPec;
+        iniPecBatchRequest.setDataOraRichiesta(LocalDateTime.now().toString());
+        return iniPecBatchRequest;
     }
 
-    private Mono<Void> createPolling(ResponsePollingIdIniPec response, String batchId) {
+    private Mono<Void> createPolling(IniPecBatchResponse response, String batchId) {
         String pollingId = response.getIdentificativoRichiesta();
         log.info("IniPEC - batchId {} - called EService and response pollingId is {}", batchId, pollingId);
         return batchPollingRepository.create(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId))

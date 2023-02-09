@@ -7,9 +7,9 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
-import it.pagopa.pn.national.registries.model.inipec.RequestCfIniPec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePollingIdIniPec;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
+import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import lombok.extern.slf4j.Slf4j;
@@ -75,7 +75,7 @@ public class InfoCamereClient {
                 );
     }
 
-    public Mono<ResponsePollingIdIniPec> callEServiceRequestId(RequestCfIniPec request) {
+    public Mono<IniPecBatchResponse> callEServiceRequestId(IniPecBatchRequest request) {
         String requestJson = convertToJson(request);
         return getToken(InipecScopeEnum.PEC.value()).flatMap(accessTokenCacheEntry ->
                 webClient.post()
@@ -91,7 +91,7 @@ public class InfoCamereClient {
                         })
                         .bodyValue(requestJson)
                         .retrieve()
-                        .bodyToMono(ResponsePollingIdIniPec.class)
+                        .bodyToMono(IniPecBatchResponse.class)
                         .doOnError(throwable -> {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
@@ -105,7 +105,7 @@ public class InfoCamereClient {
         );
     }
 
-    public Mono<ResponsePecIniPec> callEServiceRequestPec(String correlationId) {
+    public Mono<IniPecPollingResponse> callEServiceRequestPec(String correlationId) {
         return getToken(InipecScopeEnum.PEC.value()).flatMap(accessTokenCacheEntry ->
                 webClient.get()
                         .uri(uriBuilder -> uriBuilder
@@ -119,7 +119,7 @@ public class InfoCamereClient {
                             httpHeaders.set(SCOPE,InipecScopeEnum.PEC.value());
                         })
                         .retrieve()
-                        .bodyToMono(ResponsePecIniPec.class)
+                        .bodyToMono(IniPecPollingResponse.class)
                         .doOnError(throwable -> {
                             if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                                 throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
@@ -166,9 +166,9 @@ public class InfoCamereClient {
         return false;
     }
 
-    private String convertToJson(RequestCfIniPec requestCfIniPec) {
+    private String convertToJson(IniPecBatchRequest iniPecBatchRequest) {
         try {
-            return mapper.writeValueAsString(requestCfIniPec);
+            return mapper.writeValueAsString(iniPecBatchRequest);
         } catch (JsonProcessingException e) {
             throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC,e);
         }
