@@ -7,9 +7,13 @@ import java.util.List;
 @Data
 public class RequestCfIniPec {
 
-  private String dataOraRichiesta;
+    private String dataOraRichiesta;
 
-  private List<String> elencoCf;
+    private List<IniPecCf> elencoCf;
+
+    @Data
+    public static class IniPecCf {
+        private String cf;
+    }
 
 }
-

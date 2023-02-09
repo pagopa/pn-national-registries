@@ -138,7 +138,11 @@ public class IniPecBatchPecListService {
     private RequestCfIniPec createIniPecRequest(List<BatchRequest> requests) {
         RequestCfIniPec requestCfIniPec = new RequestCfIniPec();
         requestCfIniPec.setElencoCf(requests.stream()
-                .map(BatchRequest::getCf)
+                .map(request -> {
+                    RequestCfIniPec.IniPecCf iniPecCf = new RequestCfIniPec.IniPecCf();
+                    iniPecCf.setCf(request.getCf());
+                    return iniPecCf;
+                })
                 .toList());
         requestCfIniPec.setDataOraRichiesta(LocalDateTime.now().toString());
         return requestCfIniPec;
