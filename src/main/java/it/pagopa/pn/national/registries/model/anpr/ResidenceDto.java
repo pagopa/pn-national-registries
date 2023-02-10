@@ -12,5 +12,4 @@ public class ResidenceDto {
     private ForeignLocation1Dto localitaEstera;
     private String presso;
     private String dataDecorrenzaResidenza;
-
 }

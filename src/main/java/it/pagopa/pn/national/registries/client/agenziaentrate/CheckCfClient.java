@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.client.agenziaentrate;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -42,40 +43,42 @@ public class CheckCfClient {
                             CheckCfSecretConfig checkCfSecretConfig) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.purposeId = purposeId;
-        webClient = checkCfWebClient.init();
         this.mapper = objectMapper;
         this.checkCfSecretConfig = checkCfSecretConfig;
+        webClient = checkCfWebClient.init();
     }
 
     public Mono<TaxIdVerification> callEService(Request richiesta) {
         return accessTokenExpiringMap.getToken(purposeId, checkCfSecretConfig.getCheckCfSecretValue())
-                .flatMap(accessTokenCacheEntry -> {
-                    String s = convertToJson(richiesta);
-                    return webClient.post()
-                            .uri("/verifica")
-                            .headers(httpHeaders -> {
-                                httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                                httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
-                                httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                            })
-                            .bodyValue(s)
-                            .retrieve()
-                            .bodyToMono(TaxIdVerification.class)
-                            .doOnError(throwable -> {
-                                if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                                    throw new PnNationalRegistriesException(ex.getMessage(),ex.getStatusCode().value(),
-                                            ex.getStatusText(),ex.getHeaders(),ex.getResponseBodyAsByteArray(),
-                                            Charset.defaultCharset(), TaxIdResponseKO.class);
-                                }
-                            });
-                }).retryWhen(Retry.max(1).filter(throwable -> {
-                            log.debug("Try Retry call to CheckCf");
-                            return checkExceptionType(throwable);
-                        }).onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                            retrySignal.failure()));
+                .flatMap(tokenEntry -> callVerifica(richiesta, tokenEntry))
+                .retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure())
+                );
+    }
+
+    private Mono<TaxIdVerification> callVerifica(Request richiesta, AccessTokenCacheEntry tokenEntry) {
+        String s = convertToJson(richiesta);
+        return webClient.post()
+                .uri("/verifica")
+                .headers(httpHeaders -> {
+                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
+                    httpHeaders.setBearerAuth(tokenEntry.getAccessToken());
+                })
+                .bodyValue(s)
+                .retrieve()
+                .bodyToMono(TaxIdVerification.class)
+                .doOnError(throwable -> {
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
+                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), TaxIdResponseKO.class);
+                    }
+                });
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
+        log.debug("Try Retry call to CheckCf");
         if (throwable instanceof WebClientResponseException exception) {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }

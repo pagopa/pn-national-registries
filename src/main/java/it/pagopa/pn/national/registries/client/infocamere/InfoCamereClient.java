@@ -77,86 +77,97 @@ public class InfoCamereClient {
 
     public Mono<IniPecBatchResponse> callEServiceRequestId(IniPecBatchRequest request) {
         String requestJson = convertToJson(request);
-        return getToken(InipecScopeEnum.PEC.value()).flatMap(accessTokenCacheEntry ->
-                webClient.post()
-                        .uri(uriBuilder -> uriBuilder
-                                .path("/richiestaElencoPec")
-                                .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
-                                .build())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .headers(httpHeaders -> {
-                            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                            httpHeaders.setBearerAuth(accessTokenCacheEntry);
-                            httpHeaders.set(SCOPE, InipecScopeEnum.PEC.value());
-                        })
-                        .bodyValue(requestJson)
-                        .retrieve()
-                        .bodyToMono(IniPecBatchResponse.class)
-                        .doOnError(throwable -> {
-                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                                throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                        ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), InfocamereResponseKO.class);
-                            }
-                        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                        new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, retrySignal.failure()))
-                        )
-        );
+        return getToken(InipecScopeEnum.PEC.value())
+                .flatMap(token -> callRichiestaElencoPec(requestJson, token));
+    }
+
+    private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token) {
+        return webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/richiestaElencoPec")
+                        .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
+                        .build())
+                .contentType(MediaType.APPLICATION_JSON)
+                .headers(httpHeaders -> {
+                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    httpHeaders.setBearerAuth(token);
+                    httpHeaders.set(SCOPE, InipecScopeEnum.PEC.value());
+                })
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(IniPecBatchResponse.class)
+                .doOnError(throwable -> {
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
+                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), InfocamereResponseKO.class);
+                    }
+                }).retryWhen(Retry.max(1)
+                        .filter(this::checkExceptionType)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, retrySignal.failure()))
+                );
     }
 
     public Mono<IniPecPollingResponse> callEServiceRequestPec(String correlationId) {
-        return getToken(InipecScopeEnum.PEC.value()).flatMap(accessTokenCacheEntry ->
-                webClient.get()
-                        .uri(uriBuilder -> uriBuilder
-                                .path("/getElencoPec/{identificativoRichiesta}")
-                                .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
-                                .build(Map.of("identificativoRichiesta", correlationId))
-                        )
-                        .headers(httpHeaders -> {
-                            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                            httpHeaders.setBearerAuth(accessTokenCacheEntry);
-                            httpHeaders.set(SCOPE,InipecScopeEnum.PEC.value());
-                        })
-                        .retrieve()
-                        .bodyToMono(IniPecPollingResponse.class)
-                        .doOnError(throwable -> {
-                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                                throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                        ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), InfocamereResponseKO.class);
-                            }
-                        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                        new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, retrySignal.failure()))
-                        )
-        );
+        return getToken(InipecScopeEnum.PEC.value())
+                .flatMap(token -> callGetElencoPec(correlationId, token));
+    }
+
+    private Mono<IniPecPollingResponse> callGetElencoPec(String correlationId, String token) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/getElencoPec/{identificativoRichiesta}")
+                        .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
+                        .build(Map.of("identificativoRichiesta", correlationId))
+                )
+                .headers(httpHeaders -> {
+                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    httpHeaders.setBearerAuth(token);
+                    httpHeaders.set(SCOPE, InipecScopeEnum.PEC.value());
+                })
+                .retrieve()
+                .bodyToMono(IniPecPollingResponse.class)
+                .doOnError(throwable -> {
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
+                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), InfocamereResponseKO.class);
+                    }
+                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, retrySignal.failure()))
+                );
     }
 
     public Mono<AddressRegistroImpreseResponse> getLegalAddress(String taxId) {
-        return getToken(InipecScopeEnum.SEDE.value()).flatMap(accessTokenCacheEntry ->
-                webClient.post()
-                        .uri(uriBuilder -> uriBuilder
-                                .path("/sede/{cf}")
-                                .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
-                                .build(Map.of("cf", taxId)))
-                        .headers(httpHeaders -> {
-                            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                            httpHeaders.setBearerAuth(accessTokenCacheEntry);
-                            httpHeaders.set(SCOPE,InipecScopeEnum.SEDE.value());
-                        })
-                        .retrieve()
-                        .bodyToMono(AddressRegistroImpreseResponse.class)
-                        .doOnError(throwable -> {
-                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                                throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                        ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), InfocamereResponseKO.class);
-                            }
-                        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                        new PnInternalException(ERROR_MESSAGE_REGISTRO_IMPRESE, ERROR_CODE_REGISTRO_IMPRESE, retrySignal.failure())))
-        );
+        return getToken(InipecScopeEnum.SEDE.value())
+                .flatMap(token -> callGetLegalAddress(taxId, token));
+    }
+
+    private Mono<AddressRegistroImpreseResponse> callGetLegalAddress(String taxId, String token) {
+        return webClient.post()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/sede/{cf}")
+                        .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
+                        .build(Map.of("cf", taxId)))
+                .headers(httpHeaders -> {
+                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    httpHeaders.setBearerAuth(token);
+                    httpHeaders.set(SCOPE, InipecScopeEnum.SEDE.value());
+                })
+                .retrieve()
+                .bodyToMono(AddressRegistroImpreseResponse.class)
+                .doOnError(throwable -> {
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
+                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), InfocamereResponseKO.class);
+                    }
+                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_REGISTRO_IMPRESE, ERROR_CODE_REGISTRO_IMPRESE, retrySignal.failure()))
+                );
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
@@ -170,31 +181,34 @@ public class InfoCamereClient {
         try {
             return mapper.writeValueAsString(iniPecBatchRequest);
         } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC,e);
+            throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, e);
         }
     }
 
-
     public Mono<InfoCamereVerificationResponse> checkTaxIdAndVatNumberInfoCamere(InfoCamereLegalRequestBodyFilterDto filterDto) {
-        return getToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value()).flatMap(clientCredentialsResponseDto ->
-                webClient.get()
-                        .uri(uriBuilder -> uriBuilder
-                                .path("/legaleRappresentante/{cfPersona}")
-                                .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
-                                .queryParam("cfImpresa", filterDto.getVatNumber())
-                                .build(Map.of("cfPersona", filterDto.getTaxId())))
-                        .headers(httpHeaders -> httpHeaders.setBearerAuth(clientCredentialsResponseDto))
-                        .retrieve()
-                        .bodyToMono(InfoCamereVerificationResponse.class)
-                        .doOnError(throwable -> {
-                            if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                                throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                        ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                        Charset.defaultCharset(), InfocamereResponseKO.class);
-                            }
-                        }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                        new PnInternalException(ERROR_MESSAGE_LEGALE_RAPPRESENTANTE, ERROR_CODE_LEGALE_RAPPRESENTANTE, retrySignal.failure())))
-        );
+        return getToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value())
+                .flatMap(token -> callCheckTaxId(filterDto, token));
+    }
+
+    private Mono<InfoCamereVerificationResponse> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/legaleRappresentante/{cfPersona}")
+                        .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
+                        .queryParam("cfImpresa", filterDto.getVatNumber())
+                        .build(Map.of("cfPersona", filterDto.getTaxId())))
+                .headers(httpHeaders -> httpHeaders.setBearerAuth(token))
+                .retrieve()
+                .bodyToMono(InfoCamereVerificationResponse.class)
+                .doOnError(throwable -> {
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
+                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), InfocamereResponseKO.class);
+                    }
+                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_LEGALE_RAPPRESENTANTE, ERROR_CODE_LEGALE_RAPPRESENTANTE, retrySignal.failure()))
+                );
     }
 }

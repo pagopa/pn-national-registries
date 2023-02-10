@@ -9,22 +9,22 @@ public class LegalAddress {
     @JsonProperty("denominazione")
     private String address;
 
-     @JsonProperty("via")
-     private String street;
+    @JsonProperty("via")
+    private String street;
 
-     @JsonProperty("comune")
-     private String municipality;
+    @JsonProperty("comune")
+    private String municipality;
 
-     @JsonProperty("provincia")
-     private String province;
+    @JsonProperty("provincia")
+    private String province;
 
-     @JsonProperty("toponimo")
-     private String toponym;
+    @JsonProperty("toponimo")
+    private String toponym;
 
-     @JsonProperty("nCivico")
-     private String streetNumber;
+    @JsonProperty("nCivico")
+    private String streetNumber;
 
-     @JsonProperty("cap")
-     private String postalCode;
+    @JsonProperty("cap")
+    private String postalCode;
 
 }

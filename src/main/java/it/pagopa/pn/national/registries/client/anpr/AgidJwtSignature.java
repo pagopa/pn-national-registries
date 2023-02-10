@@ -95,7 +95,6 @@ public class AgidJwtSignature {
         return list;
     }
 
-
     protected RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
         log.debug("start getPublicKey");
         InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(pub));

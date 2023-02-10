@@ -24,16 +24,12 @@ public class AgenziaEntrateConverter {
     }
 
     public CheckTaxIdOKDto.ErrorCodeEnum decodeError(String message) {
-        switch (message) {
-            case CODICE_FISCALE_VALIDO_NON_UTILIZZABILE:
-                return CheckTaxIdOKDto.ErrorCodeEnum.ERR01;
-            case CODICE_FISCALE_NON_VALIDO_AGGIORNATO_IN_ALTRO:
-                return CheckTaxIdOKDto.ErrorCodeEnum.ERR02;
-            case CODICE_FISCALE_NON_VALIDO:
-                return CheckTaxIdOKDto.ErrorCodeEnum.ERR03;
-            default:
-                return null;
-        }
+        return switch (message) {
+            case CODICE_FISCALE_VALIDO_NON_UTILIZZABILE -> CheckTaxIdOKDto.ErrorCodeEnum.ERR01;
+            case CODICE_FISCALE_NON_VALIDO_AGGIORNATO_IN_ALTRO -> CheckTaxIdOKDto.ErrorCodeEnum.ERR02;
+            case CODICE_FISCALE_NON_VALIDO -> CheckTaxIdOKDto.ErrorCodeEnum.ERR03;
+            default -> null;
+        };
     }
 
     public ADELegalOKDto adELegalResponseToDto(CheckValidityRappresentanteResp checkValidityRappresentanteResp) {
@@ -44,6 +40,5 @@ public class AgenziaEntrateConverter {
 
         return adeLegalOKDto;
     }
-
 
 }

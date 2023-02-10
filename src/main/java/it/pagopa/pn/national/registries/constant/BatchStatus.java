@@ -9,36 +9,36 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum BatchStatus {
 
-  NO_BATCH_ID("NO_BATCH_ID"),
-  NOT_WORKED("NOT_WORKED"),
-  WORKING("WORKING"),
-  WORKED("WORKED"),
-  ERROR("ERROR");
+    NO_BATCH_ID("NO_BATCH_ID"),
+    NOT_WORKED("NOT_WORKED"),
+    WORKING("WORKING"),
+    WORKED("WORKED"),
+    ERROR("ERROR");
 
-  private final String value;
+    private final String value;
 
-  BatchStatus(String value) {
-    this.value = value;
-  }
-
-  @JsonValue
-  public String getValue() {
-    return value;
-  }
-
-  @Override
-  public String toString() {
-    return String.valueOf(value);
-  }
-
-  @JsonCreator
-  public static BatchStatus fromValue(String value) {
-    for (BatchStatus b : BatchStatus.values()) {
-      if (b.value.equals(value)) {
-        return b;
-      }
+    BatchStatus(String value) {
+        this.value = value;
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
-  }
+
+    @JsonValue
+    public String getValue() {
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(value);
+    }
+
+    @JsonCreator
+    public static BatchStatus fromValue(String value) {
+        for (BatchStatus b : BatchStatus.values()) {
+            if (b.value.equals(value)) {
+                return b;
+            }
+        }
+        throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
 }
 

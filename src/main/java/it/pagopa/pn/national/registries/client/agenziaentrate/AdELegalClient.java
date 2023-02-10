@@ -27,27 +27,31 @@ public class AdELegalClient {
         webClient = agenziaEntrateWebClientSOAP.init();
     }
 
-
-    public Mono<Object> getToken(){
+    public Mono<Object> getToken() {
         return Mono.just(new Object());
     }
-    public Mono<String> checkTaxIdAndVatNumberAdE(ADELegalRequestBodyFilterDto request)  {
 
-        return getToken().flatMap(token -> webClient.post()
+    public Mono<String> checkTaxIdAndVatNumberAdE(ADELegalRequestBodyFilterDto request) {
+        return getToken()
+                .flatMap(token -> callCheck(request));
+    }
+
+    private Mono<String> callCheck(ADELegalRequestBodyFilterDto request) {
+        return webClient.post()
                 .uri("/legalerappresentateAdE/check")
                 .contentType(MediaType.TEXT_XML)
                 .bodyValue("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-                            "<soapenv:Envelope " +
-                                "xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
-                                "xmlns:anag=\"http://anagrafica.verifica.rappresentante.ente\">" +
-                                "<soapenv:Header/>" +
-                                "<soapenv:Body>" +
-                                    "<checkValidityRappresentante xmlns=\"http://anagrafica.verifica.rappresentante.ente\">" +
-                                        "<cfRappresentante>" + request.getTaxId() + "</cfRappresentante>" +
-                                        "<cfEnte>" + request.getVatNumber() + "</cfEnte>" +
-                                    "</checkValidityRappresentante>" +
-                                "</soapenv:Body>" +
-                            "</soapenv:Envelope>")
+                        "<soapenv:Envelope " +
+                        "xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
+                        "xmlns:anag=\"http://anagrafica.verifica.rappresentante.ente\">" +
+                        "<soapenv:Header/>" +
+                        "<soapenv:Body>" +
+                        "<checkValidityRappresentante xmlns=\"http://anagrafica.verifica.rappresentante.ente\">" +
+                        "<cfRappresentante>" + request.getTaxId() + "</cfRappresentante>" +
+                        "<cfEnte>" + request.getVatNumber() + "</cfEnte>" +
+                        "</checkValidityRappresentante>" +
+                        "</soapenv:Body>" +
+                        "</soapenv:Envelope>")
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {
@@ -58,14 +62,14 @@ public class AdELegalClient {
                     }
                 }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_LEGALE_RAPPRESENTANTE, ERROR_CODE_LEGALE_RAPPRESENTANTE, retrySignal.failure())))
-        );
+                                new PnInternalException(ERROR_MESSAGE_LEGALE_RAPPRESENTANTE, ERROR_CODE_LEGALE_RAPPRESENTANTE, retrySignal.failure()))
+                );
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
-            if (throwable instanceof WebClientResponseException exception) {
-                return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
-            }
-            return false;
+        if (throwable instanceof WebClientResponseException exception) {
+            return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
+        return false;
+    }
 }

@@ -79,7 +79,6 @@ public class InfoCamereJwsGenerator {
         return map;
     }
 
-
     protected RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
         log.debug("start getPublicKey");
         InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(pub));
@@ -95,5 +94,4 @@ public class InfoCamereJwsGenerator {
         KeyFactory kf = KeyFactory.getInstance("RSA");
         return (RSAPrivateKey) kf.generatePrivate(encodedKeySpec);
     }
-
 }

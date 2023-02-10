@@ -19,4 +19,3 @@ public class ResponseRequestDigitalAddressDto {
 
   private List<ElementDigitalAddressDto> digitalAddress = new ArrayList<>();
 }
-
