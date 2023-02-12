@@ -28,6 +28,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     private final DynamoDbAsyncTable<BatchRequest> table;
 
     private final int maxRetry;
+    private final int retryAfter;
 
     private static final String STATUS_ALIAS = "#status";
     private static final String STATUS_PLACEHOLDER = ":status";
@@ -38,9 +39,11 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     private static final String LAST_RESERVED_EQ = LAST_RESERVED_ALIAS + " = " + LAST_RESERVED_PLACEHOLDER;
 
     public IniPecBatchRequestRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
-                                            @Value("${pn.national-registries.inipec.batch.request.max-retry}") int maxRetry) {
+                                            @Value("${pn.national-registries.inipec.batch.request.max-retry}") int maxRetry,
+                                            @Value("${pn.national-registries.inipec.batch.request.recovery.after}") int retryAfter) {
         this.table = dynamoDbEnhancedAsyncClient.table("pn-batchRequests", TableSchema.fromClass(BatchRequest.class));
         this.maxRetry = maxRetry;
+        this.retryAfter = retryAfter;
     }
 
     @Override
@@ -76,12 +79,12 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     }
 
     @Override
-    public Mono<List<BatchRequest>> getBatchRequestByBatchIdAndStatusWorking(String batchId) {
+    public Mono<List<BatchRequest>> getBatchRequestByBatchIdAndStatus(String batchId, BatchStatus status) {
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put(STATUS_ALIAS, COL_STATUS);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(STATUS_PLACEHOLDER, AttributeValue.builder().s(BatchStatus.WORKING.getValue()).build());
+        expressionValues.put(STATUS_PLACEHOLDER, AttributeValue.builder().s(status.getValue()).build());
 
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .filterExpression(expressionBuilder(STATUS_EQ, expressionValues, expressionNames))
@@ -139,9 +142,11 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(maxRetry)).build());
-        expressionValues.put(LAST_RESERVED_PLACEHOLDER, AttributeValue.builder().s(LocalDateTime.now(ZoneOffset.UTC).minusHours(1).toString()).build());
+        expressionValues.put(LAST_RESERVED_PLACEHOLDER, AttributeValue.builder()
+                .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(retryAfter).toString())
+                .build());
 
-        String expression = "#retry < :retry AND :lastReserved > #lastReserved";
+        String expression = "#retry < :retry AND (:lastReserved > #lastReserved OR attribute_not_exists(#lastReserved))";
 
         QueryConditional queryConditional = QueryConditional.keyEqualTo(keyBuilder(BatchStatus.WORKING.getValue()));
 

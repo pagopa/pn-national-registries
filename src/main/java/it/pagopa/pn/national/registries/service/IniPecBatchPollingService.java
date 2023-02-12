@@ -135,7 +135,7 @@ public class IniPecBatchPollingService {
 
     private Mono<Void> sendToQueueAndUpdateStatus(BatchPolling polling, IniPecPollingResponse response) {
         polling.setStatus(BatchStatus.WORKED.getValue());
-        return batchRequestRepository.getBatchRequestByBatchIdAndStatusWorking(polling.getBatchId())
+        return batchRequestRepository.getBatchRequestByBatchIdAndStatus(polling.getBatchId(), BatchStatus.WORKING)
                 .doOnNext(l -> log.info("IniPEC - batchId {} - pollingId {} - total batch available in status WORKING: {}", polling.getBatchId(), polling.getPollingId(), l.size()))
                 .flatMapIterable(requests -> requests)
                 .flatMap(request -> sendToSqs(request, polling, response))
@@ -147,7 +147,7 @@ public class IniPecBatchPollingService {
     }
 
     private Mono<BatchRequest> sendToSqs(BatchRequest request, BatchPolling polling, IniPecPollingResponse response) {
-        CodeSqsDto sqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(request, response);
+        CodeSqsDto sqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(request, response);
         return sqsService.push(sqsDto, request.getClientId())
                 .doOnNext(sqsResponse -> log.info("IniPEC - pushed message to SQS with correlationId: {} and taxId: {}", sqsDto.getCorrelationId(), MaskDataUtils.maskString(sqsDto.getTaxId())))
                 .doOnError(e -> log.error("IniPEC - failed to push message to SQS with correlationId: {} and taxId: {}", sqsDto.getCorrelationId(), MaskDataUtils.maskString(sqsDto.getTaxId()), e))
@@ -177,7 +177,7 @@ public class IniPecBatchPollingService {
     }
 
     private Mono<Void> setBatchRequestInError(BatchPolling polling) {
-        return batchRequestRepository.getBatchRequestByBatchIdAndStatusWorking(polling.getBatchId())
+        return batchRequestRepository.getBatchRequestByBatchIdAndStatus(polling.getBatchId(), BatchStatus.WORKING)
                 .flatMapIterable(requests -> requests)
                 .doOnNext(request -> request.setStatus(BatchStatus.ERROR.getValue()))
                 .flatMap(batchRequestRepository::update)

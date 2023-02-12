@@ -63,7 +63,7 @@ class InfoCamereConverterTest {
         IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
         iniPecPollingResponse.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertEquals("cf", codeSqsDto.getTaxId());
         assertNull(codeSqsDto.getError());
@@ -71,7 +71,7 @@ class InfoCamereConverterTest {
     }
 
     @Test
-    void testConvertoResponsePecToCodeSqsDto1() {
+    void testConvertResponsePecToCodeSqsDto1() {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCf("Cf");
         batchRequest.setCorrelationId("correlationId");
@@ -83,12 +83,15 @@ class InfoCamereConverterTest {
         IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
         iniPecPollingResponse.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
         assertNotNull(codeSqsDto);
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertEquals(1, codeSqsDto.getDigitalAddress().size());
+        assertEquals("pecImpresa", codeSqsDto.getDigitalAddress().get(0).getAddress());
     }
 
     @Test
-    void testConvertoResponsePecToCodeSqsDto2() {
+    void testConvertResponsePecToCodeSqsDto2() {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCf("cf");
         batchRequest.setCorrelationId("correlationId");
@@ -98,7 +101,7 @@ class InfoCamereConverterTest {
         IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
         iniPecPollingResponse.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
         assertEquals("cf", codeSqsDto.getTaxId());
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getDigitalAddress());

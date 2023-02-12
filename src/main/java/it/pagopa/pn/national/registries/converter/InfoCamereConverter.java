@@ -62,7 +62,7 @@ public class InfoCamereConverter {
         return batchPolling;
     }
 
-    public CodeSqsDto convertoResponsePecToCodeSqsDto(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
+    public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
         codeSqsDto.setTaxId(batchRequest.getCf());

@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -16,7 +17,7 @@ public interface IniPecBatchRequestRepository {
 
     Mono<Page<BatchRequest>> getBatchRequestByNotBatchId(Map<String, AttributeValue> lastKey, int limit);
 
-    Mono<List<BatchRequest>> getBatchRequestByBatchIdAndStatusWorking(String batchId);
+    Mono<List<BatchRequest>> getBatchRequestByBatchIdAndStatus(String batchId, BatchStatus status);
 
     Mono<BatchRequest> setNewBatchIdToBatchRequest(BatchRequest batchRequest);
 

@@ -14,7 +14,11 @@ public class MaskDataUtils {
         Pattern uriCfPath = Pattern.compile("(/extract/|/legaleRappresentante/|/sede/)(.*?)(\\?)");
         Pattern elencoCf = Pattern.compile("(\"elencoCf\")\\s*:\\s*\\[\"(.*?)\"");
         Pattern patternTaxId = Pattern.compile("(\"taxId\"|\"cfPersona\"|\"cfImpresa\")\\s*:\\s*\"(.*?)\"");
-        Pattern patternAddress = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\"|\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|\"digitalAddress\")\\s*:\\s*\"(.*?)\"");
+        Pattern patternAddress = Pattern.compile("(" +
+                "\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|" +
+                "\"descrizioneStato\"|\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|\"digitalAddress\"|\"comune\"|\"toponimo\"|\"via\"|\"cap\"|" +
+                "\"provincia\"|\"nCivico\"" +
+                ")\\s*:\\s*\"(.*?)\"");
         Pattern patternIdentity = Pattern.compile("(\"pecProfessionista\"|\"cf\"|\"codFiscale\"|\"codiceFiscale\"|\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAccessToken = Pattern.compile("(\"access_token\")\\s*:\\s*\"(.*?)\"");
 

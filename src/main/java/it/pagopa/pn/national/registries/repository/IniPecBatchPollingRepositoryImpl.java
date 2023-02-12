@@ -25,11 +25,14 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
     private final DynamoDbAsyncTable<BatchPolling> table;
 
     private final int maxRetry;
+    private final int retryAfter;
 
     public IniPecBatchPollingRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
-                                            @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry) {
+                                            @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
+                                            @Value("${pn.national-registries.inipec.batch.polling.recovery.after}") int retryAfter) {
         this.table = dynamoDbEnhancedAsyncClient.table("pn-batchPolling", TableSchema.fromClass(BatchPolling.class));
         this.maxRetry = maxRetry;
+        this.retryAfter = retryAfter;
     }
 
     @Override
@@ -114,7 +117,9 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(maxRetry)).build());
-        expressionValues.put(":lastReserved", AttributeValue.builder().s(LocalDateTime.now(ZoneOffset.UTC).minusHours(1).toString()).build());
+        expressionValues.put(":lastReserved", AttributeValue.builder()
+                .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(retryAfter).toString())
+                .build());
 
         String expression = "#retry < :retry AND (:lastReserved > #lastReserved OR attribute_not_exists(#lastReserved))";
 

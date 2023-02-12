@@ -4,9 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 /**
- * Stato dell'api key
+ * Stati dei batch d'IniPEC.
  */
-
 public enum BatchStatus {
 
     NO_BATCH_ID("NO_BATCH_ID"),
