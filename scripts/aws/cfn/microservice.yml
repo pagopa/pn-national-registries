@@ -22,6 +22,10 @@ Parameters:
     Type: String
     Description: ARN of alarm topic
 
+  LogsKinesisSourceStreamArn:
+    Type: String
+    Description: 'Kinesis stream that receive logs'
+
   ContainerImageUri:
     Type: String
     Description: 'Exact container image URI with full repository and image digest'
@@ -45,6 +49,10 @@ Parameters:
   VpcId:
     Type: String
     Description: 'VpcId where the microservice is going to be deployed'
+
+  SelcpgApiDnsName:
+    Type: String
+    Description: 'The DNS name used for SELC-PG rest API'
   
   EcsDefaultSecurityGroup:
     Type: String
@@ -270,3 +278,18 @@ Resources:
               - sqs:GetQueueUrl
             Resource:
               - !Ref NationalRegistryGatewayOutputsQueueARN
+
+  NationalRegistryApiGateway:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service.yaml"
+      Parameters:
+        MicroServiceUniqueName: !Sub '${ProjectName}-NationalRegistry'
+        IntendedUsage: PNPG
+        DnsName: !Ref SelcpgApiDnsName
+        ProjectName: !Ref ProjectName
+        ServiceApiPath: 'national-registries-private'
+        NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
+        ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
