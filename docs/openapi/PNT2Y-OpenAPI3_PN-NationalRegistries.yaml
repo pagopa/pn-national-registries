@@ -53,7 +53,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ADELegalError' 
+                $ref: '#/components/schemas/ADELegalError'
   /national-registries-private/infocamere/legal:
     post:
       tags:
@@ -103,7 +103,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/InfoCamereLegalError'                
+                $ref: '#/components/schemas/InfoCamereLegalError'
   /national-registries-private/{recipient-type}/addresses:
     post:
       tags:
@@ -822,7 +822,7 @@ components:
               example: AAAZZZ00H00T000Z
             vatNumber:
               type: string
-              example: BBBCCC00H00T000Z   
+              example: BBBCCC00H00T000Z
     ADELegalOK:
       type: object
       properties:
@@ -901,6 +901,9 @@ components:
           type: string
         taxId:
           type: string
+        error:
+          type: string
+          description: Se presente indica che si è verificato un errore durante l'esecuzione dell'operazione richiesta.
         digitalAddress:
           type: array
           description: >
@@ -976,4 +979,3 @@ components:
             
             
                   _'PROFESSIONISTA'_: Indica che l'indirizzo digitale corrente è riferito ad un professionista
-                  
