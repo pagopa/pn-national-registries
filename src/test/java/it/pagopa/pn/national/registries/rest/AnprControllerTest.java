@@ -4,6 +4,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddress
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.service.AnprService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -30,6 +31,9 @@ class AnprControllerTest {
 
     @Mock
     ServerWebExchange serverWebExchange;
+
+    @Mock
+    ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
     void testGetAddressANPR() {
