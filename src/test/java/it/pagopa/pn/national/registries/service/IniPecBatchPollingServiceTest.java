@@ -30,8 +30,6 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
-import software.amazon.awssdk.services.sqs.model.SqsException;
 
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.batch.polling.delay=30000",
@@ -51,7 +49,7 @@ class IniPecBatchPollingServiceTest {
     @MockBean
     private InfoCamereConverter infoCamereConverter;
     @MockBean
-    private SqsService sqsService;
+    private IniPecBatchSqsService iniPecBatchSqsService;
 
     @Autowired
     private IniPecBatchPollingService iniPecBatchPollingService;
@@ -61,9 +59,9 @@ class IniPecBatchPollingServiceTest {
         /*
         Questo test simula il flusso con tre polling recuperati da query separate, di cui:
             * il primo polling ha due batch request
-            * il secondo polling ha una batch request
-            * il terzo polling non ha batch request
-        Tutti e due i polling vengono eseguiti con successo e vengono inviati tre messaggi di successo sulla coda.
+            * il secondo polling non ha batch request
+            * il terzo polling ha una batch request
+        Tutti e tre i polling vengono eseguiti con successo.
          */
         BatchPolling batchPolling1 = new BatchPolling();
         batchPolling1.setBatchId("batchId1");
@@ -80,15 +78,12 @@ class IniPecBatchPollingServiceTest {
         BatchRequest batchRequest1 = new BatchRequest();
         batchRequest1.setCorrelationId("correlationId1");
         batchRequest1.setBatchId("batchId1");
-        batchRequest1.setStatus(BatchStatus.WORKING.getValue());
         BatchRequest batchRequest2 = new BatchRequest();
         batchRequest2.setCorrelationId("correlationId2");
         batchRequest2.setBatchId("batchId1");
-        batchRequest2.setStatus(BatchStatus.WORKING.getValue());
         BatchRequest batchRequest3 = new BatchRequest();
         batchRequest3.setCorrelationId("correlationId3");
-        batchRequest3.setBatchId("batchId2");
-        batchRequest3.setStatus(BatchStatus.WORKING.getValue());
+        batchRequest3.setBatchId("batchId3");
 
         Page<BatchPolling> page1 = Page.create(List.of(batchPolling1), Map.of("key", AttributeValue.builder().s("value").build()));
         Page<BatchPolling> page2 = Page.create(List.of(batchPolling2, batchPolling3));
@@ -110,28 +105,31 @@ class IniPecBatchPollingServiceTest {
         IniPecPollingResponse iniPecPollingResponse2 = new IniPecPollingResponse();
         iniPecPollingResponse2.setIdentificativoRichiesta("correlationId2");
         iniPecPollingResponse2.setElencoPec(Collections.emptyList());
+        IniPecPollingResponse iniPecPollingResponse3 = new IniPecPollingResponse();
+        iniPecPollingResponse3.setIdentificativoRichiesta("correlationId3");
+        iniPecPollingResponse3.setElencoPec(Collections.emptyList());
 
         when(infoCamereClient.callEServiceRequestPec("pollingId1"))
                 .thenReturn(Mono.just(iniPecPollingResponse1));
         when(infoCamereClient.callEServiceRequestPec("pollingId2"))
                 .thenReturn(Mono.just(iniPecPollingResponse2));
         when(infoCamereClient.callEServiceRequestPec("pollingId3"))
-                .thenReturn(Mono.just(iniPecPollingResponse2));
+                .thenReturn(Mono.just(iniPecPollingResponse3));
 
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest1, batchRequest2)));
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId2", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequest3)));
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING))
                 .thenReturn(Mono.just(Collections.emptyList()));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING))
+                .thenReturn(Mono.just(List.of(batchRequest3)));
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setTaxId("taxId");
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 
-        when(sqsService.push(same(codeSqsDto), any()))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(iniPecBatchSqsService.batchSendToSqs(anyList()))
+                .thenReturn(Mono.empty().then());
 
         when(batchPollingRepository.update(same(batchPolling1)))
                 .thenReturn(Mono.just(batchPolling1));
@@ -152,11 +150,16 @@ class IniPecBatchPollingServiceTest {
         assertEquals(BatchStatus.WORKED.getValue(), batchPolling2.getStatus());
         assertEquals(BatchStatus.WORKED.getValue(), batchPolling3.getStatus());
         assertEquals(BatchStatus.WORKED.getValue(), batchRequest1.getStatus());
+        assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest1.getSendStatus());
         assertEquals(BatchStatus.WORKED.getValue(), batchRequest2.getStatus());
+        assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest2.getSendStatus());
         assertEquals(BatchStatus.WORKED.getValue(), batchRequest3.getStatus());
+        assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest3.getSendStatus());
         verify(infoCamereConverter).convertResponsePecToCodeSqsDto(same(batchRequest1), same(iniPecPollingResponse1));
         verify(infoCamereConverter).convertResponsePecToCodeSqsDto(same(batchRequest2), same(iniPecPollingResponse1));
-        verify(infoCamereConverter).convertResponsePecToCodeSqsDto(same(batchRequest3), same(iniPecPollingResponse2));
+        verify(infoCamereConverter).convertResponsePecToCodeSqsDto(same(batchRequest3), same(iniPecPollingResponse3));
+        verify(iniPecBatchSqsService).batchSendToSqs(List.of(batchRequest1, batchRequest2));
+        verify(iniPecBatchSqsService).batchSendToSqs(List.of(batchRequest3));
     }
 
     @Test
@@ -174,9 +177,9 @@ class IniPecBatchPollingServiceTest {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCorrelationId("correlationId");
         batchRequest.setBatchId("batchId");
-        batchRequest.setStatus(BatchStatus.WORKING.getValue());
 
         BatchPolling pollingInFailure = new BatchPolling();
+
         Page<BatchPolling> page = Page.create(List.of(pollingInFailure, batchPolling));
 
         when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
@@ -203,8 +206,8 @@ class IniPecBatchPollingServiceTest {
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 
-        when(sqsService.push(same(codeSqsDto), any()))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(iniPecBatchSqsService.batchSendToSqs(anyList()))
+                .thenReturn(Mono.empty().then());
 
         when(batchPollingRepository.update(same(batchPolling)))
                 .thenReturn(Mono.just(batchPolling));
@@ -219,65 +222,7 @@ class IniPecBatchPollingServiceTest {
         assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
         assertEquals(1, pollingInFailure.getRetry());
         verify(infoCamereConverter).convertResponsePecToCodeSqsDto(same(batchRequest), same(iniPecPollingResponse));
-    }
-
-    @Test
-    void testBatchPecPolling3() {
-        /*
-        Questo test simula il flusso con un polling con due request di cui:
-            * la prima va in errore durante la scrittura sulla coda
-            * la seconda va in successo
-         */
-        BatchPolling batchPolling = new BatchPolling();
-        batchPolling.setBatchId("batchId");
-        batchPolling.setPollingId("pollingId");
-        batchPolling.setRetry(1);
-
-        BatchRequest batchRequestInFailure = new BatchRequest();
-        batchRequestInFailure.setStatus(BatchStatus.WORKING.getValue());
-
-        BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setCorrelationId("correlationId");
-        batchRequest.setBatchId("batchId");
-        batchRequest.setStatus(BatchStatus.WORKING.getValue());
-
-        when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
-                .thenReturn(Mono.just(Page.create(List.of(batchPolling))));
-        when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPolling)))
-                .thenReturn(Mono.just(batchPolling));
-
-        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
-        iniPecPollingResponse.setIdentificativoRichiesta("correlationId");
-        iniPecPollingResponse.setElencoPec(Collections.emptyList());
-
-        when(infoCamereClient.callEServiceRequestPec(any()))
-                .thenReturn(Mono.just(iniPecPollingResponse));
-
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequestInFailure, batchRequest)));
-
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setTaxId("taxId");
-        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
-                .thenReturn(codeSqsDto);
-
-        when(sqsService.push(any(), any()))
-                .thenReturn(Mono.error(SqsException.builder().build()))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
-
-        when(batchPollingRepository.update(same(batchPolling)))
-                .thenReturn(Mono.just(batchPolling));
-        when(batchRequestRepository.update(same(batchRequestInFailure)))
-                .thenReturn(Mono.just(batchRequestInFailure));
-        when(batchRequestRepository.update(same(batchRequest)))
-                .thenReturn(Mono.just(batchRequest));
-
-        assertDoesNotThrow(() -> iniPecBatchPollingService.batchPecPolling());
-
-        assertEquals(0, batchPolling.getRetry());
-        assertEquals(BatchStatus.WORKING.getValue(), batchPolling.getStatus());
-        assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
-        assertEquals(BatchStatus.WORKING.getValue(), batchRequestInFailure.getStatus());
+        verify(iniPecBatchSqsService).batchSendToSqs(List.of(batchRequest));
     }
 
     @Test
@@ -293,7 +238,7 @@ class IniPecBatchPollingServiceTest {
         when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
                 .thenReturn(Mono.just(Page.create(Collections.emptyList())));
         assertDoesNotThrow(() -> iniPecBatchPollingService.batchPecPolling());
-        verifyNoInteractions(sqsService);
+        verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);
     }
 
@@ -306,8 +251,8 @@ class IniPecBatchPollingServiceTest {
         when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPolling)))
                 .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
         assertDoesNotThrow(() -> iniPecBatchPollingService.batchPecPolling());
+        verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);
-        verifyNoInteractions(sqsService);
     }
 
     @Test
@@ -345,8 +290,8 @@ class IniPecBatchPollingServiceTest {
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 
-        when(sqsService.push(any(), any()))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(iniPecBatchSqsService.batchSendToSqs(anyList()))
+                .thenReturn(Mono.empty().then());
 
         when(batchPollingRepository.update(same(batchPolling)))
                 .thenReturn(Mono.just(batchPolling));
@@ -357,6 +302,8 @@ class IniPecBatchPollingServiceTest {
 
         assertEquals(BatchStatus.WORKED.getValue(), batchPolling.getStatus());
         assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
+        assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
+        verify(iniPecBatchSqsService).batchSendToSqs(List.of(batchRequest));
     }
 
     @Test
@@ -379,7 +326,7 @@ class IniPecBatchPollingServiceTest {
         assertDoesNotThrow(() -> iniPecBatchPollingService.batchPecPolling());
 
         verifyNoInteractions(batchRequestRepository);
-        verifyNoInteractions(sqsService);
+        verifyNoInteractions(iniPecBatchSqsService);
         assertEquals(1, batchPolling.getRetry());
         assertEquals(BatchStatus.WORKING.getValue(), batchPolling.getStatus());
         assertNotNull(batchPolling.getLastReserved());
@@ -387,7 +334,7 @@ class IniPecBatchPollingServiceTest {
     }
 
     @Test
-    @DisplayName("Test failure of E Service and retry exhausted and fail to send to SQS")
+    @DisplayName("Test failure of E Service and retry exhausted")
     void testBatchPecPollingRetryExhaustedAndSqsFailure() {
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setPollingId("pollingId");
@@ -401,9 +348,7 @@ class IniPecBatchPollingServiceTest {
                 .thenReturn(Mono.just(batchPolling));
 
         BatchRequest batchRequest1 = new BatchRequest();
-        batchRequest1.setStatus(BatchStatus.WORKING.getValue());
         BatchRequest batchRequest2 = new BatchRequest();
-        batchRequest2.setStatus(BatchStatus.WORKING.getValue());
 
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest1, batchRequest2)));
@@ -420,9 +365,8 @@ class IniPecBatchPollingServiceTest {
         codeSqsDto.setTaxId("taxId");
         when(infoCamereConverter.convertIniPecRequestToSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
-        when(sqsService.push(same(codeSqsDto), any()))
-                .thenReturn(Mono.error(SqsException.builder().build()))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(iniPecBatchSqsService.batchSendToSqs(anyList()))
+                .thenReturn(Mono.empty().then());
 
         assertDoesNotThrow(() -> iniPecBatchPollingService.batchPecPolling());
         assertDoesNotThrow(() -> iniPecBatchPollingService.batchPecPolling());
@@ -432,7 +376,9 @@ class IniPecBatchPollingServiceTest {
         assertEquals(BatchStatus.ERROR.getValue(), batchPolling.getStatus());
         assertEquals(BatchStatus.ERROR.getValue(), batchRequest1.getStatus());
         assertEquals(BatchStatus.ERROR.getValue(), batchRequest2.getStatus());
-        verify(sqsService, times(2)).push(any(), any());
+        assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest1.getSendStatus());
+        assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest2.getSendStatus());
+        verify(iniPecBatchSqsService).batchSendToSqs(List.of(batchRequest1, batchRequest2));
     }
 
     @Test
@@ -461,7 +407,7 @@ class IniPecBatchPollingServiceTest {
                 .thenReturn(Mono.just(Collections.emptyList()));
         assertDoesNotThrow(() -> iniPecBatchPollingService.recoveryBatchPolling());
         verify(batchPollingRepository, never()).setNewReservationIdToBatchPolling(any());
-        verifyNoInteractions(sqsService);
+        verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);
     }
 }

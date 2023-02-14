@@ -115,6 +115,25 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     }
 
     @Override
+    public Mono<BatchRequest> setNewReservationIdToBatchRequest(BatchRequest batchRequest) {
+        Map<String, String> expressionNames = new HashMap<>();
+        expressionNames.put("#reservationId", COL_RESERVATION_ID);
+        expressionNames.put("#sendStatus", COL_SEND_STATUS);
+
+        Map<String, AttributeValue> expressionValues = new HashMap<>();
+        expressionValues.put(":sendStatus", AttributeValue.builder().s(BatchStatus.NOT_SENT.getValue()).build());
+        expressionValues.put(":zero", AttributeValue.builder().n("0").build());
+
+        String expression = "(attribute_not_exists(#reservationId) OR size(#reservationId) = :zero) AND #sendStatus = :sendStatus";
+        UpdateItemEnhancedRequest<BatchRequest> updateItemEnhancedRequest = UpdateItemEnhancedRequest.builder(BatchRequest.class)
+                .item(batchRequest)
+                .conditionExpression(expressionBuilder(expression, expressionValues, expressionNames))
+                .build();
+
+        return Mono.fromFuture(table.updateItem(updateItemEnhancedRequest));
+    }
+
+    @Override
     public Mono<BatchRequest> resetBatchRequestForRecovery(BatchRequest batchRequest) {
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put(LAST_RESERVED_ALIAS, COL_LAST_RESERVED);
@@ -157,6 +176,30 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
         return Flux.from(table.index(GSI_S).query(queryEnhancedRequest).flatMapIterable(Page::items))
                 .collectList();
+    }
+
+    @Override
+    public Mono<Page<BatchRequest>> getBatchRequestToSend(Map<String, AttributeValue> lastKey, int limit) {
+        Key key = Key.builder()
+                .partitionValue(BatchStatus.NOT_SENT.getValue())
+                .sortValue(AttributeValue.builder()
+                        .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(retryAfter).toString())
+                        .build())
+                .build();
+
+        QueryConditional queryConditional = QueryConditional.sortLessThan(key);
+
+        QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
+                .queryConditional(queryConditional)
+                .limit(limit);
+
+        if (!CollectionUtils.isEmpty(lastKey)) {
+            queryEnhancedRequestBuilder.exclusiveStartKey(lastKey);
+        }
+
+        QueryEnhancedRequest queryEnhancedRequest = queryEnhancedRequestBuilder.build();
+
+        return Mono.from(table.index(GSI_SSL).query(queryEnhancedRequest));
     }
 
     private Key keyBuilder(String key) {

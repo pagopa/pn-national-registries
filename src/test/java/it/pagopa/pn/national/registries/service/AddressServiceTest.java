@@ -114,7 +114,7 @@ class AddressServiceTest {
         when(anprService.getAddressANPR(getAddressANPRRequestBodyDto))
                 .thenReturn(Mono.just(getAddressANPROKDto));
 
-        when(sqsService.push(any(), any()))
+        when(sqsService.push((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -179,7 +179,7 @@ class AddressServiceTest {
         when(anprService.getAddressANPR(any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        when(sqsService.push(any(), any()))
+        when(sqsService.push((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -255,7 +255,7 @@ class AddressServiceTest {
 
         when(inadService.callEService(any()))
                 .thenReturn(Mono.error(new RuntimeException()));
-        when(sqsService.push(any(), any()))
+        when(sqsService.push((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -282,7 +282,7 @@ class AddressServiceTest {
                 InadResponseKO.class);
         when(inadService.callEService(any()))
                 .thenReturn(Mono.error(pnNationalRegistriesException));
-        when(sqsService.push(any(), any()))
+        when(sqsService.push((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -345,7 +345,7 @@ class AddressServiceTest {
 
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
                 .thenReturn(Mono.error(new RuntimeException()));
-        when(sqsService.push(any(), any()))
+        when(sqsService.push((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -370,7 +370,7 @@ class AddressServiceTest {
                 HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, StandardCharsets.UTF_8, InfocamereResponseKO.class);
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
                 .thenReturn(Mono.error(pnNationalRegistriesException));
-        when(sqsService.push(any(), any()))
+        when(sqsService.push((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();

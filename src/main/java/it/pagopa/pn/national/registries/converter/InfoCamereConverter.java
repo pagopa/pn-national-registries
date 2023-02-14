@@ -1,11 +1,14 @@
 package it.pagopa.pn.national.registries.converter;
 
 import com.amazonaws.util.StringUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKProfessionalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
@@ -32,9 +35,12 @@ import java.util.List;
 @Component
 public class InfoCamereConverter {
 
+    private final ObjectMapper mapper;
     private final long iniPecTtl;
 
-    public InfoCamereConverter(@Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
+    public InfoCamereConverter(ObjectMapper mapper,
+                               @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
+        this.mapper = mapper;
         this.iniPecTtl = iniPecTtl;
     }
 
@@ -86,6 +92,14 @@ public class InfoCamereConverter {
             codeSqsDto.setDigitalAddress(Collections.emptyList());
         }
         return codeSqsDto;
+    }
+
+    public String convertCodeSqsDtoToString(CodeSqsDto codeSqsDto) {
+        try {
+            return mapper.writeValueAsString(codeSqsDto);
+        } catch (JsonProcessingException e) {
+            throw new IniPecException("can not convert SQS DTO to String", e);
+        }
     }
 
     public GetAddressRegistroImpreseOKDto mapToResponseOk(AddressRegistroImpreseResponse response) {

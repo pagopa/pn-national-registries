@@ -2,9 +2,13 @@ package it.pagopa.pn.national.registries.converter;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalOKDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
@@ -20,6 +24,7 @@ import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -34,6 +39,9 @@ class InfoCamereConverterTest {
 
     @Autowired
     private InfoCamereConverter infoCamereConverter;
+
+    @MockBean
+    private ObjectMapper objectMapper;
 
     @Test
     void testConvertToGetAddressIniPecOKDto() {
@@ -106,6 +114,22 @@ class InfoCamereConverterTest {
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void testConvertCodeSqsDtoToString() throws JsonProcessingException {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        when(objectMapper.writeValueAsString(codeSqsDto))
+                .thenReturn("string");
+        assertEquals("string", infoCamereConverter.convertCodeSqsDtoToString(codeSqsDto));
+    }
+
+    @Test
+    void testConvertCodeSqsDtoToStringError() throws JsonProcessingException {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        when(objectMapper.writeValueAsString(codeSqsDto))
+                .thenThrow(JsonProcessingException.class);
+        assertThrows(IniPecException.class, () -> infoCamereConverter.convertCodeSqsDtoToString(codeSqsDto));
     }
 
     @Test

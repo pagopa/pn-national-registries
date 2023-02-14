@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verifyNoInteractions;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
@@ -11,6 +12,7 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
@@ -29,8 +31,6 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
-import software.amazon.awssdk.services.sqs.model.SqsException;
 
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.batch.request.delay=30000",
@@ -53,7 +53,7 @@ class IniPecBatchRequestServiceTest {
     @MockBean
     private InfoCamereConverter infoCamereConverter;
     @MockBean
-    private SqsService sqsService;
+    private IniPecBatchSqsService iniPecBatchSqsService;
 
     @Test
     void testBatchPecRequest() {
@@ -159,38 +159,69 @@ class IniPecBatchRequestServiceTest {
     }
 
     @Test
-    @DisplayName("Test failure of E Service and retry exhausted")
-    void testBatchPecRequestEServiceFailureRetryExhausted() {
-        BatchRequest batchRequest1 = new BatchRequest();
-        BatchRequest batchRequest2 = new BatchRequest();
+    @DisplayName("Test failure of E Service")
+    void testBatchPecRequestEServiceFailure() {
+        BatchRequest batchRequest = new BatchRequest();
 
         when(batchRequestRepository.getBatchRequestByNotBatchId(anyMap(), anyInt()))
-                .thenReturn(Mono.just(Page.create(List.of(batchRequest1, batchRequest2))));
-        when(batchRequestRepository.setNewBatchIdToBatchRequest(same(batchRequest1)))
-                .thenReturn(Mono.just(batchRequest1));
-        when(batchRequestRepository.setNewBatchIdToBatchRequest(same(batchRequest2)))
-                .thenReturn(Mono.just(batchRequest2));
-        when(batchRequestRepository.update(same(batchRequest1)))
-                .thenReturn(Mono.just(batchRequest1));
-        when(batchRequestRepository.update(same(batchRequest2)))
-                .thenReturn(Mono.just(batchRequest2));
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
+        when(batchRequestRepository.setNewBatchIdToBatchRequest(same(batchRequest)))
+                .thenReturn(Mono.just(batchRequest));
+        when(batchRequestRepository.update(same(batchRequest)))
+                .thenReturn(Mono.just(batchRequest));
 
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
         when(infoCamereClient.callEServiceRequestId(isNotNull()))
                 .thenReturn(Mono.error(exception));
 
-        when(sqsService.push(any(), any()))
-                .thenReturn(Mono.error(SqsException.builder().build()))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(iniPecBatchSqsService.batchSendToSqs(anyList()))
+                .thenReturn(Mono.empty().then());
+
+        assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
+
+        verifyNoInteractions(batchPollingRepository);
+        verifyNoInteractions(iniPecBatchSqsService);
+        assertEquals(1, batchRequest.getRetry());
+        assertEquals(BatchStatus.WORKING.getValue(), batchRequest.getStatus());
+        assertNull(batchRequest.getSendStatus());
+    }
+
+    @Test
+    @DisplayName("Test failure of E Service and retry exhausted")
+    void testBatchPecRequestEServiceFailureRetryExhausted() {
+        BatchRequest batchRequest = new BatchRequest();
+
+        when(batchRequestRepository.getBatchRequestByNotBatchId(anyMap(), anyInt()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
+        when(batchRequestRepository.setNewBatchIdToBatchRequest(same(batchRequest)))
+                .thenReturn(Mono.just(batchRequest));
+        when(batchRequestRepository.update(same(batchRequest)))
+                .thenReturn(Mono.just(batchRequest));
+
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getMessage()).thenReturn("message");
+        when(infoCamereClient.callEServiceRequestId(isNotNull()))
+                .thenReturn(Mono.error(exception));
+
+        when(iniPecBatchSqsService.batchSendToSqs(anyList()))
+                .thenReturn(Mono.empty().then());
+
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        when(infoCamereConverter.convertIniPecRequestToSqsDto(same(batchRequest), anyString()))
+                .thenReturn(codeSqsDto);
+        when(infoCamereConverter.convertCodeSqsDtoToString(same(codeSqsDto)))
+                .thenReturn("string");
 
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
 
         verifyNoInteractions(batchPollingRepository);
-        assertEquals(3, batchRequest1.getRetry());
-        assertEquals(BatchStatus.ERROR.getValue(), batchRequest1.getStatus());
-        assertEquals(BatchStatus.ERROR.getValue(), batchRequest2.getStatus());
+        assertEquals(3, batchRequest.getRetry());
+        assertEquals(BatchStatus.ERROR.getValue(), batchRequest.getStatus());
+        assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
+        assertEquals("string", batchRequest.getMessage());
+        verify(iniPecBatchSqsService).batchSendToSqs(List.of(batchRequest));
     }
 
     @Test
@@ -219,7 +250,7 @@ class IniPecBatchRequestServiceTest {
                 .thenReturn(Mono.just(List.of()));
         assertDoesNotThrow(() -> iniPecBatchRequestService.recoveryBatchRequest());
         verify(batchRequestRepository, never()).setNewBatchIdToBatchRequest(any());
-        verifyNoInteractions(sqsService);
+        verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);
     }
 }

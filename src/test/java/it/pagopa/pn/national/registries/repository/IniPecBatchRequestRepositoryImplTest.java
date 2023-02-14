@@ -124,6 +124,22 @@ class IniPecBatchRequestRepositoryImplTest {
     }
 
     @Test
+    void testSetNewReservationIdToBatchRequest() {
+        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
+                .thenReturn(dynamoDbAsyncTable);
+        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
+
+        BatchRequest batchRequest = new BatchRequest();
+
+        when(dynamoDbAsyncTable.updateItem((UpdateItemEnhancedRequest) any()))
+                .thenReturn(CompletableFuture.completedFuture(batchRequest));
+
+        StepVerifier.create(batchRequestRepository.setNewReservationIdToBatchRequest(batchRequest))
+                .expectNext(batchRequest)
+                .verifyComplete();
+    }
+
+    @Test
     void testResetBatchRequestForRecovery1() {
         when(dynamoDbEnhancedAsyncClient.table(any(), any()))
                 .thenReturn(dynamoDbAsyncTable);
@@ -173,5 +189,25 @@ class IniPecBatchRequestRepositoryImplTest {
         StepVerifier.create(batchRequestRepository.getBatchRequestToRecovery())
                 .expectNextCount(1)
                 .verifyComplete();
+    }
+
+    @Test
+    void testGetBatchRequestToSend() {
+        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
+                .thenReturn(dynamoDbAsyncTable);
+        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
+
+        Map<String, AttributeValue> lastKey = new HashMap<>();
+        lastKey.put("chiave", AttributeValue.builder().s("valore").build());
+
+        SdkPublisher<Page<Object>> sdkPublisher = mock(SdkPublisher.class);
+        DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
+        when(dynamoDbAsyncTable.index(any()))
+                .thenReturn(index);
+        when(index.query((QueryEnhancedRequest) any()))
+                .thenReturn(sdkPublisher);
+
+        StepVerifier.create(batchRequestRepository.getBatchRequestToSend(lastKey, 100))
+                .expectNextCount(0);
     }
 }

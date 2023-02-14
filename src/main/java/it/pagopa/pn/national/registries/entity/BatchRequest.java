@@ -55,12 +55,28 @@ public class BatchRequest {
 
     @Getter(onMethod = @__({
             @DynamoDbAttribute(COL_LAST_RESERVED),
-            @DynamoDbSecondarySortKey(indexNames = GSI_BL)
+            @DynamoDbSecondarySortKey(indexNames = {GSI_BL, GSI_SSL})
     }))
     private LocalDateTime lastReserved;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_RESERVATION_ID)
+    }))
+    private String reservationId;
 
     @Getter(onMethod = @__({
             @DynamoDbAttribute(COL_TIMESTAMP)
     }))
     private LocalDateTime createdAt;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_SEND_STATUS),
+            @DynamoDbSecondaryPartitionKey(indexNames = GSI_SSL)
+    }))
+    private String sendStatus;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_MESSAGE)
+    }))
+    private String message;
 }

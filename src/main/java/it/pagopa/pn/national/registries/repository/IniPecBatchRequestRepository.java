@@ -21,8 +21,11 @@ public interface IniPecBatchRequestRepository {
 
     Mono<BatchRequest> setNewBatchIdToBatchRequest(BatchRequest batchRequest);
 
+    Mono<BatchRequest> setNewReservationIdToBatchRequest(BatchRequest batchRequest);
+
     Mono<BatchRequest> resetBatchRequestForRecovery(BatchRequest batchRequest);
 
     Mono<List<BatchRequest>> getBatchRequestToRecovery();
 
+    Mono<Page<BatchRequest>> getBatchRequestToSend(Map<String, AttributeValue> lastKey, int limit);
 }
