@@ -279,26 +279,26 @@ Resources:
             Resource:
               - !Ref NationalRegistryGatewayOutputsQueueARN
 
-#  NationalRegistryApiGateway:
-#    Type: AWS::CloudFormation::Stack
-#    Properties:
-#      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service.yaml"
-#      Parameters:
-#        MicroServiceUniqueName: !Sub '${ProjectName}-NationalRegistry'
-#        IntendedUsage: PNPG
-#        DnsName: !Ref SelcpgApiDnsName
-#        ProjectName: !Ref ProjectName
-#        ServiceApiPath: 'national-registries-private'
-#        NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
-#        ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
-#        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
-#        CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
-#
-#  NationalRegistryApiWaf:
-#    Type: AWS::CloudFormation::Stack
-#    Properties:
-#      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
-#      Parameters:
-#        WAFName: !Sub '${ProjectName}-NationalRegistry-selcpg'
-#        IntendedUsage: PNPG
-#        APIGatewayARNs: !GetAtt NationalRegistryApiGateway.Outputs.APIGatewayARN
+  NationalRegistryApiGateway:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service.yaml"
+      Parameters:
+        MicroServiceUniqueName: !Sub '${ProjectName}-NationalRegistry'
+        IntendedUsage: PNPG
+        DnsName: !Ref SelcpgApiDnsName
+        ProjectName: !Ref ProjectName
+        ServiceApiPath: 'national-registries-private'
+        NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
+        ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
+
+  NationalRegistryApiWaf:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
+      Parameters:
+        WAFName: !Sub '${ProjectName}-NationalRegistry-pnpg'
+        IntendedUsage: PNPG
+        APIGatewayARNs: !GetAtt NationalRegistryApiGateway.Outputs.APIGatewayARN
