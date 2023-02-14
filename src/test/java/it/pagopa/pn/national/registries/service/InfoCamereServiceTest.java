@@ -106,7 +106,7 @@ class InfoCamereServiceTest {
         InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
         infoCamereLegalOKDto.setTaxId("taxId");
         infoCamereLegalOKDto.setVatNumber("vatNumber");
-        infoCamereLegalOKDto.setVerificationResult("true");
+        infoCamereLegalOKDto.setVerificationResult(true);
 
 
         when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
