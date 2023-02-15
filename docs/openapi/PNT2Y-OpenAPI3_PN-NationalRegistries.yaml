@@ -3,12 +3,12 @@ info:
   title: PN-NationalRegistries REST APIs
   description: |-
     Nell’ambito del progetto Piattaforme Notifiche, il componente PN-NationalRegistries si occuperà di recuperare i dati dalle banche dati esterne previste. Tali banche dati esporranno delle interfacce web verso il componente PN-NationalRegistries, accessibili tramite piattaforma di interoperabilità.
-  version: 0.11.2
+  version: 0.11.3
 servers:
   - url: http://127.0.0.1
 tags:
   - name: agenziaEntrate
-    description: Servizi esposti dall'agenzia delle entrate per la verifica del codice fiscale e la verifica del legale rappresentante (corrispondenza fra il codice fiscale del rappresentante legale di un soggetto giuridico e il soggetto giuridico stesso).
+    description: Servizi esposti dall'agenzia delle entrate per la verifica del codice fiscale o e la verifica del legale rappresentante (corrispondenza fra il codice fiscale del rappresentante legale di un soggetto giuridico e il soggetto giuridico stesso).
   - name: addressANPR
     description: Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta.
   - name: digitalAddressINAD
@@ -152,11 +152,11 @@ paths:
     post:
       tags:
         - agenziaEntrate
-      summary: 'Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response'
-      description: 'Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response'
+      summary: 'Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale/Partita IVA descritta da un campo di ritorno booleano nell’oggetto json di response'
+      description: 'Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale/Partita IVA descritta da un campo di ritorno booleano nell’oggetto json di response'
       operationId: checkTaxId
       requestBody:
-        description: Effettua la ricerca di un codice fiscale
+        description: Effettua la ricerca di un codice fiscale/Partita IVA
         content:
           application/json:
             schema:
@@ -920,14 +920,14 @@ components:
                 enum: [IMPRESA, PROFESSIONISTA, PERSONA_FISICA]
                 description: >
                   Values:
-            
-            
+                  
+                  
                   _'IMPRESA'_: Indica che l'indirizzo digitale corrente è riferito ad un'impresa
-            
-            
+                  
+                  
                   _'PROFESSIONISTA'_: Indica che l'indirizzo digitale corrente è riferito ad un professionista
-            
-            
+                  
+                  
                   _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica
         physicalAddress:
           description: >
@@ -957,6 +957,9 @@ components:
           type: string
         taxId:
           type: string
+        error:
+          type: string
+          description: Se presente indica che si è verificato un errore durante l'esecuzione dell'operazione richiesta.
         digitalAddress:
           type: array
           description: >
@@ -973,9 +976,9 @@ components:
                 enum: [IMPRESA, PROFESSIONISTA]
                 description: >
                   Values:
-            
-            
+                  
+                  
                   _'IMPRESA'_: Indica che l'indirizzo digitale corrente è riferito ad un'impresa
-            
-            
+                  
+                  
                   _'PROFESSIONISTA'_: Indica che l'indirizzo digitale corrente è riferito ad un professionista
