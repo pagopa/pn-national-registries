@@ -782,7 +782,7 @@ components:
           type: string
           example: BBBCCC00H00T000Z
         verificationResult:
-          type: string
+          type: boolean
     InfoCamereLegalError:
       type: object
       properties:

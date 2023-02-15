@@ -181,7 +181,7 @@ class InfoCamereConverterTest {
     @Test
     void testInfoCamereResponseToDto() {
         InfoCamereVerificationResponse infoCamereVerificationResponse = new InfoCamereVerificationResponse();
-        infoCamereVerificationResponse.setVerificationResult("true");
+        infoCamereVerificationResponse.setVerificationResult("OK");
         infoCamereVerificationResponse.setVatNumber("vatNumber");
         infoCamereVerificationResponse.setTaxId("taxId");
 
@@ -190,6 +190,6 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", actualResult.getTaxId());
         assertEquals("vatNumber", actualResult.getVatNumber());
-        assertEquals("true", actualResult.getVerificationResult());
+        assertEquals(true, actualResult.getVerificationResult());
     }
 }
