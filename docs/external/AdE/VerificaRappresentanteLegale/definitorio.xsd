@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:def="http://anagrafica.verifica.rappresentante.ente" xmlns:type="http://types.verifica.rappresentante.ente" elementFormDefault="qualified" targetNamespace="http://anagrafica.verifica.rappresentante.ente">
+
+	<xsd:import namespace="http://types.verifica.rappresentante.ente" schemaLocation="types.xsd"/>
+
+
+	
+	<xsd:complexType name="checkValidityRappresentanteRespType">
+		<xsd:sequence>
+			<xsd:element minOccurs="0" name="valido" type="xsd:boolean"/>
+			<xsd:element name="dettaglioEsito" type="xsd:string"/>
+			<xsd:element name="codiceRitorno" type="xsd:string"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="checkValidityRappresentanteResp" type="def:checkValidityRappresentanteRespType"/>
+	
+	<xsd:complexType name="checkValidityRappresentanteType">
+		<xsd:sequence>
+			<xsd:element name="cfRappresentante" type="type:codiceFiscaleType"/>
+			<xsd:element name="cfEnte" type="type:codiceFiscaleType"/>
+		</xsd:sequence>
+	</xsd:complexType>
+
+	<xsd:element name="checkValidityRappresentante" type="def:checkValidityRappresentanteType"/>
+	
+	
+
+	
+</xsd:schema>
