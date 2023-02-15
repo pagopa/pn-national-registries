@@ -25,6 +25,7 @@ import java.util.List;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
+import static reactor.core.Exceptions.isRetryExhausted;
 
 @Component
 @Slf4j
@@ -72,6 +73,11 @@ public class CheckCfClient {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), TaxIdResponseKO.class);
+                    }
+                    if (isRetryExhausted(throwable) && throwable.getCause() instanceof WebClientResponseException.TooManyRequests tmrEx) {
+                        throw new PnNationalRegistriesException(tmrEx.getMessage(), tmrEx.getStatusCode().value(),
+                                tmrEx.getStatusText(), tmrEx.getHeaders(), tmrEx.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), TaxIdResponseKO.class);
                     }
                 });
