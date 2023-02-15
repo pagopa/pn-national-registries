@@ -5,7 +5,7 @@ import lombok.Data;
 import java.util.List;
 
 @Data
-public class RequestCfIniPec {
+public class IniPecBatchRequest {
 
     private String dataOraRichiesta;
 

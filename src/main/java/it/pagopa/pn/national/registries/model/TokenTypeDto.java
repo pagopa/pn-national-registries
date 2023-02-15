@@ -4,33 +4,33 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum TokenTypeDto {
-  
-  BEARER("Bearer");
 
-  private String value;
+    BEARER("Bearer");
 
-  TokenTypeDto(String value) {
-    this.value = value;
-  }
+    private final String value;
 
-  @JsonValue
-  public String getValue() {
-    return value;
-  }
-
-  @Override
-  public String toString() {
-    return String.valueOf(value);
-  }
-
-  @JsonCreator
-  public static TokenTypeDto fromValue(String value) {
-    for (TokenTypeDto b : TokenTypeDto.values()) {
-      if (b.value.equals(value)) {
-        return b;
-      }
+    TokenTypeDto(String value) {
+        this.value = value;
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
-  }
+
+    @JsonValue
+    public String getValue() {
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(value);
+    }
+
+    @JsonCreator
+    public static TokenTypeDto fromValue(String value) {
+        for (TokenTypeDto b : TokenTypeDto.values()) {
+            if (b.value.equals(value)) {
+                return b;
+            }
+        }
+        throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
 }
 

@@ -17,9 +17,8 @@ import software.amazon.awssdk.services.sqs.model.*;
 import java.util.HashMap;
 import java.util.Map;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_INI_PEC;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_INI_PEC;
-
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_INIPEC;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC;
 
 @Slf4j
 @Component
@@ -38,21 +37,26 @@ public class SqsService {
     }
 
     public Mono<SendMessageResponse> push(CodeSqsDto msg, String pnNationalRegistriesCxId) {
+        log.info("pushing message for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msg.getTaxId()), msg.getCorrelationId());
+        return push(toJson(msg), pnNationalRegistriesCxId);
+    }
+
+    public Mono<SendMessageResponse> push(String msg, String pnNationalRegistriesCxId) {
         GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
                 .queueName(queueName)
                 .build();
         String queueUrl = sqsClient.getQueueUrl(getQueueRequest).queueUrl();
 
-        log.info("Creating MessageRequest for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msg.getTaxId()), msg.getCorrelationId());
         SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
                 .queueUrl(queueUrl)
                 .messageAttributes(buildMessageAttributeMap(pnNationalRegistriesCxId))
-                .messageBody(toJson(msg))
+                .messageBody(msg)
                 .build();
 
-        log.info("Created MessageRequest for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msg.getTaxId()), msg.getCorrelationId());
-
-        return Mono.fromCallable(() -> sqsClient.sendMessage(sendMsgRequest));
+        return Mono.fromCallable(() -> {
+            log.info("pushed message to queue: {} / {}", queueName, queueUrl);
+            return sqsClient.sendMessage(sendMsgRequest);
+        });
     }
 
     private Map<String, MessageAttributeValue> buildMessageAttributeMap(String pnNationalRegistriesCxId) {
@@ -68,7 +72,7 @@ public class SqsService {
         try {
             return mapper.writeValueAsString(codeSqsDto);
         } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_INI_PEC, ERROR_CODE_INI_PEC, e);
+            throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, e);
         }
     }
 }

@@ -14,14 +14,18 @@ public class MaskDataUtils {
         Pattern uriCfPath = Pattern.compile("(/extract/|/legaleRappresentante/|/sede/)(.*?)(\\?)");
         Pattern elencoCf = Pattern.compile("(\"elencoCf\")\\s*:\\s*\\[\"(.*?)\"");
         Pattern patternTaxId = Pattern.compile("(\"taxId\"|\"cfPersona\"|\"cfImpresa\")\\s*:\\s*\"(.*?)\"");
-        Pattern patternAddress = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\"|\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|\"digitalAddress\")\\s*:\\s*\"(.*?)\"");
+        Pattern patternAddress1 = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|" +
+                "\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\")\\s*:\\s*\"(.*?)\"");
+        Pattern patternAddress2 = Pattern.compile("(\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|" +
+                "\"digitalAddress\"|\"comune\"|\"toponimo\"|\"via\"|\"cap\"|\"provincia\"|\"nCivico\")\\s*:\\s*\"(.*?)\"");
         Pattern patternIdentity = Pattern.compile("(\"pecProfessionista\"|\"cf\"|\"codFiscale\"|\"codiceFiscale\"|\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
         Pattern patternAccessToken = Pattern.compile("(\"access_token\")\\s*:\\s*\"(.*?)\"");
 
         dataBuffered = maskMatcher(uriCfPath, dataBuffered);
         dataBuffered = maskMatcher(elencoCf, dataBuffered);
         dataBuffered = maskMatcher(patternTaxId, dataBuffered);
-        dataBuffered = maskMatcher(patternAddress, dataBuffered);
+        dataBuffered = maskMatcher(patternAddress1, dataBuffered);
+        dataBuffered = maskMatcher(patternAddress2, dataBuffered);
         dataBuffered = maskMatcher(patternIdentity, dataBuffered);
         dataBuffered = maskMatcher(patternAccessToken, dataBuffered);
 

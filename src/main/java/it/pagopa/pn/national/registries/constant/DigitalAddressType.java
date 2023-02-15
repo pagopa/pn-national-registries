@@ -9,34 +9,34 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 public enum DigitalAddressType {
 
-  PEC("PEC"),
-  REM("REM"),
-  SERCQ("SERCQ");
+    PEC("PEC"),
+    REM("REM"),
+    SERCQ("SERCQ");
 
-  private final String value;
+    private final String value;
 
-  DigitalAddressType(String value) {
-    this.value = value;
-  }
-
-  @JsonValue
-  public String getValue() {
-    return value;
-  }
-
-  @Override
-  public String toString() {
-    return String.valueOf(value);
-  }
-
-  @JsonCreator
-  public static DigitalAddressType fromValue(String value) {
-    for (DigitalAddressType b : DigitalAddressType.values()) {
-      if (b.value.equals(value)) {
-        return b;
-      }
+    DigitalAddressType(String value) {
+        this.value = value;
     }
-    throw new IllegalArgumentException("Unexpected value '" + value + "'");
-  }
+
+    @JsonValue
+    public String getValue() {
+        return value;
+    }
+
+    @Override
+    public String toString() {
+        return String.valueOf(value);
+    }
+
+    @JsonCreator
+    public static DigitalAddressType fromValue(String value) {
+        for (DigitalAddressType b : DigitalAddressType.values()) {
+            if (b.value.equals(value)) {
+                return b;
+            }
+        }
+        throw new IllegalArgumentException("Unexpected value '" + value + "'");
+    }
 }
 

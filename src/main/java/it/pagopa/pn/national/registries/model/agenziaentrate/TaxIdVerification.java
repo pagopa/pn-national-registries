@@ -7,8 +7,8 @@ import lombok.Data;
  */
 @Data
 public class TaxIdVerification {
-  private String codiceFiscale;
-  private Boolean valido;
-  private String messaggio;
+    private String codiceFiscale;
+    private Boolean valido;
+    private String messaggio;
 }
 

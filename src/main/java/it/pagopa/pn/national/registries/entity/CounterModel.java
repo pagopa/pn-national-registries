@@ -14,11 +14,11 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbParti
 @DynamoDbBean
 public class CounterModel {
 
-        @Setter
-        @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute("eservice")}))
-        private String eservice;
+    @Setter
+    @Getter(onMethod=@__({@DynamoDbPartitionKey, @DynamoDbAttribute("eservice")}))
+    private String eservice;
 
-        @Setter @Getter(onMethod=@__({@DynamoDbAtomicCounter(startValue = 1), @DynamoDbAttribute("counter")}))
-        private Long counter;
+    @Setter @Getter(onMethod=@__({@DynamoDbAtomicCounter(startValue = 1), @DynamoDbAttribute("counter")}))
+    private Long counter;
 
 }

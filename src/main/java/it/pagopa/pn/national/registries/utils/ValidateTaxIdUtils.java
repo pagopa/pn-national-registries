@@ -10,8 +10,9 @@ import java.nio.charset.Charset;
 public class ValidateTaxIdUtils {
 
     private ValidateTaxIdUtils() {}
-    public static void validateTaxId(String taxId){
-        if(!ValidateUtils.validate(taxId)){
+
+    public static void validateTaxId(String taxId) {
+        if (!ValidateUtils.validate(taxId)) {
             throw new PnNationalRegistriesException("TaxId not valid", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
         }

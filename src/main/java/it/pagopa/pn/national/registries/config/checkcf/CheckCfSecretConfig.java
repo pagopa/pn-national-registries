@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.config.checkcf;
 
-import it.pagopa.pn.national.registries.config.PnNationlRegistriesSecretConfig;
+import it.pagopa.pn.national.registries.config.PnNationalRegistriesSecretConfig;
 import it.pagopa.pn.national.registries.model.SecretValue;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.Getter;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Getter
-public class CheckCfSecretConfig extends PnNationlRegistriesSecretConfig {
+public class CheckCfSecretConfig extends PnNationalRegistriesSecretConfig {
 
     private final SecretManagerService secretManagerService;
     private final SecretValue checkCfSecretValue;

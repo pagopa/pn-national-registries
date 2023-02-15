@@ -17,8 +17,8 @@ public class InadController implements DigitalAddressInadApi {
     private final InadService inadService;
     private final Scheduler scheduler;
 
-    public InadController(InadService inadServicee,Scheduler scheduler) {
-        this.inadService = inadServicee;
+    public InadController(InadService inadService, Scheduler scheduler) {
+        this.inadService = inadService;
         this.scheduler = scheduler;
     }
 
@@ -39,6 +39,7 @@ public class InadController implements DigitalAddressInadApi {
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
         ValidateTaxIdUtils.validateTaxId(extractDigitalAddressINADRequestBodyDto.getFilter().getTaxId());
         return inadService.callEService(extractDigitalAddressINADRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 }

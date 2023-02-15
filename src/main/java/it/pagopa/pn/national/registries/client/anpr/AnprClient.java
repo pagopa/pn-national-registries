@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -26,8 +27,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
 
 @Component
 @Slf4j
@@ -54,43 +55,43 @@ public class AnprClient {
         webClient = anprWebClient.init();
     }
 
-
-    public Mono<ResponseE002OKDto> callEService(E002RequestDto e002RequestDto){
-        return accessTokenExpiringMap.getToken(purposeId,anprSecretConfig.getAnprSecretValue())
-                .flatMap(accessTokenCacheEntry -> {
-                    String s = convertToJson(e002RequestDto);
-                    String digest = createDigestFromPayload(s);
-                    log.debug("digest: {}",digest);
-                    return webClient.post()
-                            .uri("/anpr-service-e002")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .headers(httpHeaders -> {
-                                httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                                httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                                httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
-                                httpHeaders.add("Content-Encoding", "UTF-8");
-                                httpHeaders.add("Digest", digest);
-                                httpHeaders.add("bearerAuth", accessTokenCacheEntry.getAccessToken());
-                            })
-                            .bodyValue(s)
-                            .retrieve()
-                            .bodyToMono(ResponseE002OKDto.class);
-                }).doOnError(throwable -> {
+    public Mono<ResponseE002OKDto> callEService(E002RequestDto requestDto) {
+        return accessTokenExpiringMap.getToken(purposeId, anprSecretConfig.getAnprSecretValue())
+                .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry))
+                .doOnError(throwable -> {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(),ex.getStatusCode().value(),
-                                ex.getStatusText(),ex.getHeaders(),ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(),AnprResponseKO.class);
+                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), AnprResponseKO.class);
                     }
-                }).retryWhen(Retry.max(1).filter(throwable -> {
-                    log.debug("Try Retry call to ANPR");
-                    return checkExceptionType(throwable);
-                }).onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                        retrySignal.failure()));
+                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure())
+                );
     }
 
-    private String convertToJson(E002RequestDto e002RequestDto) {
+    private Mono<ResponseE002OKDto> callAnpr(E002RequestDto requestDto, AccessTokenCacheEntry tokenEntry) {
+        String s = convertToJson(requestDto);
+        String digest = createDigestFromPayload(s);
+        log.debug("digest: {}", digest);
+        return webClient.post()
+                .uri("/anpr-service-e002")
+                .contentType(MediaType.APPLICATION_JSON)
+                .headers(httpHeaders -> {
+                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    httpHeaders.setBearerAuth(tokenEntry.getAccessToken());
+                    httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
+                    httpHeaders.add("Content-Encoding", "UTF-8");
+                    httpHeaders.add("Digest", digest);
+                    httpHeaders.add("bearerAuth", tokenEntry.getAccessToken());
+                })
+                .bodyValue(s)
+                .retrieve()
+                .bodyToMono(ResponseE002OKDto.class);
+    }
+
+    private String convertToJson(E002RequestDto requestDto) {
         try {
-            return mapper.writeValueAsString(e002RequestDto);
+            return mapper.writeValueAsString(requestDto);
         } catch (JsonProcessingException e) {
             throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
         }
@@ -99,17 +100,17 @@ public class AnprClient {
     private String createDigestFromPayload(String request) {
         try {
             byte[] hash = MessageDigest.getInstance("SHA-256").digest(request.getBytes(StandardCharsets.UTF_8));
-            return "SHA-256="+Base64.getEncoder().encodeToString(hash);
+            return "SHA-256=" + Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
+            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR, e);
         }
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
+        log.debug("Try Retry call to ANPR");
         if (throwable instanceof WebClientResponseException exception) {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;
     }
-
 }

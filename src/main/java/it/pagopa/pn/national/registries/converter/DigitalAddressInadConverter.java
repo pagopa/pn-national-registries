@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.UsageInfoDto;
@@ -11,9 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
-
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_INAD;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_INAD;
 
 @Slf4j
 @Component
@@ -67,7 +63,6 @@ public class DigitalAddressInadConverter {
         return switch (motivation) {
             case UFFICIO -> UsageInfoDto.MotivationEnum.UFFICIO;
             case VOLONTARIA -> UsageInfoDto.MotivationEnum.VOLONTARIA;
-            default -> throw new PnInternalException(ERROR_MESSAGE_INAD + " Invalid motivation for", ERROR_CODE_INAD);
         };
     }
 

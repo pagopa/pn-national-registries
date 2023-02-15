@@ -21,6 +21,7 @@ public class AgenziaEntrateWebClientSOAP extends CommonWebClient {
     private final Integer tcpPendingAcquireTimeout;
     private final Integer tcpPoolIdleTimeout;
     private final String basePath;
+
     public AgenziaEntrateWebClientSOAP(@Value("${pn.national.registries.webclient.check-cf.tcp-max-poolsize}") Integer tcpMaxPoolSize,
                                        @Value("${pn.national.registries.webclient.check-cf.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
                                        @Value("${pn.national.registries.webclient.check-cf.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
@@ -40,8 +41,9 @@ public class AgenziaEntrateWebClientSOAP extends CommonWebClient {
                 .pendingAcquireTimeout(Duration.ofMillis(tcpPendingAcquireTimeout))
                 .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout)).build();
 
-        HttpClient httpClient = HttpClient.create(provider).wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
+        HttpClient httpClient = HttpClient.create(provider)
+                .wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
 
-        return super.initWebClient(httpClient,basePath);
+        return super.initWebClient(httpClient, basePath);
     }
 }

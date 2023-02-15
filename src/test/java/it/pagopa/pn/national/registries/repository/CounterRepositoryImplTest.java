@@ -1,35 +1,45 @@
 package it.pagopa.pn.national.registries.repository;
 
 import it.pagopa.pn.national.registries.entity.CounterModel;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.test.StepVerifier;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 
-import static org.junit.jupiter.api.Assertions.*;
+import java.util.concurrent.CompletableFuture;
 
-@ExtendWith(SpringExtension.class)
-@ContextConfiguration(classes = CounterRepositoryImpl.class)
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 class CounterRepositoryImplTest {
 
-    @Autowired
-    private CounterRepositoryImpl counterRepository;
-
-    @MockBean
-    private DynamoDbAsyncTable<CounterModel> table;
-
-    @MockBean
+    @Mock
+    private DynamoDbAsyncTable<Object> table;
+    @Mock
     private DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
 
     @Test
+    void getCounter() {
+        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
+                .thenReturn(table);
+        CounterRepository counterRepository = new CounterRepositoryImpl(dynamoDbEnhancedAsyncClient, "");
+        when(table.updateItem((UpdateItemEnhancedRequest) any()))
+                .thenReturn(CompletableFuture.completedFuture(new CounterModel()));
+        StepVerifier.create(counterRepository.getCounter(""))
+                .expectNextCount(1)
+                .verifyComplete();
+    }
+
+    @Test
     void createUpdateItemEnhancedRequest() {
+        CounterRepositoryImpl counterRepository = new CounterRepositoryImpl(dynamoDbEnhancedAsyncClient, "");
         UpdateItemEnhancedRequest<CounterModel> upd = counterRepository.createUpdateItemEnhancedRequest("anpr");
-        Assertions.assertNotNull(upd);
+        assertNotNull(upd);
     }
 }

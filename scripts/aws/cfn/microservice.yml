@@ -291,7 +291,7 @@ Resources:
         ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ANPR_INTEGRITY_SECRET=${PDNDANPRIntegritySecret}'
         ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
         ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
-        ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
+        ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
         ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName

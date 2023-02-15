@@ -22,22 +22,24 @@ public class InfoCamereService {
     private final InfoCamereClient infoCamereClient;
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
-    private final Long iniPecTtl;
+    private final long iniPecTtl;
 
     public InfoCamereService(InfoCamereClient infoCamereClient,
                              InfoCamereConverter infoCamereConverter,
                              IniPecBatchRequestRepository iniPecBatchRequestRepository,
-                             @Value("${pn.national.registries.inipec.ttl}") Long iniPecTtl) {
+                             @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
         this.infoCamereClient = infoCamereClient;
         this.infoCamereConverter = infoCamereConverter;
         this.iniPecBatchRequestRepository = iniPecBatchRequestRepository;
         this.iniPecTtl = iniPecTtl;
     }
 
-    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto) {
-        return createBatchRequestByCf(pnNationalRegistriesCxId, getDigitalAddressIniPECRequestBodyDto)
-                .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId()),getDigitalAddressIniPECRequestBodyDto.getFilter().getCorrelationId()))
-                .doOnError(throwable -> log.info("Failed to create Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId()),getDigitalAddressIniPECRequestBodyDto.getFilter().getCorrelationId()))
+    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto) {
+        String cf = dto.getFilter().getTaxId();
+        String correlationId = dto.getFilter().getCorrelationId();
+        return createBatchRequestByCf(pnNationalRegistriesCxId, dto)
+                .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(cf), correlationId))
+                .doOnError(throwable -> log.info("Failed to create Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(cf), correlationId))
                 .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
     }
 
@@ -48,22 +50,24 @@ public class InfoCamereService {
                 .map(infoCamereConverter::mapToResponseOk);
     }
 
-    public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto requestCf) {
+    public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto) {
         BatchRequest batchRequest = createNewStartBatchRequest();
-        batchRequest.setCorrelationId(requestCf.getFilter().getCorrelationId());
-        batchRequest.setCf(requestCf.getFilter().getTaxId());
+        batchRequest.setCorrelationId(dto.getFilter().getCorrelationId());
+        batchRequest.setCf(dto.getFilter().getTaxId());
         batchRequest.setClientId(pnNationalRegistriesCxId);
-        return iniPecBatchRequestRepository.createBatchRequest(batchRequest);
+        return iniPecBatchRequestRepository.create(batchRequest);
     }
 
     private BatchRequest createNewStartBatchRequest() {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
         batchRequest.setStatus(BatchStatus.NOT_WORKED.getValue());
         batchRequest.setRetry(0);
-        batchRequest.setLastReserved(LocalDateTime.now());
-        batchRequest.setTimeStamp(LocalDateTime.now());
-        batchRequest.setTtl(LocalDateTime.now(ZoneOffset.UTC).plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
+        batchRequest.setLastReserved(now);
+        batchRequest.setCreatedAt(now);
+        batchRequest.setTtl(now.plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
+        log.trace("New Batch Request: {}", batchRequest);
         return batchRequest;
     }
 

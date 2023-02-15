@@ -1,11 +1,14 @@
 package it.pagopa.pn.national.registries.converter;
 
 import com.amazonaws.util.StringUtils;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKProfessionalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
@@ -14,19 +17,32 @@ import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationR
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
+import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
 @Component
 public class InfoCamereConverter {
+
+    private final ObjectMapper mapper;
+    private final long iniPecTtl;
+
+    public InfoCamereConverter(ObjectMapper mapper,
+                               @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
+        this.mapper = mapper;
+        this.iniPecTtl = iniPecTtl;
+    }
 
     public GetDigitalAddressIniPECOKDto convertToGetAddressIniPecOKDto(BatchRequest requestCorrelation) {
         GetDigitalAddressIniPECOKDto response = new GetDigitalAddressIniPECOKDto();
@@ -40,27 +56,50 @@ public class InfoCamereConverter {
         }
     }
 
-    public BatchPolling createBatchPollingByBatchIdAndPollingId(String batchId, String pollingId){
+    public BatchPolling createBatchPollingByBatchIdAndPollingId(String batchId, String pollingId) {
+        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setBatchId(batchId);
         batchPolling.setPollingId(pollingId);
         batchPolling.setStatus(BatchStatus.NOT_WORKED.getValue());
-        batchPolling.setTimeStamp(LocalDateTime.now());
+        batchPolling.setRetry(0);
+        batchPolling.setCreatedAt(now);
+        batchPolling.setTtl(now.plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
         return batchPolling;
     }
 
-    public CodeSqsDto convertoResponsePecToCodeSqsDto(BatchRequest batchRequest, ResponsePecIniPec responsePecIniPec) {
+    public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        List<Pec> pecs = responsePecIniPec.getElencoPec();
+        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
+        codeSqsDto.setTaxId(batchRequest.getCf());
+        List<Pec> pecs = iniPecPollingResponse.getElencoPec();
         pecs.stream()
                 .filter(p -> p.getCf().equalsIgnoreCase(batchRequest.getCf()))
                 .findAny()
-                .ifPresent(pec -> {
-                    codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
-                    codeSqsDto.setTaxId(batchRequest.getCf());
-                    codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
-                });
+                .ifPresentOrElse(
+                        pec -> codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec)),
+                        () -> codeSqsDto.setDigitalAddress(Collections.emptyList()));
         return codeSqsDto;
+    }
+
+    public CodeSqsDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setCorrelationId(request.getCorrelationId());
+        codeSqsDto.setTaxId(request.getCf());
+        if (error != null) {
+            codeSqsDto.setError(error);
+        } else {
+            codeSqsDto.setDigitalAddress(Collections.emptyList());
+        }
+        return codeSqsDto;
+    }
+
+    public String convertCodeSqsDtoToString(CodeSqsDto codeSqsDto) {
+        try {
+            return mapper.writeValueAsString(codeSqsDto);
+        } catch (JsonProcessingException e) {
+            throw new IniPecException("can not convert SQS DTO to String", e);
+        }
     }
 
     public GetAddressRegistroImpreseOKDto mapToResponseOk(AddressRegistroImpreseResponse response) {
@@ -88,8 +127,8 @@ public class InfoCamereConverter {
         if (!StringUtils.isNullOrEmpty(pec.getPecImpresa())) {
             digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
         }
-        if (pec.getPecProfessionistas() != null) {
-            pec.getPecProfessionistas().stream()
+        if (pec.getPecProfessionista() != null) {
+            pec.getPecProfessionista().stream()
                     .map(pecProf -> toDigitalAddress(pecProf.getPec(), DigitalAddressRecipientType.PROFESSIONISTA))
                     .forEach(digitalAddress::add);
         }
