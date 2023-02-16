@@ -11,4 +11,7 @@ public class CodeSqsDto {
     private PhysicalAddress physicalAddress;
     private List<DigitalAddress> digitalAddress;
     private String error;
+
+    @JsonIgnore
+    private String addressType;
 }

@@ -22,11 +22,13 @@ import reactor.util.function.Tuple3;
 import reactor.util.function.Tuples;
 
 import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
-@Service
 @Slf4j
+@Service
 public class AddressService {
 
     private final AnprService anprService;
@@ -34,6 +36,11 @@ public class AddressService {
     private final InfoCamereService infoCamereService;
     private final SqsService sqsService;
     private final boolean pnNationalRegistriesCxIdFlag;
+
+    private static final Pattern ANPR_CF_NOT_FOUND = Pattern.compile("(\"codiceErroreAnomalia\")\\s*:\\s*\"(EN122)\"",
+            Pattern.CASE_INSENSITIVE);
+    private static final Pattern INAD_CF_NOT_FOUND = Pattern.compile("(\"detail\")\\s*:\\s*\"(CF non trovato)\"",
+            Pattern.CASE_INSENSITIVE);
 
     public AddressService(AnprService anprService,
                           InadService inadService,
@@ -65,7 +72,9 @@ public class AddressService {
         var emitResult = sink.tryEmitValue(Tuples.of(recipientType, pnNationalRegistriesCxId != null ? pnNationalRegistriesCxId : "", addressRequestBodyDto));
         if (emitResult != Sinks.EmitResult.OK) {
             log.error("can not submit task: {}", emitResult);
-            sqsService.push(errorToSqsDto(correlationId, cf, "can not submit task"), pnNationalRegistriesCxId)
+            CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
+            codeSqsDto.setError("can not submit task");
+            sqsService.push(codeSqsDto, pnNationalRegistriesCxId)
                     .subscribe(ok -> {
                     }, e -> log.error("can not send message to SQS queue", e));
         }
@@ -83,7 +92,7 @@ public class AddressService {
                     return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
                             .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, cf, anprResponse), pnNationalRegistriesCxId)
                                     .map(sqs -> mapToAddressesOKDto(correlationId)))
-                            .onErrorResume(e -> sqsService.push(errorToSqsDto(correlationId, cf, e.getMessage()), pnNationalRegistriesCxId)
+                            .onErrorResume(e -> sqsService.push(errorAnprToSqsDto(correlationId, cf, e), pnNationalRegistriesCxId)
                                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId)));
                 } else {
                     return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
@@ -120,42 +129,50 @@ public class AddressService {
         }
     }
 
-    private CodeSqsDto errorToSqsDto(String correlationId, String cf, String error) {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(correlationId);
-        codeSqsDto.setTaxId(cf);
-        codeSqsDto.setError(error);
+    private CodeSqsDto errorAnprToSqsDto(String correlationId, String cf, Throwable throwable) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
+        // per ANPR CF non trovato corrisponde a HTTP Status 404 e nel body codiceErroreAnomalia = "EN122"
+        if (throwable instanceof PnNationalRegistriesException exception
+                && exception.getStatusCode() == HttpStatus.NOT_FOUND
+                && StringUtils.hasText(exception.getResponseBodyAsString())
+                && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find()) {
+            log.info("correlationId: {} - ANPR - CF non trovato", correlationId);
+            // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo
+        } else {
+            codeSqsDto.setError(throwable.getMessage());
+        }
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
         return codeSqsDto;
     }
 
-    private CodeSqsDto errorInadToSqsDto(String correlationId, String cf, Throwable error) {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(correlationId);
-        codeSqsDto.setTaxId(cf);
+    private CodeSqsDto errorInadToSqsDto(String correlationId, String cf, Throwable throwable) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
         // per INAD CF non trovato corrisponde a HTTP Status 404 e nel body deve essere contenuta la stringa "CF non trovato"
-        if (error instanceof PnNationalRegistriesException exception
+        if (throwable instanceof PnNationalRegistriesException exception
                 && exception.getStatusCode() == HttpStatus.NOT_FOUND
                 && StringUtils.hasText(exception.getResponseBodyAsString())
-                && exception.getResponseBodyAsString().toUpperCase().contains("CF NON TROVATO")) {
+                && INAD_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find()) {
             log.info("correlationId: {} - INAD - CF non trovato", correlationId);
+            codeSqsDto.setDigitalAddress(Collections.emptyList());
         } else {
-            codeSqsDto.setError(error.getMessage());
+            codeSqsDto.setError(throwable.getMessage());
         }
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
     }
 
     private CodeSqsDto errorInfoCamereToSqsDto(String correlationId, String cf, Throwable error) {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(correlationId);
-        codeSqsDto.setTaxId(cf);
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
         // per InfoCamere CF non trovato corrisponde a HTTP Status 404 e body vuoto
         if (error instanceof PnNationalRegistriesException exception
                 && exception.getStatusCode() == HttpStatus.NOT_FOUND
                 && !StringUtils.hasText(exception.getResponseBodyAsString())) {
             log.info("correlationId: {} - InfoCamere sede legale - CF non trovato", correlationId);
+            // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo
         } else {
             codeSqsDto.setError(error.getMessage());
         }
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
         return codeSqsDto;
     }
 
@@ -166,35 +183,41 @@ public class AddressService {
     }
 
     private CodeSqsDto anprToSqsDto(String correlationId, String cf, GetAddressANPROKDto anprResponse) {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(correlationId);
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
         if (anprResponse != null && !CollectionUtils.isEmpty(anprResponse.getResidentialAddresses())) {
             codeSqsDto.setPhysicalAddress(convertAnprToPhysicalAddress(anprResponse.getResidentialAddresses().get(0)));
+        } else {
+            log.info("correlationId: {} - ANPR - indirizzi non presenti", correlationId);
+            // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo
         }
-        codeSqsDto.setTaxId(cf);
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
         return codeSqsDto;
     }
 
     private CodeSqsDto inadToSqsDto(String correlationId, String cf, GetDigitalAddressINADOKDto inadDto) {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(correlationId);
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
         if (inadDto != null && inadDto.getDigitalAddress() != null) {
             List<DigitalAddress> address = inadDto.getDigitalAddress().stream()
                     .map(this::convertInadToDigitalAddress)
                     .toList();
             codeSqsDto.setDigitalAddress(address);
+        } else {
+            log.info("correlationId: {} - INAD - indirizzi non presenti", correlationId);
+            codeSqsDto.setDigitalAddress(Collections.emptyList());
         }
-        codeSqsDto.setTaxId(cf);
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
     }
 
     private CodeSqsDto regImpToSqsDto(String correlationId, String cf, GetAddressRegistroImpreseOKDto registroImpreseDto) {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(correlationId);
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
         if (registroImpreseDto.getProfessionalAddress() != null) {
             codeSqsDto.setPhysicalAddress(convertRegImpToPhysicalAddress(registroImpreseDto.getProfessionalAddress()));
+        } else {
+            log.info("correlationId: {} - InfoCamere sede legale - indirizzo non presente", correlationId);
+            // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo
         }
-        codeSqsDto.setTaxId(cf);
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
         return codeSqsDto;
     }
 
@@ -267,6 +290,13 @@ public class AddressService {
 
         dto.setFilter(filterDto);
         return dto;
+    }
+
+    private CodeSqsDto newCodeSqsDto(String correlationId, String taxId) {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setCorrelationId(correlationId);
+        codeSqsDto.setTaxId(taxId);
+        return codeSqsDto;
     }
 
     private Context enrichFluxContext(Context ctx, Map<String, String> mdcCtx) {

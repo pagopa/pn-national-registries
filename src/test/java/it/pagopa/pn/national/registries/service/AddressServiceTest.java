@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import it.pagopa.pn.commons.log.MDCWebFilter;
@@ -83,7 +84,6 @@ class AddressServiceTest {
                 () -> addressService.retrieveDigitalOrPhysicalAddress("Recipient Type", null, addressRequestBodyDto));
     }
 
-
     @Captor
     ArgumentCaptor<CodeSqsDto> anprSqsCaptor;
 
@@ -127,7 +127,6 @@ class AddressServiceTest {
                 .verifyComplete();
     }
 
-
     @Test
     @DisplayName("Test retrieve from ANPR")
     void testRetrieveDigitalOrPhysicalAddressAnpr() {
@@ -164,9 +163,13 @@ class AddressServiceTest {
         StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+        assertNotNull(anprSqsCaptor.getValue().getPhysicalAddress());
+        assertNull(anprSqsCaptor.getValue().getError());
+        assertEquals("PHYSICAL", anprSqsCaptor.getValue().getAddressType());
     }
 
     @Test
+    @DisplayName("Test failed retrieve from ANPR")
     void testRetrieveDigitalOrPhysicalAddressAnprError() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
@@ -176,10 +179,15 @@ class AddressServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.setFilter(filterDto);
 
-        when(anprService.getAddressANPR(any()))
-                .thenReturn(Mono.error(new RuntimeException()));
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.NOT_FOUND);
+        when(exception.getResponseBodyAsString()).thenReturn("{ ... \"codiceErroreAnomalia\": \"ENX\", ...");
+        when(exception.getMessage()).thenReturn("message");
 
-        when(sqsService.push((CodeSqsDto) any(), any()))
+        when(anprService.getAddressANPR(any()))
+                .thenReturn(Mono.error(exception));
+
+        when(sqsService.push(anprSqsCaptor.capture(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -188,6 +196,41 @@ class AddressServiceTest {
         StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+        assertEquals("message", anprSqsCaptor.getValue().getError());
+        assertEquals("PHYSICAL", anprSqsCaptor.getValue().getAddressType());
+        assertNull(anprSqsCaptor.getValue().getPhysicalAddress());
+    }
+
+    @Test
+    @DisplayName("Test retrieve from ANPR - CF non trovato")
+    void testRetrieveDigitalOrPhysicalAddressAnprCfNotFound() {
+        AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
+        filterDto.setTaxId("COD_FISCALE_1");
+        filterDto.setCorrelationId("correlationId");
+        filterDto.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
+        filterDto.setReferenceRequestDate("refReqDate");
+        AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
+        addressRequestBodyDto.setFilter(filterDto);
+
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.NOT_FOUND);
+        when(exception.getResponseBodyAsString()).thenReturn("{ ... \"codiceErroreAnomalia\": \"EN122\", ...");
+
+        when(anprService.getAddressANPR(any()))
+                .thenReturn(Mono.error(exception));
+
+        when(sqsService.push(anprSqsCaptor.capture(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId("correlationId");
+
+        StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+        assertNull(anprSqsCaptor.getValue().getError());
+        assertNull(anprSqsCaptor.getValue().getPhysicalAddress());
+        assertEquals("PHYSICAL", anprSqsCaptor.getValue().getAddressType());
     }
 
     @Captor
@@ -228,6 +271,7 @@ class AddressServiceTest {
 
         when(inadService.callEService(getDigitalAddressINADRequestBodyDto))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
+
         when(sqsService.push(inadSqsCaptor.capture(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
@@ -241,9 +285,11 @@ class AddressServiceTest {
         assertEquals(3, inadSqsCaptor.getValue().getDigitalAddress().size());
         assertTrue(inadSqsCaptor.getValue().getDigitalAddress().stream()
                 .anyMatch(a -> a.getAddress().equals("a1")));
+        assertEquals("DIGITAL", inadSqsCaptor.getValue().getAddressType());
     }
 
     @Test
+    @DisplayName("Test failed retrieve from INAD")
     void testRetrieveDigitalOrPhysicalAddressInadError() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
@@ -253,9 +299,15 @@ class AddressServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.setFilter(filterDto);
 
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.NOT_FOUND);
+        when(exception.getResponseBodyAsString()).thenReturn("{ ... \"detail\": \"xxx\", ...");
+        when(exception.getMessage()).thenReturn("message");
+
         when(inadService.callEService(any()))
-                .thenReturn(Mono.error(new RuntimeException()));
-        when(sqsService.push((CodeSqsDto) any(), any()))
+                .thenReturn(Mono.error(exception));
+
+        when(sqsService.push(inadSqsCaptor.capture(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -264,9 +316,13 @@ class AddressServiceTest {
         StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+        assertNull(inadSqsCaptor.getValue().getDigitalAddress());
+        assertEquals("DIGITAL", inadSqsCaptor.getValue().getAddressType());
+        assertEquals("message", inadSqsCaptor.getValue().getError());
     }
 
     @Test
+    @DisplayName("Test retrieve from ANPR - CF non trovato")
     void testRetrieveDigitalOrPhysicalAddressInadCfNotFound() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
@@ -276,13 +332,14 @@ class AddressServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.setFilter(filterDto);
 
-        PnNationalRegistriesException pnNationalRegistriesException = new PnNationalRegistriesException("", HttpStatus.NOT_FOUND.value(),
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("", HttpStatus.NOT_FOUND.value(),
                 HttpStatus.NOT_FOUND.getReasonPhrase(), null,
-                "TxT Cf non trovato ...".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8,
+                "{ ... \"detail\": \"Cf non trovato\" ... }".getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8,
                 InadResponseKO.class);
+
         when(inadService.callEService(any()))
-                .thenReturn(Mono.error(pnNationalRegistriesException));
-        when(sqsService.push((CodeSqsDto) any(), any()))
+                .thenReturn(Mono.error(exception));
+        when(sqsService.push(inadSqsCaptor.capture(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -291,6 +348,9 @@ class AddressServiceTest {
         StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+        assertEquals("DIGITAL", inadSqsCaptor.getValue().getAddressType());
+        assertNotNull(inadSqsCaptor.getValue().getDigitalAddress());
+        assertNull(inadSqsCaptor.getValue().getError());
     }
 
     @Captor
@@ -331,9 +391,11 @@ class AddressServiceTest {
                 .verifyComplete();
         assertNotNull(regImpSqsCaptor.getValue().getPhysicalAddress());
         assertEquals("a", regImpSqsCaptor.getValue().getPhysicalAddress().getAddress());
+        assertEquals("PHYSICAL", regImpSqsCaptor.getValue().getAddressType());
     }
 
     @Test
+    @DisplayName("Test failed retrieve from Registro Imprese")
     void testRetrieveDigitalOrPhysicalAddressRegImpError() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
@@ -343,9 +405,14 @@ class AddressServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.setFilter(filterDto);
 
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.NOT_FOUND);
+        when(exception.getResponseBodyAsString()).thenReturn("{ ... }");
+        when(exception.getMessage()).thenReturn("message");
+
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
-                .thenReturn(Mono.error(new RuntimeException()));
-        when(sqsService.push((CodeSqsDto) any(), any()))
+                .thenReturn(Mono.error(exception));
+        when(sqsService.push(regImpSqsCaptor.capture(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -354,9 +421,13 @@ class AddressServiceTest {
         StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+        assertEquals("PHYSICAL", regImpSqsCaptor.getValue().getAddressType());
+        assertNotNull(regImpSqsCaptor.getValue().getError());
+        assertNull(regImpSqsCaptor.getValue().getPhysicalAddress());
     }
 
     @Test
+    @DisplayName("Test retrieve from Registro Imprese - CF non trovato")
     void testRetrieveDigitalOrPhysicalAddressRegImpCfNotFound() {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId("COD_FISCALE_1");
@@ -366,11 +437,11 @@ class AddressServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.setFilter(filterDto);
 
-        PnNationalRegistriesException pnNationalRegistriesException = new PnNationalRegistriesException("", HttpStatus.NOT_FOUND.value(),
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("", HttpStatus.NOT_FOUND.value(),
                 HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, StandardCharsets.UTF_8, InfocamereResponseKO.class);
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
-                .thenReturn(Mono.error(pnNationalRegistriesException));
-        when(sqsService.push((CodeSqsDto) any(), any()))
+                .thenReturn(Mono.error(exception));
+        when(sqsService.push(regImpSqsCaptor.capture(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -379,6 +450,9 @@ class AddressServiceTest {
         StepVerifier.create(addressService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+        assertNull(regImpSqsCaptor.getValue().getError());
+        assertNull(regImpSqsCaptor.getValue().getPhysicalAddress());
+        assertEquals("PHYSICAL", regImpSqsCaptor.getValue().getAddressType());
     }
 
     @Test
