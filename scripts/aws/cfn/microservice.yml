@@ -53,7 +53,7 @@ Parameters:
   SelcpgApiDnsName:
     Type: String
     Description: 'The DNS name used for SELC-PG rest API'
-  
+
   EcsDefaultSecurityGroup:
     Type: String
     Description: 'Default security group required by infrastructure'
@@ -362,6 +362,12 @@ Resources:
               - sqs:GetQueueUrl
             Resource:
               - !Ref NationalRegistryGatewayOutputsQueueARN
+          - Effect: Allow
+            Action:
+              - ssm:GetParameter
+              - ssm:GetParameters
+            Resource:
+              - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
 
   NationalRegistryApiGateway:
     Type: AWS::CloudFormation::Stack

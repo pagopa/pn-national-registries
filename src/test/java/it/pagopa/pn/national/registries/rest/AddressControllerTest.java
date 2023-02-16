@@ -4,6 +4,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressOKD
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.service.AddressService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,6 +27,9 @@ class AddressControllerTest {
     AddressService addressService;
     @Mock
     ServerWebExchange serverWebExchange;
+
+    @Mock
+    ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
     void testGetAddress() {
