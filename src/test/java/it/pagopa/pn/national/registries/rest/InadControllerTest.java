@@ -4,6 +4,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigital
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.service.InadService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +30,9 @@ class InadControllerTest {
 
     @Mock
     ServerWebExchange serverWebExchange;
+
+    @Mock
+    ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
     void getDigitalAddressINAD() {

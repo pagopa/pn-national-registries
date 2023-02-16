@@ -20,9 +20,12 @@ public class GatewayController implements AddressApi {
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
-    public GatewayController(GatewayService gatewayService, Scheduler scheduler) {
+    private final ValidateTaxIdUtils validateTaxIdUtils;
+
+    public GatewayController(GatewayService gatewayService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.gatewayService = gatewayService;
         this.scheduler = scheduler;
+        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -38,7 +41,7 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, AddressRequestBodyDto addressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
-        ValidateTaxIdUtils.validateTaxId(addressRequestBodyDto.getFilter().getTaxId());
+        validateTaxIdUtils.validateTaxId(addressRequestBodyDto.getFilter().getTaxId());
         return gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto)
                 .map(s -> ResponseEntity.ok().body(s))
                 .publishOn(scheduler);
