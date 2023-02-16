@@ -1,31 +1,29 @@
 package it.pagopa.pn.national.registries.config;
 
-import org.junit.jupiter.api.Assertions;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
 import org.junit.jupiter.api.Test;
 
 class PnNationalRegistriesConfigTest {
 
+    /**
+     * Methods under test:
+     *
+     * <ul>
+     *   <li>default or parameterless constructor of {@link PnNationalRegistriesConfig}
+     *   <li>{@link PnNationalRegistriesConfig#toString()}
+     *   <li>{@link PnNationalRegistriesConfig#getAnprJWTHeaderDigestKeystoreAlias()}
+     *   <li>{@link PnNationalRegistriesConfig#getAnprX509CertificateChain()}
+     * </ul>
+     */
     @Test
-    void getAnprX509CertificateChain() {
-        PnNationalRegistriesConfig pnNationalRegistriesConfig = new PnNationalRegistriesConfig();
-        pnNationalRegistriesConfig.setAnprX509CertificateChain("test");
-        Assertions.assertEquals("test", pnNationalRegistriesConfig.getAnprX509CertificateChain());
-    }
-
-    @Test
-    void getAnprJWTHeaderDigestKeystoreAlias() {
-        PnNationalRegistriesConfig pnNationalRegistriesConfig = new PnNationalRegistriesConfig();
-        pnNationalRegistriesConfig.setAnprJWTHeaderDigestKeystoreAlias("test");
-        Assertions.assertEquals("test", pnNationalRegistriesConfig.getAnprJWTHeaderDigestKeystoreAlias());
-    }
-
-    @Test
-    void testToString(){
-        PnNationalRegistriesConfig pnNationalRegistriesConfig = new PnNationalRegistriesConfig();
-        pnNationalRegistriesConfig.setAnprJWTHeaderDigestKeystoreAlias("test");
-        Assertions.assertEquals("test", pnNationalRegistriesConfig.getAnprJWTHeaderDigestKeystoreAlias());
-        pnNationalRegistriesConfig.setAnprX509CertificateChain("test");
-        Assertions.assertEquals("test", pnNationalRegistriesConfig.getAnprX509CertificateChain());
-        Assertions.assertEquals("PnNationalRegistriesConfig(anprX509CertificateChain=test, anprJWTHeaderDigestKeystoreAlias=test)", pnNationalRegistriesConfig.toString());
+    void testConstructor() {
+        PnNationalRegistriesConfig actualPnNationalRegistriesConfig = new PnNationalRegistriesConfig();
+        String actualToStringResult = actualPnNationalRegistriesConfig.toString();
+        assertNull(actualPnNationalRegistriesConfig.getAnprJWTHeaderDigestKeystoreAlias());
+        assertNull(actualPnNationalRegistriesConfig.getAnprX509CertificateChain());
+        assertEquals("PnNationalRegistriesConfig(anprX509CertificateChain=null, anprJWTHeaderDigestKeystoreAlias=null)",
+                actualToStringResult);
     }
 }

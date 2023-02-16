@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
@@ -19,16 +20,18 @@ public class AwsServicesClientsConfig {
     }
 
     @Bean
-    public KmsClient kmsClient(){
+    public KmsClient kmsClient() {
         return KmsClient.builder()
-            .region(Region.of(region))
-            .build();
+                .region(Region.of(region))
+                .credentialsProvider(DefaultCredentialsProvider.create())
+                .build();
     }
 
     @Bean
-    public SecretsManagerClient secretsManagerClient(){
+    public SecretsManagerClient secretsManagerClient() {
         return SecretsManagerClient.builder()
                 .region(Region.of(region))
+                .credentialsProvider(DefaultCredentialsProvider.create())
                 .build();
     }
 

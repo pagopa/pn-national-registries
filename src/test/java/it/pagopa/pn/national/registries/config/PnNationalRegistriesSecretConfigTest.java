@@ -20,13 +20,13 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PnNationlRegistriesSecretConfigTest {
+class PnNationalRegistriesSecretConfigTest {
 
     @Mock
     private SecretManagerService secretManagerService;
 
     @InjectMocks
-    private PnNationlRegistriesSecretConfig pnNationlRegistriesSecretConfig;
+    private PnNationalRegistriesSecretConfig pnNationalRegistriesSecretConfig;
 
     @Test
     @DisplayName("Should throw an exception when the secretname is not found")
@@ -34,7 +34,7 @@ class PnNationlRegistriesSecretConfigTest {
         when(secretManagerService.getSecretValue(anyString())).thenReturn(Optional.empty());
         assertThrows(
                 PnInternalException.class,
-                () -> pnNationlRegistriesSecretConfig.getSslDataSecretValue("secretName"));
+                () -> pnNationalRegistriesSecretConfig.getSslDataSecretValue("secretName"));
     }
 
     @Test
@@ -47,7 +47,7 @@ class PnNationlRegistriesSecretConfigTest {
                 GetSecretValueResponse.builder().secretString(secretString).build();
         when(secretManagerService.getSecretValue(anyString()))
                 .thenReturn(Optional.of(getSecretValueResponse));
-        SSLData sslData = pnNationlRegistriesSecretConfig.getSslDataSecretValue(secretName);
+        SSLData sslData = pnNationalRegistriesSecretConfig.getSslDataSecretValue(secretName);
         assertNotNull(sslData);
         assertEquals("cert", sslData.getCert());
         assertEquals("key", sslData.getKey());
@@ -61,7 +61,7 @@ class PnNationlRegistriesSecretConfigTest {
         when(secretManagerService.getSecretValue(any())).thenReturn(Optional.empty());
         assertThrows(
                 PnInternalException.class,
-                () -> pnNationlRegistriesSecretConfig.getSecretValue(""));
+                () -> pnNationalRegistriesSecretConfig.getSecretValue(""));
     }
 
     @Test
@@ -75,7 +75,7 @@ class PnNationlRegistriesSecretConfigTest {
         when(secretManagerService.getSecretValue(any()))
                 .thenReturn(Optional.of(getSecretValueResponse));
 
-        SecretValue secret = pnNationlRegistriesSecretConfig.getSecretValue(secretName);
+        SecretValue secret = pnNationalRegistriesSecretConfig.getSecretValue(secretName);
 
         assertNotNull(secret);
         assertEquals("clientId", secret.getClientId());

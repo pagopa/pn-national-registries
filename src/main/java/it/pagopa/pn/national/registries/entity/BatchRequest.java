@@ -8,49 +8,75 @@ import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
 import java.time.LocalDateTime;
 
+import static it.pagopa.pn.national.registries.constant.BatchRequestConstant.*;
+
 @Data
 @ToString
 @DynamoDbBean
 public class BatchRequest {
 
-        @Getter(onMethod=@__({
-                @DynamoDbPartitionKey,
-                @DynamoDbAttribute(BatchRequestConstant.PK)
-        }))
-        private String correlationId;
+    @Getter(onMethod = @__({
+            @DynamoDbPartitionKey,
+            @DynamoDbAttribute(PK)
+    }))
+    private String correlationId;
 
-        @Getter(onMethod=@__({@DynamoDbAttribute("cf")}))
-        private String cf;
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_CF)
+    }))
+    private String cf;
 
-        @Getter(onMethod = @__({
-                @DynamoDbAttribute("batchId"),
-                @DynamoDbSecondaryPartitionKey(indexNames = BatchRequestConstant.GSI_BL)
-        }))
-        private String batchId;
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_BATCH_ID),
+            @DynamoDbSecondaryPartitionKey(indexNames = GSI_BL)
+    }))
+    private String batchId;
 
-        @Getter(onMethod=@__({@DynamoDbAttribute("retry")}))
-        private Integer retry;
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_RETRY)
+    }))
+    private Integer retry;
 
-        @Getter(onMethod=@__({@DynamoDbAttribute("ttl")}))
-        private Long ttl;
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_TTL)
+    }))
+    private Long ttl;
 
-        @Getter(onMethod=@__({@DynamoDbAttribute("clientId")}))
-        private String clientId;
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_CLIENT_ID)
+    }))
+    private String clientId;
 
-        @Getter(onMethod=@__({
-                @DynamoDbAttribute("status"),
-                @DynamoDbSecondaryPartitionKey(indexNames = BatchRequestConstant.GSI_S)
-        }))
-        private String status;
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_STATUS),
+            @DynamoDbSecondaryPartitionKey(indexNames = BatchRequestConstant.GSI_S)
+    }))
+    private String status;
 
-        @Getter(onMethod=@__({
-                @DynamoDbAttribute("lastReserved"),
-                @DynamoDbSecondarySortKey(indexNames = BatchRequestConstant.GSI_BL)
-        }))
-        private LocalDateTime lastReserved;
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_LAST_RESERVED),
+            @DynamoDbSecondarySortKey(indexNames = {GSI_BL, GSI_SSL})
+    }))
+    private LocalDateTime lastReserved;
 
-        @Getter(onMethod=@__({
-                @DynamoDbAttribute("timeStamp")
-        }))
-        private LocalDateTime timeStamp;
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_RESERVATION_ID)
+    }))
+    private String reservationId;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_TIMESTAMP)
+    }))
+    private LocalDateTime createdAt;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_SEND_STATUS),
+            @DynamoDbSecondaryPartitionKey(indexNames = GSI_SSL)
+    }))
+    private String sendStatus;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_MESSAGE)
+    }))
+    private String message;
 }

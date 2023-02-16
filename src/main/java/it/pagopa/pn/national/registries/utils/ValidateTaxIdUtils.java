@@ -16,8 +16,9 @@ public class ValidateTaxIdUtils {
     ValidateTaxIdUtils(ValidateUtils validateUtils) {
         this.validateUtils = validateUtils;
     }
-    public void validateTaxId(String taxId){
-        if(!validateUtils.validate(taxId)){
+
+    public void validateTaxId(String taxId) {
+        if (!validateUtils.validate(taxId)) {
             throw new PnNationalRegistriesException("TaxId not valid", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
         }

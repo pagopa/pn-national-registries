@@ -44,6 +44,7 @@ public class AnprController implements AddressAnprApi {
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
         validateTaxIdUtils.validateTaxId(getAddressANPRRequestBodyDto.getFilter().getTaxId());
         return anprService.getAddressANPR(getAddressANPRRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 }

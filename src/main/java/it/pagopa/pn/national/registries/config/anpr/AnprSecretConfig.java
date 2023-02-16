@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.config.anpr;
 
-import it.pagopa.pn.national.registries.config.PnNationlRegistriesSecretConfig;
+import it.pagopa.pn.national.registries.config.PnNationalRegistriesSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.model.SecretValue;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Getter
-public class AnprSecretConfig extends PnNationlRegistriesSecretConfig {
+public class AnprSecretConfig extends PnNationalRegistriesSecretConfig {
 
     private final SecretManagerService secretManagerService;
 

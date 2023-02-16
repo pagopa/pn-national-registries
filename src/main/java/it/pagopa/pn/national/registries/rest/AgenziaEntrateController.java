@@ -43,7 +43,8 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
         validateTaxIdUtils.validateTaxId(checkTaxIdRequestBodyDto.getFilter().getTaxId());
         return agenziaEntrateService.callEService(checkTaxIdRequestBodyDto)
-                    .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 
     /**
@@ -61,6 +62,7 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
     public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(ADELegalRequestBodyDto adELegalRequestBodyDto,  final ServerWebExchange exchange) {
         validateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId());
         return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 }

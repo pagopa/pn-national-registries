@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.client.inad;
 
+import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -38,33 +39,36 @@ public class InadClient {
     }
 
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
-        return accessTokenExpiringMap.getToken(purposeId, inadSecretConfig.getInadSecretValue()).flatMap(accessTokenCacheEntry ->
-                webClient.get()
-                        .uri(uriBuilder -> uriBuilder
-                                .queryParam("practicalReference", practicalReference)
-                                .path("/extract/{codice_fiscale}")
-                                .build(Map.of("codice_fiscale", taxId)))
-                        .headers(httpHeaders -> {
-                            httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                            httpHeaders.setBearerAuth(accessTokenCacheEntry.getAccessToken());
-                        })
-                        .retrieve()
-                        .bodyToMono(ResponseRequestDigitalAddressDto.class))
+        return accessTokenExpiringMap.getToken(purposeId, inadSecretConfig.getInadSecretValue())
+                .flatMap(tokenEntry -> callExtract(taxId, practicalReference, tokenEntry))
                 .doOnError(throwable -> {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(),ex.getStatusCode().value(),
-                                ex.getStatusText(),ex.getHeaders(),ex.getResponseBodyAsByteArray(),
+                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InadResponseKO.class);
                     }
                 })
-                .retryWhen(Retry.max(1).filter(throwable -> {
-                            log.debug("Try Retry call to INAD");
-                            return checkExceptionType(throwable);
-                        }).onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                        retrySignal.failure()));
+                .retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure())
+                );
+    }
+
+    private Mono<ResponseRequestDigitalAddressDto> callExtract(String taxId, String practicalReference, AccessTokenCacheEntry tokenEntry) {
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .queryParam("practicalReference", practicalReference)
+                        .path("/extract/{codice_fiscale}")
+                        .build(Map.of("codice_fiscale", taxId)))
+                .headers(httpHeaders -> {
+                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    httpHeaders.setBearerAuth(tokenEntry.getAccessToken());
+                })
+                .retrieve()
+                .bodyToMono(ResponseRequestDigitalAddressDto.class);
     }
 
     protected boolean checkExceptionType(Throwable throwable) {
+        log.debug("Try Retry call to INAD");
         if (throwable instanceof WebClientResponseException exception) {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }

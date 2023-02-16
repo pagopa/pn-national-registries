@@ -63,7 +63,8 @@ public class InfoCamereController  implements InfoCamereApi {
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(GetAddressRegistroImpreseRequestBodyDto getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
         validateTaxIdUtils.validateTaxId(getAddressRegistroImpreseRequestBodyDto.getFilter().getTaxId());
         return infoCamereService.getRegistroImpreseLegalAddress(getAddressRegistroImpreseRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 
 
@@ -84,7 +85,8 @@ public class InfoCamereController  implements InfoCamereApi {
     public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(InfoCamereLegalRequestBodyDto infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
         validateTaxIdUtils.validateTaxId(infoCamereLegalRequestBodyDto.getFilter().getTaxId());
         return infoCamereService.checkTaxIdAndVatNumber(infoCamereLegalRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 
 }

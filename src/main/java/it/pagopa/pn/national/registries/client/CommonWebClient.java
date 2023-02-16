@@ -16,18 +16,19 @@ public abstract class CommonWebClient extends CommonBaseClient {
     ResponseExchangeFilter responseExchangeFilter;
 
     protected final WebClient initWebClient(HttpClient httpClient,String baseUrl) {
-
-        ExchangeStrategies strategies = ExchangeStrategies.builder().codecs(configurer -> {
-            configurer.registerDefaults(true);
-            configurer.customCodecs().register(new CustomFormMessageWriter());
-        }).build();
+        ExchangeStrategies strategies = ExchangeStrategies.builder()
+                .codecs(configurer -> {
+                    configurer.registerDefaults(true);
+                    configurer.customCodecs().register(new CustomFormMessageWriter());
+                })
+                .build();
 
         return super.enrichBuilder(WebClient.builder()
-                        .baseUrl(baseUrl)
+                .baseUrl(baseUrl)
                 .exchangeStrategies(strategies)
-                .codecs(c ->
-                        c.defaultCodecs().enableLoggingRequestDetails(true))
+                .codecs(c -> c.defaultCodecs().enableLoggingRequestDetails(true))
                 .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(responseExchangeFilter))
-                .clientConnector(new ReactorClientHttpConnector(httpClient))).build();
+                .clientConnector(new ReactorClientHttpConnector(httpClient)))
+                .build();
     }
 }

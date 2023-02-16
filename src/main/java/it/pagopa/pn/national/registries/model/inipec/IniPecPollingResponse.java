@@ -2,12 +2,16 @@ package it.pagopa.pn.national.registries.model.inipec;
 
 import lombok.Data;
 
-@Data
-public class ResponsePollingIdIniPec {
+import java.util.List;
 
-  private String dataOraRichiesta;
+@Data
+public class IniPecPollingResponse {
+
+  private String dataOraDownload;
 
   private String identificativoRichiesta;
+
+  private List<Pec> elencoPec;
 
 }
 
