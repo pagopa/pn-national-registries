@@ -13,9 +13,9 @@ import java.util.Date;
 
 @Slf4j
 @Component
-public class DigitalAddressInadConverter {
+public class InadConverter {
 
-    private DigitalAddressInadConverter() {
+    private InadConverter() {
     }
 
     public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddressDto elementDigitalAddressDto) {
@@ -30,7 +30,7 @@ public class DigitalAddressInadConverter {
                 Date now = new Date();
                 response.setDigitalAddress(elementDigitalAddressDto.getDigitalAddress().stream()
                         .filter(a -> isValid(a, now))
-                        .map(DigitalAddressInadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
+                        .map(InadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
                         .toList());
                 log.info("inad digital addresses: {} - valid at {}: {}", response.getDigitalAddress().size(), now, elementDigitalAddressDto.getDigitalAddress().size());
             } else {

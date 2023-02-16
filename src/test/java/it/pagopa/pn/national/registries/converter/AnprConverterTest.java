@@ -14,13 +14,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(MockitoExtension.class)
-class AddressAnprConverterTest {
+class AnprConverterTest {
 
     @InjectMocks
-    private AddressAnprConverter addressAnprConverter;
+    private AnprConverter anprConverter;
 
     /**
-     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
+     * Method under test: {@link AnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
      */
     @Test
     void testConvertToGetAddressANPROKDto() {
@@ -31,18 +31,18 @@ class AddressAnprConverterTest {
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
         responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
-        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
+        assertNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
     void testConvertToGetAddressANPROKDto5() {
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
-        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
+        assertNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     /**
-     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
+     * Method under test: {@link AnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
      */
     @Test
     void testConvertToGetAddressANPROKDto11() {
@@ -76,12 +76,12 @@ class AddressAnprConverterTest {
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
         responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
-        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
+        assertNotNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
 
     /**
-     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
+     * Method under test: {@link AnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
      */
     @Test
     void testConvertToGetAddressANPROKDto2() {
@@ -143,7 +143,7 @@ class AddressAnprConverterTest {
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
         responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
-        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
+        assertNotNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -167,7 +167,7 @@ class AddressAnprConverterTest {
 
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setListaSoggetti(subjectsListDto);
-        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
+        assertNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -185,7 +185,7 @@ class AddressAnprConverterTest {
 
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setListaSoggetti(subjectsListDto);
-        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
+        assertNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -209,11 +209,11 @@ class AddressAnprConverterTest {
 
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setListaSoggetti(subjectsListDto);
-        assertNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "cf2").getResidentialAddresses());
+        assertNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "cf2").getResidentialAddresses());
     }
 
     /**
-     * Method under test: {@link AddressAnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
+     * Method under test: {@link AnprConverter#convertToGetAddressANPROKDto(ResponseE002OKDto, String)}
      */
     @Test
     void testConvertToGetAddressANPROKDto3() {
@@ -268,7 +268,7 @@ class AddressAnprConverterTest {
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
         responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
-        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
+        assertNotNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -312,7 +312,7 @@ class AddressAnprConverterTest {
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
         responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
-        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
+        assertNotNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -363,7 +363,7 @@ class AddressAnprConverterTest {
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
         responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
-        assertNotNull(addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
+        assertNotNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -407,7 +407,7 @@ class AddressAnprConverterTest {
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setListaSoggetti(subjectsListDto);
 
-        GetAddressANPROKDto response = addressAnprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "COD_FISCALE_1");
+        GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "COD_FISCALE_1");
         assertNotNull(response);
         assertNotNull(response.getResidentialAddresses());
         assertEquals(1, response.getResidentialAddresses().size());

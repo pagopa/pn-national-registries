@@ -3,7 +3,7 @@ package it.pagopa.pn.national.registries.rest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.service.AddressService;
+import it.pagopa.pn.national.registries.service.GatewayService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,13 +17,13 @@ import reactor.test.StepVerifier;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class AddressControllerTest {
+class GatewayControllerTest {
 
     @InjectMocks
-    AddressController addressController;
+    GatewayController gatewayController;
 
     @Mock
-    AddressService addressService;
+    GatewayService gatewayService;
     @Mock
     ServerWebExchange serverWebExchange;
 
@@ -34,9 +34,9 @@ class AddressControllerTest {
         addressRequestBodyFilterDto.setTaxId("PPPPLT80A01H501V");
         addressRequestBodyDto.setFilter(addressRequestBodyFilterDto);
         AddressOKDto addressOKDto = new AddressOKDto();
-        when(addressService.retrieveDigitalOrPhysicalAddressAsync("", "clientId",addressRequestBodyDto))
+        when(gatewayService.retrieveDigitalOrPhysicalAddressAsync("", "clientId",addressRequestBodyDto))
                 .thenReturn(Mono.just(addressOKDto));
-        StepVerifier.create(addressController.getAddresses("",addressRequestBodyDto, "clientId", serverWebExchange))
+        StepVerifier.create(gatewayController.getAddresses("",addressRequestBodyDto, "clientId", serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(addressOKDto));
     }
 

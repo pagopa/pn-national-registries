@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
-import it.pagopa.pn.national.registries.converter.AddressAnprConverter;
+import it.pagopa.pn.national.registries.converter.AnprConverter;
 import it.pagopa.pn.national.registries.entity.CounterModel;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
@@ -35,7 +35,7 @@ class AnprServiceTest {
     AnprService anprService;
 
     @Mock
-    AddressAnprConverter addressAnprConverter;
+    AnprConverter anprConverter;
 
     @Mock
     AnprClient anprClient;
@@ -74,7 +74,7 @@ class AnprServiceTest {
         counterModel.setCounter(1L);
         when(counterRepository.getCounter("anpr")).thenReturn(Mono.just(counterModel));
         when(anprClient.callEService(any())).thenReturn(Mono.just(response));
-        when(addressAnprConverter.convertToGetAddressANPROKDto(any(), anyString())).thenReturn(getAddressANPROKDto);
+        when(anprConverter.convertToGetAddressANPROKDto(any(), anyString())).thenReturn(getAddressANPROKDto);
 
         StepVerifier.create(anprService.getAddressANPR(request)).expectNext(getAddressANPROKDto).expectComplete().verify();
     }
