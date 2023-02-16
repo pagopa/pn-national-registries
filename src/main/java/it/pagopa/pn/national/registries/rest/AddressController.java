@@ -22,10 +22,10 @@ public class AddressController implements AddressApi {
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
 
-    public AddressController(AddressService addressService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils1) {
+    public AddressController(AddressService addressService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.addressService = addressService;
         this.scheduler = scheduler;
-        this.validateTaxIdUtils = validateTaxIdUtils1;
+        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
