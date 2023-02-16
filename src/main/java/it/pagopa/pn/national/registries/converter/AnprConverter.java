@@ -14,7 +14,7 @@ import java.util.List;
 
 @Slf4j
 @Component
-public class AddressAnprConverter {
+public class AnprConverter {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 

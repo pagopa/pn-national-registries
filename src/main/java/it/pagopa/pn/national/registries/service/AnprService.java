@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
-import it.pagopa.pn.national.registries.converter.AddressAnprConverter;
+import it.pagopa.pn.national.registries.converter.AnprConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
@@ -22,16 +22,16 @@ import java.util.List;
 @Slf4j
 public class AnprService {
 
-    private final AddressAnprConverter addressAnprConverter;
+    private final AnprConverter anprConverter;
     private final AnprClient anprClient;
     private final String anprSendType;
     private final CounterRepositoryImpl counterRepository;
 
-    public AnprService(AddressAnprConverter addressAnprConverter,
+    public AnprService(AnprConverter anprConverter,
                        AnprClient anprClient,
                        @Value("${pn.national.registries.pdnd.anpr.tipo-invio}") String anprSendType,
                        CounterRepositoryImpl counterRepository) {
-        this.addressAnprConverter = addressAnprConverter;
+        this.anprConverter = anprConverter;
         this.anprClient = anprClient;
         this.anprSendType = anprSendType;
         this.counterRepository = counterRepository;
@@ -46,7 +46,7 @@ public class AnprService {
         String cf = request.getFilter().getTaxId();
         return createRequest(request)
                 .flatMap(anprClient::callEService)
-                .map(rispostaE002OKDto -> addressAnprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, cf));
+                .map(rispostaE002OKDto -> anprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, cf));
     }
 
     private Mono<E002RequestDto> createRequest(GetAddressANPRRequestBodyDto request) {
