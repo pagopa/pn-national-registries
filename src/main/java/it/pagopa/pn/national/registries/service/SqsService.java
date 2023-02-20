@@ -2,10 +2,8 @@ package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
-import it.pagopa.pn.national.registries.utils.JacksonCustomSpELSerializer;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -20,7 +18,6 @@ import java.util.Map;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_INIPEC;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC;
-import static it.pagopa.pn.national.registries.utils.JacksonCustomSpELSerializer.FILTER_NAME;
 
 @Slf4j
 @Component
@@ -30,11 +27,11 @@ public class SqsService {
     private final ObjectMapper mapper;
     private final String queueName;
 
-    public SqsService(@Value("${pn.national.registries.sqs.queue.name}") String queueName, SqsClient sqsClient) {
+    public SqsService(@Value("${pn.national.registries.sqs.queue.name}") String queueName,
+                      SqsClient sqsClient,
+                      ObjectMapper mapper) {
         this.sqsClient = sqsClient;
-        this.mapper = new ObjectMapper()
-                .setFilterProvider(new SimpleFilterProvider()
-                        .addFilter(FILTER_NAME, new JacksonCustomSpELSerializer()));
+        this.mapper = mapper;
         this.queueName = queueName;
     }
 
