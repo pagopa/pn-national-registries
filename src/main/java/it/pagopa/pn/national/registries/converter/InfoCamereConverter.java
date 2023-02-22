@@ -9,10 +9,7 @@ import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKProfessionalAddressDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
@@ -110,6 +107,14 @@ public class InfoCamereConverter {
         return getAddressRegistroImpreseOKDto;
     }
 
+    public GetAddressRegistroImpreseOKDto mapToResponseOk(GetAddressRegistroImpreseRequestBodyDto request) {
+        GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
+        getAddressRegistroImpreseOKDto.setTaxId(request.getFilter().getTaxId());
+        getAddressRegistroImpreseOKDto.setDateTimeExtraction(new Date());
+        getAddressRegistroImpreseOKDto.setProfessionalAddress(new GetAddressRegistroImpreseOKProfessionalAddressDto());
+        return getAddressRegistroImpreseOKDto;
+    }
+
     private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImpreseResponse response) {
         GetAddressRegistroImpreseOKProfessionalAddressDto dto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
         if (response.getAddress() != null) {
@@ -149,6 +154,16 @@ public class InfoCamereConverter {
         infoCamereLegalOKDto.setTaxId(response.getTaxId());
         infoCamereLegalOKDto.setVatNumber(response.getVatNumber());
         infoCamereLegalOKDto.setVerificationResult("OK".equalsIgnoreCase(response.getVerificationResult()));
+
+        return infoCamereLegalOKDto;
+    }
+
+    public InfoCamereLegalOKDto infoCamereResponseToDto(InfoCamereLegalRequestBodyDto request) {
+        InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
+        infoCamereLegalOKDto.setDateTimeExtraction(new Date());
+        infoCamereLegalOKDto.setTaxId(request.getFilter().getTaxId());
+        infoCamereLegalOKDto.setVatNumber(request.getFilter().getVatNumber());
+        infoCamereLegalOKDto.setVerificationResult(false);
 
         return infoCamereLegalOKDto;
     }

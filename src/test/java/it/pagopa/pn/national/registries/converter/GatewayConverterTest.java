@@ -236,42 +236,6 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#errorRegImpToSqsDto(String, String, Throwable)}
-     */
-    @Test
-    void testErrorRegImpToSqsDto1() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
-        PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
-                HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
-                "OPS".getBytes(StandardCharsets.UTF_8),
-                StandardCharsets.UTF_8, InfocamereResponseKO.class);
-        CodeSqsDto codeSqsDto = gatewayConverter.errorRegImpToSqsDto(C_ID, CF, exception);
-        assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
-        assertEquals("message", codeSqsDto.getError());
-        assertNull(codeSqsDto.getPhysicalAddress());
-        assertEquals(C_ID, codeSqsDto.getCorrelationId());
-    }
-
-    /**
-     * Method under test: {@link GatewayConverter#errorRegImpToSqsDto(String, String, Throwable)}
-     */
-    @Test
-    @DisplayName("Registro Imprese CF non trovato")
-    void testErrorRegImpToSqsDto2() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
-        PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
-                HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null, null,
-                StandardCharsets.UTF_8, InfocamereResponseKO.class);
-        CodeSqsDto codeSqsDto = gatewayConverter.errorRegImpToSqsDto(C_ID, CF, exception);
-        assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
-        assertNull(codeSqsDto.getError());
-        assertNull(codeSqsDto.getPhysicalAddress());
-        assertEquals(C_ID, codeSqsDto.getCorrelationId());
-    }
-
-    /**
      * Method under test: {@link GatewayConverter#newCodeSqsDto(String, String)}
      */
     @Test

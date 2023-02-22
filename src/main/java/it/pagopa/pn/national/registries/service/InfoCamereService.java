@@ -5,6 +5,8 @@ import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
+import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -45,9 +47,20 @@ public class InfoCamereService {
 
     public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseLegalAddress(GetAddressRegistroImpreseRequestBodyDto request) {
         return infoCamereClient.getLegalAddress(request.getFilter().getTaxId())
-                .doOnNext(address -> log.info("Got Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId())))
                 .doOnError(throwable -> log.info("Failed to get Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId())))
-                .map(infoCamereConverter::mapToResponseOk);
+                .flatMap((response) -> processResponseLegalAddressOk(request, response));
+
+        //.map(infoCamereConverter::mapToResponseOk);
+    }
+
+    private Mono<GetAddressRegistroImpreseOKDto> processResponseLegalAddressOk(GetAddressRegistroImpreseRequestBodyDto request, AddressRegistroImpreseResponse response) {
+        if(response.getCode() != null && !"".equalsIgnoreCase(response.getCode())) {
+            log.info("Failed to get Legal Address for taxId: {}, with error : {}", MaskDataUtils.maskString(request.getFilter().getTaxId()), response.getDescription());
+            return Mono.just(infoCamereConverter.mapToResponseOk(request));
+        } else {
+            log.info("Got Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId()));
+            return Mono.just(infoCamereConverter.mapToResponseOk(response));
+        }
     }
 
     public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto) {
@@ -73,6 +86,16 @@ public class InfoCamereService {
 
     public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
         return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
-                .map(infoCamereConverter::infoCamereResponseToDto);
+                .flatMap((response) ->processResponseCheckTaxIdAndVatNumberOk(request, response));
+    }
+
+    private Mono<InfoCamereLegalOKDto> processResponseCheckTaxIdAndVatNumberOk(InfoCamereLegalRequestBodyDto request, InfoCamereVerificationResponse response) {
+        if(response.getCode() != null && !"".equalsIgnoreCase(response.getCode())) {
+            log.info("Failed to check tax id and vat number: {}, with error : {}", MaskDataUtils.maskString(request.getFilter().getTaxId()), response.getDescription());
+            return Mono.just(infoCamereConverter.infoCamereResponseToDto(request));
+        } else {
+            log.info("Got Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId()));
+            return Mono.just(infoCamereConverter.infoCamereResponseToDto(response));
+        }
     }
 }

@@ -66,7 +66,7 @@ public class InfoCamereJwsGenerator {
     private Map<String, Object> createClaimMap(String scope) {
         Map<String, Object> map = new HashMap<>();
         long nowSeconds = System.currentTimeMillis() / 1000L;
-        long expireSeconds = nowSeconds + 300;
+        long expireSeconds = nowSeconds + 1800;
 
         map.put(RegisteredClaims.AUDIENCE, aud);
         map.put(RegisteredClaims.EXPIRES_AT, expireSeconds);

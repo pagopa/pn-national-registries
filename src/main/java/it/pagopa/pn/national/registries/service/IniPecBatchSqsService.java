@@ -39,7 +39,7 @@ public class IniPecBatchSqsService {
         this.sqsService = sqsService;
     }
 
-    @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.sqs.recovery.delay}")
+    //@Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.sqs.recovery.delay}")
     public void recoveryBatchSendToSqs() {
         log.trace("IniPEC - recoveryBatchSendToSqs start");
         Page<BatchRequest> page;

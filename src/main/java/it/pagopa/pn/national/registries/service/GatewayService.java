@@ -109,7 +109,7 @@ public class GatewayService extends GatewayConverter {
             return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                     .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse), pnNationalRegistriesCxId))
                     .doOnError(e -> log.error("can not retrieve physical address from Registro Imprese", e))
-                    .onErrorResume(e -> sqsService.push(errorRegImpToSqsDto(correlationId, cf, e), pnNationalRegistriesCxId))
+                    //.onErrorResume(e -> sqsService.push(errorRegImpToSqsDto(correlationId, cf, e), pnNationalRegistriesCxId))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
             return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))

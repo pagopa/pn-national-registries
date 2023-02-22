@@ -101,21 +101,6 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto errorRegImpToSqsDto(String correlationId, String cf, Throwable error) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
-        // per InfoCamere CF non trovato corrisponde a HTTP Status 404 e body vuoto
-        if (error instanceof PnNationalRegistriesException exception
-                && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                && !StringUtils.hasText(exception.getResponseBodyAsString())) {
-            log.info("correlationId: {} - InfoCamere sede legale - CF non trovato", correlationId);
-            // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo
-        } else {
-            codeSqsDto.setError(error.getMessage());
-        }
-        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
-        return codeSqsDto;
-    }
-
     protected CodeSqsDto newCodeSqsDto(String correlationId, String taxId) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
