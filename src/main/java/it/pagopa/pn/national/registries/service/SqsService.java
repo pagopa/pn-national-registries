@@ -6,7 +6,6 @@ import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.utils.JacksonCustomSpELSerializer;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -39,7 +38,7 @@ public class SqsService {
     }
 
     public Mono<SendMessageResponse> push(CodeSqsDto msg, String pnNationalRegistriesCxId) {
-        log.info("pushing message for taxId: {} and correlationId: {}", MaskDataUtils.maskString(msg.getTaxId()), msg.getCorrelationId());
+        log.info("pushing message for correlationId: {}", msg.getCorrelationId());
         return push(toJson(msg), pnNationalRegistriesCxId);
     }
 

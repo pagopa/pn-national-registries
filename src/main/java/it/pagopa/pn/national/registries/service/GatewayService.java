@@ -45,7 +45,6 @@ public class GatewayService extends GatewayConverter {
         checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
 
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
-        String cf = addressRequestBodyDto.getFilter().getTaxId();
 
         Map<String, String> copyOfContext = MDCUtils.retrieveMDCContextMap();
 
@@ -59,7 +58,7 @@ public class GatewayService extends GatewayConverter {
         var emitResult = sink.tryEmitValue(Tuples.of(recipientType, pnNationalRegistriesCxId != null ? pnNationalRegistriesCxId : "", addressRequestBodyDto));
         if (emitResult != Sinks.EmitResult.OK) {
             log.error("can not submit task: {}", emitResult);
-            CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
+            CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
             codeSqsDto.setError("can not submit task");
             sqsService.push(codeSqsDto, pnNationalRegistriesCxId)
                     .subscribe(ok -> {
@@ -84,32 +83,30 @@ public class GatewayService extends GatewayConverter {
 
     private Mono<AddressOKDto> retrievePhysicalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
-        String cf = addressRequestBodyDto.getFilter().getTaxId();
 
         if (AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.equals(addressRequestBodyDto.getFilter().getDomicileType())) {
             return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
-                    .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, cf, anprResponse), pnNationalRegistriesCxId))
+                    .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, anprResponse), pnNationalRegistriesCxId))
                     .doOnError(e -> log.error("can not retrieve physical address from ANPR", e))
-                    .onErrorResume(e -> sqsService.push(errorAnprToSqsDto(correlationId, cf, e), pnNationalRegistriesCxId))
+                    .onErrorResume(e -> sqsService.push(errorAnprToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
             return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
-                    .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, cf, inadResponse), pnNationalRegistriesCxId))
+                    .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, inadResponse), pnNationalRegistriesCxId))
                     .doOnError(e -> log.error("can not retrieve digital address from INAD", e))
-                    .onErrorResume(e -> sqsService.push(errorInadToSqsDto(correlationId, cf, e), pnNationalRegistriesCxId))
+                    .onErrorResume(e -> sqsService.push(errorInadToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sqs -> mapToAddressesOKDto(correlationId));
         }
     }
 
     private Mono<AddressOKDto> retrieveDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
-        String cf = addressRequestBodyDto.getFilter().getTaxId();
 
         if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
             return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
-                    .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, cf, registroImpreseResponse), pnNationalRegistriesCxId))
+                    .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, registroImpreseResponse), pnNationalRegistriesCxId))
                     .doOnError(e -> log.error("can not retrieve physical address from Registro Imprese", e))
-                    .onErrorResume(e -> sqsService.push(errorRegImpToSqsDto(correlationId, cf, e), pnNationalRegistriesCxId))
+                    .onErrorResume(e -> sqsService.push(errorRegImpToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
             return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))

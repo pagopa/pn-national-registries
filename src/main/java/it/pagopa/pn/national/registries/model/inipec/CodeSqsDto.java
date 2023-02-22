@@ -15,8 +15,6 @@ public class CodeSqsDto {
 
     private String correlationId;
 
-    private String taxId;
-
     @JsonFilterSpEL("#? != null || (#this.error == null && #this.addressType == 'PHYSICAL')")
     private PhysicalAddress physicalAddress;
 

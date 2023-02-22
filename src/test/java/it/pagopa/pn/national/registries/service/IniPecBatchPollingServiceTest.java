@@ -124,7 +124,6 @@ class IniPecBatchPollingServiceTest {
                 .thenReturn(Mono.just(List.of(batchRequest3)));
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setTaxId("taxId");
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 
@@ -202,7 +201,6 @@ class IniPecBatchPollingServiceTest {
                 .thenReturn(Mono.just(List.of(batchRequest)));
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setTaxId("taxId");
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 
@@ -286,7 +284,6 @@ class IniPecBatchPollingServiceTest {
                 .thenReturn(Mono.just(List.of(batchRequest)));
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setTaxId("taxId");
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 
@@ -362,7 +359,6 @@ class IniPecBatchPollingServiceTest {
                 .thenReturn(Mono.error(exception));
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setTaxId("taxId");
         when(infoCamereConverter.convertIniPecRequestToSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
         when(iniPecBatchSqsService.batchSendToSqs(anyList()))
