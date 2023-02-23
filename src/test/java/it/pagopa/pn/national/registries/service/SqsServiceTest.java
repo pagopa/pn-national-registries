@@ -31,7 +31,6 @@ class SqsServiceTest {
         SqsService sqsService = new SqsService("queueNameTest", amazonSQS, objectMapper);
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setTaxId("taxId");
         codeSqsDto.setCorrelationId("correlationId");
         StepVerifier.create(sqsService.push(codeSqsDto,"clientId"))
                 .expectNext(sendMessageResponse)
