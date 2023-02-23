@@ -108,7 +108,7 @@ public class InfoCamereConverter {
         );
     }
 
-    public GetAddressRegistroImpreseOKDto mapToResponseOk(AddressRegistroImprese response) {
+    public GetAddressRegistroImpreseOKDto mapToResponseOkByResponse(AddressRegistroImprese response) {
         GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
         getAddressRegistroImpreseOKDto.setTaxId(response.getTaxId());
         getAddressRegistroImpreseOKDto.setDateTimeExtraction(new Date());
@@ -116,7 +116,7 @@ public class InfoCamereConverter {
         return getAddressRegistroImpreseOKDto;
     }
 
-    public GetAddressRegistroImpreseOKDto mapToResponseOk(GetAddressRegistroImpreseRequestBodyDto request) {
+    public GetAddressRegistroImpreseOKDto mapToResponseOkByRequest(GetAddressRegistroImpreseRequestBodyDto request) {
         GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
         getAddressRegistroImpreseOKDto.setTaxId(request.getFilter().getTaxId());
         getAddressRegistroImpreseOKDto.setDateTimeExtraction(new Date());
@@ -157,7 +157,7 @@ public class InfoCamereConverter {
         return new DigitalAddress(DigitalAddressType.PEC.getValue(), address, recipient.getValue());
     }
 
-    public InfoCamereLegalOKDto infoCamereResponseToDto(InfoCamereVerification response) {
+    public InfoCamereLegalOKDto infoCamereResponseToDtoByResponse(InfoCamereVerification response) {
         InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
         infoCamereLegalOKDto.setDateTimeExtraction(new Date());
         infoCamereLegalOKDto.setTaxId(response.getTaxId());
@@ -167,7 +167,7 @@ public class InfoCamereConverter {
         return infoCamereLegalOKDto;
     }
 
-    public InfoCamereLegalOKDto infoCamereResponseToDto(InfoCamereLegalRequestBodyDto request) {
+    public InfoCamereLegalOKDto infoCamereResponseToDtoByRequest(InfoCamereLegalRequestBodyDto request) {
         InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
         infoCamereLegalOKDto.setDateTimeExtraction(new Date());
         infoCamereLegalOKDto.setTaxId(request.getFilter().getTaxId());

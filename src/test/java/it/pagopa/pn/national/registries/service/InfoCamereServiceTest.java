@@ -85,7 +85,7 @@ class InfoCamereServiceTest {
         addressRegistroImpreseResponse.setAddress(legalAddress);
 
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
-        when(infoCamereConverter.mapToResponseOk((AddressRegistroImprese) any())).thenReturn(response);
+        when(infoCamereConverter.mapToResponseOkByResponse((AddressRegistroImprese) any())).thenReturn(response);
 
         StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
                 .expectNext(response)
@@ -111,7 +111,7 @@ class InfoCamereServiceTest {
 
 
         when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
-        when(infoCamereConverter.infoCamereResponseToDto(response)).thenReturn(infoCamereLegalOKDto);
+        when(infoCamereConverter.infoCamereResponseToDtoByResponse(response)).thenReturn(infoCamereLegalOKDto);
 
         StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
                 .expectNext(infoCamereLegalOKDto)

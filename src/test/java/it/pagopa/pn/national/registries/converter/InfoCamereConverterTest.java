@@ -173,7 +173,7 @@ class InfoCamereConverterTest {
         addressRegistroImpreseResponse.setTaxId("taxId");
 
         GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
-                .mapToResponseOk(addressRegistroImpreseResponse);
+                .mapToResponseOkByResponse(addressRegistroImpreseResponse);
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
     }
@@ -186,7 +186,7 @@ class InfoCamereConverterTest {
         infoCamereVerificationResponse.setTaxId("taxId");
 
         InfoCamereLegalOKDto actualResult = infoCamereConverter
-                .infoCamereResponseToDto(infoCamereVerificationResponse);
+                .infoCamereResponseToDtoByResponse(infoCamereVerificationResponse);
 
         assertEquals("taxId", actualResult.getTaxId());
         assertEquals("vatNumber", actualResult.getVatNumber());

@@ -101,6 +101,13 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
+    protected CodeSqsDto errorRegImpToSqsDto(String correlationId, String cf, Throwable error) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
+        codeSqsDto.setError(error.getMessage());
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
+        return codeSqsDto;
+    }
+
     protected CodeSqsDto newCodeSqsDto(String correlationId, String taxId) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
