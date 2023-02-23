@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,9 @@ class SqsServiceTest {
         when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
         when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponse);
 
-        SqsService sqsService = new SqsService("queueNameTest", amazonSQS);
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+
+        SqsService sqsService = new SqsService("queueNameTest", amazonSQS, objectMapper);
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setTaxId("taxId");
