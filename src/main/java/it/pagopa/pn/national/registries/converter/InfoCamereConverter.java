@@ -71,7 +71,6 @@ public class InfoCamereConverter {
     public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
-        codeSqsDto.setTaxId(batchRequest.getCf());
         List<Pec> pecs = iniPecPollingResponse.getElencoPec();
         pecs.stream()
                 .filter(p -> p.getCf().equalsIgnoreCase(batchRequest.getCf()))
@@ -85,7 +84,6 @@ public class InfoCamereConverter {
     public CodeSqsDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(request.getCorrelationId());
-        codeSqsDto.setTaxId(request.getCf());
         if (error != null) {
             codeSqsDto.setError(error);
         } else {

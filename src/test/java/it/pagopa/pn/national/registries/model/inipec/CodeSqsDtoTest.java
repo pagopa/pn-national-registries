@@ -88,7 +88,6 @@ class CodeSqsDtoTest {
 
     private CodeSqsDto newCodeSqsDto() {
         CodeSqsDto dto = new CodeSqsDto();
-        dto.setTaxId("taxId");
         dto.setCorrelationId("correlationId");
         return dto;
     }

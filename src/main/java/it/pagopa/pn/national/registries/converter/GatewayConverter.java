@@ -30,8 +30,8 @@ public class GatewayConverter {
         return dto;
     }
 
-    protected CodeSqsDto anprToSqsDto(String correlationId, String cf, GetAddressANPROKDto anprResponse) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
+    protected CodeSqsDto anprToSqsDto(String correlationId, GetAddressANPROKDto anprResponse) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
         if (anprResponse != null && !CollectionUtils.isEmpty(anprResponse.getResidentialAddresses())) {
             codeSqsDto.setPhysicalAddress(convertAnprToPhysicalAddress(anprResponse.getResidentialAddresses().get(0)));
         } else {
@@ -42,8 +42,8 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto errorAnprToSqsDto(String correlationId, String cf, Throwable throwable) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
+    protected CodeSqsDto errorAnprToSqsDto(String correlationId, Throwable throwable) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
         // per ANPR CF non trovato corrisponde a HTTP Status 404 e nel body codiceErroreAnomalia = "EN122"
         if (throwable instanceof PnNationalRegistriesException exception
                 && exception.getStatusCode() == HttpStatus.NOT_FOUND
@@ -58,8 +58,8 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto inadToSqsDto(String correlationId, String cf, GetDigitalAddressINADOKDto inadDto) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
+    protected CodeSqsDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
         if (inadDto != null && inadDto.getDigitalAddress() != null) {
             List<DigitalAddress> address = inadDto.getDigitalAddress().stream()
                     .map(this::convertInadToDigitalAddress)
@@ -73,8 +73,8 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto errorInadToSqsDto(String correlationId, String cf, Throwable throwable) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
+    protected CodeSqsDto errorInadToSqsDto(String correlationId, Throwable throwable) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
         // per INAD CF non trovato corrisponde a HTTP Status 404 e nel body deve essere contenuta la stringa "CF non trovato"
         if (throwable instanceof PnNationalRegistriesException exception
                 && exception.getStatusCode() == HttpStatus.NOT_FOUND
@@ -89,8 +89,8 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto regImpToSqsDto(String correlationId, String cf, GetAddressRegistroImpreseOKDto registroImpreseDto) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
+    protected CodeSqsDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
         if (registroImpreseDto != null && registroImpreseDto.getProfessionalAddress() != null) {
             codeSqsDto.setPhysicalAddress(convertRegImpToPhysicalAddress(registroImpreseDto.getProfessionalAddress()));
         } else {
@@ -101,8 +101,8 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto errorRegImpToSqsDto(String correlationId, String cf, Throwable error) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, cf);
+    protected CodeSqsDto errorRegImpToSqsDto(String correlationId, Throwable error) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
         // per InfoCamere CF non trovato corrisponde a HTTP Status 404 e body vuoto
         if (error instanceof PnNationalRegistriesException exception
                 && exception.getStatusCode() == HttpStatus.NOT_FOUND
@@ -116,10 +116,9 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto newCodeSqsDto(String correlationId, String taxId) {
+    protected CodeSqsDto newCodeSqsDto(String correlationId) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
-        codeSqsDto.setTaxId(taxId);
         return codeSqsDto;
     }
 

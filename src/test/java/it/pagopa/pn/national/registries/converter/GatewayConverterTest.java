@@ -34,49 +34,46 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#anprToSqsDto(String, String, GetAddressANPROKDto)}
+     * Method under test: {@link GatewayConverter#anprToSqsDto(String, GetAddressANPROKDto)}
      */
     @Test
     void testAnprToSqsDto1() {
         GatewayConverter gatewayConverter = new GatewayConverter();
-        CodeSqsDto codeSqsDto = gatewayConverter.anprToSqsDto(C_ID, CF, new GetAddressANPROKDto());
+        CodeSqsDto codeSqsDto = gatewayConverter.anprToSqsDto(C_ID, new GetAddressANPROKDto());
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#anprToSqsDto(String, String, GetAddressANPROKDto)}
+     * Method under test: {@link GatewayConverter#anprToSqsDto(String, GetAddressANPROKDto)}
      */
     @Test
     void testAnprToSqsDto2() {
         GatewayConverter gatewayConverter = new GatewayConverter();
-        CodeSqsDto codeSqsDto = gatewayConverter.anprToSqsDto(C_ID, CF, null);
+        CodeSqsDto codeSqsDto = gatewayConverter.anprToSqsDto(C_ID, null);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
         assertNull(codeSqsDto.getPhysicalAddress());
         assertNull(codeSqsDto.getError());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#anprToSqsDto(String, String, GetAddressANPROKDto)}
+     * Method under test: {@link GatewayConverter#anprToSqsDto(String, GetAddressANPROKDto)}
      */
     @Test
     void testAnprToSqsDto3() {
         GatewayConverter gatewayConverter = new GatewayConverter();
         GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
         getAddressANPROKDto.setResidentialAddresses(List.of(new ResidentialAddressDto()));
-        CodeSqsDto codeSqsDto = gatewayConverter.anprToSqsDto(C_ID, CF, getAddressANPROKDto);
+        CodeSqsDto codeSqsDto = gatewayConverter.anprToSqsDto(C_ID, getAddressANPROKDto);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getPhysicalAddress());
         assertNull(codeSqsDto.getError());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#errorAnprToSqsDto(String, String, Throwable)}
+     * Method under test: {@link GatewayConverter#errorAnprToSqsDto(String, Throwable)}
      */
     @Test
     void testErrorAnprToSqsDto1() {
@@ -85,16 +82,15 @@ class GatewayConverterTest {
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "{ ... \"codiceErroreAnomalia\": \"ENX\", ...".getBytes(StandardCharsets.UTF_8),
                 StandardCharsets.UTF_8, AnprResponseKO.class);
-        CodeSqsDto codeSqsDto = gatewayConverter.errorAnprToSqsDto(C_ID, CF, exception);
+        CodeSqsDto codeSqsDto = gatewayConverter.errorAnprToSqsDto(C_ID, exception);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertEquals("message", codeSqsDto.getError());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
         assertNull(codeSqsDto.getPhysicalAddress());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#errorAnprToSqsDto(String, String, Throwable)}
+     * Method under test: {@link GatewayConverter#errorAnprToSqsDto(String, Throwable)}
      */
     @Test
     @DisplayName("ANPR CF non trovato")
@@ -104,23 +100,21 @@ class GatewayConverterTest {
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "{ ... \"codiceErroreAnomalia\": \"EN122\", ...".getBytes(StandardCharsets.UTF_8),
                 StandardCharsets.UTF_8, AnprResponseKO.class);
-        CodeSqsDto codeSqsDto = gatewayConverter.errorAnprToSqsDto(C_ID, CF, exception);
+        CodeSqsDto codeSqsDto = gatewayConverter.errorAnprToSqsDto(C_ID, exception);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertNull(codeSqsDto.getError());
         assertNull(codeSqsDto.getPhysicalAddress());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#inadToSqsDto(String, String, GetDigitalAddressINADOKDto)}
+     * Method under test: {@link GatewayConverter#inadToSqsDto(String, GetDigitalAddressINADOKDto)}
      */
     @Test
     void testInadToSqsDto1() {
         GatewayConverter gatewayConverter = new GatewayConverter();
-        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, CF, new GetDigitalAddressINADOKDto());
+        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, new GetDigitalAddressINADOKDto());
         assertEquals("DIGITAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
@@ -128,14 +122,13 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#inadToSqsDto(String, String, GetDigitalAddressINADOKDto)}
+     * Method under test: {@link GatewayConverter#inadToSqsDto(String, GetDigitalAddressINADOKDto)}
      */
     @Test
     void testInadToSqsDto2() {
         GatewayConverter gatewayConverter = new GatewayConverter();
-        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, CF, null);
+        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, null);
         assertEquals("DIGITAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
@@ -143,16 +136,15 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#inadToSqsDto(String, String, GetDigitalAddressINADOKDto)}
+     * Method under test: {@link GatewayConverter#inadToSqsDto(String, GetDigitalAddressINADOKDto)}
      */
     @Test
     void testInadToSqsDto3() {
         GatewayConverter gatewayConverter = new GatewayConverter();
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
         getDigitalAddressINADOKDto.setDigitalAddress(List.of(new DigitalAddressDto()));
-        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, CF, getDigitalAddressINADOKDto);
+        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, getDigitalAddressINADOKDto);
         assertEquals("DIGITAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertFalse(codeSqsDto.getDigitalAddress().isEmpty());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
@@ -160,7 +152,7 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#errorInadToSqsDto(String, String, Throwable)}
+     * Method under test: {@link GatewayConverter#errorInadToSqsDto(String, Throwable)}
      */
     @Test
     void testErrorInadToSqsDto1() {
@@ -169,16 +161,15 @@ class GatewayConverterTest {
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "{ ... \"detail\": \"xxx\", ...".getBytes(StandardCharsets.UTF_8),
                 StandardCharsets.UTF_8, InadResponseKO.class);
-        CodeSqsDto codeSqsDto = gatewayConverter.errorInadToSqsDto(C_ID, CF, exception);
+        CodeSqsDto codeSqsDto = gatewayConverter.errorInadToSqsDto(C_ID, exception);
         assertEquals("DIGITAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertEquals("message", codeSqsDto.getError());
         assertNull(codeSqsDto.getDigitalAddress());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#errorInadToSqsDto(String, String, Throwable)}
+     * Method under test: {@link GatewayConverter#errorInadToSqsDto(String, Throwable)}
      */
     @Test
     @DisplayName("INAD CF non trovato")
@@ -188,9 +179,8 @@ class GatewayConverterTest {
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "{ ... \"detail\": \"cf non trovato\", ...".getBytes(StandardCharsets.UTF_8),
                 StandardCharsets.UTF_8, InadResponseKO.class);
-        CodeSqsDto codeSqsDto = gatewayConverter.errorInadToSqsDto(C_ID, CF, exception);
+        CodeSqsDto codeSqsDto = gatewayConverter.errorInadToSqsDto(C_ID, exception);
         assertEquals("DIGITAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertNull(codeSqsDto.getError());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
@@ -198,45 +188,42 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#regImpToSqsDto(String, String, GetAddressRegistroImpreseOKDto)}
+     * Method under test: {@link GatewayConverter#regImpToSqsDto(String, GetAddressRegistroImpreseOKDto)}
      */
     @Test
     void testRegImpToSqsDto1() {
         GatewayConverter gatewayConverter = new GatewayConverter();
-        CodeSqsDto codeSqsDto = gatewayConverter.regImpToSqsDto(C_ID, CF, new GetAddressRegistroImpreseOKDto());
+        CodeSqsDto codeSqsDto = gatewayConverter.regImpToSqsDto(C_ID, new GetAddressRegistroImpreseOKDto());
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#regImpToSqsDto(String, String, GetAddressRegistroImpreseOKDto)}
+     * Method under test: {@link GatewayConverter#regImpToSqsDto(String, GetAddressRegistroImpreseOKDto)}
      */
     @Test
     void testRegImpToSqsDto2() {
         GatewayConverter gatewayConverter = new GatewayConverter();
-        CodeSqsDto codeSqsDto = gatewayConverter.regImpToSqsDto(C_ID, CF, null);
+        CodeSqsDto codeSqsDto = gatewayConverter.regImpToSqsDto(C_ID, null);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#regImpToSqsDto(String, String, GetAddressRegistroImpreseOKDto)}
+     * Method under test: {@link GatewayConverter#regImpToSqsDto(String, GetAddressRegistroImpreseOKDto)}
      */
     @Test
     void testRegImpToSqsDto3() {
         GatewayConverter gatewayConverter = new GatewayConverter();
         GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
         getAddressRegistroImpreseOKDto.setProfessionalAddress(new GetAddressRegistroImpreseOKProfessionalAddressDto());
-        CodeSqsDto codeSqsDto = gatewayConverter.regImpToSqsDto(C_ID, CF, getAddressRegistroImpreseOKDto);
+        CodeSqsDto codeSqsDto = gatewayConverter.regImpToSqsDto(C_ID, getAddressRegistroImpreseOKDto);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#errorRegImpToSqsDto(String, String, Throwable)}
+     * Method under test: {@link GatewayConverter#errorRegImpToSqsDto(String, Throwable)}
      */
     @Test
     void testErrorRegImpToSqsDto1() {
@@ -245,16 +232,15 @@ class GatewayConverterTest {
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "OPS".getBytes(StandardCharsets.UTF_8),
                 StandardCharsets.UTF_8, InfocamereResponseKO.class);
-        CodeSqsDto codeSqsDto = gatewayConverter.errorRegImpToSqsDto(C_ID, CF, exception);
+        CodeSqsDto codeSqsDto = gatewayConverter.errorRegImpToSqsDto(C_ID, exception);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertEquals("message", codeSqsDto.getError());
         assertNull(codeSqsDto.getPhysicalAddress());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#errorRegImpToSqsDto(String, String, Throwable)}
+     * Method under test: {@link GatewayConverter#errorRegImpToSqsDto(String, Throwable)}
      */
     @Test
     @DisplayName("Registro Imprese CF non trovato")
@@ -263,22 +249,20 @@ class GatewayConverterTest {
         PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null, null,
                 StandardCharsets.UTF_8, InfocamereResponseKO.class);
-        CodeSqsDto codeSqsDto = gatewayConverter.errorRegImpToSqsDto(C_ID, CF, exception);
+        CodeSqsDto codeSqsDto = gatewayConverter.errorRegImpToSqsDto(C_ID, exception);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals(CF, codeSqsDto.getTaxId());
         assertNull(codeSqsDto.getError());
         assertNull(codeSqsDto.getPhysicalAddress());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
 
     /**
-     * Method under test: {@link GatewayConverter#newCodeSqsDto(String, String)}
+     * Method under test: {@link GatewayConverter#newCodeSqsDto(String)}
      */
     @Test
     void testNewCodeSqsDto() {
         GatewayConverter gatewayConverter = new GatewayConverter();
-        CodeSqsDto codeSqsDto = gatewayConverter.newCodeSqsDto(C_ID, CF);
-        assertEquals(CF, codeSqsDto.getTaxId());
+        CodeSqsDto codeSqsDto = gatewayConverter.newCodeSqsDto(C_ID);
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
 

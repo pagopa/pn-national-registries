@@ -73,7 +73,6 @@ class InfoCamereConverterTest {
 
         CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
-        assertEquals("cf", codeSqsDto.getTaxId());
         assertNull(codeSqsDto.getError());
         assertTrue(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()));
     }
@@ -110,7 +109,6 @@ class InfoCamereConverterTest {
         iniPecPollingResponse.setElencoPec(List.of(pec));
 
         CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
-        assertEquals("cf", codeSqsDto.getTaxId());
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
@@ -139,7 +137,6 @@ class InfoCamereConverterTest {
         batchRequest.setCf("cf");
         CodeSqsDto codeSqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, null);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
-        assertEquals("cf", codeSqsDto.getTaxId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
     }
@@ -151,7 +148,6 @@ class InfoCamereConverterTest {
         batchRequest.setCf("cf");
         CodeSqsDto codeSqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, "error");
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
-        assertEquals("cf", codeSqsDto.getTaxId());
         assertNull(codeSqsDto.getDigitalAddress());
         assertEquals("error", codeSqsDto.getError());
     }
