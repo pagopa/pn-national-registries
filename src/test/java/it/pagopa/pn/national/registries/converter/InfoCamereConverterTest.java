@@ -11,7 +11,7 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalOKDto;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
@@ -19,7 +19,7 @@ import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import java.util.Collections;
 import java.util.List;
 
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -167,7 +167,7 @@ class InfoCamereConverterTest {
         legalAddress.setStreetNumber("42");
         legalAddress.setToponym("Toponym");
 
-        AddressRegistroImpreseResponse addressRegistroImpreseResponse = new AddressRegistroImpreseResponse();
+        AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
         addressRegistroImpreseResponse.setAddress(legalAddress);
         addressRegistroImpreseResponse.setDate("2020-03-01");
         addressRegistroImpreseResponse.setTaxId("taxId");
@@ -180,7 +180,7 @@ class InfoCamereConverterTest {
 
     @Test
     void testInfoCamereResponseToDto() {
-        InfoCamereVerificationResponse infoCamereVerificationResponse = new InfoCamereVerificationResponse();
+        InfoCamereVerification infoCamereVerificationResponse = new InfoCamereVerification();
         infoCamereVerificationResponse.setVerificationResult("OK");
         infoCamereVerificationResponse.setVatNumber("vatNumber");
         infoCamereVerificationResponse.setTaxId("taxId");

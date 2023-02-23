@@ -5,8 +5,8 @@ import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
+import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -78,14 +78,14 @@ class InfoCamereServiceTest {
         professional.setAddress("address");
         response.setProfessionalAddress(professional);
 
-        AddressRegistroImpreseResponse addressRegistroImpreseResponse = new AddressRegistroImpreseResponse();
+        AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
         addressRegistroImpreseResponse.setTaxId("cf");
         LegalAddress legalAddress = new LegalAddress();
         legalAddress.setToponym("address");
         addressRegistroImpreseResponse.setAddress(legalAddress);
 
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
-        when(infoCamereConverter.mapToResponseOk(any())).thenReturn(response);
+        when(infoCamereConverter.mapToResponseOk((AddressRegistroImprese) any())).thenReturn(response);
 
         StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
                 .expectNext(response)
@@ -94,7 +94,7 @@ class InfoCamereServiceTest {
 
     @Test
     void checkTaxIdAndVatNumber() {
-        InfoCamereVerificationResponse response = new InfoCamereVerificationResponse();
+        InfoCamereVerification response = new InfoCamereVerification();
         response.setTaxId("taxId");
         response.setVatNumber("vatNumber");
 

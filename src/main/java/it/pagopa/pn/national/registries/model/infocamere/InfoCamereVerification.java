@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
 @Data
-public class InfoCamereVerificationResponse extends GenericErrorResponse {
+public class InfoCamereVerification extends InfoCamereCommonError {
 
     @JsonProperty("dataOraEstrazione")
     private String dateTimeExtraction;

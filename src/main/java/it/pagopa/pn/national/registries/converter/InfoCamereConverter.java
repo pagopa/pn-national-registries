@@ -10,13 +10,14 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
@@ -99,7 +100,15 @@ public class InfoCamereConverter {
         }
     }
 
-    public GetAddressRegistroImpreseOKDto mapToResponseOk(AddressRegistroImpreseResponse response) {
+    public boolean checkIfResponseIsInfoCamereError(InfoCamereCommonError response) {
+        return (response.getCode() != null && !"".equals(response.getCode())
+                || response.getDescription() != null && !"".equals(response.getDescription())
+                || response.getTimestamp() != null && !"".equals(response.getTimestamp())
+                || response.getAppName() != null && !"".equals(response.getAppName())
+        );
+    }
+
+    public GetAddressRegistroImpreseOKDto mapToResponseOk(AddressRegistroImprese response) {
         GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
         getAddressRegistroImpreseOKDto.setTaxId(response.getTaxId());
         getAddressRegistroImpreseOKDto.setDateTimeExtraction(new Date());
@@ -115,7 +124,7 @@ public class InfoCamereConverter {
         return getAddressRegistroImpreseOKDto;
     }
 
-    private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImpreseResponse response) {
+    private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImprese response) {
         GetAddressRegistroImpreseOKProfessionalAddressDto dto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
         if (response.getAddress() != null) {
             dto.setAddress(createLegalAddress(response.getAddress()));
@@ -148,7 +157,7 @@ public class InfoCamereConverter {
         return new DigitalAddress(DigitalAddressType.PEC.getValue(), address, recipient.getValue());
     }
 
-    public InfoCamereLegalOKDto infoCamereResponseToDto(InfoCamereVerificationResponse response) {
+    public InfoCamereLegalOKDto infoCamereResponseToDto(InfoCamereVerification response) {
         InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
         infoCamereLegalOKDto.setDateTimeExtraction(new Date());
         infoCamereLegalOKDto.setTaxId(response.getTaxId());

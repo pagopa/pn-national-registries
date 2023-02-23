@@ -1,11 +1,11 @@
 package it.pagopa.pn.national.registries.model.registroimprese;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import it.pagopa.pn.national.registries.model.infocamere.GenericErrorResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
 import lombok.Data;
 
 @Data
-public class AddressRegistroImpreseResponse extends GenericErrorResponse {
+public class AddressRegistroImprese extends InfoCamereCommonError {
 
     @JsonProperty("dataOraEstrazione")
     private String date;
