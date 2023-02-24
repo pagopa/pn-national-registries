@@ -48,7 +48,7 @@ public class IniPecBatchPollingService {
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
 
-    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress";
+    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress.";
 
     public IniPecBatchPollingService(InfoCamereConverter infoCamereConverter,
                                      IniPecBatchRequestRepository batchRequestRepository,
