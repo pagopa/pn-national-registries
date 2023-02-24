@@ -2,6 +2,8 @@ package it.pagopa.pn.national.registries.converter;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -9,8 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
@@ -128,6 +129,42 @@ class InfoCamereConverterTest {
         when(objectMapper.writeValueAsString(codeSqsDto))
                 .thenThrow(JsonProcessingException.class);
         assertThrows(IniPecException.class, () -> infoCamereConverter.convertCodeSqsDtoToString(codeSqsDto));
+    }
+
+    /**
+     * Method under test: {@link InfoCamereConverter#infoCamereResponseToDtoByRequest(InfoCamereLegalRequestBodyDto)}
+     */
+    @Test
+    void testInfoCamereResponseToDtoByRequest() {
+
+        InfoCamereLegalRequestBodyDto infoCamereLegalRequestBodyDto = new InfoCamereLegalRequestBodyDto();
+        InfoCamereLegalRequestBodyFilterDto filter = new InfoCamereLegalRequestBodyFilterDto();
+        filter.setTaxId("taxId");
+        filter.setVatNumber("vatNumber");
+        infoCamereLegalRequestBodyDto.filter(filter);
+
+        InfoCamereLegalOKDto actualInfoCamereResponseToDtoByRequestResult = infoCamereConverter.infoCamereResponseToDtoByRequest(infoCamereLegalRequestBodyDto);
+
+        assertEquals("taxId", actualInfoCamereResponseToDtoByRequestResult.getTaxId());
+        assertEquals("vatNumber", actualInfoCamereResponseToDtoByRequestResult.getVatNumber());
+        assertFalse(actualInfoCamereResponseToDtoByRequestResult.getVerificationResult());
+    }
+
+    /**
+     * Method under test: {@link InfoCamereConverter#mapToResponseOkByRequest(GetAddressRegistroImpreseRequestBodyDto)}
+     */
+    @Test
+    void testMapToResponseOkByRequest() {
+
+        GetAddressRegistroImpreseRequestBodyDto getAddressRegistroImpreseRequestBodyDto = new GetAddressRegistroImpreseRequestBodyDto();
+        GetAddressRegistroImpreseRequestBodyFilterDto filter = new GetAddressRegistroImpreseRequestBodyFilterDto();
+        filter.setTaxId("taxId");
+        getAddressRegistroImpreseRequestBodyDto.filter(filter);
+
+        GetAddressRegistroImpreseOKDto response = infoCamereConverter.mapToResponseOkByRequest(getAddressRegistroImpreseRequestBodyDto);
+
+        assertEquals("taxId", response.getTaxId());
+        assertNotNull(response.getProfessionalAddress());
     }
 
     @Test

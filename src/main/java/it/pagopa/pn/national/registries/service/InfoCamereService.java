@@ -48,7 +48,7 @@ public class InfoCamereService {
     public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseLegalAddress(GetAddressRegistroImpreseRequestBodyDto request) {
         return infoCamereClient.getLegalAddress(request.getFilter().getTaxId())
                 .doOnError(throwable -> log.info("Failed to get Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId())))
-                .flatMap((response) -> processResponseLegalAddressOk(request, response));
+                .flatMap(response -> processResponseLegalAddressOk(request, response));
     }
 
     private Mono<GetAddressRegistroImpreseOKDto> processResponseLegalAddressOk(GetAddressRegistroImpreseRequestBodyDto request, AddressRegistroImprese response) {
@@ -84,7 +84,7 @@ public class InfoCamereService {
 
     public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
         return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
-                .flatMap((response) -> processResponseCheckTaxIdAndVatNumberOk(request, response));
+                .flatMap(response -> processResponseCheckTaxIdAndVatNumberOk(request, response));
     }
 
     private Mono<InfoCamereLegalOKDto> processResponseCheckTaxIdAndVatNumberOk(InfoCamereLegalRequestBodyDto request, InfoCamereVerification response) {

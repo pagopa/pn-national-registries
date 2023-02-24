@@ -20,6 +20,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.Date;
+
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
@@ -85,7 +87,35 @@ class InfoCamereServiceTest {
         addressRegistroImpreseResponse.setAddress(legalAddress);
 
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
-        when(infoCamereConverter.mapToResponseOkByResponse((AddressRegistroImprese) any())).thenReturn(response);
+        when(infoCamereConverter.mapToResponseOkByResponse(any())).thenReturn(response);
+
+        StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
+                .expectNext(response)
+                .verifyComplete();
+    }
+
+    @Test
+    void getAddressWhenNotFound() {
+        GetAddressRegistroImpreseRequestBodyDto request = new GetAddressRegistroImpreseRequestBodyDto();
+        GetAddressRegistroImpreseRequestBodyFilterDto dto = new GetAddressRegistroImpreseRequestBodyFilterDto();
+        dto.setTaxId("cf");
+        request.setFilter(dto);
+
+        GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
+        response.setTaxId("cf");
+        GetAddressRegistroImpreseOKProfessionalAddressDto professional = new GetAddressRegistroImpreseOKProfessionalAddressDto();
+        response.setProfessionalAddress(professional);
+        response.setDateTimeExtraction(new Date());
+
+        AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
+        addressRegistroImpreseResponse.setCode("err-sede");
+        addressRegistroImpreseResponse.setDescription("description");
+        addressRegistroImpreseResponse.setAppName("appName");
+        addressRegistroImpreseResponse.setTimestamp("2022-10-01T10:00:00");
+
+        when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
+        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
+        when(infoCamereConverter.mapToResponseOkByRequest(any())).thenReturn(response);
 
         StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
                 .expectNext(response)
@@ -112,6 +142,35 @@ class InfoCamereServiceTest {
 
         when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
         when(infoCamereConverter.infoCamereResponseToDtoByResponse(response)).thenReturn(infoCamereLegalOKDto);
+
+        StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
+                .expectNext(infoCamereLegalOKDto)
+                .verifyComplete();
+    }
+
+    @Test
+    void checkTaxIdAndVatNumberWhenNotFound() {
+        InfoCamereVerification response = new InfoCamereVerification();
+        response.setCode("err-lrpunt");
+        response.setDescription("description");
+        response.setAppName("appName");
+        response.setTimestamp("2022-10-01T10:00:00");
+
+        InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
+        InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
+        dto.setTaxId("taxId");
+        dto.setVatNumber("vatNumber");
+        body.setFilter(dto);
+
+        InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
+        infoCamereLegalOKDto.setTaxId("taxId");
+        infoCamereLegalOKDto.setVatNumber("vatNumber");
+        infoCamereLegalOKDto.setVerificationResult(false);
+
+
+        when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
+        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
+        when(infoCamereConverter.infoCamereResponseToDtoByRequest(body)).thenReturn(infoCamereLegalOKDto);
 
         StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
                 .expectNext(infoCamereLegalOKDto)
