@@ -12,6 +12,7 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
@@ -165,6 +166,16 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", response.getTaxId());
         assertNotNull(response.getProfessionalAddress());
+    }
+
+    /**
+     * Method under test: {@link InfoCamereConverter#checkIfResponseIsInfoCamereError(InfoCamereCommonError)}
+     */
+    @Test
+    void testCheckIfResponseIsInfoCamereError() {
+        InfoCamereCommonError infoCamereCommonError = new InfoCamereCommonError();
+        infoCamereCommonError.setAppName("appName");
+        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(infoCamereCommonError));
     }
 
     @Test
