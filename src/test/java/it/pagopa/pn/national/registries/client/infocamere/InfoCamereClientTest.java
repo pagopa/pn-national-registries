@@ -5,12 +5,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -274,7 +274,7 @@ class InfoCamereClientTest {
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
         String request = "taxId";
-        AddressRegistroImpreseResponse response = new AddressRegistroImpreseResponse();
+        AddressRegistroImprese response = new AddressRegistroImprese();
         response.setAddress(new LegalAddress());
         response.setTaxId("taxId");
 
@@ -301,7 +301,7 @@ class InfoCamereClientTest {
 
         when(requestBodySpecLA.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpecLA);
         when(requestBodySpecLA.headers(any())).thenReturn(requestBodySpecLA);
-        when(responseSpecLA.bodyToMono(AddressRegistroImpreseResponse.class)).thenReturn(Mono.just(response));
+        when(responseSpecLA.bodyToMono(AddressRegistroImprese.class)).thenReturn(Mono.just(response));
         when(requestBodySpecLA.retrieve()).thenReturn(responseSpecLA);
 
         when(webClient.post())
@@ -344,7 +344,7 @@ class InfoCamereClientTest {
         when(requestBodySpecLA.headers(any())).thenReturn(requestBodySpecLA);
         WebClientResponseException exception = new WebClientResponseException(HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, null);
-        when(responseSpecLA.bodyToMono(AddressRegistroImpreseResponse.class)).thenReturn(Mono.error(exception));
+        when(responseSpecLA.bodyToMono(AddressRegistroImprese.class)).thenReturn(Mono.error(exception));
         when(requestBodySpecLA.retrieve()).thenReturn(responseSpecLA);
 
         when(webClient.post())
@@ -381,7 +381,7 @@ class InfoCamereClientTest {
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
         InfoCamereLegalRequestBodyFilterDto filterDto = new InfoCamereLegalRequestBodyFilterDto();
-        InfoCamereVerificationResponse response = new InfoCamereVerificationResponse();
+        InfoCamereVerification response = new InfoCamereVerification();
         response.setTaxId("taxId");
 
         String jws = "jws";
@@ -407,7 +407,7 @@ class InfoCamereClientTest {
         when(requestHeadersUriSpecIC.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpecIC);
         when(requestBodySpecIC.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpecIC);
         when(requestHeadersSpecIC.headers(any())).thenReturn(requestBodySpecIC);
-        when(responseSpecIC.bodyToMono(InfoCamereVerificationResponse.class)).thenReturn(Mono.just(response));
+        when(responseSpecIC.bodyToMono(InfoCamereVerification.class)).thenReturn(Mono.just(response));
         when(requestBodySpecIC.retrieve()).thenReturn(responseSpecIC);
 
         when(webClient.post())
@@ -452,7 +452,7 @@ class InfoCamereClientTest {
         when(requestHeadersSpecIC.headers(any())).thenReturn(requestBodySpecIC);
         WebClientResponseException exception = new WebClientResponseException(HttpStatus.BAD_REQUEST.value(),
                 HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, null);
-        when(responseSpecIC.bodyToMono(InfoCamereVerificationResponse.class)).thenReturn(Mono.error(exception));
+        when(responseSpecIC.bodyToMono(InfoCamereVerification.class)).thenReturn(Mono.error(exception));
         when(requestBodySpecIC.retrieve()).thenReturn(responseSpecIC);
 
         when(webClient.post())

@@ -7,6 +7,7 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
@@ -17,13 +18,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
-import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -46,6 +47,8 @@ public class IniPecBatchPollingService {
     private final int maxRetry;
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
+
+    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress.";
 
     public IniPecBatchPollingService(InfoCamereConverter infoCamereConverter,
                                      IniPecBatchRequestRepository batchRequestRepository,
@@ -137,9 +140,14 @@ public class IniPecBatchPollingService {
     }
 
     private Mono<IniPecPollingResponse> callEService(String batchId, String pollingId) {
-        // Se il servizio risponde con 404 potrebbe significare che la risposta non è ancora pronta.
-        // In tal caso nel body della risposta dovrebbe essere contenuta la stringa "Elenco Pec not found."
         return infoCamereClient.callEServiceRequestPec(pollingId)
+                .doOnNext(response -> {
+                    if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
+                        throw new PnNationalRegistriesException(response.getDescription(), HttpStatus.NOT_FOUND.value(),
+                                HttpStatus.NOT_FOUND.getReasonPhrase() , null, null,
+                                Charset.defaultCharset(), InfocamereResponseKO.class);
+                    }
+                })
                 .doOnNext(response -> log.info("IniPEC - batchId {} - pollingId {} - response pec size: {}", batchId, pollingId, response.getElencoPec().size()))
                 .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e))
                 .onErrorResume(isResponseNotReady, e -> Mono.empty());
@@ -148,8 +156,7 @@ public class IniPecBatchPollingService {
     private final Predicate<Throwable> isResponseNotReady = throwable ->
             throwable instanceof PnNationalRegistriesException exception
                     && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                    && StringUtils.hasText(exception.getResponseBodyAsString())
-                    && exception.getResponseBodyAsString().toUpperCase().contains("ELENCO PEC NOT FOUND");
+                    && Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase(PEC_REQUEST_IN_PROGRESS_MESSAGE);
 
     private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
         polling.setStatus(BatchStatus.WORKED.getValue());
