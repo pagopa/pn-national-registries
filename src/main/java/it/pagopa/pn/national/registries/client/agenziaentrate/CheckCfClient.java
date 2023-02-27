@@ -52,7 +52,7 @@ public class CheckCfClient {
                 .flatMap(accessTokenCacheEntry -> {
                     String s = convertToJson(richiesta);
                     return webClient.post()
-                            .uri("/verifica")
+                            .uri("/verifica-cf/v1")
                             .headers(httpHeaders -> {
                                 httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                                 httpHeaders.setAccept(List.of(MediaType.APPLICATION_JSON));
