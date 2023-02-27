@@ -21,10 +21,13 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
     private final AgenziaEntrateService agenziaEntrateService;
     private final Scheduler scheduler;
 
+    private final ValidateTaxIdUtils validateTaxIdUtils;
 
-    public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler) {
+
+    public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.agenziaEntrateService = agenziaEntrateService;
         this.scheduler = scheduler;
+        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -38,9 +41,10 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        ValidateTaxIdUtils.validateTaxId(checkTaxIdRequestBodyDto.getFilter().getTaxId());
+        validateTaxIdUtils.validateTaxId(checkTaxIdRequestBodyDto.getFilter().getTaxId());
         return agenziaEntrateService.callEService(checkTaxIdRequestBodyDto)
-                    .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 
     /**
@@ -54,9 +58,11 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      *         or Service Unavailable (status code 503)
      */
 
+    @Override
     public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(ADELegalRequestBodyDto adELegalRequestBodyDto,  final ServerWebExchange exchange) {
-        ValidateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId());
+        validateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId());
         return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 }

@@ -22,9 +22,12 @@ public class AnprController implements AddressAnprApi {
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
-    public AnprController(AnprService anprService, Scheduler scheduler) {
+    private final ValidateTaxIdUtils validateTaxIdUtils;
+
+    public AnprController(AnprService anprService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.anprService = anprService;
         this.scheduler = scheduler;
+        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -39,8 +42,9 @@ public class AnprController implements AddressAnprApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
-        ValidateTaxIdUtils.validateTaxId(getAddressANPRRequestBodyDto.getFilter().getTaxId());
+        validateTaxIdUtils.validateTaxId(getAddressANPRRequestBodyDto.getFilter().getTaxId());
         return anprService.getAddressANPR(getAddressANPRRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 }

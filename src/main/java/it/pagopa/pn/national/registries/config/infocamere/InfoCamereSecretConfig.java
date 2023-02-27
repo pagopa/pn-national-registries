@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.config.infocamere;
 
-import it.pagopa.pn.national.registries.config.PnNationlRegistriesSecretConfig;
+import it.pagopa.pn.national.registries.config.PnNationalRegistriesSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.Getter;
@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Getter
-public class InfoCamereSecretConfig extends PnNationlRegistriesSecretConfig {
+public class InfoCamereSecretConfig extends PnNationalRegistriesSecretConfig {
 
     private final SecretManagerService secretManagerService;
 

@@ -12,5 +12,9 @@ class DigitalAddressTypeTest {
         assertEquals(DigitalAddressType.PEC, DigitalAddressType.fromValue("PEC"));
         assertThrows(IllegalArgumentException.class, () -> DigitalAddressType.fromValue("random"));
     }
+    @Test
+    void testToString() {
+        assertEquals("REM", DigitalAddressType.REM.toString());
+    }
 
 }

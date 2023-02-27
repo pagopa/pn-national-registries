@@ -1,10 +1,8 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.CheckValidityRappresentanteRespType;
-import it.pagopa.pn.national.registries.client.agenziaentrate.SOAPResponse.CheckValidityRappresentanteType;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
+import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import org.springframework.stereotype.Component;
 
@@ -26,34 +24,21 @@ public class AgenziaEntrateConverter {
     }
 
     public CheckTaxIdOKDto.ErrorCodeEnum decodeError(String message) {
-        switch (message) {
-            case CODICE_FISCALE_VALIDO_NON_UTILIZZABILE:
-                return CheckTaxIdOKDto.ErrorCodeEnum.ERR01;
-            case CODICE_FISCALE_NON_VALIDO_AGGIORNATO_IN_ALTRO:
-                return CheckTaxIdOKDto.ErrorCodeEnum.ERR02;
-            case CODICE_FISCALE_NON_VALIDO:
-                return CheckTaxIdOKDto.ErrorCodeEnum.ERR03;
-            default:
-                return null;
-        }
+        return switch (message) {
+            case CODICE_FISCALE_VALIDO_NON_UTILIZZABILE -> CheckTaxIdOKDto.ErrorCodeEnum.ERR01;
+            case CODICE_FISCALE_NON_VALIDO_AGGIORNATO_IN_ALTRO -> CheckTaxIdOKDto.ErrorCodeEnum.ERR02;
+            case CODICE_FISCALE_NON_VALIDO -> CheckTaxIdOKDto.ErrorCodeEnum.ERR03;
+            default -> null;
+        };
     }
 
-    public ADELegalOKDto adELegalResponseToDto(CheckValidityRappresentanteRespType checkValidityRappresentanteRespType) {
+    public ADELegalOKDto adELegalResponseToDto(CheckValidityRappresentanteResp checkValidityRappresentanteResp) {
         ADELegalOKDto adeLegalOKDto = new ADELegalOKDto();
-        adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteRespType.getCodiceRitorno()));
-        adeLegalOKDto.setVerificationResult(checkValidityRappresentanteRespType.getValido());
-        adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteRespType.getDettaglioEsito()));
-
+        adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteResp.getCodiceRitorno()));
+        adeLegalOKDto.setVerificationResult(checkValidityRappresentanteResp.getValido());
+        adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteResp.getDettaglioEsito()));
 
         return adeLegalOKDto;
-    }
-
-    public CheckValidityRappresentanteType toEnvelopeBody(ADELegalRequestBodyFilterDto filter) {
-        CheckValidityRappresentanteType checkValidityRappresentanteType = new CheckValidityRappresentanteType();
-        checkValidityRappresentanteType.setCfRappresentante(filter.getTaxId());
-        checkValidityRappresentanteType.setCfEnte(filter.getVatNumber());
-
-        return checkValidityRappresentanteType;
     }
 
 }

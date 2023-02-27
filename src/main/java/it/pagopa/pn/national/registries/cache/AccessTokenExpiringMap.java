@@ -19,13 +19,12 @@ public class AccessTokenExpiringMap {
     private final TokenProvider tokenProvider;
 
     protected ExpiringMap<String, AccessTokenCacheEntry> expiringMap = ExpiringMap.builder()
-            .asyncExpirationListener((purposeId, accessTokenEntry) ->
-                    log.info("token for {} has expired", purposeId))
+            .asyncExpirationListener((purposeId, accessTokenEntry) -> log.info("token for {} has expired", purposeId))
             .variableExpiration()
             .build();
 
 
-    public AccessTokenExpiringMap(TokenProvider tokenProvider, @Value("${pn.national-registries.pdnd.token.deadline}")Integer deadline) {
+    public AccessTokenExpiringMap(TokenProvider tokenProvider, @Value("${pn.national-registries.pdnd.token.deadline}") Integer deadline) {
         this.tokenProvider = tokenProvider;
         this.deadline = deadline;
     }

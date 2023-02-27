@@ -2,43 +2,52 @@ package it.pagopa.pn.national.registries.converter;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressRegistroImpreseOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalOKDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
-import it.pagopa.pn.national.registries.model.inipec.ResponsePecIniPec;
+import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.util.CollectionUtils;
 
+@TestPropertySource(properties = {
+        "pn.national.registries.inipec.ttl=0"
+})
+@ContextConfiguration(classes = InfoCamereConverter.class)
 @ExtendWith(SpringExtension.class)
 class InfoCamereConverterTest {
-    @InjectMocks
+
+    @Autowired
     private InfoCamereConverter infoCamereConverter;
+
+    @MockBean
+    private ObjectMapper objectMapper;
 
     @Test
     void testConvertToGetAddressIniPecOKDto() {
         BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setBatchId("batchId");
         batchRequest.setCf("Cf");
         batchRequest.setCorrelationId("correlationId");
-        batchRequest.setLastReserved(LocalDateTime.now());
-        batchRequest.setRetry(1);
-        batchRequest.setStatus("Status");
-        batchRequest.setTimeStamp(LocalDateTime.now());
-        batchRequest.setTtl(0L);
         assertEquals("correlationId", infoCamereConverter.convertToGetAddressIniPecOKDto(batchRequest).getCorrelationId());
     }
 
@@ -52,29 +61,95 @@ class InfoCamereConverterTest {
     }
 
     @Test
-    void testConvertoResponsePecToCodeSqsDto5() {
+    void testConvertResponsePecToCodeSqsDtoCfNotFound() {
         BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId");
+        batchRequest.setCf("cf");
 
-        batchRequest.setBatchId("batchId");
+        Pec pec = new Pec();
+        pec.setCf("cf");
+        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        iniPecPollingResponse.setElencoPec(List.of(pec));
+
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
+        assertEquals("correlationId", codeSqsDto.getCorrelationId());
+        assertNull(codeSqsDto.getError());
+        assertTrue(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()));
+    }
+
+    @Test
+    void testConvertResponsePecToCodeSqsDto1() {
+        BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCf("Cf");
         batchRequest.setCorrelationId("correlationId");
-        batchRequest.setLastReserved(LocalDateTime.now());
-        batchRequest.setRetry(1);
-        batchRequest.setStatus("Status");
-        batchRequest.setTimeStamp(LocalDateTime.now());
-        batchRequest.setTtl(0L);
 
-        ResponsePecIniPec responsePecIniPec = new ResponsePecIniPec();
         Pec pec = new Pec();
         pec.setCf("Cf");
         pec.setPecImpresa("pecImpresa");
-        pec.setPecProfessionistas(new ArrayList<>());
-        ArrayList<Pec> pecs = new ArrayList<>();
-        pecs.add(pec);
-        responsePecIniPec.setElencoPec(pecs);
+        pec.setPecProfessionista(Collections.emptyList());
+        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        iniPecPollingResponse.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertoResponsePecToCodeSqsDto(batchRequest, responsePecIniPec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
         assertNotNull(codeSqsDto);
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertEquals(1, codeSqsDto.getDigitalAddress().size());
+        assertEquals("pecImpresa", codeSqsDto.getDigitalAddress().get(0).getAddress());
+    }
+
+    @Test
+    void testConvertResponsePecToCodeSqsDto2() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCf("cf");
+        batchRequest.setCorrelationId("correlationId");
+
+        Pec pec = new Pec();
+        pec.setCf("altro-cf");
+        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        iniPecPollingResponse.setElencoPec(List.of(pec));
+
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
+        assertEquals("correlationId", codeSqsDto.getCorrelationId());
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void testConvertCodeSqsDtoToString() throws JsonProcessingException {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        when(objectMapper.writeValueAsString(codeSqsDto))
+                .thenReturn("string");
+        assertEquals("string", infoCamereConverter.convertCodeSqsDtoToString(codeSqsDto));
+    }
+
+    @Test
+    void testConvertCodeSqsDtoToStringError() throws JsonProcessingException {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        when(objectMapper.writeValueAsString(codeSqsDto))
+                .thenThrow(JsonProcessingException.class);
+        assertThrows(IniPecException.class, () -> infoCamereConverter.convertCodeSqsDtoToString(codeSqsDto));
+    }
+
+    @Test
+    void testConvertIniPecRequestToSqsDto1() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId");
+        batchRequest.setCf("cf");
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, null);
+        assertEquals("correlationId", codeSqsDto.getCorrelationId());
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void testConvertIniPecRequestToSqsDto2() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId");
+        batchRequest.setCf("cf");
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, "error");
+        assertEquals("correlationId", codeSqsDto.getCorrelationId());
+        assertNull(codeSqsDto.getDigitalAddress());
+        assertEquals("error", codeSqsDto.getError());
     }
 
     @Test
@@ -101,19 +176,16 @@ class InfoCamereConverterTest {
 
     @Test
     void testInfoCamereResponseToDto() {
-
         InfoCamereVerificationResponse infoCamereVerificationResponse = new InfoCamereVerificationResponse();
-        infoCamereVerificationResponse.setVerificationResult("true");
+        infoCamereVerificationResponse.setVerificationResult("OK");
         infoCamereVerificationResponse.setVatNumber("vatNumber");
         infoCamereVerificationResponse.setTaxId("taxId");
-
 
         InfoCamereLegalOKDto actualResult = infoCamereConverter
                 .infoCamereResponseToDto(infoCamereVerificationResponse);
 
         assertEquals("taxId", actualResult.getTaxId());
         assertEquals("vatNumber", actualResult.getVatNumber());
-        assertEquals("true", actualResult.getVerificationResult());
+        assertEquals(true, actualResult.getVerificationResult());
     }
 }
-

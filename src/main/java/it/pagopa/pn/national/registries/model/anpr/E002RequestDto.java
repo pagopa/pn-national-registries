@@ -14,7 +14,4 @@ public class E002RequestDto {
     private SearchCriteriaE002Dto criteriRicerca;
     private RequestHeaderE002Dto testataRichiesta;
     private RequestDateE002Dto datiRichiesta;
-
 }
-
-

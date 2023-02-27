@@ -22,8 +22,8 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Base64;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
 
 @Component
 @Slf4j
@@ -57,26 +57,26 @@ public class AnprWebClient extends CommonWebClient {
                 .pendingAcquireTimeout(Duration.ofMillis(tcpPendingAcquireTimeout))
                 .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout)).build();
 
-        HttpClient httpClient = HttpClient.create(connectionProvider).secure(t -> t.sslContext(buildSSLHttpClient()));
+        HttpClient httpClient = HttpClient.create(connectionProvider)
+                .secure(t -> t.sslContext(buildSSLHttpClient()));
 
-        return super.initWebClient(httpClient,basePath);
+        return super.initWebClient(httpClient, basePath);
     }
 
     public SslContext buildSSLHttpClient() {
         try {
             SSLData sslData = anprSecretConfig.getAnprAuthChannelSecret();
             SslContextBuilder sslContext = SslContextBuilder.forClient()
-                    .keyManager(getCertInputStream(sslData.getCert()),getKeyInputStream(sslData.getKey()));
+                    .keyManager(getCertInputStream(sslData.getCert()), getKeyInputStream(sslData.getKey()));
 
             return getSslContext(sslContext,sslData);
-
         } catch (IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
         }
     }
 
     public SslContext getSslContext(SslContextBuilder sslContextBuilder, SSLData sslData) throws SSLException {
-        if(StringUtils.isNullOrEmpty(sslData.getTrust())){
+        if (StringUtils.isNullOrEmpty(sslData.getTrust())) {
             return sslContextBuilder.trustManager(InsecureTrustManagerFactory.INSTANCE).build();
         }
         return sslContextBuilder.trustManager(getTrustCertInputStream(sslData.getTrust())).build();

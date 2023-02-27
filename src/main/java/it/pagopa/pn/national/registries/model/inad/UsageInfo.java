@@ -19,4 +19,3 @@ public class UsageInfo {
   private Date dateEndValidity;
 
 }
-

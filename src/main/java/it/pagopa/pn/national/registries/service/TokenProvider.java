@@ -20,8 +20,7 @@ public class TokenProvider {
     public TokenProvider(PdndAssertionGenerator assertionGenerator,
                          PdndClient pdndClient,
                          @Value("${pn.national-registries.pdnd.client-assertion-type}") String clientAssertionType,
-                         @Value("${pn.national-registries.pdnd.grant-type}") String grantType
-    ) {
+                         @Value("${pn.national-registries.pdnd.grant-type}") String grantType) {
         this.assertionGenerator = assertionGenerator;
         this.clientAssertionType = clientAssertionType;
         this.grantType = grantType;

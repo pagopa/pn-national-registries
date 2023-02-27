@@ -13,4 +13,9 @@ class BatchStatusTest {
         assertThrows(IllegalArgumentException.class, () -> BatchStatus.fromValue("random"));
     }
 
+    @Test
+    void testToString() {
+        assertEquals("NO_BATCH_ID", BatchStatus.NO_BATCH_ID.toString());
+     }
+
 }

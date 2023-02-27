@@ -1,31 +1,37 @@
 package it.pagopa.pn.national.registries.config;
 
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+
+@ContextConfiguration(classes = {PnNationalRegistriesConfig.class})
+@ExtendWith(SpringExtension.class)
 class PnNationalRegistriesConfigTest {
 
+    @Autowired
+    private PnNationalRegistriesConfig pnNationalRegistriesConfig;
+
+    /**
+     * Method under test: {@link PnNationalRegistriesConfig#postProcessAfterInitialization(Object, String)}
+     */
     @Test
-    void getAnprX509CertificateChain() {
-        PnNationalRegistriesConfig pnNationalRegistriesConfig = new PnNationalRegistriesConfig();
-        pnNationalRegistriesConfig.setAnprX509CertificateChain("test");
-        Assertions.assertEquals("test", pnNationalRegistriesConfig.getAnprX509CertificateChain());
+    void testPostProcessAfterInitialization() throws BeansException {
+        assertEquals("Bean", pnNationalRegistriesConfig.postProcessAfterInitialization("Bean", "Bean Name"));
     }
 
+    /**
+     * Method under test: {@link PnNationalRegistriesConfig#postProcessAfterInitialization(Object, String)}
+     */
     @Test
-    void getAnprJWTHeaderDigestKeystoreAlias() {
-        PnNationalRegistriesConfig pnNationalRegistriesConfig = new PnNationalRegistriesConfig();
-        pnNationalRegistriesConfig.setAnprJWTHeaderDigestKeystoreAlias("test");
-        Assertions.assertEquals("test", pnNationalRegistriesConfig.getAnprJWTHeaderDigestKeystoreAlias());
-    }
-
-    @Test
-    void testToString(){
-        PnNationalRegistriesConfig pnNationalRegistriesConfig = new PnNationalRegistriesConfig();
-        pnNationalRegistriesConfig.setAnprJWTHeaderDigestKeystoreAlias("test");
-        Assertions.assertEquals("test", pnNationalRegistriesConfig.getAnprJWTHeaderDigestKeystoreAlias());
-        pnNationalRegistriesConfig.setAnprX509CertificateChain("test");
-        Assertions.assertEquals("test", pnNationalRegistriesConfig.getAnprX509CertificateChain());
-        Assertions.assertEquals("PnNationalRegistriesConfig(anprX509CertificateChain=test, anprJWTHeaderDigestKeystoreAlias=test)", pnNationalRegistriesConfig.toString());
+    void testPostProcessAfterInitialization2() throws BeansException {
+        ObjectMapper objectMapper = new ObjectMapper();
+        assertSame(objectMapper, pnNationalRegistriesConfig.postProcessAfterInitialization(objectMapper, "Bean Name"));
     }
 }

@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -26,6 +27,9 @@ class InfoCamereControllerTest {
 
     @Mock
     ServerWebExchange serverWebExchange;
+
+    @Mock
+    ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
     void getDigitalAddressINAD() {

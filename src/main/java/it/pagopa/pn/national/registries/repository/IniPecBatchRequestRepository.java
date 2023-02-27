@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -10,17 +11,21 @@ import java.util.Map;
 
 public interface IniPecBatchRequestRepository {
 
-    Mono<BatchRequest> createBatchRequest(BatchRequest batchRequest);
+    Mono<BatchRequest> update(BatchRequest batchRequest);
 
-    Mono<Page<BatchRequest>> getBatchRequestByNotBatchIdPageable(Map<String, AttributeValue> lastKey);
+    Mono<BatchRequest> create(BatchRequest batchRequest);
 
-    Mono<List<BatchRequest>> getBatchRequestsToSend(String batchId);
+    Mono<Page<BatchRequest>> getBatchRequestByNotBatchId(Map<String, AttributeValue> lastKey, int limit);
 
-    Mono<BatchRequest> setBatchRequestsStatus(BatchRequest batchRequest, String status);
+    Mono<List<BatchRequest>> getBatchRequestByBatchIdAndStatus(String batchId, BatchStatus status);
 
-    Mono<List<BatchRequest>> setNewBatchIdToBatchRequests(List<BatchRequest> batchRequest, String batchId);
+    Mono<BatchRequest> setNewBatchIdToBatchRequest(BatchRequest batchRequest);
 
-    Mono<List<BatchRequest>> resetBatchIdForRecovery();
+    Mono<BatchRequest> setNewReservationIdToBatchRequest(BatchRequest batchRequest);
 
-    Mono<List<BatchRequest>> resetBatchIdToBatchRequests(List<BatchRequest> batchRequests);
+    Mono<BatchRequest> resetBatchRequestForRecovery(BatchRequest batchRequest);
+
+    Mono<List<BatchRequest>> getBatchRequestToRecovery();
+
+    Mono<Page<BatchRequest>> getBatchRequestToSend(Map<String, AttributeValue> lastKey, int limit);
 }

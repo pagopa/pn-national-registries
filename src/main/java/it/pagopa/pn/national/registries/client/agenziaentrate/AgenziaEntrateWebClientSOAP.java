@@ -41,8 +41,9 @@ public class AgenziaEntrateWebClientSOAP extends CommonWebClient {
                 .pendingAcquireTimeout(Duration.ofMillis(tcpPendingAcquireTimeout))
                 .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout)).build();
 
-        HttpClient httpClient = HttpClient.create(provider).wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
+        HttpClient httpClient = HttpClient.create(provider)
+                .wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
 
-        return super.initWebClient(httpClient,basePath);
+        return super.initWebClient(httpClient, basePath);
     }
 }

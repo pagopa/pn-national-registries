@@ -19,9 +19,12 @@ public class InfoCamereController  implements InfoCamereApi {
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
-    public InfoCamereController(InfoCamereService infoCamereService, Scheduler scheduler) {
+    private final ValidateTaxIdUtils validateTaxIdUtils;
+
+    public InfoCamereController(InfoCamereService infoCamereService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.infoCamereService = infoCamereService;
         this.scheduler = scheduler;
+        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -38,7 +41,7 @@ public class InfoCamereController  implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
-        ValidateTaxIdUtils.validateTaxId(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId());
+        validateTaxIdUtils.validateTaxId(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId());
         return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, getDigitalAddressIniPECRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
@@ -58,9 +61,10 @@ public class InfoCamereController  implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(GetAddressRegistroImpreseRequestBodyDto getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
-        ValidateTaxIdUtils.validateTaxId(getAddressRegistroImpreseRequestBodyDto.getFilter().getTaxId());
+        validateTaxIdUtils.validateTaxId(getAddressRegistroImpreseRequestBodyDto.getFilter().getTaxId());
         return infoCamereService.getRegistroImpreseLegalAddress(getAddressRegistroImpreseRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 
 
@@ -79,9 +83,10 @@ public class InfoCamereController  implements InfoCamereApi {
 
     @Override
     public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(InfoCamereLegalRequestBodyDto infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
-        ValidateTaxIdUtils.validateTaxId(infoCamereLegalRequestBodyDto.getFilter().getTaxId());
+        validateTaxIdUtils.validateTaxId(infoCamereLegalRequestBodyDto.getFilter().getTaxId());
         return infoCamereService.checkTaxIdAndVatNumber(infoCamereLegalRequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t)).publishOn(scheduler);
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 
 }

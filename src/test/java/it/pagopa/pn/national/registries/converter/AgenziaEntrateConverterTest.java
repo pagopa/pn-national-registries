@@ -3,7 +3,9 @@ package it.pagopa.pn.national.registries.converter;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
+import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,5 +51,31 @@ class AgenziaEntrateConverterTest {
     void testDecodeError() {
         assertNull(agenziaEntrateConverter.decodeError("Not all who wander are lost"));
     }
+
+    @Test
+    void adELegalResponseToDtoTest() {
+        CheckValidityRappresentanteResp checkValidityRappresentanteResp = new CheckValidityRappresentanteResp();
+        checkValidityRappresentanteResp.setCodiceRitorno("00");
+        checkValidityRappresentanteResp.setValido(true);
+        checkValidityRappresentanteResp.setDettaglioEsito("XX00");
+
+        ADELegalOKDto adeLegalOKDto = agenziaEntrateConverter.adELegalResponseToDto(checkValidityRappresentanteResp);
+
+        assertEquals(adeLegalOKDto.getResultCode(), ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteResp.getCodiceRitorno()));
+        assertEquals(adeLegalOKDto.getVerificationResult(), checkValidityRappresentanteResp.getValido());
+        assertEquals(adeLegalOKDto.getResultDetail(), ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteResp.getDettaglioEsito()));
+    }
+
+   /* @Test
+    void  toEnvelopeBodyTest() {
+        ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
+        adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
+        adeLegalRequestBodyFilterDto.setTaxId("testTaxId");
+
+        CheckValidityRappresentanteResp checkValidityRappresentanteType = agenziaEntrateConverter.toEnvelopeBody(adeLegalRequestBodyFilterDto);
+
+        assertEquals(checkValidityRappresentanteType.getCfEnte(), adeLegalRequestBodyFilterDto.getVatNumber());
+        assertEquals(checkValidityRappresentanteType.getCfRappresentante(), adeLegalRequestBodyFilterDto.getTaxId());
+    } */
 }
 
