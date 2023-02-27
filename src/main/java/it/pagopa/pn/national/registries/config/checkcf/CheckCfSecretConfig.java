@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.config.checkcf;
 
 import it.pagopa.pn.national.registries.config.PnNationalRegistriesSecretConfig;
-import it.pagopa.pn.national.registries.config.PnNationlRegistriesSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.model.SecretValue;
 import it.pagopa.pn.national.registries.service.SecretManagerService;

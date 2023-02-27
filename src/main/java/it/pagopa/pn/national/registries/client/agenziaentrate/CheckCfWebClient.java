@@ -24,8 +24,8 @@ import java.io.InputStream;
 import java.time.Duration;
 import java.util.Base64;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_CHECK_CF;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_CHECK_CF;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_CHECK_CF;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_CHECK_CF;
 
 @Component
 @Slf4j
@@ -61,8 +61,6 @@ public class CheckCfWebClient extends CommonWebClient {
                 .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout)).build();
 
         HttpClient httpClient = HttpClient.create(connectionProvider).secure(t -> t.sslContext(buildSSLHttpClient())).wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
-        HttpClient httpClient = HttpClient.create(provider)
-                .wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
 
         return super.initWebClient(httpClient,basePath);
     }
