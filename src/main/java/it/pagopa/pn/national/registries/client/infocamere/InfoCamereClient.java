@@ -5,13 +5,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerificationResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImpreseResponse;
+import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -140,12 +140,12 @@ public class InfoCamereClient {
                 );
     }
 
-    public Mono<AddressRegistroImpreseResponse> getLegalAddress(String taxId) {
+    public Mono<AddressRegistroImprese> getLegalAddress(String taxId) {
         return getToken(InipecScopeEnum.SEDE.value())
                 .flatMap(token -> callGetLegalAddress(taxId, token));
     }
 
-    private Mono<AddressRegistroImpreseResponse> callGetLegalAddress(String taxId, String token) {
+    private Mono<AddressRegistroImprese> callGetLegalAddress(String taxId, String token) {
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/sede/{cf}")
@@ -157,7 +157,7 @@ public class InfoCamereClient {
                     httpHeaders.set(SCOPE, InipecScopeEnum.SEDE.value());
                 })
                 .retrieve()
-                .bodyToMono(AddressRegistroImpreseResponse.class)
+                .bodyToMono(AddressRegistroImprese.class)
                 .doOnError(throwable -> {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
@@ -185,12 +185,12 @@ public class InfoCamereClient {
         }
     }
 
-    public Mono<InfoCamereVerificationResponse> checkTaxIdAndVatNumberInfoCamere(InfoCamereLegalRequestBodyFilterDto filterDto) {
+    public Mono<InfoCamereVerification> checkTaxIdAndVatNumberInfoCamere(InfoCamereLegalRequestBodyFilterDto filterDto) {
         return getToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value())
                 .flatMap(token -> callCheckTaxId(filterDto, token));
     }
 
-    private Mono<InfoCamereVerificationResponse> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
+    private Mono<InfoCamereVerification> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/legaleRappresentante/{cfPersona}")
@@ -199,7 +199,7 @@ public class InfoCamereClient {
                         .build(Map.of("cfPersona", filterDto.getTaxId())))
                 .headers(httpHeaders -> httpHeaders.setBearerAuth(token))
                 .retrieve()
-                .bodyToMono(InfoCamereVerificationResponse.class)
+                .bodyToMono(InfoCamereVerification.class)
                 .doOnError(throwable -> {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
