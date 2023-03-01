@@ -29,7 +29,7 @@ public class PdndClient {
         map.put("grant_type", Collections.singletonList(grantType));
 
         return webClient.post()
-                .uri("/authorization-server/token.oauth2")
+                .uri("/token.oauth2")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED))
                 .bodyValue(map)
                 .retrieve()

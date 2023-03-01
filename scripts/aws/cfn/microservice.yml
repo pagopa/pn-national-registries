@@ -116,6 +116,11 @@ Parameters:
     Description: 'ANPR SecretName'
 
   # Parametro obbligatorio (ARN del secret)
+  PDNDCheckCfSSLSecret:
+    Type: String
+    Description: 'PDND SecretName'
+
+  # Parametro obbligatorio (ARN del secret)
   PDNDANPRSecret:
     Type: String
     Description: 'PDND ANPR Client assertion claims'
@@ -293,6 +298,7 @@ Resources:
         ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
         ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
         ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
+        ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_CHECK_CF_AUTH_SECRET=${PDNDCheckCfSSLSecret}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -319,6 +325,7 @@ Resources:
               - !Ref PDNDANPRSecret
               - !Ref ANPRSSLSecret
               - !Ref PDNDCheckCfSecret
+              - !Ref PDNDCheckCfSSLSecret
               - !Ref PDNDInadSecret
               - !Ref InfoCamereAuthSecret
           - Effect: Allow

@@ -29,6 +29,7 @@ public abstract class CommonWebClient extends CommonBaseClient {
                 .codecs(c -> c.defaultCodecs().enableLoggingRequestDetails(true))
                 .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(responseExchangeFilter))
                 .clientConnector(new ReactorClientHttpConnector(httpClient)))
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
     }
 }
