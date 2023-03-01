@@ -14,6 +14,7 @@
     "PDNDANPRIntegritySecret": "arn:aws:secretsmanager:eu-south-1:748275689270:secret:svil/pn-national-registries/anpr/integrity-rest-8She86",
     "PDNDCheckCfSecret": "arn:aws:secretsmanager:eu-south-1:748275689270:secret:79489c37-5957-4635-9121-274ba50439d8-5YhzjB",
     "PDNDInadSecret": "arn:aws:secretsmanager:eu-south-1:748275689270:secret:660261a1-1a22-4e2d-9a64-91bbca8e02a9-KjUv8x",
+    "PDNDCheckCfSSLSecret": "",
     "InfoCamereAuthSecret": "arn:aws:secretsmanager:eu-south-1:748275689270:secret:svil/pn-national-registries/inipec/auth-rest-XrD9qh",
     "ANPRTipoInvio": "TEST",
     "PnCxIdValidationEnabled": "false"
