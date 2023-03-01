@@ -13,6 +13,7 @@
     "PDNDANPRSecret": "",
     "PDNDANPRIntegritySecret": "",
     "PDNDCheckCfSecret": "",
+    "PDNDCheckCfSSLSecret": "",
     "PDNDInadSecret": "a",
     "InfoCamereAuthSecret": "",
     "ANPRTipoInvio": "",
