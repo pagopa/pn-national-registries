@@ -59,9 +59,7 @@ class PnNationalRegistriesSecretConfigTest {
     @DisplayName("Should throw an exception when the secret is not found")
     void getSecretValueWhenSecretIsNotFoundThenThrowException() {
         when(secretManagerService.getSecretValue(any())).thenReturn(Optional.empty());
-        assertThrows(
-                PnInternalException.class,
-                () -> pnNationalRegistriesSecretConfig.getSecretValue("", ""));
+        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretConfig.getSecretValue("", ""));
     }
 
     @Test
