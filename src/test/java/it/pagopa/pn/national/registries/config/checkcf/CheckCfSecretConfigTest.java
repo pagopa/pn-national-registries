@@ -34,12 +34,12 @@ class CheckCfSecretConfigTest {
                         "keyId":"pub",
                         "clientId":"trust"
                         }""").build();
-        when(secretManagerService.getSecretValue("test1"))
-                .thenReturn(Optional.of(getSecretValueResponse2));
         when(secretManagerService.getSecretValue("test2"))
+                .thenReturn(Optional.of(getSecretValueResponse2));
+        when(secretManagerService.getSecretValue("test3"))
                 .thenReturn(Optional.of(getSecretValueResponse));
 
-        CheckCfSecretConfig checkCfSecretConfig = new CheckCfSecretConfig(secretManagerService,"test1","test2");
+        CheckCfSecretConfig checkCfSecretConfig = new CheckCfSecretConfig(secretManagerService,"test1","test2", "test3");
         Assertions.assertNotNull(checkCfSecretConfig.getCheckCfSecretValue());
         Assertions.assertNotNull(checkCfSecretConfig.getCheckCfAuthChannelSecret());
     }

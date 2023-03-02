@@ -40,7 +40,7 @@ public class AnprWebClient extends CommonWebClient {
                          @Value("${pn.national.registries.webclient.anpr.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
                          @Value("${pn.national.registries.webclient.anpr.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
                          @Value("${pn.national.registries.webclient.anpr.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                         @Value("${pn.national.registries.pdnd.anpr.base-path}") String basePath,
+                         @Value("${pn.national.registries.anpr.base-path}") String basePath,
                          AnprSecretConfig anprSecretConfig) {
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;

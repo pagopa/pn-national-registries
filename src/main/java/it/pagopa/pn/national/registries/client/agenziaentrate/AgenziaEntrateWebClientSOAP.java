@@ -22,11 +22,11 @@ public class AgenziaEntrateWebClientSOAP extends CommonWebClient {
     private final Integer tcpPoolIdleTimeout;
     private final String basePath;
 
-    public AgenziaEntrateWebClientSOAP(@Value("${pn.national.registries.webclient.check-cf.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                                       @Value("${pn.national.registries.webclient.check-cf.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                                       @Value("${pn.national.registries.webclient.check-cf.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
-                                       @Value("${pn.national.registries.webclient.check-cf.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                                       @Value("${pn.national.registries.pdnd.agenzia-entrate.base-path}") String basePath) {
+    public AgenziaEntrateWebClientSOAP(@Value("${pn.national.registries.webclient.ade-legal.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                                       @Value("${pn.national.registries.webclient.ade-legal.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                                       @Value("${pn.national.registries.webclient.ade-legal.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                                       @Value("${pn.national.registries.webclient.ade-legal.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
+                                       @Value("${pn.national.registries.ade-legal.base-path}") String basePath) {
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;

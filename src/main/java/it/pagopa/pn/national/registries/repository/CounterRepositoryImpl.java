@@ -17,7 +17,7 @@ public class CounterRepositoryImpl implements CounterRepository {
     private final DynamoDbAsyncTable<CounterModel> table;
 
     public CounterRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
-                                 @Value("${pn.national.registries.pdnd.anpr.table}") String tableName) {
+                                 @Value("${pn.national.registries.anpr.table}") String tableName) {
         this.table = dynamoDbEnhancedAsyncClient.table(tableName, TableSchema.fromClass(CounterModel.class));
     }
 

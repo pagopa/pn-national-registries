@@ -36,7 +36,7 @@ public class AgidJwtSignature {
     private final String aud;
     private final AnprSecretConfig anprSecretConfig;
 
-    public AgidJwtSignature(@Value("${pn.national.registries.pdnd.anpr.base-path}") String aud,
+    public AgidJwtSignature(@Value("${pn.national.registries.anpr.base-path}") String aud,
                             AnprSecretConfig anprSecretConfig) {
         this.aud = aud;
         this.anprSecretConfig = anprSecretConfig;

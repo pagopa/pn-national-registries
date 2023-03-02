@@ -24,30 +24,28 @@ public class PnNationalRegistriesSecretConfig {
         this.secretManagerService = secretManagerService;
     }
 
-    protected SecretValue getSecretValue(String purposeId) {
-        Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(purposeId);
+    protected SecretValue getSecretValue(String purposeId, String secretId) {
+        Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretId);
         if (opt.isPresent()) {
-            log.info("founded secret for purposeId: {}", purposeId);
+            log.info("founded secret for purposeId: {} and secretId: {}", purposeId, secretId);
             return convertToSecretValueObject(opt.get().secretString());
         } else {
-            log.info("secret value for purposeId: {} not found", purposeId);
+            log.warn("secret value for purposeId: {} and secretId: {} not found", purposeId, secretId);
             throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, new Throwable());
         }
     }
 
-    protected SSLData getSslDataSecretValue(String secretName) {
-
+    protected SSLData getSslDataSecretValue(String secretId) {
         try {
             ObjectMapper mapper = new ObjectMapper();
-            Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretName);
+            Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretId);
             if (opt.isPresent()) {
-                log.info("founded secret value for secret: {}", secretName);
+                log.info("founded secret value for secret: {}", secretId);
                 return mapper.readValue(opt.get().secretString(), SSLData.class);
             } else {
-                log.info("secret value for secret: {} not found", secretName);
+                log.warn("secret value for secret: {} not found", secretId);
                 throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, new Throwable());
             }
-
         } catch (JsonProcessingException e) {
             throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, e);
         }

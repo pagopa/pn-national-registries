@@ -39,11 +39,11 @@ public class CheckCfWebClient extends CommonWebClient {
 
     private final CheckCfSecretConfig checkCfSecretConfig;
 
-    public CheckCfWebClient(@Value("${pn.national.registries.webclient.check-cf.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                            @Value("${pn.national.registries.webclient.check-cf.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                            @Value("${pn.national.registries.webclient.check-cf.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
-                            @Value("${pn.national.registries.webclient.check-cf.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                            @Value("${pn.national.registries.pdnd.agenzia-entrate.base-path}") String basePath,
+    public CheckCfWebClient(@Value("${pn.national.registries.webclient.ade-check-cf.tcp-max-poolsize}") Integer tcpMaxPoolSize,
+                            @Value("${pn.national.registries.webclient.ade-check-cf.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
+                            @Value("${pn.national.registries.webclient.ade-check-cf.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
+                            @Value("${pn.national.registries.webclient.ade-check-cf.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
+                            @Value("${pn.national.registries.ade-check-cf.base-path}") String basePath,
                             CheckCfSecretConfig checkCfSecretConfig) {
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;

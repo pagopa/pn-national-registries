@@ -86,11 +86,15 @@ Parameters:
     Type: String
     Description: 'ANPR Base Purpose ID'
 
-  AgenziaEntrateBaseURL:
+  AdELegalBaseURL:
     Type: String
-    Description: 'Agenzia Entrate Base URL'
+    Description: 'Agenzia Entrate Legale Rappresentante Base URL'
 
-  AgenziaEntratePurposeId:
+  AdECheckCfBaseURL:
+    Type: String
+    Description: 'Agenzia Entrate Check CF Base URL'
+
+  AdECheckCfPurposeId:
     Type: String
     Description: 'Agenzia Entrate Purpose ID'
 
@@ -104,11 +108,11 @@ Parameters:
 
   InfoCamereBaseURL:
     Type: String
-    Description: 'INIPEC Base URL'
+    Description: 'InfoCamere Base URL'
 
   InfoCamereClientId:
     Type: String
-    Description: 'INIPEC Client ID'
+    Description: 'InfoCamere Client ID'
 
   # Parametro obbligatorio (ARN del secret)
   ANPRSSLSecret:
@@ -116,7 +120,7 @@ Parameters:
     Description: 'ANPR SecretName'
 
   # Parametro obbligatorio (ARN del secret)
-  PDNDCheckCfSSLSecret:
+  AdECheckCfSSLSecret:
     Type: String
     Description: 'PDND SecretName'
 
@@ -126,7 +130,7 @@ Parameters:
     Description: 'PDND ANPR Client assertion claims'
 
   # Parametro obbligatorio (ARN del secret)
-  PDNDCheckCfSecret:
+  PDNDAdECheckCfSecret:
     Type: String
     Description: 'PDND CheckCf Client assertion claims'
 
@@ -136,14 +140,14 @@ Parameters:
     Description: 'PDND INAD Client assertion claims'
 
   # Parametro obbligatorio (ARN del secret)
-  PDNDANPRIntegritySecret:
+  ANPRIntegritySecret:
     Type: String
     Description: 'PDND ANPR Integrity certs'
 
   # Parametro obbligatorio (ARN del secret)
   InfoCamereAuthSecret:
     Type: String
-    Description: 'INIPEC auth cert'
+    Description: 'InfoCamere auth cert'
 
   PDNDSessionTokenSigningKeyARN:
     Type: String
@@ -285,20 +289,24 @@ Resources:
         ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
         ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_BASE_URL=${PDNDBaseURL}'
         ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
-        ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_BASE_URL=${AgenziaEntrateBaseURL}'
-        ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
-        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
-        ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
-        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_PURPOSE_ID=${AgenziaEntratePurposeId}'
-        ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_INAD_PURPOSE_ID=${INADPurposeId}'
-        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
-        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ANPR_AUTH_SECRET=${ANPRSSLSecret}'
-        ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ANPR_INTEGRITY_SECRET=${PDNDANPRIntegritySecret}'
-        ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
-        ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
-        ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
-        ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
-        ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_CHECK_CF_AUTH_SECRET=${PDNDCheckCfSSLSecret}'
+        ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_AUTH_SECRET=${ANPRSSLSecret}'
+        ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_ANPR_INTEGRITY_SECRET=${ANPRIntegritySecret}'
+        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
+        ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
+        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
+        ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_BASE_URL=${AdELegalBaseURL}'
+        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
+        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_AUTH_SECRET=${AdECheckCfSSLSecret}'
+        ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PURPOSE_ID=${AdECheckCfPurposeId}'
+        ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PDND_CLIENT_SECRET=${PDNDAdECheckCfSecret}'
+        ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
+        ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_INAD_PURPOSE_ID=${INADPurposeId}'
+        ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_INAD_PDND_CLIENT_SECRET=${PDNDInadSecret}'
+        ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
+        ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
+        ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
+        ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -321,11 +329,11 @@ Resources:
             Action:
               - secretsmanager:GetSecretValue
             Resource:
-              - !Ref PDNDANPRIntegritySecret
+              - !Ref ANPRIntegritySecret
               - !Ref PDNDANPRSecret
               - !Ref ANPRSSLSecret
-              - !Ref PDNDCheckCfSecret
-              - !Ref PDNDCheckCfSSLSecret
+              - !Ref PDNDAdECheckCfSecret
+              - !Ref AdECheckCfSSLSecret
               - !Ref PDNDInadSecret
               - !Ref InfoCamereAuthSecret
           - Effect: Allow

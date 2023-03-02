@@ -24,7 +24,7 @@ public class InadWebClient extends CommonWebClient {
                          @Value("${pn.national.registries.webclient.inad.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
                          @Value("${pn.national.registries.webclient.inad.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
                          @Value("${pn.national.registries.webclient.inad.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                         @Value("${pn.national.registries.pdnd.inad.base-path}") String basePath) {
+                         @Value("${pn.national.registries.inad.base-path}") String basePath) {
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
