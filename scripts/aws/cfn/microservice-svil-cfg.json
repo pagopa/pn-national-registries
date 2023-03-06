@@ -10,7 +10,7 @@
     "AdELegalBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "AdECheckCfBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "AdECheckCfPurposeId": "79489c37-5957-4635-9121-274ba50439d8",
-    "AdECheckCfSSLSecret": "",
+    "AdECheckCfSSLSecret": "arn:aws:secretsmanager:eu-south-1:748275689270:secret:svil/pn-national-registries/pdnd/auth-rest-0M39TW",
     "PDNDAdECheckCfSecret": "arn:aws:secretsmanager:eu-south-1:748275689270:secret:79489c37-5957-4635-9121-274ba50439d8-5YhzjB",
     "INADBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "INADPurposeId": "660261a1-1a22-4e2d-9a64-91bbca8e02a9",
