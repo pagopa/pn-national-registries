@@ -28,20 +28,21 @@ public class ResponseExchangeFilter implements ExchangeFilterFunction {
     }
 
     private ClientResponse interceptBody(long startTime, ClientResponse response, ClientRequest request) {
+        StringBuilder body = new StringBuilder();
         return response.mutate()
                 .body(data -> data
-                        .doOnNext(dataBuffer ->
-                                logResponseBody(startTime, dataBuffer, response, request)))
+                        .doOnNext(dataBuffer -> body.append(dataBuffer.toString(StandardCharsets.UTF_8)))
+                        .doOnComplete(() -> logResponseBody(startTime, body.toString(), response, request)))
                 .build();
     }
 
-    public void logResponseBody(long startTime, DataBuffer dataBuffer, ClientResponse response, ClientRequest request) {
+    public void logResponseBody(long startTime, String body, ClientResponse response, ClientRequest request) {
         long duration = System.currentTimeMillis() - startTime;
         log.info("Response HTTP from {} {} {} - body: {} - timelapse: {}ms",
                 MaskDataUtils.maskInformation(request.url().toString()),
                 response.statusCode().value(),
                 Objects.requireNonNull(response.statusCode().name()),
-                MaskDataUtils.maskInformation(dataBuffer.toString(StandardCharsets.UTF_8)),
+                MaskDataUtils.maskInformation(body),
                 duration);
     }
 
