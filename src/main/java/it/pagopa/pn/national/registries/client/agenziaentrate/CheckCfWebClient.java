@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import com.amazonaws.util.StringUtils;
-import io.netty.handler.logging.LogLevel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
@@ -15,7 +14,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
-import reactor.netty.transport.logging.AdvancedByteBufFormat;
 
 import javax.net.ssl.SSLException;
 import java.io.ByteArrayInputStream;
@@ -61,8 +59,7 @@ public class CheckCfWebClient extends CommonWebClient {
                 .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout)).build();
 
         HttpClient httpClient = HttpClient.create(connectionProvider)
-                .secure(t -> t.sslContext(buildSSLHttpClient()))
-                .wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
+                .secure(t -> t.sslContext(buildSSLHttpClient()));
 
         return super.initWebClient(httpClient, basePath);
     }

@@ -79,7 +79,6 @@ public class AnprService {
         dto.setCasoUso("C001");
 
         richiesta.setDatiRichiesta(dto);
-        log.debug("RichiestaE002Dto: {}", request);
         return richiesta;
     }
 }
