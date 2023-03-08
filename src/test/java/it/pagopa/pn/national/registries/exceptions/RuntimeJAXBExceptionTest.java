@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import org.junit.jupiter.api.Test;
 
 class RuntimeJAXBExceptionTest {
+
     /**
      * Method under test: {@link RuntimeJAXBException#RuntimeJAXBException(String)}
      */
@@ -18,4 +19,3 @@ class RuntimeJAXBExceptionTest {
         assertEquals("An error occurred", actualRuntimeJAXBException.getLocalizedMessage());
     }
 }
-
