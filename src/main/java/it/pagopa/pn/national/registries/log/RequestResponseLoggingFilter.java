@@ -49,6 +49,7 @@ public class RequestResponseLoggingFilter implements WebFilter {
 
         ServerHttpResponseDecorator loggingServerHttpResponseDecorator = new ServerHttpResponseDecorator(exchange.getResponse()) {
             String responseBody = "";
+
             @Override
             public @NotNull Mono<Void> writeWith(@NotNull Publisher<? extends DataBuffer> body) {
                 Mono<DataBuffer> buffer = Mono.from(body);
