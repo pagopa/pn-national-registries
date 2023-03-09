@@ -24,27 +24,22 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class PnWebExceptionHandlerTest {
+
     @InjectMocks
     private PnWebExceptionHandler pnWebExceptionHandler;
 
     @Mock
     ServerWebExchange serverWebExchange;
-
     @Mock
     ServerHttpResponse serverHttpResponse;
-
     @Mock
     ServerHttpRequest serverHttpRequest;
-
     @Mock
     DataBufferFactory dataBufferFactory;
-
     @Mock
     DataBuffer dataBuffer;
-
     @Mock
     ExceptionHelper exceptionHelper;
-
     @Mock
     HttpHeaders headers;
 
@@ -52,7 +47,7 @@ class PnWebExceptionHandlerTest {
      * Method under test: {@link PnWebExceptionHandler#handle(ServerWebExchange, Throwable)}
      */
     @Test
-    void testHandle(){
+    void testHandle() {
         Problem problem = new Problem();
         problem.setStatus(400);
         Throwable throwable = new Throwable();
@@ -62,8 +57,7 @@ class PnWebExceptionHandlerTest {
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
-        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,throwable)).expectComplete();
-
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, throwable)).expectComplete();
     }
 
     /**
@@ -71,7 +65,6 @@ class PnWebExceptionHandlerTest {
      */
     @Test
     void testHandle2() {
-
         WebClientResponseException exception = mock(WebClientResponseException.class);
         when(exception.getMessage()).thenReturn("bad request");
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
@@ -82,8 +75,7 @@ class PnWebExceptionHandlerTest {
         Problem problem = new Problem();
         problem.setStatus(400);
         when(exceptionHelper.handleException(any())).thenReturn(problem);
-        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
-
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
     }
 
     /**
@@ -95,17 +87,12 @@ class PnWebExceptionHandlerTest {
         when(exception.getStatusCode()).thenReturn(HttpStatus.UNAUTHORIZED);
         when(exception.getMessage()).thenReturn("bad request");
         when(exceptionHelper.handleException(exception)).thenReturn(Problem.builder().status(400).build());
-        Class<?> inadResponseKOClass = InadResponseKO.class;
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
-        Problem problem = new Problem();
-        problem.setStatus(400);
-        //when(exceptionHelper.handleException(any())).thenReturn(problem);
-        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
-
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
     }
 
     @Test
@@ -121,17 +108,13 @@ class PnWebExceptionHandlerTest {
         when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
-        Problem problem = new Problem();
-        problem.setStatus(400);
-        //when(exceptionHelper.handleException(any())).thenReturn(problem);
-        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
-
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
     }
 
     @Test
     void testHandle7() {
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
-        when(exception.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
         when(exception.getMessage()).thenReturn("bad request");
         when(exception.getResponseBodyAsString()).thenReturn("{}");
         Class<?> inadResponseKOClass = AnprResponseKO.class;
@@ -141,11 +124,6 @@ class PnWebExceptionHandlerTest {
         when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
-        Problem problem = new Problem();
-        problem.setStatus(400);
-        //when(exceptionHelper.handleException(any())).thenReturn(problem);
-        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange,exception)).expectComplete();
-
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
     }
 }
-

@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
-import io.netty.handler.logging.LogLevel;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
@@ -14,7 +13,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
-import reactor.netty.transport.logging.AdvancedByteBufFormat;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -49,8 +47,7 @@ public class CheckCfWebClient extends CommonWebClient {
                 .build();
 
         HttpClient httpClient = HttpClient.create(connectionProvider)
-                .secure(t -> t.sslContext(buildSslContext()))
-                .wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
+                .secure(t -> t.sslContext(buildSslContext()));
 
         return super.initWebClient(httpClient, basePath);
     }

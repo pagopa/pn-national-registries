@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
-import io.netty.handler.logging.LogLevel;
 import it.pagopa.pn.national.registries.client.CommonWebClient;
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalWebClientConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -9,7 +8,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
-import reactor.netty.transport.logging.AdvancedByteBufFormat;
 
 import java.time.Duration;
 
@@ -36,8 +34,7 @@ public class AgenziaEntrateWebClientSOAP extends CommonWebClient {
                 .maxIdleTime(Duration.ofMillis(webClientConfig.getTcpPoolIdleTimeout()))
                 .build();
 
-        HttpClient httpClient = HttpClient.create(connectionProvider)
-                .wiretap("reactor.netty.http.client.HttpClient", LogLevel.DEBUG, AdvancedByteBufFormat.TEXTUAL);
+        HttpClient httpClient = HttpClient.create(connectionProvider);
 
         return super.initWebClient(httpClient, basePath);
     }

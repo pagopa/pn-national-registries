@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
+import it.pagopa.pn.commons.log.MDCWebFilter;
 import it.pagopa.pn.national.registries.model.NationalRegistriesProblem;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.anpr.ResponseKO;
@@ -31,21 +32,23 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 
-@Configuration
-@Order(-2)
-@Import(ExceptionHelper.class)
 @Slf4j
+@Order(-2)
+@Configuration
+@Import(ExceptionHelper.class)
 public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
 
     private final ExceptionHelper exceptionHelper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public PnWebExceptionHandler(ExceptionHelper exceptionHelper){
+    private static final String LOG_EX = "Error -> statusCode: {}, message: {}, uri: {}";
+
+    public PnWebExceptionHandler(ExceptionHelper exceptionHelper) {
         this.exceptionHelper = exceptionHelper;
         objectMapper.findAndRegisterModules();
 
         objectMapper
-                .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT,true)
+                .configure(DeserializationFeature.ACCEPT_EMPTY_STRING_AS_NULL_OBJECT, true)
                 .configOverride(OffsetDateTime.class)
                 .setFormat(JsonFormat.Value.forPattern("yyyy-MM-dd'T'HH:mm:ss.SSSX"));
     }
@@ -55,26 +58,31 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
     public Mono<Void> handle(@NonNull ServerWebExchange serverWebExchange, @NonNull Throwable throwable) {
         DataBuffer dataBuffer;
         DataBufferFactory bufferFactory = serverWebExchange.getResponse().bufferFactory();
-        NationalRegistriesProblem nationalRegistriesProblem;
         try {
+            NationalRegistriesProblem problem;
             if (throwable instanceof PnNationalRegistriesException exception) {
-                log.error("Error -> statusCode: {}, message: {}, uri: {}", exception.getStatusCode().value(), MaskDataUtils.maskInformation(exception.getMessage()), serverWebExchange.getRequest().getURI());
-                if(exception.getStatusCode().equals(HttpStatus.UNAUTHORIZED)){
-                    nationalRegistriesProblem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
-                }else {
-                    nationalRegistriesProblem = createProblem(exception);
+                if (exception.getStatusCode().equals(HttpStatus.UNAUTHORIZED)) {
+                    problem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
+                } else {
+                    problem = createProblem(exception);
                 }
             } else if (Exceptions.isRetryExhausted(throwable) && throwable.getCause() instanceof WebClientResponseException.ServiceUnavailable exception) {
-                log.error("Error -> statusCode: {}, message: {}, uri: {}", exception.getStatusCode().value(), MaskDataUtils.maskInformation(exception.getMessage()), serverWebExchange.getRequest().getURI());
-                nationalRegistriesProblem = createProblem(exception);
+                problem = createProblem(exception);
             } else {
-                log.error("Error -> {}, uri : {}", MaskDataUtils.maskInformation(throwable.getMessage()), serverWebExchange.getRequest().getURI());
-                nationalRegistriesProblem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
+                problem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
             }
-            nationalRegistriesProblem.setTraceId(MDC.get("trace_id"));
-            nationalRegistriesProblem.setTimestamp(OffsetDateTime.now());
-            dataBuffer = bufferFactory.wrap(objectMapper.writeValueAsBytes(nationalRegistriesProblem));
-            serverWebExchange.getResponse().setStatusCode(HttpStatus.resolve(nationalRegistriesProblem.getStatus()));
+
+            if (problem.getStatus() >= 500) {
+                log.error(LOG_EX, problem.getStatus(), MaskDataUtils.maskInformation(throwable.getMessage()), serverWebExchange.getRequest().getURI());
+            } else {
+                log.warn(LOG_EX, problem.getStatus(), MaskDataUtils.maskInformation(throwable.getMessage()), serverWebExchange.getRequest().getURI());
+            }
+
+            problem.setTraceId(MDC.get(MDCWebFilter.MDC_TRACE_ID_KEY));
+            problem.setTimestamp(OffsetDateTime.now());
+
+            dataBuffer = bufferFactory.wrap(objectMapper.writeValueAsBytes(problem));
+            serverWebExchange.getResponse().setStatusCode(HttpStatus.resolve(problem.getStatus()));
 
         } catch (JsonProcessingException e) {
             log.error("cannot output problem", e);
@@ -120,13 +128,14 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
 
     private AnprResponseKO mapToAnprResponseKO(String responseBodyAsString) throws JsonProcessingException {
         ResponseKO responseKO = new ResponseKO();
-        if(!StringUtils.isNullOrEmpty(responseBodyAsString))
+        if (!StringUtils.isNullOrEmpty(responseBodyAsString)) {
             responseKO = objectMapper.readValue(responseBodyAsString, ResponseKO.class);
+        }
         AnprResponseKO anprResponseKO = new AnprResponseKO();
-        if(responseKO.getResponseHeader()!=null){
+        if (responseKO.getResponseHeader() != null) {
             anprResponseKO.setClientOperationId(responseKO.getResponseHeader().getClientOperationId());
         }
-        if(responseKO.getErrorsList()!=null && responseKO.getErrorsList().size()==1){
+        if (responseKO.getErrorsList() != null && responseKO.getErrorsList().size() == 1) {
             anprResponseKO.setCode(responseKO.getErrorsList().get(0).getCode());
             anprResponseKO.setDetail(responseKO.getErrorsList().get(0).getDetail());
             anprResponseKO.setElement(responseKO.getErrorsList().get(0).getElement());
