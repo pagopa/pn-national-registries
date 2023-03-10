@@ -15,10 +15,8 @@ class PdndWebClientTest {
 
     @Test
     void testInit(){
-        PdndWebClient pdndWebClient = new PdndWebClient(100,100,
-                100,100,"test.it");
+        PdndWebClient pdndWebClient = new PdndWebClient(100, 100, 100 ,100, true, "test.it");
         Assertions.assertThrows(NullPointerException.class, pdndWebClient::initWebClient);
     }
-
 
 }

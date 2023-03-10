@@ -24,7 +24,9 @@ public class PdndWebClient extends CommonWebClient {
                          @Value("${pn.national.registries.webclient.pdnd.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
                          @Value("${pn.national.registries.webclient.pdnd.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
                          @Value("${pn.national.registries.webclient.pdnd.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
+                         @Value("${pn.national.registries.webclient.ssl-cert-ver}") Boolean sslCertVer,
                          @Value("${pn.national.registries.pdnd.base-path}") String basePath) {
+        super(sslCertVer);
         this.tcpMaxPoolSize = tcpMaxPoolSize;
         this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
         this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
@@ -33,12 +35,12 @@ public class PdndWebClient extends CommonWebClient {
     }
 
     protected WebClient initWebClient() {
-
         ConnectionProvider connectionProvider = ConnectionProvider.builder("fixed")
                 .maxConnections(tcpMaxPoolSize)
                 .pendingAcquireMaxCount(tcpMaxQueuedConnections)
                 .pendingAcquireTimeout(Duration.ofMillis(tcpPendingAcquireTimeout))
-                .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout)).build();
+                .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout))
+                .build();
 
         HttpClient httpClient = HttpClient.create(connectionProvider);
 

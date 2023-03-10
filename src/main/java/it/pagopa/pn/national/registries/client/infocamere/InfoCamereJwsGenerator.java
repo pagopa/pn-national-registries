@@ -45,11 +45,13 @@ public class InfoCamereJwsGenerator {
     public String createAuthRest(String scope) {
         try {
             log.info("start to createAuthRest");
-            SSLData sslData = infoCamereSecretConfig.getIniPecAuthRestSecret();
-            return JWT.create().withHeader(createHeaderMap(sslData)).withPayload(createClaimMap(scope))
+            SSLData sslData = infoCamereSecretConfig.getInfoCamereAuthRestSecret();
+            return JWT.create()
+                    .withHeader(createHeaderMap(sslData))
+                    .withPayload(createClaimMap(scope))
                     .sign(Algorithm.RSA256(getPublicKey(sslData.getPub()), getPrivateKey(sslData.getKey())));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
-            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
+            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR, e);
         }
     }
 
@@ -75,7 +77,7 @@ public class InfoCamereJwsGenerator {
         map.put(RegisteredClaims.JWT_ID, UUID.randomUUID().toString());
         map.put("scope", scope);
 
-        log.debug("ClaimMap audience: {}",map.get(RegisteredClaims.AUDIENCE));
+        log.debug("ClaimMap audience: {}", map.get(RegisteredClaims.AUDIENCE));
         return map;
     }
 

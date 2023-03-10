@@ -23,14 +23,14 @@ class InadSecretConfigTest {
 
     @Test
     void getInadSecretConfigTest() {
-        GetSecretValueResponse getSecretValueResponse2 = GetSecretValueResponse.builder()
-                .secretString("{\n" +
-                        "\"keyId\":\"pub\",\n" +
-                        "\"clientId\":\"trust\"\n" +
-                        "}").build();
-        when(secretManagerService.getSecretValue("test1"))
+        GetSecretValueResponse getSecretValueResponse2 = GetSecretValueResponse.builder().secretString("""
+                {
+                "keyId":"pub",
+                "clientId":"trust"
+                }""").build();
+        when(secretManagerService.getSecretValue("test2"))
                 .thenReturn(Optional.of(getSecretValueResponse2));
-        InadSecretConfig inadSecretConfig = new InadSecretConfig(secretManagerService,"test1");
+        InadSecretConfig inadSecretConfig = new InadSecretConfig(secretManagerService, "test1", "test2");
         Assertions.assertNotNull(inadSecretConfig.getInadSecretValue());
     }
 

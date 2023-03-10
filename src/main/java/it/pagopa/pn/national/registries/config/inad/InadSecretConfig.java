@@ -17,9 +17,10 @@ public class InadSecretConfig extends PnNationalRegistriesSecretConfig {
     private final SecretValue inadSecretValue;
 
     public InadSecretConfig(SecretManagerService secretManagerService,
-                            @Value("${pn.national.registries.pdnd.inad.purpose-id}") String purposeId) {
+                            @Value("${pn.national.registries.pdnd.inad.purpose-id}") String purposeId,
+                            @Value("${pn.national.registries.pdnd.inad.secret}") String pdndSecret) {
         super(secretManagerService);
         this.secretManagerService = secretManagerService;
-        this.inadSecretValue = getSecretValue(purposeId);
+        this.inadSecretValue = getSecretValue(purposeId, pdndSecret);
     }
 }

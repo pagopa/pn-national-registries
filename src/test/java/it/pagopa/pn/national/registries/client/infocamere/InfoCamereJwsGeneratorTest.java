@@ -32,7 +32,7 @@ class InfoCamereJwsGeneratorTest {
         sslData.setKey("TestKey");
         sslData.setPub("TestPub");
         sslData.setTrust("TestTrust");
-        Mockito.when(infoCamereSecretConfig.getIniPecAuthRestSecret()).thenReturn(sslData);
+        Mockito.when(infoCamereSecretConfig.getInfoCamereAuthRestSecret()).thenReturn(sslData);
         Assertions.assertThrows(PnInternalException.class, () -> authRest.createAuthRest(scope));
     }
 

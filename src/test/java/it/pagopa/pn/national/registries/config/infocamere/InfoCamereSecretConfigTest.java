@@ -20,15 +20,15 @@ class InfoCamereSecretConfigTest {
 
     @Test
     void getIniPecSecretConfigTest() {
-        GetSecretValueResponse getSecretValueResponse2 = GetSecretValueResponse.builder()
-                .secretString("{\n" +
-                        "\"cert\":\"cert\",\n" +
-                        "\"key\":\"key\"\n" +
-                        "}").build();
+        GetSecretValueResponse getSecretValueResponse2 = GetSecretValueResponse.builder().secretString("""
+                {
+                "cert":"cert",
+                "key":"key"
+                }""").build();
         when(secretManagerService.getSecretValue("test1"))
                 .thenReturn(Optional.of(getSecretValueResponse2));
-        InfoCamereSecretConfig inipecSecretConfig = new InfoCamereSecretConfig(secretManagerService,"test1");
-        Assertions.assertNotNull(inipecSecretConfig.getIniPecAuthRestSecret());
+        InfoCamereSecretConfig inipecSecretConfig = new InfoCamereSecretConfig(secretManagerService, "test1");
+        Assertions.assertNotNull(inipecSecretConfig.getInfoCamereAuthRestSecret());
     }
 
 }

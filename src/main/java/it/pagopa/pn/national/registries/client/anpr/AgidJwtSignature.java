@@ -36,7 +36,7 @@ public class AgidJwtSignature {
     private final String aud;
     private final AnprSecretConfig anprSecretConfig;
 
-    public AgidJwtSignature(@Value("${pn.national.registries.pdnd.anpr.base-path}") String aud,
+    public AgidJwtSignature(@Value("${pn.national.registries.anpr.base-path}") String aud,
                             AnprSecretConfig anprSecretConfig) {
         this.aud = aud;
         this.anprSecretConfig = anprSecretConfig;
@@ -51,7 +51,9 @@ public class AgidJwtSignature {
             log.debug("tokenHeader ALg: {}",th.getAlg());
             TokenPayload tp = new TokenPayload(jwtConfig);
             log.debug("tokenPayload Audience: {}",tp.getAud());
-            return JWT.create().withHeader(createHeaderMap(th, sslData)).withPayload(createClaimMap(digest, tp))
+            return JWT.create()
+                    .withHeader(createHeaderMap(th, sslData))
+                    .withPayload(createClaimMap(digest, tp))
                     .sign(Algorithm.RSA256(getPublicKey(sslData.getPub()), getPrivateKey(sslData.getKey())));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);

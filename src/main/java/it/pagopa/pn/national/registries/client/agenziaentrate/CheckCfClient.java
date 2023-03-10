@@ -39,7 +39,7 @@ public class CheckCfClient {
 
     protected CheckCfClient(AccessTokenExpiringMap accessTokenExpiringMap,
                             CheckCfWebClient checkCfWebClient,
-                            @Value("${pn.national.registries.pdnd.agenzia-entrate.purpose-id}") String purposeId,
+                            @Value("${pn.national.registries.pdnd.ade-check-cf.purpose-id}") String purposeId,
                             ObjectMapper objectMapper,
                             CheckCfSecretConfig checkCfSecretConfig) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;

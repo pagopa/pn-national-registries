@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import it.pagopa.pn.national.registries.client.CommonWebClient;
+import it.pagopa.pn.national.registries.config.adelegal.AdeLegalWebClientConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,32 +15,26 @@ import java.time.Duration;
 @Slf4j
 public class AgenziaEntrateWebClientSOAP extends CommonWebClient {
 
-    private final Integer tcpMaxPoolSize;
-    private final Integer tcpMaxQueuedConnections;
-    private final Integer tcpPendingAcquireTimeout;
-    private final Integer tcpPoolIdleTimeout;
     private final String basePath;
+    private final AdeLegalWebClientConfig webClientConfig;
 
-    public AgenziaEntrateWebClientSOAP(@Value("${pn.national.registries.webclient.check-cf.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                                       @Value("${pn.national.registries.webclient.check-cf.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                                       @Value("${pn.national.registries.webclient.check-cf.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
-                                       @Value("${pn.national.registries.webclient.check-cf.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                                       @Value("${pn.national.registries.pdnd.agenzia-entrate.base-path}") String basePath) {
-        this.tcpMaxPoolSize = tcpMaxPoolSize;
-        this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
-        this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
-        this.tcpPoolIdleTimeout = tcpPoolIdleTimeout;
+    public AgenziaEntrateWebClientSOAP(@Value("${pn.national.registries.webclient.ssl-cert-ver}") Boolean sslCertVer,
+                                       @Value("${pn.national.registries.ade-legal.base-path}") String basePath,
+                                       AdeLegalWebClientConfig webClientConfig) {
+        super(sslCertVer);
         this.basePath = basePath;
+        this.webClientConfig = webClientConfig;
     }
 
     protected WebClient init() {
-        ConnectionProvider provider = ConnectionProvider.builder("fixed")
-                .maxConnections(tcpMaxPoolSize)
-                .pendingAcquireMaxCount(tcpMaxQueuedConnections)
-                .pendingAcquireTimeout(Duration.ofMillis(tcpPendingAcquireTimeout))
-                .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout)).build();
+        ConnectionProvider connectionProvider = ConnectionProvider.builder("fixed")
+                .maxConnections(webClientConfig.getTcpMaxPoolSize())
+                .pendingAcquireMaxCount(webClientConfig.getTcpMaxQueuedConnections())
+                .pendingAcquireTimeout(Duration.ofMillis(webClientConfig.getTcpPendingAcquiredTimeout()))
+                .maxIdleTime(Duration.ofMillis(webClientConfig.getTcpPoolIdleTimeout()))
+                .build();
 
-        HttpClient httpClient = HttpClient.create(provider);
+        HttpClient httpClient = HttpClient.create(connectionProvider);
 
         return super.initWebClient(httpClient, basePath);
     }

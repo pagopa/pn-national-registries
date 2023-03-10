@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.client.inad;
 
 import it.pagopa.pn.national.registries.client.CommonWebClient;
+import it.pagopa.pn.national.registries.config.inad.InadWebClientConfig;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -14,32 +15,26 @@ import java.time.Duration;
 @Slf4j
 public class InadWebClient extends CommonWebClient {
 
-    private final Integer tcpMaxPoolSize;
-    private final Integer tcpMaxQueuedConnections;
-    private final Integer tcpPendingAcquireTimeout;
-    private final Integer tcpPoolIdleTimeout;
     private final String basePath;
+    private final InadWebClientConfig webClientConfig;
 
-    public InadWebClient(@Value("${pn.national.registries.webclient.inad.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                         @Value("${pn.national.registries.webclient.inad.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                         @Value("${pn.national.registries.webclient.inad.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
-                         @Value("${pn.national.registries.webclient.inad.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                         @Value("${pn.national.registries.pdnd.inad.base-path}") String basePath) {
-        this.tcpMaxPoolSize = tcpMaxPoolSize;
-        this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
-        this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
-        this.tcpPoolIdleTimeout = tcpPoolIdleTimeout;
+    public InadWebClient(@Value("${pn.national.registries.webclient.ssl-cert-ver}") Boolean sslCertVer,
+                         @Value("${pn.national.registries.inad.base-path}") String basePath,
+                         InadWebClientConfig webClientConfig) {
+        super(sslCertVer);
         this.basePath = basePath;
+        this.webClientConfig = webClientConfig;
     }
 
     public WebClient init() {
-        ConnectionProvider provider = ConnectionProvider.builder("fixed")
-                .maxConnections(tcpMaxPoolSize)
-                .pendingAcquireMaxCount(tcpMaxQueuedConnections)
-                .pendingAcquireTimeout(Duration.ofMillis(tcpPendingAcquireTimeout))
-                .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout)).build();
+        ConnectionProvider connectionProvider = ConnectionProvider.builder("fixed")
+                .maxConnections(webClientConfig.getTcpMaxPoolSize())
+                .pendingAcquireMaxCount(webClientConfig.getTcpMaxQueuedConnections())
+                .pendingAcquireTimeout(Duration.ofMillis(webClientConfig.getTcpPendingAcquiredTimeout()))
+                .maxIdleTime(Duration.ofMillis(webClientConfig.getTcpPoolIdleTimeout()))
+                .build();
 
-        HttpClient httpClient = HttpClient.create(provider);
+        HttpClient httpClient = HttpClient.create(connectionProvider);
 
         return super.initWebClient(httpClient, basePath);
     }

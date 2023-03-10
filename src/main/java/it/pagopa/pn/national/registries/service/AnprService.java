@@ -29,7 +29,7 @@ public class AnprService {
 
     public AnprService(AnprConverter anprConverter,
                        AnprClient anprClient,
-                       @Value("${pn.national.registries.pdnd.anpr.tipo-invio}") String anprSendType,
+                       @Value("${pn.national.registries.anpr.tipo-invio}") String anprSendType,
                        CounterRepositoryImpl counterRepository) {
         this.anprConverter = anprConverter;
         this.anprClient = anprClient;

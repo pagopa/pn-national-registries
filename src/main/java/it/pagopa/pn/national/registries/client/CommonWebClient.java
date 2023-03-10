@@ -1,7 +1,12 @@
 package it.pagopa.pn.national.registries.client;
 
+import com.amazonaws.util.StringUtils;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;
+import it.pagopa.pn.national.registries.model.SSLData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.client.reactive.ReactorClientHttpConnector;
@@ -9,13 +14,24 @@ import org.springframework.web.reactive.function.client.ExchangeStrategies;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
+import javax.net.ssl.SSLException;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.util.Base64;
+
 @Slf4j
 public abstract class CommonWebClient extends CommonBaseClient {
 
     @Autowired
     ResponseExchangeFilter responseExchangeFilter;
 
-    protected final WebClient initWebClient(HttpClient httpClient,String baseUrl) {
+    protected Boolean sslCertVer;
+
+    protected CommonWebClient(Boolean sslCertVer) {
+        this.sslCertVer = sslCertVer;
+    }
+
+    protected final WebClient initWebClient(HttpClient httpClient, String baseUrl) {
         ExchangeStrategies strategies = ExchangeStrategies.builder()
                 .codecs(configurer -> {
                     configurer.registerDefaults(true);
@@ -31,5 +47,27 @@ public abstract class CommonWebClient extends CommonBaseClient {
                 .clientConnector(new ReactorClientHttpConnector(httpClient)))
                 .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .build();
+    }
+
+    protected final SslContext getSslContext(SslContextBuilder sslContextBuilder, SSLData sslData) throws SSLException {
+        boolean notHasTrust = StringUtils.isNullOrEmpty(sslData.getTrust());
+        if (notHasTrust && Boolean.FALSE.equals(sslCertVer)) {
+            return sslContextBuilder.trustManager(InsecureTrustManagerFactory.INSTANCE).build();
+        } else if (notHasTrust) {
+            return sslContextBuilder.build();
+        }
+        return sslContextBuilder.trustManager(getTrustCertInputStream(sslData.getTrust())).build();
+    }
+
+    protected final InputStream getTrustCertInputStream(String clientKeyPem) {
+        return new ByteArrayInputStream(Base64.getDecoder().decode(clientKeyPem));
+    }
+
+    protected final InputStream getKeyInputStream(String clientKeyPem) {
+        return new ByteArrayInputStream(Base64.getDecoder().decode(clientKeyPem));
+    }
+
+    protected final InputStream getCertInputStream(String stringCert) {
+        return new ByteArrayInputStream(Base64.getDecoder().decode(stringCert));
     }
 }

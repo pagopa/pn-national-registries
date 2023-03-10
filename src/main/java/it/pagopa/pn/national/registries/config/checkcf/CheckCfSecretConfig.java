@@ -19,11 +19,12 @@ public class CheckCfSecretConfig extends PnNationalRegistriesSecretConfig {
     private final SecretValue checkCfSecretValue;
 
     public CheckCfSecretConfig(SecretManagerService secretManagerService,
-                               @Value("${pn.national.registries.pdnd.agenzia-entrate.purpose-id}") String purposeId,
-                               @Value("${pn.national.registries.pdnd.check-cf.secret.auth-channel}") String authChannelSecret) {
+                               @Value("${pn.national.registries.pdnd.ade-check-cf.purpose-id}") String purposeId,
+                               @Value("${pn.national.registries.pdnd.ade-check-cf.secret}") String pdndSecret,
+                               @Value("${pn.national.registries.ade-check-cf.secret.auth-channel}") String authChannelSecret) {
         super(secretManagerService);
         this.secretManagerService = secretManagerService;
         this.checkCfAuthChannelSecret = getSslDataSecretValue(authChannelSecret);
-        this.checkCfSecretValue = getSecretValue(purposeId);
+        this.checkCfSecretValue = getSecretValue(purposeId, pdndSecret);
     }
 }

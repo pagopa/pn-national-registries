@@ -59,15 +59,14 @@ class PnNationalRegistriesSecretConfigTest {
     @DisplayName("Should throw an exception when the secret is not found")
     void getSecretValueWhenSecretIsNotFoundThenThrowException() {
         when(secretManagerService.getSecretValue(any())).thenReturn(Optional.empty());
-        assertThrows(
-                PnInternalException.class,
-                () -> pnNationalRegistriesSecretConfig.getSecretValue(""));
+        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretConfig.getSecretValue("", ""));
     }
 
     @Test
     @DisplayName("Should return secret value when the secret is found")
     void getSecretValueWhenSecretIsFound() {
-        String secretName = "secretName";
+        String secretId = "secretName";
+        String purposeId = "purposeId";
         String secretValue =
                 "{\"client_id\":\"clientId\",\"key_id\":\"keyId\",\"jwt_config\":{\"issuer\":\"issuer\",\"audience\":\"audience\",\"subject\":\"subject\",\"expires_in\":3600,\"algorithm\":\"RS256\",\"key_type\":\"RSA\",\"key_size\":2048}}";
         GetSecretValueResponse getSecretValueResponse =
@@ -75,7 +74,7 @@ class PnNationalRegistriesSecretConfigTest {
         when(secretManagerService.getSecretValue(any()))
                 .thenReturn(Optional.of(getSecretValueResponse));
 
-        SecretValue secret = pnNationalRegistriesSecretConfig.getSecretValue(secretName);
+        SecretValue secret = pnNationalRegistriesSecretConfig.getSecretValue(purposeId, secretId);
 
         assertNotNull(secret);
         assertEquals("clientId", secret.getClientId());
