@@ -29,7 +29,7 @@ ufficiale.
 * Valorizzare nel file _microservice-xxx-cfg.json_ le variabili:
     * __PDNDANPRSecret__ con nome del secret creato
     * __ANPRPurposeId__ con il purposeId ottenuto da PDND
-* Creare manualmente un secret su SecretManager (nome di esempio: _dev/pn-national-registries/anpr/auth-rest_)
+* Creare manualmente un secret su SecretManager (nome di esempio: _pn-national-registries/anpr/auth-rest_)
 * Generare/ottenere un certificato per mTLS
 * Popolare il secret con certificato, chiave pubblica e chiave privata codificati in base64; struttura di base:
 ```json
@@ -42,7 +42,7 @@ ufficiale.
 ```
 * Valorizzare nel file _microservice-xxx-cfg.json_ la variabile:
     * __ANPRSSLSecret__ con nome del secret creato
-* Creare manualmente un secret su SecretManager (nome di esempio: _dev/pn-national-registries/anpr/integrity-rest_)
+* Creare manualmente un secret su SecretManager (nome di esempio: _pn-national-registries/anpr/integrity-rest_)
 * Generare/ottenere un certificato per _integrity_
 * Popolare il secret con certificato, chiave pubblica e chiave privata codificati in base64; struttura di base:
 ```json
@@ -62,7 +62,7 @@ Necessaria la comunicazione con ANPR per fornire loro chiavi pubbliche e certifi
 Il procedimento descritto per ANPR sulla generazione delle chiavi per il client PDND
 vale anche per INAD:
 * Nel file _storage.yml_ fare riferimento a InadPDNDSessionTokenSigningKey
-* Nome di esempio per il secret: _dev/pn-national-registries/pdnd/INAD_
+* Nome di esempio per il secret: _pn-national-registries/pdnd/INAD_
 * Variabili da valorizzare in _microservice-xxx-cfg.json_:
     * __INADPurposeId__ con purposeId ottenuto da PDND
     * __PDNDInadSecret__ con nome del secret creato
@@ -73,8 +73,8 @@ __NB__: rispetto ad ANPR, non si applica tutta la parte su mTLS e _integrity_.
 
 Vale la stessa procedura descritta per ANPR (eccezion fatta per l'_integrity_):
 * Nel file _storage.yml_ fare riferimento a CheckCfPDNDSessionTokenSigningKey
-* Nome di esempio per il secret di PDND: _dev/pn-national-registries/pdnd/CheckCF_
-* Nome di esempio per il secret per mTLS: _dev/pn-national-registries/CheckCF/auth-rest_
+* Nome di esempio per il secret di PDND: _pn-national-registries/pdnd/CheckCF_
+* Nome di esempio per il secret per mTLS: _pn-national-registries/CheckCF/auth-rest_
 * Variabili da valorizzare in _microservice-xxx-cfg.json_:
     * __AdECheckCfPurposeId__ con purposeId ottenuto da PDND
     * __PDNDAdECheckCfSecret__ con nome del secret per PDND
