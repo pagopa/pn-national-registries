@@ -332,17 +332,6 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
-              - secretsmanager:GetSecretValue
-            Resource:
-              - !Ref ANPRIntegritySecret
-              - !Ref PDNDANPRSecret
-              - !Ref ANPRSSLSecret
-              - !Ref PDNDAdECheckCfSecret
-              - !Ref AdECheckCfSSLSecret
-              - !Ref PDNDInadSecret
-              - !Ref InfoCamereAuthSecret
-          - Effect: Allow
-            Action:
               - kms:Sign
             Resource:
               - !Ref PDNDSessionTokenSigningKeyARN
