@@ -149,6 +149,10 @@ Parameters:
     Type: String
     Description: 'InfoCamere auth cert'
 
+  SecretPrefix:
+    Type: String
+    Description: 'Secret name prefix'
+
   PDNDSessionTokenSigningKeyARN:
     Type: String
     Description: 'PDND Session Token Signing Key for eservice C001'
@@ -307,6 +311,7 @@ Resources:
         ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
         ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
+        MicroServiceSecretPrefix: !Sub '${SecretPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -325,17 +330,6 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
-          - Effect: Allow
-            Action:
-              - secretsmanager:GetSecretValue
-            Resource:
-              - !Ref ANPRIntegritySecret
-              - !Ref PDNDANPRSecret
-              - !Ref ANPRSSLSecret
-              - !Ref PDNDAdECheckCfSecret
-              - !Ref AdECheckCfSSLSecret
-              - !Ref PDNDInadSecret
-              - !Ref InfoCamereAuthSecret
           - Effect: Allow
             Action:
               - kms:Sign
