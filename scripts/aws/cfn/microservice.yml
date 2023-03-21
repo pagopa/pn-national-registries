@@ -311,7 +311,7 @@ Resources:
         ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
         ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
-        MicroServiceSecretPrefix: !Sub '${SecretPrefix}'
+        # MicroServiceSecretPrefix: !Sub '${SecretPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -324,12 +324,14 @@ Resources:
   NationalRegistryMicroserviceTaskManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      #PolicyName: !Sub '${ProjectName}-NationalRegistryMicroserviceSecretsPolicy'
-      #Roles:
-      #  - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
       PolicyDocument:
         Version: 2012-10-17
         Statement:
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretPrefix}*'
           - Effect: Allow
             Action:
               - kms:Sign
@@ -356,15 +358,6 @@ Resources:
               - !Ref BatchPollingTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
-  # NationalRegistryGatewayOutputsQueuePolicy:
-  #   Type: AWS::IAM::Policy
-  #   Properties:
-  #     PolicyName: !Sub '${ProjectName}-NationalRegistryGatewayOutputsQueuePolicy'
-  #     Roles:
-  #       - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
-  #     PolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
           - Effect: Allow
             Action:
               - sqs:SendMessage
