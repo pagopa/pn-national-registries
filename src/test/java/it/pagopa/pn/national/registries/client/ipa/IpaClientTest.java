@@ -1,0 +1,92 @@
+package it.pagopa.pn.national.registries.client.ipa;
+
+import it.pagopa.pn.national.registries.model.ipa.DataWS23Dto;
+import it.pagopa.pn.national.registries.model.ipa.ResultDto;
+import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import org.springframework.web.reactive.function.client.WebClient;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.*;
+
+@ExtendWith(SpringExtension.class)
+class IpaClientTest {
+    @InjectMocks
+    private IpaClient ipaClient;
+
+    @Mock
+    private WebClient webClient;
+
+    @Mock
+    private IpaWebClient ipaWebClient;
+
+    @Test
+    void callEService() {
+
+        when(ipaWebClient.init()).thenReturn(webClient);
+
+        IpaClient ipaClient = new IpaClient(ipaWebClient,"auth_id");
+
+        WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
+        DataWS23Dto dataWS23Dto = new DataWS23Dto();
+        dataWS23Dto.setCodEnte("codeEnte");
+        dataWS23Dto.setType("type");
+        dataWS23Dto.setDomicilioDigitale("domicilioDigitale");
+        dataWS23Dto.setDenominazione("denominazione");
+        ResultDto resultDto = new ResultDto();
+        resultDto.setCodError(0);
+        resultDto.setDescError("no error");
+        resultDto.setNumItems(1);
+        ws23ResponseDto.setData(dataWS23Dto);
+        ws23ResponseDto.setResult(resultDto);
+
+        WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
+        WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
+        WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
+        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
+
+        when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(requestBodyUriSpec.uri("/WS23DOMDIGCFservices/api/WS23_DOM_DIG_CF")).thenReturn(requestBodySpec);
+        when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
+        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
+        when(requestBodySpec.body(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+        when(responseSpec.bodyToMono(WS23ResponseDto.class)).thenReturn(Mono.just(ws23ResponseDto));
+
+        StepVerifier.create(ipaClient.callEServiceWS23("taxId")).expectNext(ws23ResponseDto).verifyComplete();
+
+    }
+
+
+    @Test
+   void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
+        IpaClient adELegalClient = new IpaClient(ipaWebClient,"auth_id");
+
+        WebClientResponseException webClientResponseException =
+                new WebClientResponseException(
+                        "message",
+                        HttpStatus.UNAUTHORIZED.value(),
+                        "statusText",
+                        HttpHeaders.EMPTY,
+                        null,
+                        null);
+        assertTrue(adELegalClient.checkExceptionType(webClientResponseException));
+    }
+
+    @Test
+    void testCheckExceptionType() {
+        assertFalse(ipaClient.checkExceptionType(new Throwable()));
+    }
+}
+

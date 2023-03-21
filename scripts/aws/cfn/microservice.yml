@@ -74,6 +74,14 @@ Parameters:
     Type: String
     Description: 'keep track of used projects commitIds'
 
+  IPAAuthId:
+    Type: String
+    Description: 'IPA Auth Id'
+
+  IPABaseURL:
+    Type: String
+    Description: 'IPA Base URL'
+
   PDNDBaseURL:
     Type: String
     Description: 'PDND Base URL'
@@ -307,6 +315,8 @@ Resources:
         ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
         ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
+        ContainerEnvEntry22: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
+        ContainerEnvEntry23: !Sub 'PN_NATIONAL_REGISTRY_AUTH_ID=${IPAAuthId}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds

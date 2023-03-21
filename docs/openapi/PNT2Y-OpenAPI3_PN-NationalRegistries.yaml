@@ -16,6 +16,44 @@ tags:
   - name: infoCamere
     description: Servizi esposti dalla banca dati esterna InfoCamere per il recupero della PEC, dell'indirizzo della Sede Legale e per la verifica del Legale Rappresentante.
 paths:
+  /national-registries-private/ipa/pec:
+    post:
+      tags:
+        - ipa
+      summary: 'Il servizio consente di individuare i domicili digitali associati ad un codice fiscale di un Ente o al codice fiscale di un suo servizio di fatturazione elettronica.'
+      description: 'Il servizio consente di individuare i domicili digitali associati ad un codice fiscale di un Ente o al codice fiscale di un suo servizio di fatturazione elettronica.'
+      operationId: ipaPec
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IPARequestBody'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IPAPecOK'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IPAPecError'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IPAPecError'
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IPAPecError'
   /national-registries-private/agenzia-entrate/legal:
     post:
       tags:
@@ -680,6 +718,17 @@ components:
             taxId:
               type: string
               example: AAAZZZ00H00T0
+    IPAPecOK:
+      type: object
+      properties:
+        domicilioDigitale:
+          type: string
+        tipo:
+          type: string
+        codEnte:
+          type: string
+        denominazione:
+          type: string
     GetAddressRegistroImpreseOK:
       type: object
       properties:
@@ -808,6 +857,11 @@ components:
                 type: string
               detail:
                 type: string
+    IPARequestBody:
+      type: object
+      properties:
+        taxId:
+          type: string
     ADELegalRequestBody:
       type: object
       properties:
@@ -870,6 +924,31 @@ components:
             
             _'02'_: Formato dati in input non corretto
     ADELegalError:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: Contiene il codice HTTP dell'errore
+        title:
+          type: string
+        detail:
+          type: string
+        traceId:
+          type: string
+        timestamp:
+          type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              element:
+                type: string
+              detail:
+                type: string
+    IPAPecError:
       type: object
       properties:
         status:

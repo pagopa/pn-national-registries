@@ -12,6 +12,7 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_CODE_INAD = "PN_NATIONAL_REGISTRIES_INAD";
     public static final String ERROR_CODE_SECRET_MANAGER = "PN_NATIONAL_REGISTRIES";
     public static final String ERROR_CODE_INIPEC = "PN_NATIONAL_REGISTRIES_INFOCAMERE_INI_PEC";
+    public static final String ERROR_CODE_IPA = "PN_NATIONAL_REGISTRIES_INFOCAMERE_IPA";
 
     public static final String ERROR_CODE_REGISTRO_IMPRESE = "PN_NATIONAL_REGISTRIES_INFOCAMERE_REGISTRO_IMPRESE";
 
@@ -29,4 +30,7 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
 
     public static final String ERROR_MESSAGE_REGISTRO_IMPRESE = "Errore durante la chiamata al servizio getRegistroImpreseLegalAddress di InfoCamere";
     public static final String ERROR_MESSAGE_LEGALE_RAPPRESENTANTE = "Errore durante la chiamata al servizio legaleRappresentante di InfoCamere";
+
+    public static final String ERROR_MESSAGE_IPA = "Errore durante la chiamata al servizio pec di IPA";
+
 }
