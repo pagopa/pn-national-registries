@@ -1,35 +1,30 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.test.context.ContextConfiguration;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 
 import static org.mockito.Mockito.*;
 
-@ContextConfiguration(classes = {IpaController.class})
 @ExtendWith(SpringExtension.class)
 class IpaControllerTest {
 
-    @Autowired
+    @InjectMocks
     private IpaController ipaController;
 
-    @MockBean
+    @Mock
     private IpaService ipaService;
 
-    @MockBean
-    private Scheduler scheduler;
-
-    @MockBean
+    @Mock
     private ValidateTaxIdUtils validateTaxIdUtils;
 
 
@@ -39,7 +34,8 @@ class IpaControllerTest {
      */
     @Test
     void testIpaPec4() {
-        when(ipaService.getIpaPec(any())).thenReturn(mock(Mono.class));
+        IPAPecOKDto ipaPecOKDto = new IPAPecOKDto();
+        when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaPecOKDto));
         doNothing().when(validateTaxIdUtils).validateTaxId(any());
 
         CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
