@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.client.ipa;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -46,7 +46,7 @@ public class IpaClient {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(), InfocamereResponseKO.class);
+                                Charset.defaultCharset(), IPAPecErrorDto.class);
                     }
                 }).retryWhen(Retry.max(1)
                         .filter(this::checkExceptionType)
