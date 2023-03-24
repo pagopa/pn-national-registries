@@ -860,8 +860,14 @@ components:
     IPARequestBody:
       type: object
       properties:
-        taxId:
-          type: string
+        filter:
+          type: object
+          required:
+            - taxId
+          properties:
+            taxId:
+              type: string
+              example: AAAZZZ00H00T000Z
     ADELegalRequestBody:
       type: object
       properties:

@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.converter.IpaConverter;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.model.ipa.DataWS23Dto;
@@ -45,7 +46,9 @@ class IpaServiceTest {
         ws23ResponseDto.setData(dataWS23Dto);
         when(ipaClient.callEServiceWS23(any())).thenReturn(Mono.just(ws23ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
-        ipaRequestBodyDto.taxId("42");
+        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        filter.setTaxId("42");
+        ipaRequestBodyDto.setFilter(filter);
 
         IPAPecOKDto ipaPecOKDto = new IPAPecOKDto();
         ipaPecOKDto.setTipo("type");
@@ -71,7 +74,9 @@ class IpaServiceTest {
         ws23ResponseDto.setData(dataWS23Dto);
         when(ipaClient.callEServiceWS23(any())).thenReturn(Mono.just(ws23ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
-        ipaRequestBodyDto.taxId("42");
+        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        filter.setTaxId("42");
+        ipaRequestBodyDto.setFilter(filter);
 
         StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto)).expectError().verify();
     }

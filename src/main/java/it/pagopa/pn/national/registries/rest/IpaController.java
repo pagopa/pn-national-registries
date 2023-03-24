@@ -40,7 +40,7 @@ public class IpaController implements IpaApi {
     */
     @Override
     public Mono<ResponseEntity<IPAPecOKDto>> ipaPec(IPARequestBodyDto ipARequestBodyDto, ServerWebExchange exchange) {
-        validateTaxIdUtils.validateTaxId(ipARequestBodyDto.getTaxId());
+        validateTaxIdUtils.validateTaxId(ipARequestBodyDto.getFilter().getTaxId());
         return ipaService.getIpaPec(ipARequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);

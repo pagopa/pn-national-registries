@@ -28,7 +28,7 @@ public class IpaService {
     }
 
     public Mono<IPAPecOKDto> getIpaPec(IPARequestBodyDto request) {
-        return ipaClient.callEServiceWS23(request.getTaxId())
+        return ipaClient.callEServiceWS23(request.getFilter().getTaxId())
                 .map(ws23ResponseDto -> {
                     checkErrorWsResultDto(ws23ResponseDto.getResult());
                     return ipaConverter.convertToIPAPecOKDto(ws23ResponseDto);
