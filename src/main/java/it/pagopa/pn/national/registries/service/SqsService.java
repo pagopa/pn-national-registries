@@ -35,7 +35,7 @@ public class SqsService {
     }
 
     public Mono<SendMessageResponse> push(CodeSqsDto msg, String pnNationalRegistriesCxId) {
-        log.info("pushing message for correlationId: {}", msg.getCorrelationId());
+        log.info("pushing message for clientId: [{}] with correlationId: {}", pnNationalRegistriesCxId, msg.getCorrelationId());
         return push(toJson(msg), pnNationalRegistriesCxId);
     }
 
