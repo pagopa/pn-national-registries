@@ -124,6 +124,8 @@ Resources:
 
   CounterTable:
     Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain 
     Properties:
       TableName: !Sub '${ProjectName}-counter'
       AttributeDefinitions:
@@ -136,6 +138,8 @@ Resources:
 
   BatchRequestTable:
     Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain 
     Properties:
       TableName: !Sub '${ProjectName}-batchRequests'
       AttributeDefinitions:
@@ -186,6 +190,8 @@ Resources:
 
   BatchPollingTable:
     Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain 
     Properties:
       TableName: !Sub '${ProjectName}-batchPolling'
       AttributeDefinitions:
