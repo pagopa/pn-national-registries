@@ -189,6 +189,10 @@ Parameters:
     Type: String
     Description: 'Validazione del pn-national-registries cx id'
 
+  EcsLogGroup:
+    Type: String
+    Description: ECS log group name
+
   # Heath Check parameters
   HealthCheckInterval:
     Description: Seconds between two health check
@@ -287,7 +291,7 @@ Resources:
         AutoscalingDataPointM: !Ref AutoscalingDataPointM
         HealthCheckPath: /actuator/health
         AutoscalingStrategy: REST-API
-        MicroServiceUniqueName: !Sub '${ProjectName}-NationalRegistry'
+        MicroServiceUniqueName: !Sub '${ProjectName}-nationa-registries'
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
@@ -320,6 +324,7 @@ Resources:
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
         TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskManagedPolicy
+        EcsLogGroup: !Ref EcsLogGroup
 
   NationalRegistryMicroserviceTaskManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
@@ -376,7 +381,7 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service.yaml"
       Parameters:
-        MicroServiceUniqueName: !Sub '${ProjectName}-NationalRegistry'
+        MicroServiceUniqueName: !Sub '${ProjectName}-national-registries'
         IntendedUsage: PNPG
         DnsName: !Ref SelcpgApiDnsName
         ProjectName: !Ref ProjectName
@@ -391,6 +396,6 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
       Parameters:
-        WAFName: !Sub '${ProjectName}-NationalRegistry-pnpg'
+        WAFName: !Sub '${ProjectName}-national-registries-pnpg'
         IntendedUsage: PNPG
         APIGatewayARNs: !GetAtt NationalRegistryApiGateway.Outputs.APIGatewayARN
