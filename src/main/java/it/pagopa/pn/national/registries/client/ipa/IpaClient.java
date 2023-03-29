@@ -37,7 +37,7 @@ public class IpaClient {
 
     public Mono<WS23ResponseDto> callEServiceWS23(String taxId) {
         return webClient.post()
-                .uri("/WS23DOMDIGCFservices/api/WS23_DOM_DIG_CF")
+                .uri("ws/WS23DOMDIGCFservices/api/WS23_DOM_DIG_CF")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA))
                 .body(BodyInserters.fromFormData(createRequestWS23(taxId)))
                 .retrieve()

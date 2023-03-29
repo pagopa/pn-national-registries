@@ -16,9 +16,9 @@ public class DataWS23Dto {
     @JsonProperty("tipo")
     private String type;
 
-    @JsonProperty("cod_ente")
+    @JsonProperty("cod_amm")
     private String codEnte;
 
-    @JsonProperty("denominazione")
+    @JsonProperty("des_amm")
     private String denominazione;
 }
