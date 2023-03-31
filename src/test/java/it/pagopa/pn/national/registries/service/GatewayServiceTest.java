@@ -235,6 +235,24 @@ class GatewayServiceTest {
                 .verifyComplete();
     }
 
+    @Test
+    void testLogInWarn() {
+        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
+
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("", 400, "", null, null, null, null);
+        when(infoCamereService.getRegistroImpreseLegalAddress(any()))
+                .thenReturn(Mono.error(exception));
+        when(sqsService.push((CodeSqsDto) any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId(C_ID);
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
     private AddressRequestBodyDto newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum domicileType) {
         AddressRequestBodyFilterDto filterDto = new AddressRequestBodyFilterDto();
         filterDto.setTaxId(CF);
