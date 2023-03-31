@@ -1,38 +1,28 @@
 package it.pagopa.pn.national.registries.utils;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 class CheckExceptionUtilsTest {
+
     /**
-     * Method under test: {@link CheckExceptionUtils#logOnWarningOrError(Throwable, Logger, String)}
+     * Method under test: {@link CheckExceptionUtils#isForLogLevelWarn(Throwable)}
      */
     @Test
-    void testLogOnWarningOrError1() {
-        Throwable throwable = new Throwable();
-        Logger logger = mock(Logger.class);
-        doNothing().when(logger).error(any());
-        CheckExceptionUtils.logOnWarningOrError(throwable, logger, "Error message");
-        verify(logger).error(any());
+    void testIsForLogLevelWarn() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("", 400, "", null,  null, null, null);
+        assertTrue(CheckExceptionUtils.isForLogLevelWarn(exception));
     }
 
     /**
-     * Method under test: {@link CheckExceptionUtils#logOnWarningOrError(Throwable, Logger, String)}
+     * Method under test: {@link CheckExceptionUtils#isForLogLevelWarn(Throwable)}
      */
     @Test
-    void testLogOnWarningOrError2() {
-        Logger logger = mock(Logger.class);
-        doNothing().when(logger).warn(any());
-        WebClientResponseException webClientResponseException = new WebClientResponseException(400, "BAD_REQUEST", null, null, null);
-        CheckExceptionUtils.logOnWarningOrError(webClientResponseException, logger, "Error message.");
-        verify(logger).warn(any());
+    void testIsForLogLevelWarn1() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("", 500, "", null,  null, null, null);
+        assertFalse(CheckExceptionUtils.isForLogLevelWarn(exception));
     }
 }
-
