@@ -36,7 +36,7 @@ public class IpaService {
     }
 
     private void checkErrorWsResultDto(ResultDto resultDto){
-        if(resultDto.getNumItems()<1 && resultDto.getCodError()!=0){
+        if(resultDto.getCodError()!=0){
             throw new PnNationalRegistriesException(resultDto.getDescError(), HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null,
                     Charset.defaultCharset(), IPAPecErrorDto.class);
