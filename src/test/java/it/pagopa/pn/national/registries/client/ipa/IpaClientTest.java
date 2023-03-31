@@ -16,6 +16,9 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
@@ -39,16 +42,18 @@ class IpaClientTest {
         IpaClient ipaClient = new IpaClient(ipaWebClient,"auth_id");
 
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
+        List<DataWS23Dto> dataWS23DtoList = new ArrayList<>();
         DataWS23Dto dataWS23Dto = new DataWS23Dto();
         dataWS23Dto.setCodEnte("codeEnte");
         dataWS23Dto.setType("type");
         dataWS23Dto.setDomicilioDigitale("domicilioDigitale");
         dataWS23Dto.setDenominazione("denominazione");
+        dataWS23DtoList.add(dataWS23Dto);
         ResultDto resultDto = new ResultDto();
         resultDto.setCodError(0);
         resultDto.setDescError("no error");
         resultDto.setNumItems(1);
-        ws23ResponseDto.setData(dataWS23Dto);
+        ws23ResponseDto.setData(dataWS23DtoList);
         ws23ResponseDto.setResult(resultDto);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
@@ -57,7 +62,7 @@ class IpaClientTest {
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri("/WS23DOMDIGCFservices/api/WS23_DOM_DIG_CF")).thenReturn(requestBodySpec);
+        when(requestBodyUriSpec.uri("/ws/WS23DOMDIGCFServices/api/WS23_DOM_DIG_CF")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         when(requestBodySpec.body(any())).thenReturn(requestHeadersSpec);

@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.service;
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.converter.IpaConverter;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.model.ipa.DataWS23Dto;
@@ -15,6 +16,9 @@ import org.mockito.Mock;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
@@ -42,8 +46,10 @@ class IpaServiceTest {
         dataWS23Dto.setType("type");
         dataWS23Dto.setDomicilioDigitale("domicilio digitale");
         dataWS23Dto.setCodEnte("cod ente");
+        List<DataWS23Dto> list = new ArrayList<>();
+        list.add(dataWS23Dto);
         ws23ResponseDto.setResult(resultDto);
-        ws23ResponseDto.setData(dataWS23Dto);
+        ws23ResponseDto.setData(list);
         when(ipaClient.callEServiceWS23(any())).thenReturn(Mono.just(ws23ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
@@ -51,10 +57,14 @@ class IpaServiceTest {
         ipaRequestBodyDto.setFilter(filter);
 
         IPAPecOKDto ipaPecOKDto = new IPAPecOKDto();
-        ipaPecOKDto.setTipo("type");
-        ipaPecOKDto.setDenominazione("denominazione");
-        ipaPecOKDto.setCodEnte("cod ente");
-        ipaPecOKDto.setDomicilioDigitale("domicilio digitale");
+        IPAPecDto ipaPecDto = new IPAPecDto();
+        ipaPecDto.setTipo("type");
+        ipaPecDto.setDenominazione("denominazione");
+        ipaPecDto.setCodEnte("cod ente");
+        ipaPecDto.setDomicilioDigitale("domicilio digitale");
+        List<IPAPecDto> ipaPecDtos = new ArrayList<>();
+        ipaPecDtos.add(ipaPecDto);
+        ipaPecOKDto.setDomiciliDigitali(ipaPecDtos);
 
         when(ipaConverter.convertToIPAPecOKDto(any())).thenReturn(ipaPecOKDto);
 
@@ -71,7 +81,9 @@ class IpaServiceTest {
         resultDto.setDescError("Error");
         DataWS23Dto dataWS23Dto = new DataWS23Dto();
         ws23ResponseDto.setResult(resultDto);
-        ws23ResponseDto.setData(dataWS23Dto);
+        List<DataWS23Dto> list = new ArrayList<>();
+        list.add(dataWS23Dto);
+        ws23ResponseDto.setData(list);
         when(ipaClient.callEServiceWS23(any())).thenReturn(Mono.just(ws23ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();

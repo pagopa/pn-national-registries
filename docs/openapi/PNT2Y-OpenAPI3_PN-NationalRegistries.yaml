@@ -718,7 +718,7 @@ components:
             taxId:
               type: string
               example: AAAZZZ00H00T0
-    IPAPecOK:
+    IPAPec:
       type: object
       properties:
         domicilioDigitale:
@@ -729,6 +729,13 @@ components:
           type: string
         denominazione:
           type: string
+    IPAPecOK:
+      type: object
+      properties:
+        Domicili digitali:
+          type: array
+          items:
+            $ref: '#/components/schemas/IPAPec'
     GetAddressRegistroImpreseOK:
       type: object
       properties:

@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.IpaApi;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
@@ -37,7 +38,7 @@ public class IpaController implements IpaApi {
      *         or Unauthorized (status code 401)
      *         or Internal server error (status code 500)
      *         or Service Unavailable (status code 503)
-    */
+     */
     @Override
     public Mono<ResponseEntity<IPAPecOKDto>> ipaPec(IPARequestBodyDto ipARequestBodyDto, ServerWebExchange exchange) {
         validateTaxIdUtils.validateTaxId(ipARequestBodyDto.getFilter().getTaxId());

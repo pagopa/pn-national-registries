@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -14,5 +16,5 @@ public class WS23ResponseDto {
     private ResultDto result;
 
     @JsonProperty("data")
-    private DataWS23Dto data;
+    private List<DataWS23Dto> data;
 }
