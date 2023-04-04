@@ -6,7 +6,7 @@ import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.JwtConfig;
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.anpr.E002RequestDto;
 import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
@@ -92,16 +92,16 @@ class AnprClientTest {
         AnprClient anprClient = new AnprClient(
                 accessTokenExpiringMap,new ObjectMapper(),agidJwtSignature, anprWebClient, "purposeId", anprSecretConfig);
 
-        SecretValue secretValue = new SecretValue();
-        secretValue.setClientId("testClient");
-        secretValue.setKeyId("testKeyId");
+        PdndSecretValue pdndSecretValue = new PdndSecretValue();
+        pdndSecretValue.setClientId("testClient");
+        pdndSecretValue.setKeyId("testKeyId");
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("aud");
         jwtConfig.setKid("kid");
         jwtConfig.setIssuer("testiss");
         jwtConfig.setSubject("subject");
         jwtConfig.setPurposeId("purposeId");
-        secretValue.setJwtConfig(jwtConfig);
+        pdndSecretValue.setJwtConfig(jwtConfig);
         //when(anprSecretConfig.getAnprSecretValue()).thenReturn(secretValue);
 
         E002RequestDto e002RequestDto = new E002RequestDto();
@@ -142,16 +142,16 @@ class AnprClientTest {
         AnprClient anprClient = new AnprClient(
                 accessTokenExpiringMap,new ObjectMapper(),agidJwtSignature, anprWebClient, "purposeId", anprSecretConfig);
 
-        SecretValue secretValue = new SecretValue();
-        secretValue.setClientId("testClient");
-        secretValue.setKeyId("testKeyId");
+        PdndSecretValue pdndSecretValue = new PdndSecretValue();
+        pdndSecretValue.setClientId("testClient");
+        pdndSecretValue.setKeyId("testKeyId");
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("aud");
         jwtConfig.setKid("kid");
         jwtConfig.setIssuer("testiss");
         jwtConfig.setSubject("subject");
         jwtConfig.setPurposeId("purposeId");
-        secretValue.setJwtConfig(jwtConfig);
+        pdndSecretValue.setJwtConfig(jwtConfig);
 
         E002RequestDto e002RequestDto = new E002RequestDto();
         SearchCriteriaE002Dto dto = new SearchCriteriaE002Dto();
@@ -193,16 +193,16 @@ class AnprClientTest {
         AnprClient anprClient = new AnprClient(
                 accessTokenExpiringMap,new ObjectMapper(),agidJwtSignature, anprWebClient, "purposeId", anprSecretConfig);
 
-        SecretValue secretValue = new SecretValue();
-        secretValue.setClientId("testClient");
-        secretValue.setKeyId("testKeyId");
+        PdndSecretValue pdndSecretValue = new PdndSecretValue();
+        pdndSecretValue.setClientId("testClient");
+        pdndSecretValue.setKeyId("testKeyId");
         JwtConfig jwtConfig = new JwtConfig();
         jwtConfig.setAudience("aud");
         jwtConfig.setKid("kid");
         jwtConfig.setIssuer("testiss");
         jwtConfig.setSubject("subject");
         jwtConfig.setPurposeId("purposeId");
-        secretValue.setJwtConfig(jwtConfig);
+        pdndSecretValue.setJwtConfig(jwtConfig);
         //when(anprSecretConfig.getAnprSecretValue()).thenReturn(secretValue);
 
         E002RequestDto e002RequestDto = new E002RequestDto();

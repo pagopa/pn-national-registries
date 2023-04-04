@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.config;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.SSLData;
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -75,7 +75,7 @@ class PnNationalRegistriesSecretConfigTest {
     @Test
     void testGetIpaSecret2() {
         when(secretManagerService.getSecretValue(org.mockito.Mockito.any()))
-                .thenThrow(new PnInternalException("An error occurred"));
+                .thenThrow(new PnInternalException("An error occurred", ""));
         assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretConfig.getIpaSecret("Auth Id Secret"));
         verify(secretManagerService).getSecretValue(org.mockito.Mockito.any());
     }
@@ -84,7 +84,7 @@ class PnNationalRegistriesSecretConfigTest {
     @DisplayName("Should throw an exception when the secret is not found")
     void getSecretValueWhenSecretIsNotFoundThenThrowException() {
         when(secretManagerService.getSecretValue(any())).thenReturn(Optional.empty());
-        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretConfig.getSecretValue("", ""));
+        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretConfig.getPdndSecretValue("", ""));
     }
 
     @Test
@@ -99,7 +99,7 @@ class PnNationalRegistriesSecretConfigTest {
         when(secretManagerService.getSecretValue(any()))
                 .thenReturn(Optional.of(getSecretValueResponse));
 
-        SecretValue secret = pnNationalRegistriesSecretConfig.getSecretValue(purposeId, secretId);
+        PdndSecretValue secret = pnNationalRegistriesSecretConfig.getPdndSecretValue(purposeId, secretId);
 
         assertNotNull(secret);
         assertEquals("clientId", secret.getClientId());

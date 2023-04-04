@@ -21,8 +21,7 @@ public class IpaService {
     private final IpaConverter ipaConverter;
     private final IpaClient ipaClient;
 
-    public IpaService(IpaConverter ipaConverter,
-                      IpaClient ipaClient) {
+    public IpaService(IpaConverter ipaConverter, IpaClient ipaClient) {
         this.ipaConverter = ipaConverter;
         this.ipaClient = ipaClient;
     }
@@ -35,12 +34,11 @@ public class IpaService {
                 });
     }
 
-    private void checkErrorWsResultDto(ResultDto resultDto){
-        if(resultDto.getCodError()!=0){
+    private void checkErrorWsResultDto(ResultDto resultDto) {
+        if (resultDto.getCodError() != 0) {
             throw new PnNationalRegistriesException(resultDto.getDescError(), HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null,
                     Charset.defaultCharset(), IPAPecErrorDto.class);
         }
     }
-
 }

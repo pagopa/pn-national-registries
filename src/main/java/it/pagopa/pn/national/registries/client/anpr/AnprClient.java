@@ -56,7 +56,7 @@ public class AnprClient {
     }
 
     public Mono<ResponseE002OKDto> callEService(E002RequestDto requestDto) {
-        return accessTokenExpiringMap.getToken(purposeId, anprSecretConfig.getAnprSecretValue())
+        return accessTokenExpiringMap.getToken(purposeId, anprSecretConfig.getAnprPdndSecretValue())
                 .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry))
                 .doOnError(throwable -> {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {

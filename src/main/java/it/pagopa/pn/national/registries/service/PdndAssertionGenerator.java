@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
 import lombok.extern.slf4j.Slf4j;
@@ -32,7 +32,7 @@ public class PdndAssertionGenerator {
         this.kmsClient = kmsClient;
     }
 
-    public String generateClientAssertion(SecretValue jwtCfg){
+    public String generateClientAssertion(PdndSecretValue jwtCfg) {
         log.info("START - PdndAssertionsGenerator.generateClientAssertion");
         long startTime = System.currentTimeMillis();
         try {

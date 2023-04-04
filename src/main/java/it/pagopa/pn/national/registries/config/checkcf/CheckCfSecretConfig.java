@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.config.checkcf;
 
 import it.pagopa.pn.national.registries.config.PnNationalRegistriesSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -16,7 +16,7 @@ public class CheckCfSecretConfig extends PnNationalRegistriesSecretConfig {
 
     private final SecretManagerService secretManagerService;
     private final SSLData checkCfAuthChannelSecret;
-    private final SecretValue checkCfSecretValue;
+    private final PdndSecretValue checkCfPdndSecretValue;
 
     public CheckCfSecretConfig(SecretManagerService secretManagerService,
                                @Value("${pn.national.registries.pdnd.ade-check-cf.purpose-id}") String purposeId,
@@ -25,6 +25,6 @@ public class CheckCfSecretConfig extends PnNationalRegistriesSecretConfig {
         super(secretManagerService);
         this.secretManagerService = secretManagerService;
         this.checkCfAuthChannelSecret = getSslDataSecretValue(authChannelSecret);
-        this.checkCfSecretValue = getSecretValue(purposeId, pdndSecret);
+        this.checkCfPdndSecretValue = getPdndSecretValue(purposeId, pdndSecret);
     }
 }

@@ -40,7 +40,7 @@ class CheckCfSecretConfigTest {
                 .thenReturn(Optional.of(getSecretValueResponse));
 
         CheckCfSecretConfig checkCfSecretConfig = new CheckCfSecretConfig(secretManagerService,"test1","test2", "test3");
-        Assertions.assertNotNull(checkCfSecretConfig.getCheckCfSecretValue());
+        Assertions.assertNotNull(checkCfSecretConfig.getCheckCfPdndSecretValue());
         Assertions.assertNotNull(checkCfSecretConfig.getCheckCfAuthChannelSecret());
     }
 

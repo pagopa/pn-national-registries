@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.cache;
 
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.TokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpiringMap;
@@ -29,13 +29,13 @@ public class AccessTokenExpiringMap {
         this.deadline = deadline;
     }
 
-    public Mono<AccessTokenCacheEntry> getToken(String purposeId, SecretValue secretValue) {
+    public Mono<AccessTokenCacheEntry> getToken(String purposeId, PdndSecretValue pdndSecretValue) {
         if (expiringMap.isEmpty() || !expiringMap.containsKey(purposeId)) {
-            return requireNewAccessToken(purposeId, secretValue);
+            return requireNewAccessToken(purposeId, pdndSecretValue);
         } else {
             long expiration = expiringMap.getExpectedExpiration(purposeId);
             if (expiration <= deadline) {
-                return requireNewAccessToken(purposeId, secretValue);
+                return requireNewAccessToken(purposeId, pdndSecretValue);
             } else {
                 log.info("Existing Access Token Required with PurposeId: " + purposeId);
                 return Mono.just(expiringMap.get(purposeId));
@@ -43,9 +43,9 @@ public class AccessTokenExpiringMap {
         }
     }
 
-    private Mono<AccessTokenCacheEntry> requireNewAccessToken(String purposeId, SecretValue secretValue) {
+    private Mono<AccessTokenCacheEntry> requireNewAccessToken(String purposeId, PdndSecretValue pdndSecretValue) {
         log.info("New Access Token Required with PurposeId: " + purposeId);
-        return tokenProvider.getTokenPdnd(secretValue)
+        return tokenProvider.getTokenPdnd(pdndSecretValue)
                 .map(clientCredentialsResponseDto -> {
                     AccessTokenCacheEntry tok = new AccessTokenCacheEntry(purposeId);
                     tok.setClientCredentials(clientCredentialsResponseDto);

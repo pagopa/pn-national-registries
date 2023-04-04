@@ -6,7 +6,7 @@ import lombok.Data;
 
 @Data
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SecretValue {
+public class PdndSecretValue {
 
     private JwtConfig jwtConfig;
 

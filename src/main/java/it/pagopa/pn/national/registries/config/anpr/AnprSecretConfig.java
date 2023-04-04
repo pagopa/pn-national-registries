@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.config.anpr;
 
 import it.pagopa.pn.national.registries.config.PnNationalRegistriesSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -18,7 +18,7 @@ public class AnprSecretConfig extends PnNationalRegistriesSecretConfig {
 
     private final SSLData anprAuthChannelSecret;
     private final SSLData anprIntegritySecret;
-    private final SecretValue anprSecretValue;
+    private final PdndSecretValue anprPdndSecretValue;
 
     public AnprSecretConfig(SecretManagerService secretManagerService,
                             @Value("${pn.national.registries.pdnd.anpr.purpose-id}") String purposeId,
@@ -29,6 +29,6 @@ public class AnprSecretConfig extends PnNationalRegistriesSecretConfig {
         this.secretManagerService = secretManagerService;
         this.anprAuthChannelSecret = getSslDataSecretValue(authChannelSecret);
         this.anprIntegritySecret = getSslDataSecretValue(integritySecret);
-        this.anprSecretValue = getSecretValue(purposeId, pdndSecret);
+        this.anprPdndSecretValue = getPdndSecretValue(purposeId, pdndSecret);
     }
 }

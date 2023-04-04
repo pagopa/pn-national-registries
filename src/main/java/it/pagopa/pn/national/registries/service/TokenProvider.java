@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -27,9 +27,9 @@ public class TokenProvider {
         this.pdndClient = pdndClient;
     }
 
-    public Mono<ClientCredentialsResponseDto> getTokenPdnd(SecretValue secretValue) {
-        String clientAssertion = assertionGenerator.generateClientAssertion(secretValue);
-        return pdndClient.createToken(clientAssertion, clientAssertionType, grantType, secretValue.getClientId())
+    public Mono<ClientCredentialsResponseDto> getTokenPdnd(PdndSecretValue pdndSecretValue) {
+        String clientAssertion = assertionGenerator.generateClientAssertion(pdndSecretValue);
+        return pdndClient.createToken(clientAssertion, clientAssertionType, grantType, pdndSecretValue.getClientId())
                 .map(clientCredentialsResponseDto -> clientCredentialsResponseDto);
     }
 }

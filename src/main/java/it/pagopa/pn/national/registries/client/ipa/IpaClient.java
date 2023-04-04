@@ -63,14 +63,12 @@ public class IpaClient {
         return false;
     }
 
-
     private MultiValueMap<String, String> createRequestWS23(String taxId) {
         LinkedMultiValueMap<String, String> requestWS23 = new LinkedMultiValueMap<>();
         String authId = ipaSecretConfig.getIpaSecret().getAuthId();
-        requestWS23.add("CF",taxId);
+        requestWS23.add("CF", taxId);
         requestWS23.add("AUTH_ID", authId);
         return requestWS23;
     }
-
 
 }

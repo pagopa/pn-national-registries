@@ -31,7 +31,7 @@ class InadSecretConfigTest {
         when(secretManagerService.getSecretValue("test2"))
                 .thenReturn(Optional.of(getSecretValueResponse2));
         InadSecretConfig inadSecretConfig = new InadSecretConfig(secretManagerService, "test1", "test2");
-        Assertions.assertNotNull(inadSecretConfig.getInadSecretValue());
+        Assertions.assertNotNull(inadSecretConfig.getInadPdndSecretValue());
     }
 
 }

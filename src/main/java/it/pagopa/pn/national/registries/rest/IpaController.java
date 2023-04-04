@@ -45,6 +45,4 @@ public class IpaController implements IpaApi {
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }
-
-
 }

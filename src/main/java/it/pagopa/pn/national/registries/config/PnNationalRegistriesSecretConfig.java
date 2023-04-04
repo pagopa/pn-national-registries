@@ -4,7 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.SSLData;
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.ipa.IpaSecret;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.extern.slf4j.Slf4j;
@@ -25,11 +25,11 @@ public class PnNationalRegistriesSecretConfig {
         this.secretManagerService = secretManagerService;
     }
 
-    protected SecretValue getSecretValue(String purposeId, String secretId) {
+    protected PdndSecretValue getPdndSecretValue(String purposeId, String secretId) {
         Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretId);
         if (opt.isPresent()) {
             log.info("founded secret for purposeId: {} and secretId: {}", purposeId, secretId);
-            return convertToSecretValueObject(opt.get().secretString(), SecretValue.class);
+            return convertToSecretValueObject(opt.get().secretString(), PdndSecretValue.class);
         } else {
             log.warn("secret value for purposeId: {} and secretId: {} not found", purposeId, secretId);
             throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, new Throwable());
@@ -52,8 +52,8 @@ public class PnNationalRegistriesSecretConfig {
         }
     }
 
-    protected IpaSecret getIpaSecret(String authIdSecret) {
-        Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(authIdSecret);
+    protected IpaSecret getIpaSecret(String secretId) {
+        Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretId);
         if (opt.isPresent()) {
             log.info("founded AUTH_ID for Ipa client");
             return convertToSecretValueObject(opt.get().secretString(), IpaSecret.class);
@@ -65,12 +65,10 @@ public class PnNationalRegistriesSecretConfig {
 
     private <T> T convertToSecretValueObject(String value, Class<T> type) {
         ObjectMapper mapper = new ObjectMapper();
-        T secret;
         try {
-            secret = mapper.readValue(value, type);
+            return mapper.readValue(value, type);
         } catch (JsonProcessingException e) {
             throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER_CONVERTER, ERROR_CODE_SECRET_MANAGER_CONVERTER, e);
         }
-        return type.cast(secret);
     }
 }
