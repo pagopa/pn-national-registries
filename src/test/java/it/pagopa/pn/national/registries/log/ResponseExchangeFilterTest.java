@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.log;
 
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,6 +52,18 @@ class ResponseExchangeFilterTest {
         StepVerifier.create(clientResponseMono)
                 .expectNextMatches(clientResponse -> clientResponse.statusCode().equals(HttpStatus.OK))
                 .verifyComplete();
+    }
+
+    @Test
+    void logResponseInCaseOfError() {
+        ClientRequest request = ClientRequest.create(HttpMethod.GET, URI.create("http://localhost:8080/test")).build();
+        ExchangeFunction exchangeFunction = clientRequest -> Mono.error(new PnNationalRegistriesException("", 400, "", null, null, null, null));
+
+        Mono<ClientResponse> clientResponseMono = responseExchangeFilter.filter(request, exchangeFunction);
+
+        StepVerifier.create(clientResponseMono)
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
     }
 
     @Test

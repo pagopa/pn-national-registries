@@ -157,6 +157,10 @@ Parameters:
     Type: String
     Description: 'InfoCamere auth cert'
 
+  SecretPrefix:
+    Type: String
+    Description: 'Secret name prefix'
+
   PDNDSessionTokenSigningKeyARN:
     Type: String
     Description: 'PDND Session Token Signing Key for eservice C001'
@@ -192,6 +196,10 @@ Parameters:
   PnCxIdValidationEnabled:
     Type: String
     Description: 'Validazione del pn-national-registries cx id'
+
+  EcsLogGroup:
+    Type: String
+    Description: ECS log group name
 
   # Heath Check parameters
   HealthCheckInterval:
@@ -291,7 +299,7 @@ Resources:
         AutoscalingDataPointM: !Ref AutoscalingDataPointM
         HealthCheckPath: /actuator/health
         AutoscalingStrategy: REST-API
-        MicroServiceUniqueName: !Sub '${ProjectName}-NationalRegistry'
+        MicroServiceUniqueName: !Sub '${ProjectName}-national-registries'
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
@@ -317,6 +325,7 @@ Resources:
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
         ContainerEnvEntry22: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
         ContainerEnvEntry23: !Sub 'PN_NATIONAL_REGISTRY_AUTH_ID=${IPAAuthId}'
+        # MicroServiceSecretPrefix: !Sub '${SecretPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref SubnetsIds
@@ -325,13 +334,11 @@ Resources:
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
         TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskManagedPolicy
+        EcsLogGroup: !Ref EcsLogGroup
 
   NationalRegistryMicroserviceTaskManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
-      #PolicyName: !Sub '${ProjectName}-NationalRegistryMicroserviceSecretsPolicy'
-      #Roles:
-      #  - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -339,13 +346,7 @@ Resources:
             Action:
               - secretsmanager:GetSecretValue
             Resource:
-              - !Ref ANPRIntegritySecret
-              - !Ref PDNDANPRSecret
-              - !Ref ANPRSSLSecret
-              - !Ref PDNDAdECheckCfSecret
-              - !Ref AdECheckCfSSLSecret
-              - !Ref PDNDInadSecret
-              - !Ref InfoCamereAuthSecret
+              - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretPrefix}*'
           - Effect: Allow
             Action:
               - kms:Sign
@@ -372,15 +373,6 @@ Resources:
               - !Ref BatchPollingTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
-  # NationalRegistryGatewayOutputsQueuePolicy:
-  #   Type: AWS::IAM::Policy
-  #   Properties:
-  #     PolicyName: !Sub '${ProjectName}-NationalRegistryGatewayOutputsQueuePolicy'
-  #     Roles:
-  #       - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
-  #     PolicyDocument:
-  #       Version: 2012-10-17
-  #       Statement:
           - Effect: Allow
             Action:
               - sqs:SendMessage
@@ -399,7 +391,7 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service.yaml"
       Parameters:
-        MicroServiceUniqueName: !Sub '${ProjectName}-NationalRegistry'
+        MicroServiceUniqueName: !Sub '${ProjectName}-national-registries'
         IntendedUsage: PNPG
         DnsName: !Ref SelcpgApiDnsName
         ProjectName: !Ref ProjectName
@@ -414,6 +406,6 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
       Parameters:
-        WAFName: !Sub '${ProjectName}-NationalRegistry-pnpg'
+        WAFName: !Sub '${ProjectName}-national-registries-pnpg'
         IntendedUsage: PNPG
         APIGatewayARNs: !GetAtt NationalRegistryApiGateway.Outputs.APIGatewayARN

@@ -30,6 +30,7 @@ public class RequestResponseLoggingFilter implements WebFilter {
         ServerHttpRequest httpRequest = exchange.getRequest();
         final String httpUrl = httpRequest.getURI().toString();
         Long startTime = System.currentTimeMillis();
+
         ServerHttpRequestDecorator loggingServerHttpRequestDecorator = new ServerHttpRequestDecorator(exchange.getRequest()) {
             String requestBody = "";
 
