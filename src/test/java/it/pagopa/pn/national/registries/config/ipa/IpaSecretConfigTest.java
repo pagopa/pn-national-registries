@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.config.inad;
+package it.pagopa.pn.national.registries.config.ipa;
 
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import org.junit.jupiter.api.Assertions;
@@ -10,28 +10,27 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
 import java.util.Optional;
+
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class InadSecretConfigTest {
+class IpaSecretConfigTest {
 
     @MockBean
-    InadSecretConfig inadSecretConfig;
+    IpaSecretConfig ipaSecretConfig;
 
     @Mock
     SecretManagerService secretManagerService;
 
     @Test
-    void getInadSecretConfigTest() {
-        GetSecretValueResponse getSecretValueResponse2 = GetSecretValueResponse.builder().secretString("""
+    void getIpaSecretConfigTest() {
+        GetSecretValueResponse getSecretValueResponse = GetSecretValueResponse.builder().secretString("""
                 {
-                "keyId":"pub",
-                "clientId":"trust"
+                "AUTH_ID":"AUTH_ID"
                 }""").build();
-        when(secretManagerService.getSecretValue("test2"))
-                .thenReturn(Optional.of(getSecretValueResponse2));
-        InadSecretConfig inadSecretConfig = new InadSecretConfig(secretManagerService, "test1", "test2");
-        Assertions.assertNotNull(inadSecretConfig.getInadPdndSecretValue());
+        when(secretManagerService.getSecretValue("test1"))
+                .thenReturn(Optional.of(getSecretValueResponse));
+        IpaSecretConfig ipaSecretConfig = new IpaSecretConfig(secretManagerService, "test1");
+        Assertions.assertNotNull(ipaSecretConfig.getIpaSecret());
     }
-
 }

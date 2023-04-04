@@ -4,7 +4,7 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,11 +25,11 @@ class AgidJwtSignatureTest {
         AgidJwtSignature agidJwtSignature = new AgidJwtSignature("aud", anprSecretConfig);
         String digest = "digest";
 
-        SecretValue secretValue = new SecretValue();
-        secretValue.setClientId("test");
-        secretValue.setKeyId("test");
-        secretValue.setJwtConfig(new JwtConfig());
-        Mockito.when(anprSecretConfig.getAnprSecretValue()).thenReturn(secretValue);
+        PdndSecretValue pdndSecretValue = new PdndSecretValue();
+        pdndSecretValue.setClientId("test");
+        pdndSecretValue.setKeyId("test");
+        pdndSecretValue.setJwtConfig(new JwtConfig());
+        Mockito.when(anprSecretConfig.getAnprPdndSecretValue()).thenReturn(pdndSecretValue);
 
         SSLData sslData = new SSLData();
         sslData.setCert("TestCert");

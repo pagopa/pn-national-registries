@@ -45,7 +45,7 @@ public class AgidJwtSignature {
     public String createAgidJwt(String digest) {
         try {
             log.info("start to createAgidJwt with digest: {}",digest);
-            JwtConfig jwtConfig = anprSecretConfig.getAnprSecretValue().getJwtConfig();
+            JwtConfig jwtConfig = anprSecretConfig.getAnprPdndSecretValue().getJwtConfig();
             SSLData sslData = anprSecretConfig.getAnprIntegritySecret();
             TokenHeader th = new TokenHeader(jwtConfig);
             log.debug("tokenHeader ALg: {}",th.getAlg());

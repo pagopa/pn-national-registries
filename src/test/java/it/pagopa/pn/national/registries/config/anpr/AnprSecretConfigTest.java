@@ -43,7 +43,7 @@ class AnprSecretConfigTest {
         when(secretManagerService.getSecretValue("test4"))
                 .thenReturn(Optional.of(getSecretValueResponse));
         AnprSecretConfig anprSecretConfig = new AnprSecretConfig(secretManagerService, "test1", "test2", "test3", "test4");
-        Assertions.assertNotNull(anprSecretConfig.getAnprSecretValue());
+        Assertions.assertNotNull(anprSecretConfig.getAnprPdndSecretValue());
         Assertions.assertNotNull(anprSecretConfig.getAnprIntegritySecret());
         Assertions.assertNotNull(anprSecretConfig.getAnprAuthChannelSecret());
     }

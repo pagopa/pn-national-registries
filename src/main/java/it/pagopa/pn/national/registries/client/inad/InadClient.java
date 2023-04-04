@@ -39,7 +39,7 @@ public class InadClient {
     }
 
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
-        return accessTokenExpiringMap.getToken(purposeId, inadSecretConfig.getInadSecretValue())
+        return accessTokenExpiringMap.getToken(purposeId, inadSecretConfig.getInadPdndSecretValue())
                 .flatMap(tokenEntry -> callExtract(taxId, practicalReference, tokenEntry))
                 .doOnError(throwable -> {
                     if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {

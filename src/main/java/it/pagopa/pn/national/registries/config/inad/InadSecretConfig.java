@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.config.inad;
 
 import it.pagopa.pn.national.registries.config.PnNationalRegistriesSecretConfig;
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -14,13 +14,13 @@ import org.springframework.stereotype.Component;
 public class InadSecretConfig extends PnNationalRegistriesSecretConfig {
 
     private final SecretManagerService secretManagerService;
-    private final SecretValue inadSecretValue;
+    private final PdndSecretValue inadPdndSecretValue;
 
     public InadSecretConfig(SecretManagerService secretManagerService,
                             @Value("${pn.national.registries.pdnd.inad.purpose-id}") String purposeId,
                             @Value("${pn.national.registries.pdnd.inad.secret}") String pdndSecret) {
         super(secretManagerService);
         this.secretManagerService = secretManagerService;
-        this.inadSecretValue = getSecretValue(purposeId, pdndSecret);
+        this.inadPdndSecretValue = getPdndSecretValue(purposeId, pdndSecret);
     }
 }

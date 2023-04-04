@@ -18,6 +18,8 @@
     "InfoCamereBaseURL": "",
     "InfoCamereClientId": "",
     "InfoCamereAuthSecret": "",
+    "IPABaseURL": "",
+    "IPASecret": "",
     "SecretPrefix": "",
     "PnCxIdValidationEnabled": ""
   }
