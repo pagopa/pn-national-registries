@@ -1,11 +1,11 @@
 package it.pagopa.pn.national.registries.client.ipa;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -27,12 +27,12 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 public class IpaClient {
 
     private final WebClient webClient;
-    private final String authId;
 
-    protected IpaClient(IpaWebClient ipaWebClient,
-                        @Value("${pn.national.registries.ipa.auth.id}") String authId) {
+    private final IpaSecretConfig ipaSecretConfig;
+
+    protected IpaClient(IpaWebClient ipaWebClient, IpaSecretConfig ipaSecretConfig) {
         webClient = ipaWebClient.init();
-        this.authId = authId;
+        this.ipaSecretConfig = ipaSecretConfig;
     }
 
     public Mono<WS23ResponseDto> callEServiceWS23(String taxId) {
@@ -66,8 +66,9 @@ public class IpaClient {
 
     private MultiValueMap<String, String> createRequestWS23(String taxId) {
         LinkedMultiValueMap<String, String> requestWS23 = new LinkedMultiValueMap<>();
+        String authId = ipaSecretConfig.getIpaSecret().getAuthId();
         requestWS23.add("CF",taxId);
-        requestWS23.add("AUTH_ID",authId);
+        requestWS23.add("AUTH_ID", authId);
         return requestWS23;
     }
 

@@ -10,7 +10,9 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_CODE_ADDRESS_ANPR = "PN_NATIONAL_REGISTRIES_ADDRESS_ANPR";
     public static final String ERROR_CODE_CHECK_CF = "PN_NATIONAL_REGISTRIES_CHECK_CF";
     public static final String ERROR_CODE_INAD = "PN_NATIONAL_REGISTRIES_INAD";
-    public static final String ERROR_CODE_SECRET_MANAGER = "PN_NATIONAL_REGISTRIES";
+    public static final String ERROR_CODE_SECRET_MANAGER = "PN_NATIONAL_REGISTRIES_SECRET_MANAGER";
+    public static final String ERROR_CODE_SECRET_MANAGER_CONVERTER = "PN_NATIONAL_REGISTRIES_SECRET_MANAGER_CONVERTER";
+
     public static final String ERROR_CODE_INIPEC = "PN_NATIONAL_REGISTRIES_INFOCAMERE_INI_PEC";
     public static final String ERROR_CODE_IPA = "PN_NATIONAL_REGISTRIES_INFOCAMERE_IPA";
 
@@ -26,7 +28,9 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
 
     public static final String ERROR_MESSAGE_INIPEC = "Errore durante la chiamata al servizio iniPEC di InfoCamere";
     public static final String ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS = "Errore durante il recupero della PEC richiesta - numero massimo di tentativi esaurito!";
-    public static final String ERROR_MESSAGE_SECRET_MANAGER = "Secret Value not found";
+    public static final String ERROR_MESSAGE_SECRET_MANAGER = "Secret not found";
+    public static final String ERROR_MESSAGE_SECRET_MANAGER_CONVERTER = "Error in Secret converter";
+
 
     public static final String ERROR_MESSAGE_REGISTRO_IMPRESE = "Errore durante la chiamata al servizio getRegistroImpreseLegalAddress di InfoCamere";
     public static final String ERROR_MESSAGE_LEGALE_RAPPRESENTANTE = "Errore durante la chiamata al servizio legaleRappresentante di InfoCamere";

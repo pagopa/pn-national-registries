@@ -10,6 +10,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.ContextConfiguration;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
 import java.util.Optional;
@@ -17,8 +18,10 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ContextConfiguration(classes = {PnNationalRegistriesSecretConfig.class})
 @ExtendWith(MockitoExtension.class)
 class PnNationalRegistriesSecretConfigTest {
 
@@ -53,6 +56,28 @@ class PnNationalRegistriesSecretConfigTest {
         assertEquals("key", sslData.getKey());
         assertEquals("pub", sslData.getPub());
         assertEquals("trust", sslData.getTrust());
+    }
+
+    /**
+     * Method under test: {@link PnNationalRegistriesSecretConfig#getIpaSecret(String)}
+     */
+    @Test
+    void testGetIpaSecret() {
+        when(secretManagerService.getSecretValue(org.mockito.Mockito.any())).thenReturn(Optional.empty());
+        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretConfig.getIpaSecret("Auth Id Secret"));
+        verify(secretManagerService).getSecretValue(org.mockito.Mockito.any());
+    }
+
+
+    /**
+     * Method under test: {@link PnNationalRegistriesSecretConfig#getIpaSecret(String)}
+     */
+    @Test
+    void testGetIpaSecret2() {
+        when(secretManagerService.getSecretValue(org.mockito.Mockito.any()))
+                .thenThrow(new PnInternalException("An error occurred"));
+        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretConfig.getIpaSecret("Auth Id Secret"));
+        verify(secretManagerService).getSecretValue(org.mockito.Mockito.any());
     }
 
     @Test

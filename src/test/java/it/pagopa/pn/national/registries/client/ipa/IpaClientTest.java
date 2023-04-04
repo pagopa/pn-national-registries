@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.client.ipa;
 
+import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.model.ipa.DataWS23Dto;
+import it.pagopa.pn.national.registries.model.ipa.IpaSecret;
 import it.pagopa.pn.national.registries.model.ipa.ResultDto;
 import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
 import org.junit.jupiter.api.Test;
@@ -34,12 +36,15 @@ class IpaClientTest {
     @Mock
     private IpaWebClient ipaWebClient;
 
+    @Mock
+    private IpaSecretConfig ipaSecretConfig;
+
     @Test
     void callEService() {
 
         when(ipaWebClient.init()).thenReturn(webClient);
 
-        IpaClient ipaClient = new IpaClient(ipaWebClient,"auth_id");
+        IpaClient ipaClient = new IpaClient(ipaWebClient,ipaSecretConfig);
 
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
         List<DataWS23Dto> dataWS23DtoList = new ArrayList<>();
@@ -61,6 +66,8 @@ class IpaClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
+        when(ipaSecretConfig.getIpaSecret()).thenReturn(new IpaSecret());
+
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/ws/WS23DOMDIGCFServices/api/WS23_DOM_DIG_CF")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
@@ -76,7 +83,7 @@ class IpaClientTest {
 
     @Test
    void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        IpaClient adELegalClient = new IpaClient(ipaWebClient,"auth_id");
+        IpaClient adELegalClient = new IpaClient(ipaWebClient,ipaSecretConfig);
 
         WebClientResponseException webClientResponseException =
                 new WebClientResponseException(

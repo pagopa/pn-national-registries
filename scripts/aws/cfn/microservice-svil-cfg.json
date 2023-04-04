@@ -18,6 +18,7 @@
     "InfoCamereBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock/ic/ce/wspa/wspa/rest",
     "InfoCamereClientId": "a7e152cac460917f3123cc2410f5a8d2",
     "InfoCamereAuthSecret": "pn-national-registries/infocamere/auth-rest",
+    "IPASecret": "pn-national-registries/ipa",
     "SecretPrefix": "pn-national-registries",
     "PnCxIdValidationEnabled": "false"
   }
