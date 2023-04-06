@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.exceptions;
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.common.rest.error.v1.dto.ProblemError;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.ipa.IpaResponseKO;
@@ -26,7 +27,7 @@ import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.adapter.DefaultServerWebExchange;
 import reactor.test.StepVerifier;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -92,6 +93,21 @@ class PnWebExceptionHandlerTest {
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
     }
 
+    @Test
+    void testHandle4() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("ex.getMessage()", 400,
+                "ex.getStatusText()", headers, null,
+                Charset.defaultCharset(), IPAPecErrorDto.class);
+
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
+        when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
+        when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        Problem problem = new Problem();
+        problem.setStatus(400);
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
+    }
 
 
     /**
@@ -172,11 +188,7 @@ class PnWebExceptionHandlerTest {
         DefaultServerWebExchange defaultServerWebExchange = mock(DefaultServerWebExchange.class);
         when(defaultServerWebExchange.getResponse()).thenReturn(new MockServerHttpResponse());
         Throwable t = new Throwable();
-        assertThrows(PnNationalRegistriesException.class, () -> {
-            try {
-                pnWebExceptionHandler.handle(defaultServerWebExchange, t); }
-            catch (RuntimeException ignored) {
-            }});
+        assertThrows(PnNationalRegistriesException.class, () -> pnWebExceptionHandler.handle(defaultServerWebExchange, t));
         verify(exceptionHelper).handleException(org.mockito.Mockito.any());
         verify(defaultServerWebExchange).getResponse();
     }
