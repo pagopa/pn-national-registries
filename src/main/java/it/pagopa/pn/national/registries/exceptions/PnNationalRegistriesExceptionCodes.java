@@ -14,7 +14,7 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_CODE_SECRET_MANAGER_CONVERTER = "PN_NATIONAL_REGISTRIES_SECRET_MANAGER_CONVERTER";
 
     public static final String ERROR_CODE_INIPEC = "PN_NATIONAL_REGISTRIES_INFOCAMERE_INI_PEC";
-    public static final String ERROR_CODE_IPA = "PN_NATIONAL_REGISTRIES_INFOCAMERE_IPA";
+    public static final String ERROR_CODE_IPA = "PN_NATIONAL_REGISTRIES_IPA";
 
     public static final String ERROR_CODE_REGISTRO_IMPRESE = "PN_NATIONAL_REGISTRIES_INFOCAMERE_REGISTRO_IMPRESE";
 

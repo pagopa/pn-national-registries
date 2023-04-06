@@ -8,9 +8,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
 import it.pagopa.pn.commons.log.MDCWebFilter;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.NationalRegistriesProblem;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.anpr.ResponseKO;
+import it.pagopa.pn.national.registries.model.ipa.IpaResponseKO;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -31,6 +33,9 @@ import reactor.util.annotation.NonNull;
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.List;
+
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_IPA;
 
 @Slf4j
 @Order(-2)
@@ -109,6 +114,9 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         problemDef.setDetail(exception.getMessage());
         if (exception.getClassName().equals(AnprResponseKO.class)) {
             problemDef.setErrors(mapToAnprResponseKO(error));
+        }
+        else if (exception.getClassName().equals(IPAPecErrorDto.class)){
+            problemDef.setErrors(List.of(mapToIpaResponseKO(exception.getResponseBodyAsString())));
         } else if (!StringUtils.isNullOrEmpty(error)) {
             problemDef.setErrors(objectMapper.readValue(error, exception.getClassName()));
         } else {
@@ -141,5 +149,12 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
             anprResponseKO.setElement(responseKO.getErrorsList().get(0).getElement());
         }
         return anprResponseKO;
+    }
+
+    private IpaResponseKO mapToIpaResponseKO(String errorDetail) {
+        IpaResponseKO ipaResponseKO = new IpaResponseKO();
+        ipaResponseKO.setDetail(errorDetail);
+        ipaResponseKO.setCode(ERROR_CODE_IPA);
+        return ipaResponseKO;
     }
 }
