@@ -9,24 +9,20 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
 class IpaClientTest {
+
     @InjectMocks
     private IpaClient ipaClient;
 
@@ -44,7 +40,7 @@ class IpaClientTest {
 
         when(ipaWebClient.init()).thenReturn(webClient);
 
-        IpaClient ipaClient = new IpaClient(ipaWebClient,ipaSecretConfig);
+        IpaClient ipaClient = new IpaClient(ipaWebClient, ipaSecretConfig);
 
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
         List<DataWS23Dto> dataWS23DtoList = new ArrayList<>();
@@ -76,29 +72,8 @@ class IpaClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(WS23ResponseDto.class)).thenReturn(Mono.just(ws23ResponseDto));
 
-        StepVerifier.create(ipaClient.callEServiceWS23("taxId")).expectNext(ws23ResponseDto).verifyComplete();
-
-    }
-
-
-    @Test
-   void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        IpaClient adELegalClient = new IpaClient(ipaWebClient,ipaSecretConfig);
-
-        WebClientResponseException webClientResponseException =
-                new WebClientResponseException(
-                        "message",
-                        HttpStatus.UNAUTHORIZED.value(),
-                        "statusText",
-                        HttpHeaders.EMPTY,
-                        null,
-                        null);
-        assertTrue(adELegalClient.checkExceptionType(webClientResponseException));
-    }
-
-    @Test
-    void testCheckExceptionType() {
-        assertFalse(ipaClient.checkExceptionType(new Throwable()));
+        StepVerifier.create(ipaClient.callEServiceWS23("taxId"))
+                .expectNext(ws23ResponseDto)
+                .verifyComplete();
     }
 }
-

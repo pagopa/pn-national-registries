@@ -14,6 +14,7 @@ import java.time.Duration;
 @Component
 @Slf4j
 public class IpaWebClient extends CommonWebClient {
+
     private final String basePath;
     private final IpaWebClientConfig webClientConfig;
 
