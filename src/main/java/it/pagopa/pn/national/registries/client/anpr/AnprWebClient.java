@@ -17,11 +17,11 @@ import reactor.netty.resources.ConnectionProvider;
 import java.io.IOException;
 import java.time.Duration;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ANPR;
 
-@Component
 @Slf4j
+@Component
 public class AnprWebClient extends CommonWebClient {
 
     private final String basePath;
@@ -59,7 +59,7 @@ public class AnprWebClient extends CommonWebClient {
                     .keyManager(getCertInputStream(sslData.getCert()), getKeyInputStream(sslData.getKey()));
             return getSslContext(sslContext, sslData);
         } catch (IOException e) {
-            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR, e);
+            throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR, e);
         }
     }
 }

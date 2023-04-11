@@ -25,8 +25,8 @@ public class IpaClient {
     private final IpaSecretConfig ipaSecretConfig;
 
     protected IpaClient(IpaWebClient ipaWebClient, IpaSecretConfig ipaSecretConfig) {
-        webClient = ipaWebClient.init();
         this.ipaSecretConfig = ipaSecretConfig;
+        webClient = ipaWebClient.init();
     }
 
     public Mono<WS23ResponseDto> callEServiceWS23(String taxId) {
@@ -37,9 +37,9 @@ public class IpaClient {
                 .retrieve()
                 .bodyToMono(WS23ResponseDto.class)
                 .doOnError(throwable -> {
-                    if (throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                    if (throwable instanceof WebClientResponseException e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), IPAPecErrorDto.class);
                     }
                 });

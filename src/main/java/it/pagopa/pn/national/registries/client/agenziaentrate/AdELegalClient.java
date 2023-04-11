@@ -12,13 +12,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
+
 import java.nio.charset.Charset;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_LEGALE_RAPPRESENTANTE;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_LEGALE_RAPPRESENTANTE;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADE_UNAUTHORIZED;
 
-@Component
 @Slf4j
+@Component
 public class AdELegalClient {
 
     private final WebClient webClient;
@@ -55,18 +56,18 @@ public class AdELegalClient {
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && (throwable instanceof WebClientResponseException ex)) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), ADELegalErrorDto.class);
                     }
-                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                }).retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_LEGALE_RAPPRESENTANTE, ERROR_CODE_LEGALE_RAPPRESENTANTE, retrySignal.failure()))
+                                new PnInternalException(ERROR_MESSAGE_ADE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
-    protected boolean checkExceptionType(Throwable throwable) {
+    protected boolean shouldRetry(Throwable throwable) {
         if (throwable instanceof WebClientResponseException exception) {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }

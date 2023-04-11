@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.client.inad;
 
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
@@ -18,6 +19,9 @@ import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
 import java.util.Map;
+
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INAD_UNAUTHORIZED;
 
 @Slf4j
 @Component
@@ -41,8 +45,11 @@ public class InadClient {
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
         return accessTokenExpiringMap.getToken(purposeId, inadSecretConfig.getInadPdndSecretValue())
                 .flatMap(tokenEntry -> callExtract(taxId, practicalReference, tokenEntry))
-                .retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure())
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                // don't pass retrySignal.failure() to PnInternalException as cause
+                                // the common handler prints the stack trace that includes the called URL and for INAD in the URL is the taxId
+                                new PnInternalException(ERROR_MESSAGE_INAD_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED))
                 );
     }
 
@@ -59,7 +66,7 @@ public class InadClient {
                 .retrieve()
                 .bodyToMono(ResponseRequestDigitalAddressDto.class)
                 .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InadResponseKO.class);
@@ -67,9 +74,9 @@ public class InadClient {
                 });
     }
 
-    protected boolean checkExceptionType(Throwable throwable) {
-        log.debug("Try Retry call to INAD");
+    protected boolean shouldRetry(Throwable throwable) {
         if (throwable instanceof WebClientResponseException exception) {
+            log.debug("Try Retry call to INAD");
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;

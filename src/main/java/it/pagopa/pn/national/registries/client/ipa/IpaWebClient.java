@@ -11,8 +11,8 @@ import reactor.netty.resources.ConnectionProvider;
 
 import java.time.Duration;
 
-@Component
 @Slf4j
+@Component
 public class IpaWebClient extends CommonWebClient {
 
     private final String basePath;

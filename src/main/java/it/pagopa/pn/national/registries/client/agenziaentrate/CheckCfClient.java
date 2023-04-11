@@ -23,8 +23,7 @@ import reactor.util.retry.Retry;
 import java.nio.charset.Charset;
 import java.util.List;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 import static reactor.core.Exceptions.isRetryExhausted;
 
 @Slf4j
@@ -52,8 +51,9 @@ public class CheckCfClient {
     public Mono<TaxIdVerification> callEService(Request richiesta) {
         return accessTokenExpiringMap.getToken(purposeId, checkCfSecretConfig.getCheckCfPdndSecretValue())
                 .flatMap(tokenEntry -> callVerifica(richiesta, tokenEntry))
-                .retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure())
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_ADE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
@@ -70,22 +70,22 @@ public class CheckCfClient {
                 .retrieve()
                 .bodyToMono(TaxIdVerification.class)
                 .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), TaxIdResponseKO.class);
                     }
-                    if (isRetryExhausted(throwable) && throwable.getCause() instanceof WebClientResponseException.TooManyRequests tmrEx) {
-                        throw new PnNationalRegistriesException(tmrEx.getMessage(), tmrEx.getStatusCode().value(),
-                                tmrEx.getStatusText(), tmrEx.getHeaders(), tmrEx.getResponseBodyAsByteArray(),
+                    if (isRetryExhausted(throwable) && throwable.getCause() instanceof WebClientResponseException.TooManyRequests e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), TaxIdResponseKO.class);
                     }
                 });
     }
 
-    protected boolean checkExceptionType(Throwable throwable) {
-        log.debug("Try Retry call to CheckCf");
+    protected boolean shouldRetry(Throwable throwable) {
         if (throwable instanceof WebClientResponseException exception) {
+            log.debug("Try Retry call to CheckCf");
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;
@@ -95,7 +95,7 @@ public class CheckCfClient {
         try {
             return mapper.writeValueAsString(richiesta);
         } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR, e);
+            throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, e);
         }
     }
 }
