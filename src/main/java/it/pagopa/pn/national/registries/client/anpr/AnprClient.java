@@ -30,8 +30,8 @@ import java.util.Base64;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
 
-@Component
 @Slf4j
+@Component
 public class AnprClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
@@ -58,13 +58,7 @@ public class AnprClient {
     public Mono<ResponseE002OKDto> callEService(E002RequestDto requestDto) {
         return accessTokenExpiringMap.getToken(purposeId, anprSecretConfig.getAnprPdndSecretValue())
                 .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry))
-                .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(), AnprResponseKO.class);
-                    }
-                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
+                .retryWhen(Retry.max(1).filter(this::checkExceptionType)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure())
                 );
     }
@@ -86,7 +80,14 @@ public class AnprClient {
                 })
                 .bodyValue(s)
                 .retrieve()
-                .bodyToMono(ResponseE002OKDto.class);
+                .bodyToMono(ResponseE002OKDto.class)
+                .doOnError(throwable -> {
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
+                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), AnprResponseKO.class);
+                    }
+                });
     }
 
     private String convertToJson(E002RequestDto requestDto) {

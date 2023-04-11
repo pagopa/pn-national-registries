@@ -19,8 +19,8 @@ import reactor.util.retry.Retry;
 import java.nio.charset.Charset;
 import java.util.Map;
 
-@Component
 @Slf4j
+@Component
 public class InadClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
@@ -41,13 +41,6 @@ public class InadClient {
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
         return accessTokenExpiringMap.getToken(purposeId, inadSecretConfig.getInadPdndSecretValue())
                 .flatMap(tokenEntry -> callExtract(taxId, practicalReference, tokenEntry))
-                .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(), InadResponseKO.class);
-                    }
-                })
                 .retryWhen(Retry.max(1).filter(this::checkExceptionType)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure())
                 );
@@ -64,7 +57,14 @@ public class InadClient {
                     httpHeaders.setBearerAuth(tokenEntry.getAccessToken());
                 })
                 .retrieve()
-                .bodyToMono(ResponseRequestDigitalAddressDto.class);
+                .bodyToMono(ResponseRequestDigitalAddressDto.class)
+                .doOnError(throwable -> {
+                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
+                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), InadResponseKO.class);
+                    }
+                });
     }
 
     protected boolean checkExceptionType(Throwable throwable) {

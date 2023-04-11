@@ -27,8 +27,8 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
 import static reactor.core.Exceptions.isRetryExhausted;
 
-@Component
 @Slf4j
+@Component
 public class CheckCfClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;

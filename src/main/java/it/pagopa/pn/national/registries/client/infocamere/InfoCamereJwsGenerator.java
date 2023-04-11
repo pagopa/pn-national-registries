@@ -26,8 +26,8 @@ import java.util.*;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
 
-@Component
 @Slf4j
+@Component
 public class InfoCamereJwsGenerator {
 
     private final String aud;

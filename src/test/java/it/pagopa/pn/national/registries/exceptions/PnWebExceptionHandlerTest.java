@@ -109,7 +109,6 @@ class PnWebExceptionHandlerTest {
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
     }
 
-
     /**
      * Method under test: {@link PnWebExceptionHandler#handle(ServerWebExchange, Throwable)}
      */
@@ -158,6 +157,7 @@ class PnWebExceptionHandlerTest {
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
     }
+
     @Test
     void testHandle3() {
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
@@ -173,7 +173,6 @@ class PnWebExceptionHandlerTest {
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
     }
-
 
     /**
      * Method under test: {@link PnWebExceptionHandler#handle(ServerWebExchange, Throwable)}
@@ -251,8 +250,6 @@ class PnWebExceptionHandlerTest {
         verify(serverHttpRequestDecorator).getURI();
     }
 
-
-
     /**
      * Method under test: {@link PnWebExceptionHandler#handle(ServerWebExchange, Throwable)}
      */
@@ -286,5 +283,4 @@ class PnWebExceptionHandlerTest {
         verify(defaultServerWebExchange, atLeast(1)).getResponse();
         verify(serverHttpRequestDecorator).getURI();
     }
-
 }

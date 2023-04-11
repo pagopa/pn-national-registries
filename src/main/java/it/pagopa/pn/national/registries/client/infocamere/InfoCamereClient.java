@@ -28,15 +28,13 @@ import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 
-@Component
 @Slf4j
+@Component
 public class InfoCamereClient {
 
     private final WebClient webClient;
     private final InfoCamereJwsGenerator infoCamereJwsGenerator;
-
     private final String clientId;
-
     private final ObjectMapper mapper;
 
     private static final String CLIENT_ID = "client_id";

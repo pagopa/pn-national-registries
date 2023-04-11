@@ -22,8 +22,8 @@ import java.nio.charset.Charset;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_IPA;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_IPA;
 
-@Component
 @Slf4j
+@Component
 public class IpaClient {
 
     private final WebClient webClient;
