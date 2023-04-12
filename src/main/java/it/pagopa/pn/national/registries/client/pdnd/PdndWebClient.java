@@ -10,8 +10,8 @@ import reactor.netty.resources.ConnectionProvider;
 
 import java.time.Duration;
 
-@Component
 @Slf4j
+@Component
 public class PdndWebClient extends CommonWebClient {
 
     private final Integer tcpMaxPoolSize;

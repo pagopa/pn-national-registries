@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.exceptions;
 
-import com.amazonaws.util.StringUtils;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -11,8 +10,11 @@ import it.pagopa.pn.commons.log.MDCWebFilter;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.NationalRegistriesProblem;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
+import it.pagopa.pn.national.registries.model.anpr.ErrorListAnpr;
 import it.pagopa.pn.national.registries.model.anpr.ResponseKO;
 import it.pagopa.pn.national.registries.model.ipa.IpaResponseKO;
+import it.pagopa.pn.national.registries.model.pdnd.PdndResponseError;
+import it.pagopa.pn.national.registries.model.pdnd.PdndResponseKO;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -24,6 +26,7 @@ import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.Exceptions;
@@ -32,7 +35,7 @@ import reactor.util.annotation.NonNull;
 
 import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_IPA;
@@ -107,20 +110,21 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
     }
 
     private NationalRegistriesProblem createProblem(PnNationalRegistriesException exception) throws JsonProcessingException {
-        String error = exception.getResponseBodyAsString();
+        String responseBody = exception.getResponseBodyAsString();
         NationalRegistriesProblem problemDef = new NationalRegistriesProblem();
         problemDef.setStatus(exception.getStatusCode().value());
         problemDef.setTitle(exception.getStatusText());
         problemDef.setDetail(exception.getMessage());
         if (exception.getClassName().equals(AnprResponseKO.class)) {
-            problemDef.setErrors(mapToAnprResponseKO(error));
-        }
-        else if (exception.getClassName().equals(IPAPecErrorDto.class)){
+            problemDef.setErrors(mapToAnprResponseKO(responseBody));
+        } else if (exception.getClassName().equals(IPAPecErrorDto.class)) {
             problemDef.setErrors(List.of(mapToIpaResponseKO(exception.getResponseBodyAsString())));
-        } else if (!StringUtils.isNullOrEmpty(error)) {
-            problemDef.setErrors(objectMapper.readValue(error, exception.getClassName()));
+        } else if (exception.getClassName().equals(PdndResponseKO.class)) {
+            problemDef.setErrors(mapToPdndResponseKO(responseBody));
+        } else if (StringUtils.hasText(responseBody)) {
+            problemDef.setErrors(List.of(objectMapper.readValue(responseBody, exception.getClassName())));
         } else {
-            problemDef.setErrors(new ArrayList<>());
+            problemDef.setErrors(Collections.emptyList());
         }
         return problemDef;
     }
@@ -130,25 +134,41 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         problemDef.setStatus(exception.getStatusCode().value());
         problemDef.setTitle(exception.getStatusText());
         problemDef.setDetail(exception.getMessage());
-        problemDef.setErrors(new ArrayList<>());
+        problemDef.setErrors(Collections.emptyList());
         return problemDef;
     }
 
-    private AnprResponseKO mapToAnprResponseKO(String responseBodyAsString) throws JsonProcessingException {
+    private List<AnprResponseKO> mapToAnprResponseKO(String responseBody) throws JsonProcessingException {
         ResponseKO responseKO = new ResponseKO();
-        if (!StringUtils.isNullOrEmpty(responseBodyAsString)) {
-            responseKO = objectMapper.readValue(responseBodyAsString, ResponseKO.class);
+        if (StringUtils.hasText(responseBody)) {
+            responseKO = objectMapper.readValue(responseBody, ResponseKO.class);
         }
-        AnprResponseKO anprResponseKO = new AnprResponseKO();
-        if (responseKO.getResponseHeader() != null) {
-            anprResponseKO.setClientOperationId(responseKO.getResponseHeader().getClientOperationId());
+        String clientOperationId =
+                responseKO.getResponseHeader() != null ? responseKO.getResponseHeader().getClientOperationId() : null;
+        List<AnprResponseKO> responseErrors = Collections.emptyList();
+        if (responseKO.getErrorsList() != null) {
+            responseErrors = responseKO.getErrorsList().stream()
+                    .map(e -> mapToAnprResponseKO(clientOperationId, e))
+                    .toList();
         }
-        if (responseKO.getErrorsList() != null && responseKO.getErrorsList().size() == 1) {
-            anprResponseKO.setCode(responseKO.getErrorsList().get(0).getCode());
-            anprResponseKO.setDetail(responseKO.getErrorsList().get(0).getDetail());
-            anprResponseKO.setElement(responseKO.getErrorsList().get(0).getElement());
+        return responseErrors;
+    }
+
+    private AnprResponseKO mapToAnprResponseKO(String clientOperationId, ErrorListAnpr error) {
+        AnprResponseKO response = new AnprResponseKO();
+        response.setCode(error.getCode());
+        response.setDetail(error.getDetail());
+        response.setElement(error.getElement());
+        response.setClientOperationId(clientOperationId);
+        return response;
+    }
+
+    private List<PdndResponseError> mapToPdndResponseKO(String responseBody) throws JsonProcessingException {
+        PdndResponseKO response = objectMapper.readValue(responseBody, PdndResponseKO.class);
+        if (response.getErrors() != null) {
+            return response.getErrors();
         }
-        return anprResponseKO;
+        return Collections.emptyList();
     }
 
     private IpaResponseKO mapToIpaResponseKO(String errorDetail) {

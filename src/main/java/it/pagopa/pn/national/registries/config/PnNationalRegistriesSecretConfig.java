@@ -68,7 +68,7 @@ public class PnNationalRegistriesSecretConfig {
         try {
             return mapper.readValue(value, type);
         } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER_CONVERTER, ERROR_CODE_SECRET_MANAGER_CONVERTER, e);
+            throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER_CONVERTER, ERROR_CODE_SECRET_MANAGER, e);
         }
     }
 }

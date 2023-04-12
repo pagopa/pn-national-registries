@@ -27,11 +27,10 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADDRESS_ANPR;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESS_ANPR;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 
-@Component
 @Slf4j
+@Component
 public class AnprClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
@@ -58,14 +57,9 @@ public class AnprClient {
     public Mono<ResponseE002OKDto> callEService(E002RequestDto requestDto) {
         return accessTokenExpiringMap.getToken(purposeId, anprSecretConfig.getAnprPdndSecretValue())
                 .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry))
-                .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(), AnprResponseKO.class);
-                    }
-                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> retrySignal.failure())
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_ANPR_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
@@ -86,14 +80,21 @@ public class AnprClient {
                 })
                 .bodyValue(s)
                 .retrieve()
-                .bodyToMono(ResponseE002OKDto.class);
+                .bodyToMono(ResponseE002OKDto.class)
+                .doOnError(throwable -> {
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), AnprResponseKO.class);
+                    }
+                });
     }
 
     private String convertToJson(E002RequestDto requestDto) {
         try {
             return mapper.writeValueAsString(requestDto);
         } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR,e);
+            throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR, e);
         }
     }
 
@@ -102,13 +103,13 @@ public class AnprClient {
             byte[] hash = MessageDigest.getInstance("SHA-256").digest(request.getBytes(StandardCharsets.UTF_8));
             return "SHA-256=" + Base64.getEncoder().encodeToString(hash);
         } catch (NoSuchAlgorithmException e) {
-            throw new PnInternalException(ERROR_MESSAGE_ADDRESS_ANPR, ERROR_CODE_ADDRESS_ANPR, e);
+            throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR, e);
         }
     }
 
-    protected boolean checkExceptionType(Throwable throwable) {
-        log.debug("Try Retry call to ANPR");
+    protected boolean shouldRetry(Throwable throwable) {
         if (throwable instanceof WebClientResponseException exception) {
+            log.debug("Try Retry call to ANPR");
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;

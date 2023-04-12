@@ -51,9 +51,7 @@ class InadClientTest {
     @Test
     void callEService() {
         when(inadWebClient.init()).thenReturn(webClient);
-        InadClient inadClient = new InadClient(
-                accessTokenExpiringMap,inadWebClient,"purposeId", inadSecretConfig
-        );
+        InadClient inadClient = new InadClient(accessTokenExpiringMap,inadWebClient,"purposeId", inadSecretConfig);
 
         ResponseRequestDigitalAddressDto response = new ResponseRequestDigitalAddressDto();
         response.setTaxId("cf");
@@ -75,62 +73,39 @@ class InadClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ResponseRequestDigitalAddressDto.class)).thenReturn(Mono.just(response));
 
-        StepVerifier.create(inadClient.callEService("cf","test")).expectNext().verifyError();
+        StepVerifier.create(inadClient.callEService("cf","test"))
+                .expectNext()
+                .verifyError();
     }
+
     @Test
     void callEServiceDoOnError() {
         when(inadWebClient.init()).thenReturn(webClient);
-        InadClient inadClient = new InadClient(
-                accessTokenExpiringMap,inadWebClient,"purposeId", inadSecretConfig
-        );
+        InadClient inadClient = new InadClient(accessTokenExpiringMap,inadWebClient,"purposeId", inadSecretConfig);
         HttpHeaders headers = mock(HttpHeaders.class);
         byte[] testByteArray = new byte[0];
         String test = "test";
         WebClientResponseException webClientResponseException = new WebClientResponseException(test, HttpStatus.NOT_FOUND.value(), test, headers, testByteArray, Charset.defaultCharset());
 
-        ResponseRequestDigitalAddressDto response = new ResponseRequestDigitalAddressDto();
-        response.setTaxId("cf");
-        response.setSince(new Date());
-
-        AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
-
         when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.error(webClientResponseException));
 
-        StepVerifier.create(inadClient.callEService("cf", "test")).verifyError(WebClientResponseException.class);
+        StepVerifier.create(inadClient.callEService("cf", "test"))
+                .verifyError(WebClientResponseException.class);
     }
 
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
-    void checkExceptionTypeWhenNotWebClientResponseExceptionThenReturnFalse() {
-        InadClient inadClient =
-                new InadClient(
-                        accessTokenExpiringMap,
-                        inadWebClient,
-                        "purposeId",
-                        inadSecretConfig);
-        assertFalse(inadClient.checkExceptionType(new Exception()));
+    void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
+        InadClient inadClient = new InadClient(accessTokenExpiringMap, inadWebClient, "purposeId", inadSecretConfig);
+        assertFalse(inadClient.shouldRetry(new Exception()));
     }
 
     @Test
-    @DisplayName(
-            "Should return true when the exception is webclientresponseexception and the status code is 401")
-    void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        InadClient inadClient =
-                new InadClient(
-                        accessTokenExpiringMap,
-                        inadWebClient,
-                        "purposeId",
-                        inadSecretConfig);
-        WebClientResponseException webClientResponseException =
-                new WebClientResponseException(
-                        "message",
-                        HttpStatus.UNAUTHORIZED.value(),
-                        "statusText",
-                        HttpHeaders.EMPTY,
-                        null,
-                        null);
-        assertTrue(inadClient.checkExceptionType(webClientResponseException));
+    @DisplayName("Should return true when the exception is webclientresponseexception and the status code is 401")
+    void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
+        InadClient inadClient = new InadClient(accessTokenExpiringMap, inadWebClient, "purposeId", inadSecretConfig);
+        WebClientResponseException webClientResponseException = new WebClientResponseException("message",
+                HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
+        assertTrue(inadClient.shouldRetry(webClientResponseException));
     }
 }

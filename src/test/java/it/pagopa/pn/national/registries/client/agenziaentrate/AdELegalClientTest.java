@@ -34,23 +34,17 @@ class AdELegalClientTest {
     @Autowired
     private AdELegalClient adELegalClient;
 
-
     @MockBean
     WebClient webClient;
 
     @MockBean
     AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP;
 
-
     /**
      * Method under test: {@link AdELegalClient#getToken()}
      */
     @Test
     void testGetToken2() {
-        //   Diffblue Cover was unable to write a Spring test,
-        //   so wrote a non-Spring test instead.
-        //   Diffblue AI was unable to find a test
-
         AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = mock(AgenziaEntrateWebClientSOAP.class);
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(null);
         (new AdELegalClient(agenziaEntrateWebClientSOAP)).getToken();
@@ -62,10 +56,6 @@ class AdELegalClientTest {
      */
     @Test
     void testCheckTaxIdAndVatNumberAdE2() {
-        //   Diffblue Cover was unable to write a Spring test,
-        //   so wrote a non-Spring test instead.
-        //   Diffblue AI was unable to find a test
-
         AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = mock(AgenziaEntrateWebClientSOAP.class);
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(null);
         AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
@@ -99,7 +89,6 @@ class AdELegalClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/legalerappresentateAdE/check")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(any())).thenReturn(requestBodySpec);
@@ -108,8 +97,9 @@ class AdELegalClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(response));
 
-        StepVerifier.create(adELegalClient.checkTaxIdAndVatNumberAdE(adeLegalRequestBodyFilterDto)).expectNext(response).verifyComplete();
-
+        StepVerifier.create(adELegalClient.checkTaxIdAndVatNumberAdE(adeLegalRequestBodyFilterDto))
+                .expectNext(response)
+                .verifyComplete();
     }
 
     @Test
@@ -126,14 +116,6 @@ class AdELegalClientTest {
         adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
         adeLegalRequestBodyFilterDto.setTaxId("setTaxId");
 
-        StringWriter requestSW = new StringWriter();
-        JAXB.marshal(adeLegalRequestBodyFilterDto, requestSW);
-
-        CheckValidityRappresentanteResp checkValidityRappresentanteRespType = new CheckValidityRappresentanteResp();
-        checkValidityRappresentanteRespType.setValido(true);
-        checkValidityRappresentanteRespType.setDettaglioEsito("XX00");
-        checkValidityRappresentanteRespType.setCodiceRitorno("00");
-
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
@@ -147,39 +129,33 @@ class AdELegalClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.error(webClientResponseException));
 
-        StepVerifier.create(adELegalClient.checkTaxIdAndVatNumberAdE(adeLegalRequestBodyFilterDto)).expectError(WebClientResponseException.class).verify();
-
+        StepVerifier.create(adELegalClient.checkTaxIdAndVatNumberAdE(adeLegalRequestBodyFilterDto))
+                .expectError(WebClientResponseException.class)
+                .verify();
     }
 
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
-    void checkExceptionTypeWhenNotWebClientResponseExceptionThenReturnFalse() {
+    void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
         AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
-        assertFalse(adELegalClient.checkExceptionType(new Exception()));
+        assertFalse(adELegalClient.shouldRetry(new Exception()));
     }
 
     @Test
-    @DisplayName(
-            "Should return true when the exception is webclientresponseexception and the status code is 401")
-    void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
+    @DisplayName("Should return true when the exception is webclientresponseexception and the status code is 401")
+    void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
         AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
 
-        WebClientResponseException webClientResponseException =
-                new WebClientResponseException(
-                        "message",
-                        HttpStatus.UNAUTHORIZED.value(),
-                        "statusText",
-                        HttpHeaders.EMPTY,
-                        null,
-                        null);
-        assertTrue(adELegalClient.checkExceptionType(webClientResponseException));
+        WebClientResponseException webClientResponseException = new WebClientResponseException("message",
+                HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
+        assertTrue(adELegalClient.shouldRetry(webClientResponseException));
     }
 
     /**
-     * Method under test: {@link AdELegalClient#checkExceptionType(Throwable)}
+     * Method under test: {@link AdELegalClient#shouldRetry(Throwable)}
      */
     @Test
-    void testCheckExceptionType() {
-        assertFalse(adELegalClient.checkExceptionType(new Throwable()));
+    void testShouldRetry() {
+        assertFalse(adELegalClient.shouldRetry(new Throwable()));
     }
 }

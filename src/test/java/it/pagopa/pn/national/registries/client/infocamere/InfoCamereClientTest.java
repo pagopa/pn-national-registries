@@ -52,15 +52,17 @@ class InfoCamereClientTest {
 
     @Mock
     ObjectMapper mapper;
-    String clientId = "tezt_clientId";
+
+    final String clientId = "tezt_clientId";
 
     private static WebClient.RequestBodyUriSpec requestBodyUriSpec;
     private static WebClient.RequestBodySpec requestBodySpec;
     private static WebClient.RequestHeadersSpec requestHeadersSpec;
     private static WebClient.ResponseSpec responseSpec;
     private static WebClient.RequestHeadersUriSpec requestHeadersUriSpec;
+
     @BeforeAll
-    static void setup(){
+    static void setup() {
         requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         requestBodySpec = mock(WebClient.RequestBodySpec.class);
         requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
@@ -176,21 +178,6 @@ class InfoCamereClientTest {
             throw new RuntimeException(e);
         }
 
-     /*   WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
-        WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
-        WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
-        WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
-
-        String jws = "jws";
-        when(infoCamereJwsGenerator.createAuthRest(any())).thenReturn(jws);
-
-        when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
-        when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
-        when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
-        when(requestBodySpec.bodyValue(any())).thenReturn(requestHeadersSpec);
-        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(jws));*/
         callGetTokenTest();
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
@@ -355,24 +342,18 @@ class InfoCamereClientTest {
                 .verify();
     }
     @Test
-    void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
+    void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
-        WebClientResponseException webClientResponseException =
-                new WebClientResponseException(
-                        "message",
-                        HttpStatus.UNAUTHORIZED.value(),
-                        "statusText",
-                        HttpHeaders.EMPTY,
-                        null,
-                        null);
-        assertTrue(infoCamereClient.checkExceptionType(webClientResponseException));
+        WebClientResponseException webClientResponseException = new WebClientResponseException("message",
+                HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
+        assertTrue(infoCamereClient.shouldRetry(webClientResponseException));
     }
 
     @Test
-    void checkExceptionTypeWhenNotWebClientResponseExceptionThenReturnFalse() {
+    void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, infoCamereJwsGenerator, mapper);
 
-        assertFalse(infoCamereClient.checkExceptionType(new Exception()));
+        assertFalse(infoCamereClient.shouldRetry(new Exception()));
     }
 
     @Test

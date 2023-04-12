@@ -3,14 +3,14 @@ package it.pagopa.pn.national.registries.client.infocamere;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
-import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
-import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
+import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -28,15 +28,13 @@ import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 
-@Component
 @Slf4j
+@Component
 public class InfoCamereClient {
 
     private final WebClient webClient;
     private final InfoCamereJwsGenerator infoCamereJwsGenerator;
-
     private final String clientId;
-
     private final ObjectMapper mapper;
 
     private static final String CLIENT_ID = "client_id";
@@ -46,10 +44,10 @@ public class InfoCamereClient {
                                @Value("${pn.national.registries.infocamere.client-id}") String clientId,
                                InfoCamereJwsGenerator infoCamereJwsGenerator,
                                ObjectMapper mapper) {
-        webClient = infoCamereWebClient.init();
         this.clientId = clientId;
         this.infoCamereJwsGenerator = infoCamereJwsGenerator;
         this.mapper = mapper;
+        webClient = infoCamereWebClient.init();
     }
 
     public Mono<String> getToken(String scope) {
@@ -64,21 +62,25 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                    if (isUnauthorized(throwable)) {
+                        throw new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, throwable);
+                    }
+                    if (throwable instanceof WebClientResponseException e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
                     }
-                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, retrySignal.failure()))
-                );
+                });
     }
 
     public Mono<IniPecBatchResponse> callEServiceRequestId(IniPecBatchRequest request) {
         String requestJson = convertToJson(request);
         return getToken(InipecScopeEnum.PEC.value())
-                .flatMap(token -> callRichiestaElencoPec(requestJson, token));
+                .flatMap(token -> callRichiestaElencoPec(requestJson, token))
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
+                );
     }
 
     private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token) {
@@ -97,21 +99,21 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(IniPecBatchResponse.class)
                 .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
                     }
-                }).retryWhen(Retry.max(1)
-                        .filter(this::checkExceptionType)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, retrySignal.failure()))
-                );
+                });
     }
 
     public Mono<IniPecPollingResponse> callEServiceRequestPec(String correlationId) {
         return getToken(InipecScopeEnum.PEC.value())
-                .flatMap(token -> callGetElencoPec(correlationId, token));
+                .flatMap(token -> callGetElencoPec(correlationId, token))
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
+                );
     }
 
     private Mono<IniPecPollingResponse> callGetElencoPec(String correlationId, String token) {
@@ -129,20 +131,21 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(IniPecPollingResponse.class)
                 .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
                     }
-                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, retrySignal.failure()))
-                );
+                });
     }
 
     public Mono<AddressRegistroImprese> getLegalAddress(String taxId) {
         return getToken(InipecScopeEnum.SEDE.value())
-                .flatMap(token -> callGetLegalAddress(taxId, token));
+                .flatMap(token -> callGetLegalAddress(taxId, token))
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
+                );
     }
 
     private Mono<AddressRegistroImprese> callGetLegalAddress(String taxId, String token) {
@@ -159,35 +162,21 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(AddressRegistroImprese.class)
                 .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
                     }
-                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_REGISTRO_IMPRESE, ERROR_CODE_REGISTRO_IMPRESE, retrySignal.failure()))
-                );
-    }
-
-    protected boolean checkExceptionType(Throwable throwable) {
-        if (throwable instanceof WebClientResponseException exception) {
-            return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
-        }
-        return false;
-    }
-
-    private String convertToJson(IniPecBatchRequest iniPecBatchRequest) {
-        try {
-            return mapper.writeValueAsString(iniPecBatchRequest);
-        } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, e);
-        }
+                });
     }
 
     public Mono<InfoCamereVerification> checkTaxIdAndVatNumberInfoCamere(InfoCamereLegalRequestBodyFilterDto filterDto) {
         return getToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value())
-                .flatMap(token -> callCheckTaxId(filterDto, token));
+                .flatMap(token -> callCheckTaxId(filterDto, token))
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
+                );
     }
 
     private Mono<InfoCamereVerification> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
@@ -201,14 +190,30 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(InfoCamereVerification.class)
                 .doOnError(throwable -> {
-                    if (!checkExceptionType(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
-                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
                     }
-                }).retryWhen(Retry.max(1).filter(this::checkExceptionType)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_LEGALE_RAPPRESENTANTE, ERROR_CODE_LEGALE_RAPPRESENTANTE, retrySignal.failure()))
-                );
+                });
+    }
+
+    protected boolean shouldRetry(Throwable throwable) {
+        return isUnauthorized(throwable);
+    }
+
+    private boolean isUnauthorized(Throwable throwable) {
+        if (throwable instanceof WebClientResponseException exception) {
+            return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
+        }
+        return false;
+    }
+
+    private String convertToJson(IniPecBatchRequest iniPecBatchRequest) {
+        try {
+            return mapper.writeValueAsString(iniPecBatchRequest);
+        } catch (JsonProcessingException e) {
+            throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, e);
+        }
     }
 }

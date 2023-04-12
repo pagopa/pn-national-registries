@@ -51,14 +51,13 @@ class CheckCfClientTest {
     @Test
     void callEService() throws JsonProcessingException {
         when(checkCfWebClient.init()).thenReturn(webClient);
-        CheckCfClient checkCfClient = new CheckCfClient(
-                accessTokenExpiringMap, checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
-        );
+        CheckCfClient checkCfClient = new CheckCfClient(accessTokenExpiringMap, checkCfWebClient, "purposeId",
+                objectMapper, checkCfSecretConfig);
         Request richiesta = new Request();
         richiesta.setCodiceFiscale("cf");
 
         String richiestaJson = "{\"codiceFiscale\": \"cf\"}";
-        when( objectMapper.writeValueAsString(any())).thenReturn(richiestaJson);
+        when(objectMapper.writeValueAsString(any())).thenReturn(richiestaJson);
 
         TaxIdVerification taxIdVerification = new TaxIdVerification();
         taxIdVerification.setCodiceFiscale("cf");
@@ -73,7 +72,6 @@ class CheckCfClientTest {
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
-
 
         when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
@@ -84,15 +82,16 @@ class CheckCfClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TaxIdVerification.class)).thenReturn(Mono.just(taxIdVerification));
 
-        StepVerifier.create(checkCfClient.callEService(richiesta)).expectNext(taxIdVerification).verifyComplete();
-
+        StepVerifier.create(checkCfClient.callEService(richiesta))
+                .expectNext(taxIdVerification)
+                .verifyComplete();
     }
+
     @Test
     void checkTaxIdAndVatNumberErrorTest() throws JsonProcessingException {
         when(checkCfWebClient.init()).thenReturn(webClient);
-        CheckCfClient checkCfClient = new CheckCfClient(
-                accessTokenExpiringMap, checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
-        );
+        CheckCfClient checkCfClient = new CheckCfClient(accessTokenExpiringMap, checkCfWebClient, "purposeId",
+                objectMapper, checkCfSecretConfig);
         HttpHeaders headers = mock(HttpHeaders.class);
         byte[] testByteArray = new byte[0];
         String test = "test";
@@ -102,12 +101,7 @@ class CheckCfClientTest {
         richiesta.setCodiceFiscale("cf");
 
         String richiestaJson = "{\"codiceFiscale\": \"cf\"}";
-        when( objectMapper.writeValueAsString(any())).thenReturn(richiestaJson);
-
-        TaxIdVerification taxIdVerification = new TaxIdVerification();
-        taxIdVerification.setCodiceFiscale("cf");
-        taxIdVerification.setValido(true);
-        taxIdVerification.setMessaggio("valid");
+        when(objectMapper.writeValueAsString(any())).thenReturn(richiestaJson);
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setAccessToken("fafsff");
@@ -118,7 +112,6 @@ class CheckCfClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-
         when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
@@ -128,63 +121,47 @@ class CheckCfClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TaxIdVerification.class)).thenReturn(Mono.error(webClientResponseException));
 
-        StepVerifier.create(checkCfClient.callEService(richiesta)).expectError(WebClientResponseException.class).verify();
+        StepVerifier.create(checkCfClient.callEService(richiesta))
+                .expectError(WebClientResponseException.class)
+                .verify();
     }
 
     @Test
     void callEServiceThrowsJsonProcessingException() throws JsonProcessingException {
         when(checkCfWebClient.init()).thenReturn(webClient);
         CheckCfClient checkCfClient = new CheckCfClient(
-                accessTokenExpiringMap, checkCfWebClient,"purposeId",objectMapper, checkCfSecretConfig
+                accessTokenExpiringMap, checkCfWebClient, "purposeId", objectMapper, checkCfSecretConfig
         );
         Request richiesta = new Request();
-        Mockito.when( objectMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("") {});
-
+        Mockito.when(objectMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("") {});
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setAccessToken("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
-        when(accessTokenExpiringMap.getToken(eq("purposeId"),any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
-        StepVerifier.create(checkCfClient.callEService(richiesta)).expectError(PnInternalException.class).verify();
-
+        StepVerifier.create(checkCfClient.callEService(richiesta))
+                .expectError(PnInternalException.class)
+                .verify();
     }
-
 
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
-    void checkExceptionTypeWhenNotWebClientResponseExceptionThenReturnFalse() {
-        CheckCfClient checkCfClient =
-                new CheckCfClient(
-                        accessTokenExpiringMap,
-                        checkCfWebClient,
-                        "purposeId",
-                        objectMapper,
-                        checkCfSecretConfig);
-        assertFalse(checkCfClient.checkExceptionType(new Exception()));
+    void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
+        CheckCfClient checkCfClient = new CheckCfClient(accessTokenExpiringMap, checkCfWebClient, "purposeId",
+                objectMapper, checkCfSecretConfig);
+        assertFalse(checkCfClient.shouldRetry(new Exception()));
     }
 
     @Test
-    @DisplayName(
-            "Should return true when the exception is webclientresponseexception and the status code is 401")
-    void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        CheckCfClient checkCfClient =
-                new CheckCfClient(
-                        accessTokenExpiringMap,
-                        checkCfWebClient,
-                        "purposeId",
-                        objectMapper,
-                        checkCfSecretConfig);
-        WebClientResponseException webClientResponseException =
-                new WebClientResponseException(
-                        "message",
-                        HttpStatus.UNAUTHORIZED.value(),
-                        "statusText",
-                        HttpHeaders.EMPTY,
-                        null,
-                        null);
-        assertTrue(checkCfClient.checkExceptionType(webClientResponseException));
+    @DisplayName("Should return true when the exception is webclientresponseexception and the status code is 401")
+    void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
+        CheckCfClient checkCfClient = new CheckCfClient(accessTokenExpiringMap, checkCfWebClient, "purposeId",
+                objectMapper, checkCfSecretConfig);
+        WebClientResponseException webClientResponseException = new WebClientResponseException("message",
+                HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
+        assertTrue(checkCfClient.shouldRetry(webClientResponseException));
     }
 
 }

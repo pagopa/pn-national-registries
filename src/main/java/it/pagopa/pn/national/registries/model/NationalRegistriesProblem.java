@@ -2,16 +2,15 @@ package it.pagopa.pn.national.registries.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Data;
-import lombok.ToString;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.OffsetDateTime;
 
 @Data
-@ToString
-public class NationalRegistriesProblem{
+public class NationalRegistriesProblem {
 
     private static final long serialVersionUID = 1L;
+
     @JsonProperty("status")
     private Integer status;
     @JsonProperty("title")
@@ -21,9 +20,7 @@ public class NationalRegistriesProblem{
     @JsonProperty("traceId")
     private String traceId;
     @JsonProperty("timestamp")
-    @DateTimeFormat(
-            iso = DateTimeFormat.ISO.DATE_TIME
-    )
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private OffsetDateTime timestamp;
     @JsonProperty("errors")
     private Object errors;
