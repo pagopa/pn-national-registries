@@ -27,7 +27,7 @@ class AccessTokenExpiringMapTest {
 
 
     @BeforeAll
-    void init(){
+    void init() {
         expiringMap = ExpiringMap.builder()
                 .variableExpiration()
                 .build();
@@ -40,16 +40,19 @@ class AccessTokenExpiringMapTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purpose");
 
-        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider,Integer.parseInt("-5000"));
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, Integer.parseInt("-5000"));
 
         when(tokenProvider.getTokenPdnd(new PdndSecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
-        StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new PdndSecretValue())).expectNext(accessTokenCacheEntry).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getToken("purpose", new PdndSecretValue()))
+                .expectNext(accessTokenCacheEntry)
+                .verifyComplete();
 
-        expiringMap.put("purpose",accessTokenCacheEntry);
+        expiringMap.put("purpose", accessTokenCacheEntry);
 
-        StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new PdndSecretValue())).expectNext(expiringMap.get("purpose")).verifyComplete();
-
+        StepVerifier.create(accessTokenExpiringMap.getToken("purpose", new PdndSecretValue()))
+                .expectNext(expiringMap.get("purpose"))
+                .verifyComplete();
     }
 
     @Test
@@ -59,17 +62,19 @@ class AccessTokenExpiringMapTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purpose");
 
-        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider,Integer.parseInt("5000"));
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, Integer.parseInt("5000"));
 
         when(tokenProvider.getTokenPdnd(new PdndSecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
-        StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new PdndSecretValue())).expectNext(accessTokenCacheEntry).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getToken("purpose", new PdndSecretValue()))
+                .expectNext(accessTokenCacheEntry)
+                .verifyComplete();
 
-        expiringMap.put("purpose",accessTokenCacheEntry);
+        expiringMap.put("purpose", accessTokenCacheEntry);
 
-        StepVerifier.create(accessTokenExpiringMap.getToken("purpose",new PdndSecretValue())).expectNext(accessTokenCacheEntry).verifyComplete();
-
+        StepVerifier.create(accessTokenExpiringMap.getToken("purpose", new PdndSecretValue()))
+                .expectNext(accessTokenCacheEntry)
+                .verifyComplete();
     }
-
 
 }

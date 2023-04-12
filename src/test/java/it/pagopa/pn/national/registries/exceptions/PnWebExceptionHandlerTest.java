@@ -7,6 +7,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecErro
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.ipa.IpaResponseKO;
+import it.pagopa.pn.national.registries.model.pdnd.PdndResponseKO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -94,6 +95,22 @@ class PnWebExceptionHandlerTest {
     }
 
     @Test
+    void testHandle3() {
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
+        when(exception.getMessage()).thenReturn("bad request");
+        when(exception.getResponseBodyAsString()).thenReturn("{}");
+        Class<?> ipaResponseKOClass = IpaResponseKO.class;
+        doReturn(ipaResponseKOClass).when(exception).getClassName();
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
+        when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
+        when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
+    }
+
+    @Test
     void testHandle4() {
         PnNationalRegistriesException exception = new PnNationalRegistriesException("ex.getMessage()", 400,
                 "ex.getStatusText()", headers, null,
@@ -159,13 +176,9 @@ class PnWebExceptionHandlerTest {
     }
 
     @Test
-    void testHandle3() {
-        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
-        when(exception.getStatusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
-        when(exception.getMessage()).thenReturn("bad request");
-        when(exception.getResponseBodyAsString()).thenReturn("{}");
-        Class<?> ipaResponseKOClass = IpaResponseKO.class;
-        doReturn(ipaResponseKOClass).when(exception).getClassName();
+    void testHandle8() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("message", 400, "Bad Request", null,
+                "{\"listaErrori\":[{\"code\":\"\"}]}".getBytes(), Charset.defaultCharset(), AnprResponseKO.class);
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
@@ -282,5 +295,29 @@ class PnWebExceptionHandlerTest {
         verify(defaultServerWebExchange).getRequest();
         verify(defaultServerWebExchange, atLeast(1)).getResponse();
         verify(serverHttpRequestDecorator).getURI();
+    }
+
+    @Test
+    void testHandle14() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("message", 400, "Bad Request", null,
+                "{\"title\":\"code\"}".getBytes(), Charset.defaultCharset(), PdndResponseKO.class);
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
+        when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
+        when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
+    }
+
+    @Test
+    void testHandle15() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("message", 400, "Bad Request", null,
+                "{\"title\":\"code\",\"errors\":[]}".getBytes(), Charset.defaultCharset(), PdndResponseKO.class);
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
+        when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
+        when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
     }
 }
