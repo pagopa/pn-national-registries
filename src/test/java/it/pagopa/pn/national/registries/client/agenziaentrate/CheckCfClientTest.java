@@ -65,7 +65,7 @@ class CheckCfClientTest {
         taxIdVerification.setMessaggio("valid");
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
@@ -73,7 +73,7 @@ class CheckCfClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/verifica")).thenReturn(requestBodySpec);
@@ -104,7 +104,7 @@ class CheckCfClientTest {
         when(objectMapper.writeValueAsString(any())).thenReturn(richiestaJson);
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
@@ -112,7 +112,7 @@ class CheckCfClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/verifica")).thenReturn(requestBodySpec);
@@ -136,10 +136,10 @@ class CheckCfClientTest {
         Mockito.when(objectMapper.writeValueAsString(any())).thenThrow(new JsonProcessingException("") {});
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
-        when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         StepVerifier.create(checkCfClient.callEService(richiesta))
                 .expectError(PnInternalException.class)

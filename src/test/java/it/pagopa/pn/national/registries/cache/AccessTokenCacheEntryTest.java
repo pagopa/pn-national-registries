@@ -18,8 +18,8 @@ class AccessTokenCacheEntryTest {
         client.setAccessToken("test");
         client.setTokenType(tokenTypeDto);
         accessTokenCacheEntry.setClientCredentials(client);
-        Assertions.assertEquals("test",accessTokenCacheEntry.getAccessToken());
-        Assertions.assertEquals("purposeId",accessTokenCacheEntry.getPurposeId());
+        Assertions.assertEquals("test",accessTokenCacheEntry.getTokenValue());
+        Assertions.assertEquals("purposeId",accessTokenCacheEntry.getTokenKey());
         Assertions.assertEquals("Bearer",accessTokenCacheEntry.getTokenType().getValue());
     }
 }

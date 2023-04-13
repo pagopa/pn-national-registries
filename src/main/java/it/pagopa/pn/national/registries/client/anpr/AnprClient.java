@@ -55,7 +55,7 @@ public class AnprClient {
     }
 
     public Mono<ResponseE002OKDto> callEService(E002RequestDto requestDto) {
-        return accessTokenExpiringMap.getToken(purposeId, anprSecretConfig.getAnprPdndSecretValue())
+        return accessTokenExpiringMap.getPDNDToken(purposeId, anprSecretConfig.getAnprPdndSecretValue())
                 .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -72,11 +72,11 @@ public class AnprClient {
                 .contentType(MediaType.APPLICATION_JSON)
                 .headers(httpHeaders -> {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                    httpHeaders.setBearerAuth(tokenEntry.getAccessToken());
+                    httpHeaders.setBearerAuth(tokenEntry.getTokenValue());
                     httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
                     httpHeaders.add("Content-Encoding", "UTF-8");
                     httpHeaders.add("Digest", digest);
-                    httpHeaders.add("bearerAuth", tokenEntry.getAccessToken());
+                    httpHeaders.add("bearerAuth", tokenEntry.getTokenValue());
                 })
                 .bodyValue(s)
                 .retrieve()

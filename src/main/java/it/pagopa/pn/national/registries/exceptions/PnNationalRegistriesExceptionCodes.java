@@ -28,6 +28,9 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
 
     public static final String ERROR_CODE_UNAUTHORIZED = "PN_NATIONAL_REGISTRIES_UNAUTHORIZED";
 
+    public static final String ERROR_CODE_INFOCAMERE_TOKEN_DURATION = "PN_NATIONAL_REGISTRIES_INFOCAMERE_TOKEN_DURATION";
+
+
     // messaggi di errore di national registries
 
     // PDND
@@ -57,4 +60,6 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_MESSAGE_INAD_UNAUTHORIZED = "Errore di autorizzazione su INAD";
     public static final String ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED = "Errore di autorizzazione su InfoCamere";
     public static final String ERROR_MESSAGE_ADE_UNAUTHORIZED = "Errore di autorizzazione su AdE";
+    public static final String ERROR_MESSAGE_INFOCAMERE_TOKEN_DURATION = "Errore, il token è scaduto";
+
 }

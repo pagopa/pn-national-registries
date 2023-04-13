@@ -80,7 +80,7 @@ class AnprClientTest {
         rispostaE002OKDto.setListaSoggetti(new SubjectsListDto());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
@@ -88,7 +88,7 @@ class AnprClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/anpr-service-e002")).thenReturn(requestBodySpec);
@@ -115,7 +115,7 @@ class AnprClientTest {
         e002RequestDto.setCriteriRicerca(dto);
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
@@ -123,7 +123,7 @@ class AnprClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/anpr-service-e002")).thenReturn(requestBodySpec);
@@ -151,7 +151,7 @@ class AnprClientTest {
         e002RequestDto.setCriteriRicerca(dto);
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
@@ -159,7 +159,7 @@ class AnprClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/anpr-service-e002")).thenReturn(requestBodySpec);
