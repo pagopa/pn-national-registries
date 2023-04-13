@@ -51,7 +51,6 @@ public class InfoCamereClient {
         webClient = infoCamereWebClient.init();
     }
 
-
     public Mono<IniPecBatchResponse> callEServiceRequestId(IniPecBatchRequest request) {
         String requestJson = convertToJson(request);
         return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value())

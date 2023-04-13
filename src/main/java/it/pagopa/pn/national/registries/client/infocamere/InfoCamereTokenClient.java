@@ -20,19 +20,17 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 
 @Slf4j
 @Component
-public class InfoCamereGetTokenClient {
+public class InfoCamereTokenClient {
 
     private final WebClient webClient;
-
     private final InfoCamereJwsGenerator infoCamereJwsGenerator;
-
     private final String clientId;
 
     private static final String CLIENT_ID = "client_id";
 
-    protected InfoCamereGetTokenClient(InfoCamereWebClient infoCamereGetTokenWebClient,
-                                       @Value("${pn.national.registries.infocamere.client-id}") String clientId,
-                                       InfoCamereJwsGenerator infoCamereJwsGenerator) {
+    protected InfoCamereTokenClient(InfoCamereWebClient infoCamereGetTokenWebClient,
+                                    @Value("${pn.national.registries.infocamere.client-id}") String clientId,
+                                    InfoCamereJwsGenerator infoCamereJwsGenerator) {
         this.clientId = clientId;
         this.infoCamereJwsGenerator = infoCamereJwsGenerator;
         webClient = infoCamereGetTokenWebClient.init();

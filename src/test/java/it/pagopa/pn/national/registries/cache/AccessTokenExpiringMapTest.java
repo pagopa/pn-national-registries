@@ -43,7 +43,7 @@ class AccessTokenExpiringMapTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purpose");
 
-        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, Integer.parseInt("-5000"));
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, -5000, -5000);
 
         when(tokenProvider.getTokenPdnd(new PdndSecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
@@ -65,7 +65,7 @@ class AccessTokenExpiringMapTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purpose");
 
-        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, Integer.parseInt("5000"));
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, 5000, 5000);
 
         when(tokenProvider.getTokenPdnd(new PdndSecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
@@ -85,7 +85,7 @@ class AccessTokenExpiringMapTest {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwczovL2ljYXBpc2NsLmluZm9jYW1lcmUuaXQvaWMvY2Uvd3NwYS93c3BhL3Jlc3QvIiwic3ViIjoiYTdlMTUyY2FjNDYwOTE3ZjMxMjNjYzI0MTBmNWE4ZDIiLCJzY29wZSI6InNlZGUtaW1wcmVzYS1wYSIsImlzcyI6ImE3ZTE1MmNhYzQ2MDkxN2YzMTIzY2MyNDEwZjVhOGQyIiwiZXhwIjo5OTgwNzc3Nzg5LCJpYXQiOjE2ODA3NzcxODksImp0aSI6IjcxZWY5ZmEzLThkMmYtNDAwMi05MTQwLTI2MWFjNmRkNzgyMiJ9.wb9I-1b0YVat0EaRUyY8wHww1Dz6-VuoQsQ-N2S5dArCiawiRsdSypsLPyI5TYh-RTA6-sbp4921vWmUiaNFxg");
 
-        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, Integer.MAX_VALUE);
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, Integer.MAX_VALUE, Integer.MAX_VALUE);
         when(tokenProvider.getTokenInfoCamere("scope")).thenReturn(Mono.just("eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwczovL2ljYXBpc2NsLmluZm9jYW1lcmUuaXQvaWMvY2Uvd3NwYS93c3BhL3Jlc3QvIiwic3ViIjoiYTdlMTUyY2FjNDYwOTE3ZjMxMjNjYzI0MTBmNWE4ZDIiLCJzY29wZSI6InNlZGUtaW1wcmVzYS1wYSIsImlzcyI6ImE3ZTE1MmNhYzQ2MDkxN2YzMTIzY2MyNDEwZjVhOGQyIiwiZXhwIjo5OTgwNzc3Nzg5LCJpYXQiOjE2ODA3NzcxODksImp0aSI6IjcxZWY5ZmEzLThkMmYtNDAwMi05MTQwLTI2MWFjNmRkNzgyMiJ9.wb9I-1b0YVat0EaRUyY8wHww1Dz6-VuoQsQ-N2S5dArCiawiRsdSypsLPyI5TYh-RTA6-sbp4921vWmUiaNFxg"));
 
         StepVerifier.create(accessTokenExpiringMap.getInfoCamereToken("scope"))
@@ -103,7 +103,7 @@ class AccessTokenExpiringMapTest {
     void testGetTokenExpiringMapInfoCamere2() {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwczovL2ljYXBpc2NsLmluZm9jYW1lcmUuaXQvaWMvY2Uvd3NwYS93c3BhL3Jlc3QvIiwic3ViIjoiYTdlMTUyY2FjNDYwOTE3ZjMxMjNjYzI0MTBmNWE4ZDIiLCJzY29wZSI6InNlZGUtaW1wcmVzYS1wYSIsImlzcyI6ImE3ZTE1MmNhYzQ2MDkxN2YzMTIzY2MyNDEwZjVhOGQyIiwiZXhwIjo5OTgwNzc3Nzg5LCJpYXQiOjE2ODA3NzcxODksImp0aSI6IjcxZWY5ZmEzLThkMmYtNDAwMi05MTQwLTI2MWFjNmRkNzgyMiJ9.wb9I-1b0YVat0EaRUyY8wHww1Dz6-VuoQsQ-N2S5dArCiawiRsdSypsLPyI5TYh-RTA6-sbp4921vWmUiaNFxg");
-        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, Integer.parseInt("5000"));
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, 5000, 5000);
 
         when(tokenProvider.getTokenInfoCamere("scope")).thenReturn(Mono.just("eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwczovL2ljYXBpc2NsLmluZm9jYW1lcmUuaXQvaWMvY2Uvd3NwYS93c3BhL3Jlc3QvIiwic3ViIjoiYTdlMTUyY2FjNDYwOTE3ZjMxMjNjYzI0MTBmNWE4ZDIiLCJzY29wZSI6InNlZGUtaW1wcmVzYS1wYSIsImlzcyI6ImE3ZTE1MmNhYzQ2MDkxN2YzMTIzY2MyNDEwZjVhOGQyIiwiZXhwIjo5OTgwNzc3Nzg5LCJpYXQiOjE2ODA3NzcxODksImp0aSI6IjcxZWY5ZmEzLThkMmYtNDAwMi05MTQwLTI2MWFjNmRkNzgyMiJ9.wb9I-1b0YVat0EaRUyY8wHww1Dz6-VuoQsQ-N2S5dArCiawiRsdSypsLPyI5TYh-RTA6-sbp4921vWmUiaNFxg"));
 
@@ -122,7 +122,7 @@ class AccessTokenExpiringMapTest {
     void testGetTokenExpiringMapInfoCamere3() {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwczovL2ljYXBpc2NsLmluZm9jYW1lcmUuaXQvaWMvY2Uvd3NwYS93c3BhL3Jlc3QvIiwic3ViIjoiYTdlMTUyY2FjNDYwOTE3ZjMxMjNjYzI0MTBmNWE4ZDIiLCJzY29wZSI6InNlZGUtaW1wcmVzYS1wYSIsImlzcyI6ImE3ZTE1MmNhYzQ2MDkxN2YzMTIzY2MyNDEwZjVhOGQyIiwiZXhwIjoxNjgwNzc3Nzg5LCJpYXQiOjE2ODA3NzcxODksImp0aSI6IjcxZWY5ZmEzLThkMmYtNDAwMi05MTQwLTI2MWFjNmRkNzgyMiJ9.HVnHcmcebOnw5y4ziVIZjSz90ZjCvbyyxlFZ4Uq9V1Hka8Add7GQ6qO8BFpF73hvlFFVY-Av-58-OIq312N5oQ");
-        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, Integer.parseInt("5000"));
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, 5000, 5000);
 
         when(tokenProvider.getTokenInfoCamere("scope")).thenReturn(Mono.just("eyJhbGciOiJIUzUxMiJ9.eyJhdWQiOiJodHRwczovL2ljYXBpc2NsLmluZm9jYW1lcmUuaXQvaWMvY2Uvd3NwYS93c3BhL3Jlc3QvIiwic3ViIjoiYTdlMTUyY2FjNDYwOTE3ZjMxMjNjYzI0MTBmNWE4ZDIiLCJzY29wZSI6InNlZGUtaW1wcmVzYS1wYSIsImlzcyI6ImE3ZTE1MmNhYzQ2MDkxN2YzMTIzY2MyNDEwZjVhOGQyIiwiZXhwIjoxNjgwNzc3Nzg5LCJpYXQiOjE2ODA3NzcxODksImp0aSI6IjcxZWY5ZmEzLThkMmYtNDAwMi05MTQwLTI2MWFjNmRkNzgyMiJ9.HVnHcmcebOnw5y4ziVIZjSz90ZjCvbyyxlFZ4Uq9V1Hka8Add7GQ6qO8BFpF73hvlFFVY-Av-58-OIq312N5oQ"));
 
@@ -136,6 +136,5 @@ class AccessTokenExpiringMapTest {
                 .expectNext(accessTokenCacheEntry)
                 .verifyComplete();
     }
-
 
 }

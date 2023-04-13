@@ -27,11 +27,11 @@ import java.util.function.Function;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-@ContextConfiguration(classes = {InfoCamereGetTokenClient.class, String.class})
+@ContextConfiguration(classes = {InfoCamereTokenClient.class, String.class})
 @ExtendWith(SpringExtension.class)
-class InfoCamereGetTokenClientTest {
+class InfoCamereTokenClientTest {
     @Autowired
-    private InfoCamereGetTokenClient infoCamereGetTokenClient;
+    private InfoCamereTokenClient infoCamereTokenClient;
 
     @MockBean
     private InfoCamereWebClient infoCamereGetTokenWebClient;
@@ -58,21 +58,21 @@ class InfoCamereGetTokenClientTest {
         requestHeadersUriSpec = mock(WebClient.RequestHeadersUriSpec.class);
     }
     /**
-     * Method under test: {@link InfoCamereGetTokenClient#getToken(String)}
+     * Method under test: {@link InfoCamereTokenClient#getToken(String)}
      */
     @Test
     void testGetToken2() throws UnsupportedEncodingException {
         HttpHeaders headers = new HttpHeaders();
         when(infoCamereJwsGenerator.createAuthRest(any()))
                 .thenThrow(new WebClientResponseException(1, "Status Text", headers, "AAAAAAAA".getBytes(StandardCharsets.UTF_8), null));
-        assertThrows(WebClientResponseException.class, () -> infoCamereGetTokenClient.getToken("Scope"));
+        assertThrows(WebClientResponseException.class, () -> infoCamereTokenClient.getToken("Scope"));
         verify(infoCamereJwsGenerator).createAuthRest(any());
     }
 
     @Test
     void callGetTokenTest() {
         when(infoCamereGetTokenWebClient.init()).thenReturn(webClient);
-        InfoCamereGetTokenClient infoCamereGetTokenClient1 = new InfoCamereGetTokenClient(infoCamereGetTokenWebClient, clientId, infoCamereJwsGenerator);
+        InfoCamereTokenClient infoCamereTokenClient1 = new InfoCamereTokenClient(infoCamereGetTokenWebClient, clientId, infoCamereJwsGenerator);
 
         String scope = "test_scope";
         String jws = "jws";
@@ -87,14 +87,14 @@ class InfoCamereGetTokenClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.just(jws));
 
-        StepVerifier.create(infoCamereGetTokenClient1.getToken(scope)).expectNext(jws).verifyComplete();
+        StepVerifier.create(infoCamereTokenClient1.getToken(scope)).expectNext(jws).verifyComplete();
     }
 
     @Test
     void testGetTokenWebException() {
         String scope = "test_scope";
         when(infoCamereGetTokenWebClient.init()).thenReturn(webClient);
-        InfoCamereGetTokenClient infoCamereGetTokenClient1 = new InfoCamereGetTokenClient(infoCamereGetTokenWebClient, clientId, infoCamereJwsGenerator);
+        InfoCamereTokenClient infoCamereTokenClient1 = new InfoCamereTokenClient(infoCamereGetTokenWebClient, clientId, infoCamereJwsGenerator);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
@@ -115,14 +115,14 @@ class InfoCamereGetTokenClientTest {
                 HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, null);
         when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.error(exception));
 
-        StepVerifier.create(infoCamereGetTokenClient1.getToken(scope)).expectError(PnNationalRegistriesException.class).verify();
+        StepVerifier.create(infoCamereTokenClient1.getToken(scope)).expectError(PnNationalRegistriesException.class).verify();
     }
 
     @Test
     void testGetTokenWebUnauthorizedException() {
         String scope = "test_scope";
         when(infoCamereGetTokenWebClient.init()).thenReturn(webClient);
-        InfoCamereGetTokenClient infoCamereGetTokenClient1 = new InfoCamereGetTokenClient(infoCamereGetTokenWebClient, clientId, infoCamereJwsGenerator);
+        InfoCamereTokenClient infoCamereTokenClient1 = new InfoCamereTokenClient(infoCamereGetTokenWebClient, clientId, infoCamereJwsGenerator);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
@@ -143,7 +143,7 @@ class InfoCamereGetTokenClientTest {
                 HttpStatus.UNAUTHORIZED.getReasonPhrase(), null, null, null);
         when(responseSpec.bodyToMono(String.class)).thenReturn(Mono.error(exception));
 
-        StepVerifier.create(infoCamereGetTokenClient1.getToken(scope)).expectError(PnInternalException.class).verify();
+        StepVerifier.create(infoCamereTokenClient1.getToken(scope)).expectError(PnInternalException.class).verify();
     }
 }
 

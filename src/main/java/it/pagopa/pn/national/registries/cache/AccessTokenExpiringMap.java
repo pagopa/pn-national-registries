@@ -19,19 +19,22 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class AccessTokenExpiringMap {
 
-    private final Integer deadline;
+    private final Integer pdndDeadline;
+    private final Integer infoCamereDeadline;
 
     private final TokenProvider tokenProvider;
-
 
     protected ExpiringMap<String, AccessTokenCacheEntry> expiringMap = ExpiringMap.builder()
             .asyncExpirationListener((tokenKey, entry) -> log.info("token for key {} has expired", tokenKey))
             .variableExpiration()
             .build();
 
-    public AccessTokenExpiringMap(TokenProvider tokenProvider, @Value("${pn.national-registries.pdnd.token.deadline}") Integer deadline) {
+    public AccessTokenExpiringMap(TokenProvider tokenProvider,
+                                  @Value("${pn.national-registries.pdnd.token.deadline}") Integer pdndDeadline,
+                                  @Value("${pn.national.registries.infocamere.token.deadline}") Integer infoCamereDeadline) {
         this.tokenProvider = tokenProvider;
-        this.deadline = deadline;
+        this.pdndDeadline = pdndDeadline;
+        this.infoCamereDeadline = infoCamereDeadline;
     }
 
     public Mono<AccessTokenCacheEntry> getPDNDToken(String purposeId, PdndSecretValue pdndSecretValue) {
@@ -40,7 +43,7 @@ public class AccessTokenExpiringMap {
         }
         try {
             long expiration = expiringMap.getExpectedExpiration(purposeId);
-            if (expiration <= deadline) {
+            if (expiration <= pdndDeadline) {
                 return requireNewPDNDAccessToken(purposeId, pdndSecretValue);
             } else {
                 log.info("Existing Access Token Required with purposeId: {}", purposeId);
@@ -57,7 +60,7 @@ public class AccessTokenExpiringMap {
         }
         try {
             long expiration = expiringMap.getExpectedExpiration(scope);
-            if (expiration <= deadline) {
+            if (expiration <= infoCamereDeadline) {
                 return requireNewInfoCamereAccessToken(scope);
             } else {
                 log.info("Existing InfoCamere Access Token Required with scope: {}", scope);
@@ -68,7 +71,6 @@ public class AccessTokenExpiringMap {
         }
     }
 
-
     private Mono<AccessTokenCacheEntry> requireNewPDNDAccessToken(String purposeId, PdndSecretValue pdndSecretValue) {
         log.info("New PDND Access Token Required with purposeId: {}", purposeId);
         return tokenProvider.getTokenPdnd(pdndSecretValue)
@@ -77,6 +79,7 @@ public class AccessTokenExpiringMap {
                     entry.setClientCredentials(dto);
                     expiringMap.put(purposeId, entry);
                     expiringMap.setExpiration(purposeId, dto.getExpiresIn(), TimeUnit.SECONDS);
+                    log.debug("New PDND Access Token with purposeId {} expires in {}s", purposeId, dto.getExpiresIn());
                     return entry;
                 });
     }
@@ -89,10 +92,12 @@ public class AccessTokenExpiringMap {
                     entry.setClientCredentials(token);
                     expiringMap.put(scope, entry);
                     long duration = JWT.decode(token).getExpiresAt().getTime() - System.currentTimeMillis();
-                    if(duration > 0)
-                        expiringMap.setExpiration(scope, duration/1000L, TimeUnit.SECONDS);
-                    else
+                    if (duration > 0) {
+                        expiringMap.setExpiration(scope, duration / 1000L, TimeUnit.SECONDS);
+                    } else {
                         throw new PnInternalException(ERROR_CODE_INFOCAMERE_TOKEN_DURATION, ERROR_MESSAGE_INFOCAMERE_TOKEN_DURATION);
+                    }
+                    log.debug("New InfoCamere Access Token with scope {} expires in {}ms", scope, duration);
                     return entry;
                 });
     }

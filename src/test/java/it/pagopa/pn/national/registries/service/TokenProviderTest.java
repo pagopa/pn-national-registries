@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.client.infocamere.InfoCamereGetTokenClient;
+import it.pagopa.pn.national.registries.client.infocamere.InfoCamereTokenClient;
 import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
@@ -37,7 +37,7 @@ class TokenProviderTest {
     PdndClient pdndClient;
 
     @Mock
-    InfoCamereGetTokenClient infoCamereGetTokenClient;
+    InfoCamereTokenClient infoCamereTokenClient;
 
     @Test
     @DisplayName("Should throw an exception when the client id and secret are invalid")
@@ -49,15 +49,12 @@ class TokenProviderTest {
         when(pdndClient.createToken(anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(Mono.empty());
 
-        TokenProvider tokenProvider =
-                new TokenProvider(
-                        assertionGenerator, pdndClient, infoCamereGetTokenClient, "clientAssertionType", "grantType");
+        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
+                "clientAssertionType", "grantType");
         Mono<ClientCredentialsResponseDto> token = tokenProvider.getTokenPdnd(pdndSecretValue);
 
         StepVerifier.create(token).verifyComplete();
     }
-
-
 
     @Test
     @DisplayName("Should return a token when the client id and secret are valid")
@@ -68,17 +65,15 @@ class TokenProviderTest {
         PdndSecretValue pdndSecretValue = new PdndSecretValue();
         pdndSecretValue.setClientId(clientId);
         pdndSecretValue.setKeyId(secret);
-        ClientCredentialsResponseDto clientCredentialsResponseDto =
-                new ClientCredentialsResponseDto();
+        ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
         clientCredentialsResponseDto.setAccessToken(token);
 
         when(assertionGenerator.generateClientAssertion(any())).thenReturn("assertion");
         when(pdndClient.createToken(anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(Mono.just(clientCredentialsResponseDto));
 
-        TokenProvider tokenProvider =
-                new TokenProvider(
-                        assertionGenerator, pdndClient, infoCamereGetTokenClient, "clientAssertionType", "grantType");
+        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
+                "clientAssertionType", "grantType");
 
         Mono<ClientCredentialsResponseDto> tokenMono = tokenProvider.getTokenPdnd(pdndSecretValue);
 
@@ -91,11 +86,8 @@ class TokenProviderTest {
 
     @Test
     void getToken() {
-        TokenProvider tokenProvider = new TokenProvider(assertionGenerator,
-                pdndClient,
-                infoCamereGetTokenClient,
-                "client_credentials",
-                "basePath");
+        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
+                "client_credentials", "basePath");
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
         clientCredentialsResponseDto.setAccessToken("token");
         when(assertionGenerator.generateClientAssertion(any())).thenReturn("clientAssertion");
@@ -106,11 +98,8 @@ class TokenProviderTest {
 
     @Test
     void getTokenSecretEmpty() {
-        TokenProvider tokenProvider = new TokenProvider(assertionGenerator,
-                pdndClient,
-                infoCamereGetTokenClient,
-                "test",
-                "client_credentials");
+        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
+                "test", "client_credentials");
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
         clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
         when(pdndClient.createToken(null, "test", "client_credentials", null))
