@@ -43,7 +43,7 @@ public class InadClient {
     }
 
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
-        return accessTokenExpiringMap.getToken(purposeId, inadSecretConfig.getInadPdndSecretValue())
+        return accessTokenExpiringMap.getPDNDToken(purposeId, inadSecretConfig.getInadPdndSecretValue())
                 .flatMap(tokenEntry -> callExtract(taxId, practicalReference, tokenEntry))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -61,7 +61,7 @@ public class InadClient {
                         .build(Map.of("codice_fiscale", taxId)))
                 .headers(httpHeaders -> {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                    httpHeaders.setBearerAuth(tokenEntry.getAccessToken());
+                    httpHeaders.setBearerAuth(tokenEntry.getTokenValue());
                 })
                 .retrieve()
                 .bodyToMono(ResponseRequestDigitalAddressDto.class)

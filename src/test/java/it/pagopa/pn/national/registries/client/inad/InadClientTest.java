@@ -58,14 +58,14 @@ class InadClientTest {
         response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
         WebClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(WebClient.RequestHeadersUriSpec.class);
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
-        when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
@@ -87,7 +87,7 @@ class InadClientTest {
         String test = "test";
         WebClientResponseException webClientResponseException = new WebClientResponseException(test, HttpStatus.NOT_FOUND.value(), test, headers, testByteArray, Charset.defaultCharset());
 
-        when(accessTokenExpiringMap.getToken(eq("purposeId"), any())).thenReturn(Mono.error(webClientResponseException));
+        when(accessTokenExpiringMap.getPDNDToken(eq("purposeId"), any())).thenReturn(Mono.error(webClientResponseException));
 
         StepVerifier.create(inadClient.callEService("cf", "test"))
                 .verifyError(WebClientResponseException.class);

@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.client.infocamere.InfoCamereGetTokenClient;
 import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
@@ -17,18 +18,26 @@ public class TokenProvider {
     private final PdndAssertionGenerator assertionGenerator;
     private final PdndClient pdndClient;
 
+    private final InfoCamereGetTokenClient infoCamereGetTokenClient;
+
     public TokenProvider(PdndAssertionGenerator assertionGenerator,
                          PdndClient pdndClient,
+                         InfoCamereGetTokenClient infoCamereGetTokenClient,
                          @Value("${pn.national-registries.pdnd.client-assertion-type}") String clientAssertionType,
                          @Value("${pn.national-registries.pdnd.grant-type}") String grantType) {
         this.assertionGenerator = assertionGenerator;
         this.clientAssertionType = clientAssertionType;
         this.grantType = grantType;
         this.pdndClient = pdndClient;
+        this.infoCamereGetTokenClient = infoCamereGetTokenClient;
     }
 
     public Mono<ClientCredentialsResponseDto> getTokenPdnd(PdndSecretValue pdndSecretValue) {
         String clientAssertion = assertionGenerator.generateClientAssertion(pdndSecretValue);
         return pdndClient.createToken(clientAssertion, clientAssertionType, grantType, pdndSecretValue.getClientId());
+    }
+
+    public Mono<String> getTokenInfoCamere(String scope) {
+        return infoCamereGetTokenClient.getToken(scope);
     }
 }
