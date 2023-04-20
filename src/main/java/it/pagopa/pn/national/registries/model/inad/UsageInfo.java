@@ -12,7 +12,7 @@ import java.util.Date;
 @Data
 public class UsageInfo {
 
-  @JsonProperty("motivazione")
+  @JsonProperty("motivation")
   private MotivationTerminationDto motivation;
 
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
