@@ -60,6 +60,9 @@ public class InadConverter {
     }
 
     private static UsageInfoDto.MotivationEnum convertMotivation(MotivationTerminationDto motivation) {
+        if (motivation == null) {
+            return null;
+        }
         return switch (motivation) {
             case UFFICIO -> UsageInfoDto.MotivationEnum.UFFICIO;
             case VOLONTARIA -> UsageInfoDto.MotivationEnum.VOLONTARIA;
