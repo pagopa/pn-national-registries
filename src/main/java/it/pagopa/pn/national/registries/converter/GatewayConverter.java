@@ -117,6 +117,7 @@ public class GatewayConverter {
     protected PhysicalAddress convertAnprToPhysicalAddress(ResidentialAddressDto residenceDto) {
         PhysicalAddress physicalAddress = new PhysicalAddress();
         physicalAddress.setAddress(residenceDto.getAddress());
+        physicalAddress.setAddressDetails(residenceDto.getAddressDetail());
         physicalAddress.setAt(residenceDto.getAt());
         physicalAddress.setZip(residenceDto.getZip());
         physicalAddress.setMunicipality(residenceDto.getMunicipality());
@@ -124,7 +125,6 @@ public class GatewayConverter {
         physicalAddress.setForeignState(residenceDto.getForeignState());
         physicalAddress.setMunicipalityDetails(residenceDto.getMunicipalityDetails());
         physicalAddress.setMunicipality(residenceDto.getMunicipality());
-        physicalAddress.setProvince(residenceDto.getProvince());
         return physicalAddress;
     }
 
