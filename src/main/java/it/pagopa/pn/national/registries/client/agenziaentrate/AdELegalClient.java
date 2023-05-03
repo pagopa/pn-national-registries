@@ -24,8 +24,11 @@ public class AdELegalClient {
 
     private final WebClient webClient;
 
-    protected AdELegalClient(AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP) {
+    private final SAMLWriter samlWriter;
+    protected AdELegalClient(AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP,
+                             SAMLWriter samlWriter) {
         webClient = agenziaEntrateWebClientSOAP.init();
+        this.samlWriter = samlWriter;
     }
 
     public Mono<Object> getToken() {
@@ -38,21 +41,11 @@ public class AdELegalClient {
     }
 
     private Mono<String> callCheck(ADELegalRequestBodyFilterDto request) {
+
         return webClient.post()
                 .uri("/legalerappresentateAdE/check")
                 .contentType(MediaType.TEXT_XML)
-                .bodyValue("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-                        "<soapenv:Envelope " +
-                        "xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
-                        "xmlns:anag=\"http://anagrafica.verifica.rappresentante.ente\">" +
-                        "<soapenv:Header/>" +
-                        "<soapenv:Body>" +
-                        "<checkValidityRappresentante xmlns=\"http://anagrafica.verifica.rappresentante.ente\">" +
-                        "<cfRappresentante>" + request.getTaxId() + "</cfRappresentante>" +
-                        "<cfEnte>" + request.getVatNumber() + "</cfEnte>" +
-                        "</checkValidityRappresentante>" +
-                        "</soapenv:Body>" +
-                        "</soapenv:Envelope>")
+                .bodyValue(samlWriter.getEnvelope())
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {

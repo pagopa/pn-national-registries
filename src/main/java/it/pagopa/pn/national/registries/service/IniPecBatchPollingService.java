@@ -64,7 +64,7 @@ public class IniPecBatchPollingService {
         this.maxRetry = maxRetry;
     }
 
-    @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
+    //@Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
     public void batchPecPolling() {
         log.trace("IniPEC - batchPecPolling start");
         Page<BatchPolling> page;
@@ -84,7 +84,7 @@ public class IniPecBatchPollingService {
         log.trace("IniPEC - batchPecPolling end");
     }
 
-    @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.recovery.delay}")
+   // @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.recovery.delay}")
     public void recoveryBatchPolling() {
         log.trace("IniPEC - recoveryBatchPolling start");
         batchPollingRepository.getBatchPollingToRecover()

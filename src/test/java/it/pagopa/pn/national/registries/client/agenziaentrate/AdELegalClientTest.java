@@ -38,6 +38,9 @@ class AdELegalClientTest {
     WebClient webClient;
 
     @MockBean
+    SAMLWriter samlWriter;
+
+    @MockBean
     AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP;
 
     /**
@@ -47,7 +50,7 @@ class AdELegalClientTest {
     void testGetToken2() {
         AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = mock(AgenziaEntrateWebClientSOAP.class);
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(null);
-        (new AdELegalClient(agenziaEntrateWebClientSOAP)).getToken();
+        (new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter)).getToken();
         verify(agenziaEntrateWebClientSOAP).init();
     }
 
@@ -58,7 +61,7 @@ class AdELegalClientTest {
     void testCheckTaxIdAndVatNumberAdE2() {
         AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = mock(AgenziaEntrateWebClientSOAP.class);
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(null);
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter);
         adELegalClient.checkTaxIdAndVatNumberAdE(new ADELegalRequestBodyFilterDto());
         verify(agenziaEntrateWebClientSOAP).init();
     }
@@ -66,7 +69,7 @@ class AdELegalClientTest {
     @Test
     void checkTaxIdAndVatNumberTest() {
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(webClient);
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter);
 
         ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
         adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
@@ -105,7 +108,7 @@ class AdELegalClientTest {
     @Test
     void checkTaxIdAndVatNumberErrorTest() {
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(webClient);
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter);
 
         HttpHeaders headers = mock(HttpHeaders.class);
         byte[] testByteArray = new byte[0];
@@ -137,14 +140,14 @@ class AdELegalClientTest {
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
     void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter);
         assertFalse(adELegalClient.shouldRetry(new Exception()));
     }
 
     @Test
     @DisplayName("Should return true when the exception is webclientresponseexception and the status code is 401")
     void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter);
 
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
