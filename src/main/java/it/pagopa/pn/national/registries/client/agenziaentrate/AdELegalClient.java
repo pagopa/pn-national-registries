@@ -4,6 +4,7 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalErrorDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.utils.XMLWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -24,20 +25,15 @@ public class AdELegalClient {
 
     private final WebClient webClient;
 
-    private final SAMLWriter samlWriter;
+    private final XMLWriter xmlWriter;
     protected AdELegalClient(AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP,
-                             SAMLWriter samlWriter) {
+                             XMLWriter xmlWriter) {
         webClient = agenziaEntrateWebClientSOAP.init();
-        this.samlWriter = samlWriter;
-    }
-
-    public Mono<Object> getToken() {
-        return Mono.just(new Object());
+        this.xmlWriter = xmlWriter;
     }
 
     public Mono<String> checkTaxIdAndVatNumberAdE(ADELegalRequestBodyFilterDto request) {
-        return getToken()
-                .flatMap(token -> callCheck(request));
+        return callCheck(request);
     }
 
     private Mono<String> callCheck(ADELegalRequestBodyFilterDto request) {
@@ -45,7 +41,7 @@ public class AdELegalClient {
         return webClient.post()
                 .uri("/legalerappresentateAdE/check")
                 .contentType(MediaType.TEXT_XML)
-                .bodyValue(samlWriter.getEnvelope())
+                .bodyValue(xmlWriter.getEnvelope(request.getVatNumber(), request.getTaxId()))
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {

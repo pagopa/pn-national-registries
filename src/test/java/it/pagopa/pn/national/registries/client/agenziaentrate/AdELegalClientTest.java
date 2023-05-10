@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
+import it.pagopa.pn.national.registries.utils.XMLWriter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,42 +35,21 @@ class AdELegalClientTest {
     @Autowired
     private AdELegalClient adELegalClient;
 
+
+
     @MockBean
     WebClient webClient;
 
     @MockBean
-    SAMLWriter samlWriter;
+    XMLWriter xmlWriter;
 
     @MockBean
     AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP;
 
-    /**
-     * Method under test: {@link AdELegalClient#getToken()}
-     */
-    @Test
-    void testGetToken2() {
-        AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = mock(AgenziaEntrateWebClientSOAP.class);
-        when(agenziaEntrateWebClientSOAP.init()).thenReturn(null);
-        (new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter)).getToken();
-        verify(agenziaEntrateWebClientSOAP).init();
-    }
-
-    /**
-     * Method under test: {@link AdELegalClient#checkTaxIdAndVatNumberAdE(ADELegalRequestBodyFilterDto)}
-     */
-    @Test
-    void testCheckTaxIdAndVatNumberAdE2() {
-        AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = mock(AgenziaEntrateWebClientSOAP.class);
-        when(agenziaEntrateWebClientSOAP.init()).thenReturn(null);
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter);
-        adELegalClient.checkTaxIdAndVatNumberAdE(new ADELegalRequestBodyFilterDto());
-        verify(agenziaEntrateWebClientSOAP).init();
-    }
-
     @Test
     void checkTaxIdAndVatNumberTest() {
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(webClient);
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, xmlWriter);
 
         ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
         adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
@@ -108,7 +88,7 @@ class AdELegalClientTest {
     @Test
     void checkTaxIdAndVatNumberErrorTest() {
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(webClient);
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, xmlWriter);
 
         HttpHeaders headers = mock(HttpHeaders.class);
         byte[] testByteArray = new byte[0];
@@ -140,14 +120,14 @@ class AdELegalClientTest {
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
     void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, xmlWriter);
         assertFalse(adELegalClient.shouldRetry(new Exception()));
     }
 
     @Test
     @DisplayName("Should return true when the exception is webclientresponseexception and the status code is 401")
     void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, samlWriter);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, xmlWriter);
 
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);

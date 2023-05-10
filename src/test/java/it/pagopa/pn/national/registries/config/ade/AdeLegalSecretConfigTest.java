@@ -1,5 +1,7 @@
-package it.pagopa.pn.national.registries.config.checkcf;
+package it.pagopa.pn.national.registries.config.ade;
 
+import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
+import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -11,9 +13,8 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRespon
 import java.util.Optional;
 
 import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
-class CheckCfSecretConfigTest {
+class AdeLegalSecretConfigTest {
 
     @Mock
     SecretManagerService secretManagerService;
@@ -28,20 +29,10 @@ class CheckCfSecretConfigTest {
                         "pub":"pub",
                         "trust":"trust"
                         }""").build();
-        GetSecretValueResponse getSecretValueResponse2 = GetSecretValueResponse.builder()
-                .secretString("""
-                        {
-                        "keyId":"pub",
-                        "clientId":"trust"
-                        }""").build();
-        when(secretManagerService.getSecretValue("test2"))
-                .thenReturn(Optional.of(getSecretValueResponse2));
-        when(secretManagerService.getSecretValue("test3"))
+        when(secretManagerService.getSecretValue("test"))
                 .thenReturn(Optional.of(getSecretValueResponse));
 
-        CheckCfSecretConfig checkCfSecretConfig = new CheckCfSecretConfig(secretManagerService,"test1","test2", "test3");
-        Assertions.assertNotNull(checkCfSecretConfig.getCheckCfPdndSecretValue());
-        Assertions.assertNotNull(checkCfSecretConfig.getCheckCfAuthChannelSecret());
+        AdeLegalSecretConfig adeLegalSecretConfig = new AdeLegalSecretConfig(secretManagerService,"test");
+        Assertions.assertNotNull(adeLegalSecretConfig.getAdeSecretConfig());
     }
-
 }

@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.client.agenziaentrate.SAMLWriter;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.AgenziaEntrateApi;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyDto;
@@ -9,9 +8,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxId
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -26,8 +23,6 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
 
-    @Autowired
-    SAMLWriter samlWriter;
 
     public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.agenziaEntrateService = agenziaEntrateService;
@@ -68,12 +63,6 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
         validateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId());
         return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
-                .publishOn(scheduler);
-    }
-
-    @GetMapping("/test")
-    public Mono<ResponseEntity<String>> test() {
-        return Mono.just(ResponseEntity.ok().body(samlWriter.getEnvelope()))
                 .publishOn(scheduler);
     }
 }
