@@ -1,31 +1,11 @@
 package it.pagopa.pn.national.registries.utils;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
-
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
-import it.pagopa.pn.national.registries.service.SecretManagerService;
-
-import javax.xml.namespace.QName;
-
-import net.shibboleth.utilities.java.support.collection.LazySet;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.Disabled;
-
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.opensaml.core.xml.NamespaceManager;
-import org.opensaml.saml.common.SAMLObjectContentReference;
-import org.opensaml.saml.ext.saml2alg.impl.DigestMethodImpl;
 import org.opensaml.saml.saml2.core.*;
-import org.opensaml.security.credential.Credential;
-import org.opensaml.security.credential.CredentialSupport;
-import org.opensaml.security.x509.BasicX509Credential;
 import org.opensaml.xmlsec.signature.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -34,7 +14,9 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.security.PrivateKey;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ContextConfiguration(classes = {SAMLAssertionWriter.class})
 @ExtendWith(SpringExtension.class)

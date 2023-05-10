@@ -24,8 +24,6 @@ import org.opensaml.xmlsec.signature.support.Signer;
 
 import javax.xml.namespace.QName;
 
-import java.util.List;
-
 import static it.pagopa.pn.national.registries.utils.XMLWriterConstant.SOAP_ENV_NAMESPACE;
 import static it.pagopa.pn.national.registries.utils.XMLWriterConstant.XML_SCHEMA_NAMESPACE;
 import static org.mockito.Mockito.*;
@@ -48,7 +46,7 @@ class XMLWriterTest {
      * Method under test: {@link XMLWriter#getEnvelope(String, String)}
      */
     @Test
-    void testGetEnvelope() throws MarshallingException, InitializationException, XMLParserException {
+    void testGetEnvelope() throws InitializationException {
         InitializationService.initialize();
 
         Assertion assertion = mock(Assertion.class);

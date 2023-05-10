@@ -42,7 +42,7 @@ class X509CertificateUtilsTest {
     @Test
     void testGetPrivateKey() {
         X509CertificateUtils x509CertificateUtils = init(KEY, CERT);
-        assertDoesNotThrow(() -> x509CertificateUtils.getPrivateKey());
+        assertDoesNotThrow(x509CertificateUtils::getPrivateKey);
         assertEquals("RSA", x509CertificateUtils.getPrivateKey().getAlgorithm());
     }
 
