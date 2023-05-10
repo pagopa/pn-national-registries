@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.utils;
 
 import lombok.extern.slf4j.Slf4j;
-import net.shibboleth.utilities.java.support.xml.XMLParserException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -11,7 +10,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensaml.core.config.InitializationException;
 import org.opensaml.core.config.InitializationService;
 import org.opensaml.core.xml.NamespaceManager;
-import org.opensaml.core.xml.io.MarshallingException;
 import org.opensaml.core.xml.schema.XSAny;
 import org.opensaml.core.xml.util.AttributeMap;
 import org.opensaml.saml.saml2.core.Assertion;
