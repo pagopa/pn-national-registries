@@ -1,56 +1,23 @@
 package it.pagopa.pn.national.registries.converter;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.commons.utils.DynamoDbAsyncTableDecorator;
-import it.pagopa.pn.national.registries.client.anpr.AnprClient;
-import it.pagopa.pn.national.registries.client.inad.InadClient;
-import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
-import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecOKDto;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
-import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
-import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
-import it.pagopa.pn.national.registries.service.AnprService;
-import it.pagopa.pn.national.registries.service.GatewayService;
-import it.pagopa.pn.national.registries.service.InadService;
-import it.pagopa.pn.national.registries.service.InfoCamereService;
-import it.pagopa.pn.national.registries.service.IpaService;
-import it.pagopa.pn.national.registries.service.SqsService;
-
-import java.io.UnsupportedEncodingException;
-
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-import org.junit.jupiter.api.Disabled;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.util.StringUtils;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.services.sqs.SqsClient;
+
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class GatewayConverterTest {
 
