@@ -204,7 +204,7 @@ class GatewayConverterTest {
      * Method under test: {@link GatewayConverter#errorIpaToSqsDto(String, Throwable)}
      */
     @Test
-    void testErrorIpaToSqsDto2() throws UnsupportedEncodingException {
+    void testErrorIpaToSqsDto2() {
         GatewayConverter gatewayConverter = new GatewayConverter();
         PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
                 HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), null,
@@ -220,7 +220,7 @@ class GatewayConverterTest {
      * Method under test: {@link GatewayConverter#errorIpaToSqsDto(String, Throwable)}
      */
     @Test
-    void testErrorIpaToSqsDto3() throws UnsupportedEncodingException {
+    void testErrorIpaToSqsDto3() {
         GatewayConverter gatewayConverter = new GatewayConverter();
         Throwable exception = new Throwable("message");
 
