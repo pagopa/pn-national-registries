@@ -12,6 +12,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -89,6 +90,20 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
+    protected CodeSqsDto errorIpaToSqsDto(String correlationId, Throwable throwable) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
+        if (throwable instanceof PnNationalRegistriesException exception
+                && exception.getStatusCode() == HttpStatus.BAD_REQUEST
+                && StringUtils.hasText(exception.getResponseBodyAsString())) {
+            log.info("correlationId: {} - IPA - " + throwable.getMessage(), correlationId);
+            codeSqsDto.setDigitalAddress(Collections.emptyList());
+        } else {
+            codeSqsDto.setError(throwable.getMessage());
+        }
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
+        return codeSqsDto;
+    }
+
     protected CodeSqsDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
         if (registroImpreseDto != null && registroImpreseDto.getProfessionalAddress() != null) {
@@ -99,6 +114,25 @@ public class GatewayConverter {
         }
         codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
         return codeSqsDto;
+    }
+
+    protected CodeSqsDto ipaToSqsDto(String correlationId, IPAPecOKDto ipaResponse) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
+        if (ipaResponse != null && ipaResponse.getDomiciliDigitali() != null) {
+            codeSqsDto.setDigitalAddress(convertIpaPecToDigitalAddress(ipaResponse.getDomiciliDigitali()));
+        } else {
+            log.info("correlationId: {} - IPA - WS23 - domicili digitali non presenti", correlationId);
+        }
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
+        return codeSqsDto;
+    }
+
+    private List<DigitalAddress> convertIpaPecToDigitalAddress(List<IPAPecDto> domiciliDigitali) {
+        List<DigitalAddress> digitalAddresses = new ArrayList<>();
+
+        domiciliDigitali.stream().map(ipaPecDto -> new DigitalAddress(ipaPecDto.getTipo(), ipaPecDto.getDomicilioDigitale(), ipaPecDto.getCodEnte() + " - " + ipaPecDto.getDenominazione()))
+                .forEach(digitalAddresses::add);
+        return digitalAddresses;
     }
 
     protected CodeSqsDto errorRegImpToSqsDto(String correlationId, Throwable error) {
@@ -184,4 +218,13 @@ public class GatewayConverter {
         dto.setFilter(filterDto);
         return dto;
     }
+
+    protected IPARequestBodyDto convertToGetIpaPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
+        IPARequestBodyDto dto = new IPARequestBodyDto();
+        CheckTaxIdRequestBodyFilterDto filterDto = new CheckTaxIdRequestBodyFilterDto();
+        filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
+        dto.setFilter(filterDto);
+        return dto;
+    }
+
 }

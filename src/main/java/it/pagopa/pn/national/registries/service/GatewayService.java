@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.ipa.IpaResponseKO;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -28,17 +29,19 @@ public class GatewayService extends GatewayConverter {
     private final AnprService anprService;
     private final InadService inadService;
     private final InfoCamereService infoCamereService;
+    private final IpaService ipaService;
     private final SqsService sqsService;
     private final boolean pnNationalRegistriesCxIdFlag;
 
     public GatewayService(AnprService anprService,
                           InadService inadService,
                           InfoCamereService infoCamereService,
-                          SqsService sqsService,
+                          IpaService ipaService, SqsService sqsService,
                           @Value("${pn.national.registries.val.cx.id.enabled}") boolean pnNationalRegistriesCxIdFlag) {
         this.anprService = anprService;
         this.inadService = inadService;
         this.infoCamereService = infoCamereService;
+        this.ipaService = ipaService;
         this.sqsService = sqsService;
         this.pnNationalRegistriesCxIdFlag = pnNationalRegistriesCxIdFlag;
     }
@@ -111,10 +114,20 @@ public class GatewayService extends GatewayConverter {
                     .onErrorResume(e -> sqsService.push(errorRegImpToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
-            return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto))
-                    .map(iniPecResponse -> mapToAddressesOKDto(correlationId));
+            return ipaService.getIpaPec(convertToGetIpaPecRequest(addressRequestBodyDto))
+                    .flatMap(response -> {
+                        if (response.getDomiciliDigitali().isEmpty()) {
+                            return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto));
+                        }
+                        return sqsService.push(ipaToSqsDto(correlationId, response), pnNationalRegistriesCxId);
+                    })
+                    .doOnError(e -> logEServiceError(e, "can not retrieve digital address from IPA: {}"))
+                    .onErrorResume(e -> sqsService.push(errorIpaToSqsDto(correlationId, e), pnNationalRegistriesCxId))
+                    .map(sqs -> mapToAddressesOKDto(correlationId));
         }
     }
+
+
 
     private void checkFlagPnNationalRegistriesCxId(String pnNationalRegistriesCxId) {
         if (pnNationalRegistriesCxIdFlag && pnNationalRegistriesCxId == null) {

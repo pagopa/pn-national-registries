@@ -11,6 +11,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyFilterDto;
 
+import java.util.List;
 import java.util.Map;
 
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
@@ -42,6 +43,8 @@ class GatewayServiceTest {
     private InfoCamereService infoCamereService;
     @MockBean
     private SqsService sqsService;
+    @MockBean
+    private IpaService ipaService;
 
     @Autowired
     private GatewayService gatewayService;
@@ -226,6 +229,34 @@ class GatewayServiceTest {
 
         when(infoCamereService.getIniPecDigitalAddress(eq("clientId"), any()))
                 .thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
+
+        IPAPecOKDto ipaPecOKDto = new IPAPecOKDto();
+        ipaPecOKDto.setDomiciliDigitali(List.of());
+        when(ipaService.getIpaPec(any()))
+                .thenReturn(Mono.just(ipaPecOKDto));
+
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId(C_ID);
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Test retrieve from IPA")
+    void testRetrieveDigitalOrPhysicalAddressIpa() {
+        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+        IPAPecOKDto ipaPecOKDto = new IPAPecOKDto();
+        IPAPecDto ipaPecDto = new IPAPecDto();
+        ipaPecDto.setDomicilioDigitale("test");
+        ipaPecOKDto.setDomiciliDigitali(List.of(ipaPecDto));
+
+        when(ipaService.getIpaPec(any()))
+                .thenReturn(Mono.just(ipaPecOKDto));
+        when(sqsService.push((CodeSqsDto) any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
