@@ -1,7 +1,5 @@
 package it.pagopa.pn.national.registries.converter;
 
-import static org.junit.jupiter.api.Assertions.*;
-
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
@@ -10,13 +8,15 @@ import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
-
-import java.nio.charset.StandardCharsets;
-import java.util.List;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 class GatewayConverterTest {
 
@@ -188,6 +188,48 @@ class GatewayConverterTest {
     }
 
     /**
+     * Method under test: {@link GatewayConverter#errorIpaToSqsDto(String, Throwable)}
+     */
+    @Test
+    void testErrorIpaToSqsDto() {
+        GatewayConverter gatewayConverter = new GatewayConverter();
+        CodeSqsDto actualErrorIpaToSqsDtoResult = gatewayConverter.errorIpaToSqsDto("42", new Throwable());
+        assertEquals("DIGITAL", actualErrorIpaToSqsDtoResult.getAddressType());
+        assertNull(actualErrorIpaToSqsDtoResult.getError());
+        assertEquals("42", actualErrorIpaToSqsDtoResult.getCorrelationId());
+    }
+
+    /**
+     * Method under test: {@link GatewayConverter#errorIpaToSqsDto(String, Throwable)}
+     */
+    @Test
+    void testErrorIpaToSqsDto2() {
+        GatewayConverter gatewayConverter = new GatewayConverter();
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
+                HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), null,
+                "{ ... \"detail\": \"xxx\", ...".getBytes(StandardCharsets.UTF_8),
+                StandardCharsets.UTF_8, IPAPecErrorDto.class);
+
+        CodeSqsDto codeSqsDto = gatewayConverter.errorIpaToSqsDto(C_ID, exception);
+
+        assertEquals("DIGITAL", codeSqsDto.getAddressType());
+    }
+
+    /**
+     * Method under test: {@link GatewayConverter#errorIpaToSqsDto(String, Throwable)}
+     */
+    @Test
+    void testErrorIpaToSqsDto3() {
+        GatewayConverter gatewayConverter = new GatewayConverter();
+        Throwable exception = new Throwable("message");
+
+        CodeSqsDto codeSqsDto = gatewayConverter.errorIpaToSqsDto(C_ID, exception);
+
+        assertEquals("DIGITAL", codeSqsDto.getAddressType());
+        assertEquals("message", codeSqsDto.getError());
+    }
+
+    /**
      * Method under test: {@link GatewayConverter#regImpToSqsDto(String, GetAddressRegistroImpreseOKDto)}
      */
     @Test
@@ -220,6 +262,43 @@ class GatewayConverterTest {
         CodeSqsDto codeSqsDto = gatewayConverter.regImpToSqsDto(C_ID, getAddressRegistroImpreseOKDto);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
+    }
+
+    /**
+     * Method under test: {@link GatewayConverter#ipaToSqsDto(String, IPAPecOKDto)}
+     */
+    @Test
+    void testIpaToSqsDto() {
+        GatewayConverter gatewayConverter = new GatewayConverter();
+        CodeSqsDto actualIpaToSqsDtoResult = gatewayConverter.ipaToSqsDto("42", new IPAPecOKDto());
+        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals("42", actualIpaToSqsDtoResult.getCorrelationId());
+    }
+
+    /**
+     * Method under test: {@link GatewayConverter#ipaToSqsDto(String, IPAPecOKDto)}
+     */
+    @Test
+    void testIpaToSqsDto2() {
+        CodeSqsDto actualIpaToSqsDtoResult = (new GatewayConverter()).ipaToSqsDto("foo", null);
+        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals("foo", actualIpaToSqsDtoResult.getCorrelationId());
+    }
+
+    /**
+     * Method under test: {@link GatewayConverter#ipaToSqsDto(String, IPAPecOKDto)}
+     */
+    @Test
+    void testIpaToSqsDto3() {
+        GatewayConverter gatewayConverter = new GatewayConverter();
+
+        IPAPecOKDto ipaResponse = new IPAPecOKDto();
+        ArrayList<IPAPecDto> domiciliDigitali = new ArrayList<>();
+        ipaResponse.domiciliDigitali(domiciliDigitali);
+        CodeSqsDto actualIpaToSqsDtoResult = gatewayConverter.ipaToSqsDto("foo", ipaResponse);
+        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals(domiciliDigitali, actualIpaToSqsDtoResult.getDigitalAddress());
+        assertEquals("foo", actualIpaToSqsDtoResult.getCorrelationId());
     }
 
     /**
