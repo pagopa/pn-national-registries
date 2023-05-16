@@ -130,7 +130,7 @@ public class GatewayConverter {
     private List<DigitalAddress> convertIpaPecToDigitalAddress(List<IPAPecDto> domiciliDigitali) {
         List<DigitalAddress> digitalAddresses = new ArrayList<>();
 
-        domiciliDigitali.stream().map(ipaPecDto -> new DigitalAddress(ipaPecDto.getTipo(), ipaPecDto.getDomicilioDigitale(), ipaPecDto.getCodEnte() + " - " + ipaPecDto.getDenominazione()))
+        domiciliDigitali.stream().map(ipaPecDto -> new DigitalAddress(DigitalAddressType.PEC.getValue(), ipaPecDto.getDomicilioDigitale(), DigitalAddressRecipientType.IMPRESA.getValue()))
                 .forEach(digitalAddresses::add);
         return digitalAddresses;
     }
