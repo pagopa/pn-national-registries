@@ -8,8 +8,13 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.Charset;
 
+/**
+ * This class use it.pagopa.pn.commons.utils.ValidateUtils
+ * Read the parameter <i>MapTaxIdWhiteList</i> to skip CF validation
+ */
 @Component
 public class ValidateTaxIdUtils {
+
 
     private final ValidateUtils validateUtils;
 
