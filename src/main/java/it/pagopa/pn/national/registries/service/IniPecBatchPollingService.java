@@ -48,8 +48,6 @@ public class IniPecBatchPollingService {
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
 
-    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress.";
-
     public IniPecBatchPollingService(InfoCamereConverter infoCamereConverter,
                                      IniPecBatchRequestRepository batchRequestRepository,
                                      IniPecBatchPollingRepository batchPollingRepository,
@@ -135,28 +133,34 @@ public class IniPecBatchPollingService {
     private Mono<Void> handlePolling(BatchPolling polling) {
         return callEService(polling.getBatchId(), polling.getPollingId())
                 .onErrorResume(t -> incrementAndCheckRetry(polling, t).then(Mono.error(t)))
-                .flatMap(response -> handleSuccessfulPolling(polling, response))
+                .flatMap(response -> {
+                    if(!infoCamereConverter.checkListPecInProgress(response)) {
+                        return handleSuccessfulPolling(polling, response);
+                    }
+                    return Mono.empty();
+                })
                 .onErrorResume(e -> Mono.empty());
     }
 
     private Mono<IniPecPollingResponse> callEService(String batchId, String pollingId) {
         return infoCamereClient.callEServiceRequestPec(pollingId)
                 .doOnNext(response -> {
-                    if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
-                        throw new PnNationalRegistriesException(response.getDescription(), HttpStatus.NOT_FOUND.value(),
+                     if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
+                        if(infoCamereConverter.checkListPecInProgress(response)) {
+                            log.info("IniPEC - batchId {} - pollingId {} - " + response.getDescription(), batchId, pollingId);
+                        }
+                        else {
+                            throw new PnNationalRegistriesException(response.getDescription(), HttpStatus.NOT_FOUND.value(),
                                 HttpStatus.NOT_FOUND.getReasonPhrase() , null, null,
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
+                        }
+                    }
+                    else {
+                        log.info("IniPEC - batchId {} - pollingId {} - response pec size: {}", batchId, pollingId, response.getElencoPec().size());
                     }
                 })
-                .doOnNext(response -> log.info("IniPEC - batchId {} - pollingId {} - response pec size: {}", batchId, pollingId, response.getElencoPec().size()))
-                .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e))
-                .onErrorResume(isResponseNotReady, e -> Mono.empty());
+                .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e));
     }
-
-    private final Predicate<Throwable> isResponseNotReady = throwable ->
-            throwable instanceof PnNationalRegistriesException exception
-                    && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                    && Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase(PEC_REQUEST_IN_PROGRESS_MESSAGE);
 
     private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
         polling.setStatus(BatchStatus.WORKED.getValue());
