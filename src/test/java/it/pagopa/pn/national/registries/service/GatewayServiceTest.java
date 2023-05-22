@@ -2,7 +2,6 @@ package it.pagopa.pn.national.registries.service;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import it.pagopa.pn.commons.log.MDCWebFilter;
@@ -11,7 +10,6 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyFilterDto;
 
-import java.util.List;
 import java.util.Map;
 
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;

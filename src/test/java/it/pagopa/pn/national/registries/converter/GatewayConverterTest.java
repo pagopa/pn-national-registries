@@ -29,7 +29,6 @@ import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 import java.util.List;
 
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
