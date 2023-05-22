@@ -115,7 +115,7 @@ class WS23RequestDtoTest {
         int expectedHashCodeResult = ws23RequestDto.hashCode();
         assertEquals(expectedHashCodeResult, ws23RequestDto2.hashCode());
     }
-    
+
 
     /**
      * Methods under test:
