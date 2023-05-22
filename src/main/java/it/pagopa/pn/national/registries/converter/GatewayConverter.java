@@ -116,10 +116,10 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto ipaToSqsDto(String correlationId, IPAPecOKDto ipaResponse) {
+    protected CodeSqsDto ipaToSqsDto(String correlationId, IPAPecDto ipaResponse) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
-        if (ipaResponse != null && ipaResponse.getDomiciliDigitali() != null) {
-            codeSqsDto.setDigitalAddress(convertIpaPecToDigitalAddress(ipaResponse.getDomiciliDigitali()));
+        if (ipaResponse != null && ipaResponse.getDomicilioDigitale() != null) {
+            codeSqsDto.setDigitalAddress(List.of(convertIpaPecToDigitalAddress(ipaResponse)));
         } else {
             log.info("correlationId: {} - IPA - WS23 - domicili digitali non presenti", correlationId);
         }
@@ -127,12 +127,11 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    private List<DigitalAddress> convertIpaPecToDigitalAddress(List<IPAPecDto> domiciliDigitali) {
-        List<DigitalAddress> digitalAddresses = new ArrayList<>();
+    private DigitalAddress convertIpaPecToDigitalAddress(IPAPecDto domicilioDigitale) {
+        return new DigitalAddress(DigitalAddressType.PEC.getValue(),
+                domicilioDigitale.getDomicilioDigitale(),
+                DigitalAddressRecipientType.IMPRESA.getValue());
 
-        domiciliDigitali.stream().map(ipaPecDto -> new DigitalAddress(DigitalAddressType.PEC.getValue(), ipaPecDto.getDomicilioDigitale(), DigitalAddressRecipientType.IMPRESA.getValue()))
-                .forEach(digitalAddresses::add);
-        return digitalAddresses;
     }
 
     protected CodeSqsDto errorRegImpToSqsDto(String correlationId, Throwable error) {

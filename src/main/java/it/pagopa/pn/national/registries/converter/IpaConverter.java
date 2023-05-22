@@ -1,33 +1,35 @@
 package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecOKDto;
+
+import it.pagopa.pn.national.registries.model.ipa.DataWS05Dto;
 import it.pagopa.pn.national.registries.model.ipa.DataWS23Dto;
+import it.pagopa.pn.national.registries.model.ipa.WS05ResponseDto;
 import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-
-import java.util.Collections;
-import java.util.List;
 
 @Slf4j
 @Component
 public class IpaConverter {
 
-    public IPAPecOKDto convertToIPAPecOKDto(WS23ResponseDto ws23ResponseDto) {
-        IPAPecOKDto response = new IPAPecOKDto();
-        List<IPAPecDto> ipaPecDtoList = Collections.emptyList();
-        if (ws23ResponseDto.getData() != null) {
-            ipaPecDtoList = ws23ResponseDto.getData().stream()
-                    .map(this::convertToIpaPecDto)
-                    .toList();
-        }
-        response.setDomiciliDigitali(ipaPecDtoList);
+    public static final String ADDRESS_TYPE = "PEC";
+
+    public IPAPecDto convertToIPAPecDtoFromWS05(WS05ResponseDto ws05ResponseDto) {
+        IPAPecDto response = new IPAPecDto();
+        DataWS05Dto dataWS05Dto = ws05ResponseDto.getData();
+
+        response.setCodEnte(dataWS05Dto.getCodAmm());
+        response.setDenominazione(dataWS05Dto.getDesAmm());
+        response.setTipo(ADDRESS_TYPE);
+        response.setDomicilioDigitale(dataWS05Dto.getMail1());
+
         return response;
     }
 
-    private IPAPecDto convertToIpaPecDto(DataWS23Dto dataWS23Dto) {
+    public IPAPecDto convertToIpaPecDtoFromWS23(WS23ResponseDto ws23ResponseDto) {
         IPAPecDto ipaPecDto = new IPAPecDto();
+        DataWS23Dto dataWS23Dto = ws23ResponseDto.getData().get(0);
         ipaPecDto.setCodEnte(dataWS23Dto.getCodEnte());
         ipaPecDto.setDenominazione(dataWS23Dto.getDenominazione());
         ipaPecDto.setTipo(dataWS23Dto.getType());

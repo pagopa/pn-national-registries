@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
@@ -34,8 +34,8 @@ class IpaControllerTest {
      */
     @Test
     void testIpaPec4() {
-        IPAPecOKDto ipaPecOKDto = new IPAPecOKDto();
-        when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaPecOKDto));
+        IPAPecDto ipaPecDto = new IPAPecDto();
+        when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaPecDto));
         doNothing().when(validateTaxIdUtils).validateTaxId(any());
 
         CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
