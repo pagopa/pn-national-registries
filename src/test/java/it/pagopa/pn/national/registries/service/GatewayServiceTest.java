@@ -2,7 +2,6 @@ package it.pagopa.pn.national.registries.service;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 import it.pagopa.pn.commons.log.MDCWebFilter;
@@ -11,7 +10,6 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyFilterDto;
 
-import java.util.List;
 import java.util.Map;
 
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
@@ -227,15 +225,16 @@ class GatewayServiceTest {
     void testRetrieveDigitalOrPhysicalAddressIniPEC() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
-        when(infoCamereService.getIniPecDigitalAddress(eq("clientId"), any()))
-                .thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
+        IPAPecDto ipaPecOKDto = new IPAPecDto();
+        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale");
+        ipaPecOKDto.setTipo("tipo");
+        ipaPecOKDto.setCodEnte("codEnte");
+        ipaPecOKDto.setDenominazione("denominazione");
 
-        IPAPecOKDto ipaPecOKDto = new IPAPecOKDto();
-        ipaPecOKDto.setDomiciliDigitali(List.of());
         when(ipaService.getIpaPec(any()))
                 .thenReturn(Mono.just(ipaPecOKDto));
 
-
+        when(sqsService.push((CodeSqsDto) any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
@@ -248,10 +247,11 @@ class GatewayServiceTest {
     @DisplayName("Test retrieve from IPA")
     void testRetrieveDigitalOrPhysicalAddressIpa() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
-        IPAPecOKDto ipaPecOKDto = new IPAPecOKDto();
-        IPAPecDto ipaPecDto = new IPAPecDto();
-        ipaPecDto.setDomicilioDigitale("test");
-        ipaPecOKDto.setDomiciliDigitali(List.of(ipaPecDto));
+        IPAPecDto ipaPecOKDto = new IPAPecDto();
+        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale");
+        ipaPecOKDto.setTipo("tipo");
+        ipaPecOKDto.setCodEnte("codEnte");
+        ipaPecOKDto.setDenominazione("denominazione");
 
         when(ipaService.getIpaPec(any()))
                 .thenReturn(Mono.just(ipaPecOKDto));

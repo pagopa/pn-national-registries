@@ -3,7 +3,7 @@ info:
   title: PN-NationalRegistries REST APIs
   description: |-
     Nell’ambito del progetto Piattaforme Notifiche, il componente PN-NationalRegistries si occuperà di recuperare i dati dalle banche dati esterne previste. Tali banche dati esporranno delle interfacce web verso il componente PN-NationalRegistries, accessibili tramite piattaforma di interoperabilità.
-  version: 0.11.4
+  version: 0.11.5
 servers:
   - url: http://127.0.0.1
 tags:
@@ -35,7 +35,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/IPAPecOK'
+                $ref: '#/components/schemas/IPAPec'
         "401":
           description: Unauthorized
           content:
@@ -729,13 +729,6 @@ components:
           type: string
         denominazione:
           type: string
-    IPAPecOK:
-      type: object
-      properties:
-        Domicili digitali:
-          type: array
-          items:
-            $ref: '#/components/schemas/IPAPec'
     GetAddressRegistroImpreseOK:
       type: object
       properties:

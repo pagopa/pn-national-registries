@@ -118,7 +118,10 @@ public class GatewayService extends GatewayConverter {
         } else {
             return ipaService.getIpaPec(convertToGetIpaPecRequest(addressRequestBodyDto))
                     .flatMap(response -> {
-                        if (response.getDomiciliDigitali().isEmpty()) {
+                        if (response.getDomicilioDigitale() == null &&
+                                response.getDenominazione() == null &&
+                                response.getCodEnte() == null &&
+                                response.getTipo() == null) {
                             return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto));
                         }
                         return sqsService.push(ipaToSqsDto(correlationId, response), pnNationalRegistriesCxId);
