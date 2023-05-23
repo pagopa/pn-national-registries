@@ -201,6 +201,56 @@ Parameters:
     Type: String
     Description: 'Validazione del pn-national-registries cx id'
 
+  PnNationalRegistriesInipecTtl:
+    Type: Number
+    Description: 'IniPEC TTL'
+    Default: 1209600
+
+  PnNationalRegistriesInipecBatchRequestDelay:
+    Type: Number
+    Description: 'IniPEC batch request delay'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchRequestRecoveryDelay:
+    Type: Number
+    Description: 'IniPEC batch request recovery delay'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchRequestRecoveryAfter:
+    Type: Number
+    Description: 'IniPEC batch request recovery after'
+    Default: 3600
+
+  PnNationalRegistriesInipecBatchRequestMaxRetry:
+    Type: Number
+    Description: 'IniPEC batch request max retry'
+    Default: 3
+
+  PnNationalRegistriesInipecBatchPollingDelay:
+    Type: Number
+    Description: 'IniPEC batch polling delay'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchPollingRecoveryDelay:
+    Type: Number
+    Description: 'IniPEC batch polling recovery delay'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchPollingRecoveryAfter:
+    Type: Number
+    Description: 'IniPEC batch polling recovery after'
+    Default: 3600
+
+  PnNationalRegistriesInipecBatchPollingMaxRetry:
+    Type: Number
+    Description: 'IniPEC batch polling max retry'
+    Default: 3
+
+  PnNationalRegistriesInipecBatchSqsRecoveryDelay:
+    Type: Number
+    Description: 'IniPEC batch SQS recovery delay'
+    Default: 30000
+
   EcsLogGroup:
     Type: String
     Description: ECS log group name
@@ -329,6 +379,17 @@ Resources:
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
         ContainerEnvEntry22: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
         ContainerEnvEntry23: !Sub 'PN_NATIONAL_REGISTRY_IPA_SECRET=${IPASecret}'
+        ContainerEnvEntry24: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
+        ContainerEnvEntry25: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_DELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
+        ContainerEnvEntry26: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
+        ContainerEnvEntry27: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
+        ContainerEnvEntry28: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_MAX_RETRY=${PnNationalRegistriesInipecBatchRequestMaxRetry}'
+        ContainerEnvEntry29: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_DELAY=${PnNationalRegistriesInipecBatchPollingDelay}'
+        ContainerEnvEntry30: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchPollingRecoveryDelay}'
+        ContainerEnvEntry31: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchPollingRecoveryAfter}'
+        ContainerEnvEntry32: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
+        ContainerEnvEntry33: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
+
         # MicroServiceSecretPrefix: !Sub '${SecretPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName

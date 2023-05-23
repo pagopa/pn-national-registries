@@ -21,6 +21,16 @@
     "IPABaseURL": "",
     "IPASecret": "",
     "SecretPrefix": "",
-    "PnCxIdValidationEnabled": ""
+    "PnCxIdValidationEnabled": "",
+    "PnNationalRegistriesInipecTtl": "",
+    "PnNationalRegistriesInipecBatchRequestDelay": "",
+    "PnNationalRegistriesInipecBatchRequestRecoveryDelay": "",
+    "PnNationalRegistriesInipecBatchRequestRecoveryAfter": "",
+    "PnNationalRegistriesInipecBatchRequestMaxRetry": "",
+    "PnNationalRegistriesInipecBatchPollingDelay": "",
+    "PnNationalRegistriesInipecBatchPollingRecoveryDelay": "",
+    "PnNationalRegistriesInipecBatchPollingRecoveryAfter": "",
+    "PnNationalRegistriesInipecBatchPollingMaxRetry": "",
+    "PnNationalRegistriesInipecBatchSqsRecoveryDelay": ""
   }
 }
