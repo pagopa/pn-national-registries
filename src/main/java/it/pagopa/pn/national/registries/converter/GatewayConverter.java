@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.converter;
 
-import io.netty.handler.codec.DateFormatter;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
