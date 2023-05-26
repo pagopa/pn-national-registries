@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
+import io.netty.handler.codec.DateFormatter;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.ZoneId;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -176,10 +178,11 @@ public class GatewayConverter {
     protected GetAddressANPRRequestBodyDto convertToGetAddressAnprRequest(AddressRequestBodyDto addressRequestBodyDto) {
         GetAddressANPRRequestBodyDto dto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto filterDto = new GetAddressANPRRequestBodyFilterDto();
-
         filterDto.setRequestReason(addressRequestBodyDto.getFilter().getCorrelationId());
         filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
-        filterDto.setReferenceRequestDate(addressRequestBodyDto.getFilter().getReferenceRequestDate());
+        filterDto.setReferenceRequestDate(addressRequestBodyDto.getFilter().getReferenceRequestDate().toInstant()
+                .atZone(ZoneId.systemDefault())
+                .toLocalDateTime().toString().substring(0, 10));
 
         dto.setFilter(filterDto);
         return dto;

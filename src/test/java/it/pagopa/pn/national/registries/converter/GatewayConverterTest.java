@@ -29,6 +29,9 @@ import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 
 import java.nio.charset.StandardCharsets;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.List;
 
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
@@ -512,7 +515,7 @@ class GatewayConverterTest {
         filterDto.setTaxId(CF);
         filterDto.setCorrelationId(C_ID);
         filterDto.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
-        filterDto.setReferenceRequestDate("2023-02-16");
+        filterDto.setReferenceRequestDate(Date.from(LocalDate.of(2023, 2, 16).atStartOfDay(ZoneId.systemDefault()).toInstant()));
         AddressRequestBodyDto requestBodyDto = new AddressRequestBodyDto();
         requestBodyDto.setFilter(filterDto);
         return requestBodyDto;
