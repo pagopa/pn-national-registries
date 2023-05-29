@@ -70,9 +70,15 @@ public class InadConverter {
     }
 
     private static boolean isValid(ElementDigitalAddressDto dto, Date date) {
-        return dto.getUsageInfo() == null
+        if(dto.getUsageInfo() == null
                 || dto.getUsageInfo().getDateEndValidity() == null
                 || dto.getUsageInfo().getDateEndValidity().equals(date)
-                || dto.getUsageInfo().getDateEndValidity().after(date);
+                || dto.getUsageInfo().getDateEndValidity().after(date)){
+            return true;
+        }
+        else{
+            log.info("inad digital address: {} is not valid", dto.getDigitalAddress());
+            return false;
+        }
     }
 }
