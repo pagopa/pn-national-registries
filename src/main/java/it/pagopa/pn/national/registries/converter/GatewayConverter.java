@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -23,6 +25,7 @@ public class GatewayConverter {
             Pattern.CASE_INSENSITIVE);
     private static final Pattern INAD_CF_NOT_FOUND = Pattern.compile("(\"detail\")\\s*:\\s*\"(CF non trovato)\"",
             Pattern.CASE_INSENSITIVE);
+    private static final String DATE_PATTERN = "yyyy-MM-dd";
 
     protected AddressOKDto mapToAddressesOKDto(String correlationId) {
         AddressOKDto dto = new AddressOKDto();
@@ -176,10 +179,12 @@ public class GatewayConverter {
     protected GetAddressANPRRequestBodyDto convertToGetAddressAnprRequest(AddressRequestBodyDto addressRequestBodyDto) {
         GetAddressANPRRequestBodyDto dto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto filterDto = new GetAddressANPRRequestBodyFilterDto();
-
         filterDto.setRequestReason(addressRequestBodyDto.getFilter().getCorrelationId());
         filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
-        filterDto.setReferenceRequestDate(addressRequestBodyDto.getFilter().getReferenceRequestDate());
+        filterDto.setReferenceRequestDate(DateTimeFormatter.ofPattern(DATE_PATTERN)
+                .withZone(ZoneId.systemDefault())
+                .format(addressRequestBodyDto.getFilter().getReferenceRequestDate().toInstant()));
+
 
         dto.setFilter(filterDto);
         return dto;

@@ -13,6 +13,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressReq
 import java.util.Map;
 
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import org.joda.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,7 +50,6 @@ class GatewayServiceTest {
 
     private static final String CF = "CF";
     private static final String C_ID = "correlationId";
-    private static final String REF_REQ_DATE = "refReqDate";
 
     @Test
     @DisplayName("Test recipientType not valid")
@@ -289,7 +289,7 @@ class GatewayServiceTest {
         filterDto.setTaxId(CF);
         filterDto.setCorrelationId(C_ID);
         filterDto.setDomicileType(domicileType);
-        filterDto.setReferenceRequestDate(REF_REQ_DATE);
+        filterDto.setReferenceRequestDate(LocalDateTime.now().toDate());
 
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.setFilter(filterDto);

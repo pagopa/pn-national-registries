@@ -450,7 +450,7 @@ components:
               example: AAAZZZ00H00T000Z
             referenceRequestDate:
               type: string
-              format: YYYY-MM-DDThh:mm:ss
+              format: date-time
             correlationId:
               type: string
             domicileType:
