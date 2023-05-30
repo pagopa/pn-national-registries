@@ -32,6 +32,8 @@
     "PnNationalRegistriesInipecBatchPollingRecoveryDelay": "30000",
     "PnNationalRegistriesInipecBatchPollingRecoveryAfter": "3600",
     "PnNationalRegistriesInipecBatchPollingMaxRetry": "3",
-    "PnNationalRegistriesInipecBatchSqsRecoveryDelay": "30000"
+    "PnNationalRegistriesInipecBatchSqsRecoveryDelay": "30000",
+    "CpuValue": "2048",
+    "MemoryAmount": "4GB"
   }
 }
