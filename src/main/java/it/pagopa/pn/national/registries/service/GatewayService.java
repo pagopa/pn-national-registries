@@ -111,6 +111,7 @@ public class GatewayService extends GatewayConverter {
 
         if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
             return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
+                    .doOnNext(batchRequest -> log.info("Got registro imprese response for taxId: {}", MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId())))
                     .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, registroImpreseResponse), pnNationalRegistriesCxId))
                     .doOnError(e -> logEServiceError(e, "can not retrieve physical address from Registro Imprese: {}"))
                     .onErrorResume(e -> sqsService.push(errorRegImpToSqsDto(correlationId, e), pnNationalRegistriesCxId))
