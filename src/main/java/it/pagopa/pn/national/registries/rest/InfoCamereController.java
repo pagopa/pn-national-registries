@@ -12,6 +12,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 @RestController
+@lombok.CustomLog
 public class InfoCamereController  implements InfoCamereApi {
 
     private final InfoCamereService infoCamereService;
@@ -20,6 +21,10 @@ public class InfoCamereController  implements InfoCamereApi {
     private final Scheduler scheduler;
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
+
+    private static final String PROCESS_DIGITAL_ADDRESS_INI_PEC = "digitalAddressIniPEC";
+    private static final String PROCESS_ADDRESS_REGISTRO_IMPRESE = "addressRegistroImprese";
+    private static final String PROCESS_INFO_CAMERE_LEGAL = "infoCamereLegal";
 
     public InfoCamereController(InfoCamereService infoCamereService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.infoCamereService = infoCamereService;
@@ -41,9 +46,12 @@ public class InfoCamereController  implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_DIGITAL_ADDRESS_INI_PEC);
         validateTaxIdUtils.validateTaxId(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId());
         return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, getDigitalAddressIniPECRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_DIGITAL_ADDRESS_INI_PEC))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_DIGITAL_ADDRESS_INI_PEC,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 
@@ -61,9 +69,12 @@ public class InfoCamereController  implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(GetAddressRegistroImpreseRequestBodyDto getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_ADDRESS_REGISTRO_IMPRESE);
         validateTaxIdUtils.validateTaxId(getAddressRegistroImpreseRequestBodyDto.getFilter().getTaxId());
         return infoCamereService.getRegistroImpreseLegalAddress(getAddressRegistroImpreseRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_ADDRESS_REGISTRO_IMPRESE))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_ADDRESS_REGISTRO_IMPRESE,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 
@@ -83,9 +94,12 @@ public class InfoCamereController  implements InfoCamereApi {
 
     @Override
     public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(InfoCamereLegalRequestBodyDto infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_INFO_CAMERE_LEGAL);
         validateTaxIdUtils.validateTaxId(infoCamereLegalRequestBodyDto.getFilter().getTaxId());
         return infoCamereService.checkTaxIdAndVatNumber(infoCamereLegalRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_INFO_CAMERE_LEGAL))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_INFO_CAMERE_LEGAL,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 

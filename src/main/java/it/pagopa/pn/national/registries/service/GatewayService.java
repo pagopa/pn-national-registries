@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.commons.log.MDCWebFilter;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -143,13 +142,13 @@ public class GatewayService extends GatewayConverter {
 
     private Context enrichFluxContext(Context ctx, Map<String, String> mdcCtx) {
         if (mdcCtx != null) {
-            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_TRACE_ID_KEY, mdcCtx.get(MDCWebFilter.MDC_TRACE_ID_KEY));
-            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_JTI_KEY, mdcCtx.get(MDCWebFilter.MDC_JTI_KEY));
-            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_UID_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_UID_KEY));
-            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_CX_ID_KEY, mdcCtx.get(MDCWebFilter.MDC_CX_ID_KEY));
-            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_TYPE_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_TYPE_KEY));
-            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_GROUPS_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_GROUPS_KEY));
-            ctx = addToFluxContext(ctx, MDCWebFilter.MDC_PN_CX_ROLE_KEY, mdcCtx.get(MDCWebFilter.MDC_PN_CX_ROLE_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_TRACE_ID_KEY, mdcCtx.get(MDCUtils.MDC_TRACE_ID_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_JTI_KEY, mdcCtx.get(MDCUtils.MDC_JTI_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_PN_UID_KEY, mdcCtx.get(MDCUtils.MDC_PN_UID_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_CX_ID_KEY, mdcCtx.get(MDCUtils.MDC_CX_ID_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_PN_CX_TYPE_KEY, mdcCtx.get(MDCUtils.MDC_PN_CX_TYPE_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_PN_CX_GROUPS_KEY, mdcCtx.get(MDCUtils.MDC_PN_CX_GROUPS_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_PN_CX_ROLE_KEY, mdcCtx.get(MDCUtils.MDC_PN_CX_ROLE_KEY));
         }
         return ctx;
     }

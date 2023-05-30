@@ -7,7 +7,6 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxId
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
@@ -15,13 +14,16 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 @RestController
-@Slf4j
+@lombok.CustomLog
 public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     private final AgenziaEntrateService agenziaEntrateService;
     private final Scheduler scheduler;
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
+
+    private static final String PROCESS_CHECK_TAX_ID = "checkTaxId";
+    private static final String PROCESS_ADE_LEGAL = "adeLegal";
 
 
     public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
@@ -41,9 +43,12 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_CHECK_TAX_ID);
         validateTaxIdUtils.validateTaxId(checkTaxIdRequestBodyDto.getFilter().getTaxId());
         return agenziaEntrateService.callEService(checkTaxIdRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_CHECK_TAX_ID))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_CHECK_TAX_ID,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 
@@ -60,9 +65,12 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     @Override
     public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(ADELegalRequestBodyDto adELegalRequestBodyDto,  final ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_ADE_LEGAL);
         validateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId());
         return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_ADE_LEGAL))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_ADE_LEGAL,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }

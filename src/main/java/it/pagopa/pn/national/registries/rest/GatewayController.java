@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 @RestController
+@lombok.CustomLog
 public class GatewayController implements AddressApi {
 
     private final GatewayService gatewayService;
@@ -21,6 +22,8 @@ public class GatewayController implements AddressApi {
     private final Scheduler scheduler;
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
+
+    private static final String PROCESS_GET_ADDRESS = "getAddresses";
 
     public GatewayController(GatewayService gatewayService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.gatewayService = gatewayService;
@@ -41,9 +44,12 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, AddressRequestBodyDto addressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_GET_ADDRESS);
         validateTaxIdUtils.validateTaxId(addressRequestBodyDto.getFilter().getTaxId());
         return gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto)
                 .map(s -> ResponseEntity.ok().body(s))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_GET_ADDRESS))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_GET_ADDRESS,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 

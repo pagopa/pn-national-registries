@@ -13,6 +13,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 @RestController
+@lombok.CustomLog
 public class IpaController implements IpaApi {
 
     private final IpaService ipaService;
@@ -21,6 +22,8 @@ public class IpaController implements IpaApi {
     private final Scheduler scheduler;
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
+    private static final String PROCESS_IPA_PEC = "ipaPec";
+
 
     public IpaController(IpaService ipaService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.ipaService = ipaService;
@@ -40,9 +43,12 @@ public class IpaController implements IpaApi {
      */
     @Override
     public Mono<ResponseEntity<IPAPecDto>> ipaPec(IPARequestBodyDto ipARequestBodyDto, ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_IPA_PEC);
         validateTaxIdUtils.validateTaxId(ipARequestBodyDto.getFilter().getTaxId());
         return ipaService.getIpaPec(ipARequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_IPA_PEC))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_IPA_PEC,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }

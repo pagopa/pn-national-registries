@@ -12,12 +12,15 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 @RestController
+@lombok.CustomLog
 public class InadController implements DigitalAddressInadApi {
 
     private final InadService inadService;
     private final Scheduler scheduler;
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
+
+    private static final String PROCESS_DIGITAL_ADDRESS_INAD = "digitalAddressINAD";
 
     public InadController(InadService inadService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.inadService = inadService;
@@ -40,9 +43,12 @@ public class InadController implements DigitalAddressInadApi {
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_DIGITAL_ADDRESS_INAD);
         validateTaxIdUtils.validateTaxId(extractDigitalAddressINADRequestBodyDto.getFilter().getTaxId());
         return inadService.callEService(extractDigitalAddressINADRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_DIGITAL_ADDRESS_INAD))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_DIGITAL_ADDRESS_INAD,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }

@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.commons.utils.DynamoDbAsyncTableDecorator;
+import it.pagopa.pn.commons.utils.dynamodb.async.DynamoDbAsyncTableDecorator;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
