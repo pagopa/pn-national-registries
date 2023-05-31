@@ -9,7 +9,6 @@ import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -18,7 +17,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 @Service
-@Slf4j
+@lombok.CustomLog
 public class InfoCamereService {
 
     private final InfoCamereClient infoCamereClient;
@@ -83,15 +82,19 @@ public class InfoCamereService {
     }
 
     public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
+        log.logChecking("validating taxId and vatNumber");
         return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
                 .flatMap(response -> processResponseCheckTaxIdAndVatNumberOk(request, response));
     }
 
     private Mono<InfoCamereLegalOKDto> processResponseCheckTaxIdAndVatNumberOk(InfoCamereLegalRequestBodyDto request, InfoCamereVerification response) {
+        String process = "validating taxId and vatNumber";
         if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
+            log.logCheckingOutcome(process, false, "Failed to check taxId and vatNumber with error: "+response.getDescription());
             log.info("Failed to check tax id: {} and vat number: {}, with error : {}", MaskDataUtils.maskString(request.getFilter().getTaxId()), MaskDataUtils.maskString(request.getFilter().getVatNumber()), response.getDescription());
             return Mono.just(infoCamereConverter.infoCamereResponseToDtoByRequest(request));
         } else {
+            log.logCheckingOutcome(process, true);
             log.info("Got Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId()));
             return Mono.just(infoCamereConverter.infoCamereResponseToDtoByResponse(response));
         }

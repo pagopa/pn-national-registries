@@ -13,6 +13,7 @@ import java.nio.charset.Charset;
  * Read the parameter <i>MapTaxIdWhiteList</i> to skip CF validation
  */
 @Component
+@lombok.CustomLog
 public class ValidateTaxIdUtils {
 
 
@@ -23,9 +24,13 @@ public class ValidateTaxIdUtils {
     }
 
     public void validateTaxId(String taxId) {
+        String process = "validating taxId";
+        log.logChecking(process);
         if (!validateUtils.validate(taxId)) {
+            log.logCheckingOutcome(process, false, "TaxId is not valid");
             throw new PnNationalRegistriesException("TaxId not valid", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
         }
+        log.logCheckingOutcome(process, true);
     }
 }
