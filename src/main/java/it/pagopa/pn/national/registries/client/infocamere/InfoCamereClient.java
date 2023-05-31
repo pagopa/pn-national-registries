@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.client.infocamere;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -13,7 +14,6 @@ import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,8 +29,8 @@ import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 
-@Slf4j
 @Component
+@lombok.CustomLog
 public class InfoCamereClient {
 
     private final WebClient webClient;
@@ -62,6 +62,7 @@ public class InfoCamereClient {
     }
 
     private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Getting correlationId InfoCamere for taxIds");
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/richiestaElencoPec")
@@ -95,6 +96,7 @@ public class InfoCamereClient {
     }
 
     private Mono<IniPecPollingResponse> callGetElencoPec(String correlationId, String token) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Getting elencoPec InfoCamere for correlationId");
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/getElencoPec/{identificativoRichiesta}")
@@ -127,6 +129,7 @@ public class InfoCamereClient {
     }
 
     private Mono<AddressRegistroImprese> callGetLegalAddress(String taxId, String token) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Getting legalAddress InfoCamere for taxId");
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/sede/{cf}")
@@ -158,6 +161,7 @@ public class InfoCamereClient {
     }
 
     private Mono<InfoCamereVerification> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Validate taxId InfoCamere for taxId");
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/legaleRappresentante/{cfPersona}")

@@ -1,11 +1,11 @@
 package it.pagopa.pn.national.registries.client.ipa;
 
+import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.ipa.WS05ResponseDto;
 import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -17,8 +17,8 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.Charset;
 
-@Slf4j
 @Component
+@lombok.CustomLog
 public class IpaClient {
 
     private final WebClient webClient;
@@ -31,6 +31,7 @@ public class IpaClient {
     }
 
     public Mono<WS23ResponseDto> callEServiceWS23(String taxId) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Calling WS23 for taxId");
         return webClient.post()
                 .uri("/ws/WS23DOMDIGCFServices/api/WS23_DOM_DIG_CF")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA))
@@ -50,6 +51,7 @@ public class IpaClient {
     }
 
     public Mono<WS05ResponseDto> callEServiceWS05(String codAmm) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Calling WS05 for codAmm");
         return webClient.post()
                 .uri("ws/WS05AMMServices/api/WS05_AMM")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA))

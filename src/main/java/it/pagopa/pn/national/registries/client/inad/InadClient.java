@@ -1,13 +1,13 @@
 package it.pagopa.pn.national.registries.client.inad;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -23,8 +23,8 @@ import java.util.Map;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INAD_UNAUTHORIZED;
 
-@Slf4j
 @Component
+@lombok.CustomLog
 public class InadClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
@@ -54,6 +54,7 @@ public class InadClient {
     }
 
     private Mono<ResponseRequestDigitalAddressDto> callExtract(String taxId, String practicalReference, AccessTokenCacheEntry tokenEntry) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Getting digitalAddress Inad for taxId");
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("practicalReference", practicalReference)

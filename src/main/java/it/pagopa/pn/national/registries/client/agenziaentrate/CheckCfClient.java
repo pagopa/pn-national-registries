@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.client.agenziaentrate;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
@@ -10,7 +11,6 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdResponseKO;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -26,8 +26,8 @@ import java.util.List;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 import static reactor.core.Exceptions.isRetryExhausted;
 
-@Slf4j
 @Component
+@lombok.CustomLog
 public class CheckCfClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
@@ -58,6 +58,7 @@ public class CheckCfClient {
     }
 
     private Mono<TaxIdVerification> callVerifica(Request richiesta, AccessTokenCacheEntry tokenEntry) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Validate taxId");
         String s = convertToJson(richiesta);
         return webClient.post()
                 .uri("/verifica")

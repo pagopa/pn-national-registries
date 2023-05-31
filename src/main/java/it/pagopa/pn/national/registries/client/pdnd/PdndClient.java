@@ -1,10 +1,10 @@
 package it.pagopa.pn.national.registries.client.pdnd;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.pdnd.PdndResponseKO;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -20,8 +20,8 @@ import java.util.Collections;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSSAGE_PDND_UNAUTHORIZED;
 
-@Slf4j
 @Component
+@lombok.CustomLog
 public class PdndClient {
 
     private final WebClient webClient;
@@ -37,6 +37,7 @@ public class PdndClient {
         map.put("client_assertion_type", Collections.singletonList(clientAssertionType));
         map.put("grant_type", Collections.singletonList(grantType));
 
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Calling token.oatuh2");
         return webClient.post()
                 .uri("/token.oauth2")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED))
