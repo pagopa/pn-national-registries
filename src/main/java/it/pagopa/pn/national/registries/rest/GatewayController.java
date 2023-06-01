@@ -48,7 +48,7 @@ public class GatewayController implements AddressApi {
     public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, AddressRequestBodyDto addressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
         log.logStartingProcess(PROCESS_NAME_GATEWAY_ADDRESS);
         validateTaxIdUtils.validateTaxId(addressRequestBodyDto.getFilter().getTaxId(),PROCESS_NAME_GATEWAY_ADDRESS);
-        MDC.put(MDCUtils.MDC_PN_NATIONAL_REGISTRIES_CORRELATIONID_KEY, addressRequestBodyDto.getFilter().getCorrelationId());
+        MDC.put("correlationid", addressRequestBodyDto.getFilter().getCorrelationId());
         return MDCUtils.addMDCToContextAndExecute(gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto)
                 .map(s -> ResponseEntity.ok().body(s))
                 .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_GATEWAY_ADDRESS))
