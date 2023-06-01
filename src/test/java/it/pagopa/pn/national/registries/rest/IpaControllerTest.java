@@ -36,7 +36,7 @@ class IpaControllerTest {
     void testIpaPec4() {
         IPAPecDto ipaPecDto = new IPAPecDto();
         when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaPecDto));
-        doNothing().when(validateTaxIdUtils).validateTaxId(any());
+        doNothing().when(validateTaxIdUtils).validateTaxId(any(), anyString());
 
         CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
         checkTaxIdRequestBodyFilterDto.taxId("42");
@@ -45,7 +45,7 @@ class IpaControllerTest {
         ipaRequestBodyDto.filter(checkTaxIdRequestBodyFilterDto);
         ipaController.ipaPec(ipaRequestBodyDto, null);
         verify(ipaService).getIpaPec(any());
-        verify(validateTaxIdUtils).validateTaxId(any());
+        verify(validateTaxIdUtils).validateTaxId(any(), anyString());
     }
 
 

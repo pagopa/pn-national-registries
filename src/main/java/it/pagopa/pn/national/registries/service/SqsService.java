@@ -10,7 +10,10 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.*;
+import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -36,6 +39,8 @@ public class SqsService {
 
     public Mono<SendMessageResponse> push(CodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info("pushing message for clientId: [{}] with correlationId: {}", pnNationalRegistriesCxId, msg.getCorrelationId());
+        log.debug("Inserting data {} in SQS {}", msg,queueName);
+        log.info("Inserted data in SQS {}",queueName);
         return push(toJson(msg), pnNationalRegistriesCxId);
     }
 

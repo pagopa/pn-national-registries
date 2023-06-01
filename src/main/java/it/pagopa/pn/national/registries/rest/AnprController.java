@@ -12,6 +12,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_ANPR_ADDRESS;
+
 @RestController
 @lombok.CustomLog
 public class AnprController implements AddressAnprApi {
@@ -22,9 +24,7 @@ public class AnprController implements AddressAnprApi {
     private final Scheduler scheduler;
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
-
-    private static final String PROCESS_ADDRESS_ANPR = "addressANPR";
-
+    
     public AnprController(AnprService anprService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.anprService = anprService;
         this.scheduler = scheduler;
@@ -43,12 +43,12 @@ public class AnprController implements AddressAnprApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_ADDRESS_ANPR);
-        validateTaxIdUtils.validateTaxId(getAddressANPRRequestBodyDto.getFilter().getTaxId());
+        log.logStartingProcess(PROCESS_NAME_ANPR_ADDRESS);
+        validateTaxIdUtils.validateTaxId(getAddressANPRRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_ANPR_ADDRESS);
         return anprService.getAddressANPR(getAddressANPRRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_ADDRESS_ANPR))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_ADDRESS_ANPR,false,throwable.getMessage()))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_ANPR_ADDRESS))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_ANPR_ADDRESS,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }

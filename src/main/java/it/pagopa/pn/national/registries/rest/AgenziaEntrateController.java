@@ -13,6 +13,9 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_AGENZIA_ENTRATE_LEGAL;
+
 @RestController
 @lombok.CustomLog
 public class AgenziaEntrateController implements AgenziaEntrateApi {
@@ -21,10 +24,6 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
     private final Scheduler scheduler;
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
-
-    private static final String PROCESS_CHECK_TAX_ID = "checkTaxId";
-    private static final String PROCESS_ADE_LEGAL = "adeLegal";
-
 
     public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.agenziaEntrateService = agenziaEntrateService;
@@ -43,12 +42,12 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_CHECK_TAX_ID);
-        validateTaxIdUtils.validateTaxId(checkTaxIdRequestBodyDto.getFilter().getTaxId());
+        log.logStartingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID);
+        validateTaxIdUtils.validateTaxId(checkTaxIdRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID);
         return agenziaEntrateService.callEService(checkTaxIdRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_CHECK_TAX_ID))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_CHECK_TAX_ID,false,throwable.getMessage()))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 
@@ -65,12 +64,12 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     @Override
     public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(ADELegalRequestBodyDto adELegalRequestBodyDto,  final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_ADE_LEGAL);
-        validateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId());
+        log.logStartingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL);
+        validateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL);
         return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_ADE_LEGAL))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_ADE_LEGAL,false,throwable.getMessage()))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }

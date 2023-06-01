@@ -17,6 +17,9 @@ import reactor.core.publisher.Mono;
 
 import java.nio.charset.Charset;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_WS05_PEC;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_WS23_PEC;
+
 @Component
 @lombok.CustomLog
 public class IpaClient {
@@ -31,7 +34,7 @@ public class IpaClient {
     }
 
     public Mono<WS23ResponseDto> callEServiceWS23(String taxId) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Calling WS23 for taxId");
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_WS23_PEC);
         return webClient.post()
                 .uri("/ws/WS23DOMDIGCFServices/api/WS23_DOM_DIG_CF")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA))
@@ -51,7 +54,7 @@ public class IpaClient {
     }
 
     public Mono<WS05ResponseDto> callEServiceWS05(String codAmm) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Calling WS05 for codAmm");
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_WS05_PEC);
         return webClient.post()
                 .uri("ws/WS05AMMServices/api/WS05_AMM")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA))

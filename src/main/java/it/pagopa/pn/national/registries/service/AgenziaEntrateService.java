@@ -18,6 +18,9 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import java.io.StringReader;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID;
+
 @Component
 @lombok.CustomLog
 public class AgenziaEntrateService {
@@ -35,7 +38,10 @@ public class AgenziaEntrateService {
     }
 
     public Mono<CheckTaxIdOKDto> callEService(CheckTaxIdRequestBodyDto request) {
+        log.logChecking(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID);
         return checkCfClient.callEService(createRequest(request))
+                .doOnNext(taxIdVerification -> log.logCheckingOutcome(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID,true))
+                .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID,false,throwable.getMessage()))
                 .map(agenziaEntrateConverter::convertToCfStatusDto);
     }
 
@@ -57,16 +63,15 @@ public class AgenziaEntrateService {
     }
 
     public Mono<ADELegalOKDto> checkTaxIdAndVatNumber(ADELegalRequestBodyDto request) {
-        String process = "validating taxId and vatNumber";
-        log.logChecking(process);
+        log.logChecking(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL);
         return adELegalClient.checkTaxIdAndVatNumberAdE(request.getFilter())
                 .map(response -> {
                     try {
                         CheckValidityRappresentanteResp checkValidityRappresentanteResp = unmarshaller(response);
-                        log.logCheckingOutcome(process, true);
+                        log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL,true);
                         return agenziaEntrateConverter.adELegalResponseToDto(checkValidityRappresentanteResp);
                     } catch (JAXBException e) {
-                        log.logCheckingOutcome(process, false, "invalid format in responseBody");
+                        log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL,false,e.getMessage());
                         throw new RuntimeJAXBException(e.getMessage());
                     }
                 });

@@ -23,6 +23,7 @@ import reactor.util.retry.Retry;
 import java.nio.charset.Charset;
 import java.util.List;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_AGENZIA_ENTRATE_CHECK_TAX_ID;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 import static reactor.core.Exceptions.isRetryExhausted;
 
@@ -58,7 +59,7 @@ public class CheckCfClient {
     }
 
     private Mono<TaxIdVerification> callVerifica(Request richiesta, AccessTokenCacheEntry tokenEntry) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Validate taxId");
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_AGENZIA_ENTRATE_CHECK_TAX_ID);
         String s = convertToJson(richiesta);
         return webClient.post()
                 .uri("/verifica")

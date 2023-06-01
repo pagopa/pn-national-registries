@@ -8,6 +8,8 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.Charset;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_VALIDATION_TAX_ID;
+
 /**
  * This class use it.pagopa.pn.commons.utils.ValidateUtils
  * Read the parameter <i>MapTaxIdWhiteList</i> to skip CF validation
@@ -23,14 +25,14 @@ public class ValidateTaxIdUtils {
         this.validateUtils = validateUtils;
     }
 
-    public void validateTaxId(String taxId) {
-        String process = "validating taxId";
-        log.logChecking(process);
+    public void validateTaxId(String taxId, String processName) {
+        log.logChecking(PROCESS_CHECKING_VALIDATION_TAX_ID);
         if (!validateUtils.validate(taxId)) {
-            log.logCheckingOutcome(process, false, "TaxId is not valid");
+            log.logCheckingOutcome(PROCESS_CHECKING_VALIDATION_TAX_ID, false, "TaxId not valid");
+            log.logEndingProcess(processName, false, " TaxId not valid");
             throw new PnNationalRegistriesException("TaxId not valid", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
         }
-        log.logCheckingOutcome(process, true);
+        log.logCheckingOutcome(PROCESS_CHECKING_VALIDATION_TAX_ID, true);
     }
 }

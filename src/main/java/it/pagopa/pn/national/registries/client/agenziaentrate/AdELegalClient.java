@@ -15,6 +15,7 @@ import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_AGENZIA_ENTRATE_LEGAL;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADE_UNAUTHORIZED;
 
@@ -38,7 +39,7 @@ public class AdELegalClient {
     }
 
     private Mono<String> callCheck(ADELegalRequestBodyFilterDto request) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Validate ADELegal taxId and vatNumber");
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_AGENZIA_ENTRATE_LEGAL);
         return webClient.post()
                 .uri("/legalerappresentateAdE/check")
                 .contentType(MediaType.TEXT_XML)

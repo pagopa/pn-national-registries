@@ -12,6 +12,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_GATEWAY_ADDRESS;
+
 @RestController
 @lombok.CustomLog
 public class GatewayController implements AddressApi {
@@ -22,9 +24,7 @@ public class GatewayController implements AddressApi {
     private final Scheduler scheduler;
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
-
-    private static final String PROCESS_GET_ADDRESS = "getAddresses";
-
+    
     public GatewayController(GatewayService gatewayService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.gatewayService = gatewayService;
         this.scheduler = scheduler;
@@ -44,12 +44,12 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, AddressRequestBodyDto addressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_GET_ADDRESS);
-        validateTaxIdUtils.validateTaxId(addressRequestBodyDto.getFilter().getTaxId());
+        log.logStartingProcess(PROCESS_NAME_GATEWAY_ADDRESS);
+        validateTaxIdUtils.validateTaxId(addressRequestBodyDto.getFilter().getTaxId(),PROCESS_NAME_GATEWAY_ADDRESS);
         return gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto)
                 .map(s -> ResponseEntity.ok().body(s))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_GET_ADDRESS))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_GET_ADDRESS,false,throwable.getMessage()))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_GATEWAY_ADDRESS))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_GATEWAY_ADDRESS,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 

@@ -27,6 +27,8 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Optional;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_INFO_CAMERE_LEGAL;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_REGISTRO_IMPRESE_ADDRESS;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 
 @Component
@@ -62,7 +64,7 @@ public class InfoCamereClient {
     }
 
     private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Getting correlationId InfoCamere for taxIds");
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Retrieving correlationId [INFOCAMERE]");
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/richiestaElencoPec")
@@ -129,7 +131,7 @@ public class InfoCamereClient {
     }
 
     private Mono<AddressRegistroImprese> callGetLegalAddress(String taxId, String token) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Getting legalAddress InfoCamere for taxId");
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_REGISTRO_IMPRESE_ADDRESS);
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/sede/{cf}")
@@ -161,7 +163,7 @@ public class InfoCamereClient {
     }
 
     private Mono<InfoCamereVerification> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Validate taxId InfoCamere for taxId");
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_INFO_CAMERE_LEGAL);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/legaleRappresentante/{cfPersona}")

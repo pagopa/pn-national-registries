@@ -20,6 +20,7 @@ import reactor.util.retry.Retry;
 import java.nio.charset.Charset;
 import java.util.Map;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_INAD_ADDRESS;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INAD_UNAUTHORIZED;
 
@@ -54,7 +55,7 @@ public class InadClient {
     }
 
     private Mono<ResponseRequestDigitalAddressDto> callExtract(String taxId, String practicalReference, AccessTokenCacheEntry tokenEntry) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Getting digitalAddress Inad for taxId");
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_INAD_ADDRESS);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("practicalReference", practicalReference)

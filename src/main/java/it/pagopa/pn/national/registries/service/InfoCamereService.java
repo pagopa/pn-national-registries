@@ -16,6 +16,8 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHEKING_INFO_CAMERE_LEGAL;
+
 @Service
 @lombok.CustomLog
 public class InfoCamereService {
@@ -82,8 +84,10 @@ public class InfoCamereService {
     }
 
     public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
-        log.logChecking("validating taxId and vatNumber");
+        log.logChecking(PROCESS_CHEKING_INFO_CAMERE_LEGAL);
         return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
+                .doOnNext(infoCamereVerification -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL,true))
+                .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL,false,throwable.getMessage()))
                 .flatMap(response -> processResponseCheckTaxIdAndVatNumberOk(request, response));
     }
 

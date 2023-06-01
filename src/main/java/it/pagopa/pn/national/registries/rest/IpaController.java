@@ -12,6 +12,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_IPA_ADDRESS;
+
 @RestController
 @lombok.CustomLog
 public class IpaController implements IpaApi {
@@ -22,8 +24,6 @@ public class IpaController implements IpaApi {
     private final Scheduler scheduler;
 
     private final ValidateTaxIdUtils validateTaxIdUtils;
-    private static final String PROCESS_IPA_PEC = "ipaPec";
-
 
     public IpaController(IpaService ipaService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.ipaService = ipaService;
@@ -43,12 +43,12 @@ public class IpaController implements IpaApi {
      */
     @Override
     public Mono<ResponseEntity<IPAPecDto>> ipaPec(IPARequestBodyDto ipARequestBodyDto, ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_IPA_PEC);
-        validateTaxIdUtils.validateTaxId(ipARequestBodyDto.getFilter().getTaxId());
+        log.logStartingProcess(PROCESS_NAME_IPA_ADDRESS);
+        validateTaxIdUtils.validateTaxId(ipARequestBodyDto.getFilter().getTaxId(),PROCESS_NAME_IPA_ADDRESS);
         return ipaService.getIpaPec(ipARequestBodyDto)
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_IPA_PEC))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_IPA_PEC,false,throwable.getMessage()))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_IPA_ADDRESS))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_IPA_ADDRESS,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }

@@ -17,6 +17,7 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.Charset;
 import java.util.Collections;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_PDND_TOKEN;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSSAGE_PDND_UNAUTHORIZED;
 
@@ -37,7 +38,7 @@ public class PdndClient {
         map.put("client_assertion_type", Collections.singletonList(clientAssertionType));
         map.put("grant_type", Collections.singletonList(grantType));
 
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Calling token.oatuh2");
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_PDND_TOKEN);
         return webClient.post()
                 .uri("/token.oauth2")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED))

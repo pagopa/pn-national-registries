@@ -10,7 +10,6 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressReq
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,8 +22,10 @@ import reactor.util.function.Tuples;
 import java.nio.charset.Charset;
 import java.util.Map;
 
-@Slf4j
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_CX_ID_FLAG;
+
 @Service
+@lombok.CustomLog
 public class GatewayService extends GatewayConverter {
 
     private final AnprService anprService;
@@ -93,12 +94,14 @@ public class GatewayService extends GatewayConverter {
         if (AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.equals(addressRequestBodyDto.getFilter().getDomicileType())) {
             return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
                     .flatMap(anprResponse -> sqsService.push(anprToSqsDto(correlationId, anprResponse), pnNationalRegistriesCxId))
+                    .doOnNext(sendMessageResponse -> log.info("retrieved physycal address from ANPR for correlationId: {} - cf: {}",addressRequestBodyDto.getFilter().getCorrelationId(),MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId())))
                     .doOnError(e -> logEServiceError(e, "can not retrieve physical address from ANPR: {}"))
                     .onErrorResume(e -> sqsService.push(errorAnprToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
             return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
                     .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, inadResponse), pnNationalRegistriesCxId))
+                    .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}",addressRequestBodyDto.getFilter().getCorrelationId(),MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId())))
                     .doOnError(e -> logEServiceError(e, "can not retrieve digital address from INAD: {}"))
                     .onErrorResume(e -> sqsService.push(errorInadToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sqs -> mapToAddressesOKDto(correlationId));
@@ -111,6 +114,7 @@ public class GatewayService extends GatewayConverter {
         if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
             return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                     .flatMap(registroImpreseResponse -> sqsService.push(regImpToSqsDto(correlationId, registroImpreseResponse), pnNationalRegistriesCxId))
+                    .doOnNext(sendMessageResponse -> log.info("retrieved physycal address from Registro Imprese for correlationId: {} - cf: {}",addressRequestBodyDto.getFilter().getCorrelationId(),MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId())))
                     .doOnError(e -> logEServiceError(e, "can not retrieve physical address from Registro Imprese: {}"))
                     .onErrorResume(e -> sqsService.push(errorRegImpToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
@@ -125,6 +129,7 @@ public class GatewayService extends GatewayConverter {
                         }
                         return sqsService.push(ipaToSqsDto(correlationId, response), pnNationalRegistriesCxId);
                     })
+                    .doOnNext(sendMessageResponse -> log.info("retrieved digital address from IPA for correlationId: {} - cf: {}",addressRequestBodyDto.getFilter().getCorrelationId(),MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId())))
                     .doOnError(e -> logEServiceError(e, "can not retrieve digital address from IPA: {}"))
                     .onErrorResume(e -> sqsService.push(errorIpaToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sqs -> mapToAddressesOKDto(correlationId));
@@ -134,10 +139,13 @@ public class GatewayService extends GatewayConverter {
 
 
     private void checkFlagPnNationalRegistriesCxId(String pnNationalRegistriesCxId) {
+        log.logChecking(PROCESS_CHECKING_CX_ID_FLAG);
         if (pnNationalRegistriesCxIdFlag && pnNationalRegistriesCxId == null) {
+            log.logCheckingOutcome(PROCESS_CHECKING_CX_ID_FLAG,false,"pnNationalRegistriesCxId required");
             throw new PnNationalRegistriesException("pnNationalRegistriesCxId required", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
         }
+        log.logCheckingOutcome(PROCESS_CHECKING_CX_ID_FLAG,true);
     }
 
     private Context enrichFluxContext(Context ctx, Map<String, String> mdcCtx) {
