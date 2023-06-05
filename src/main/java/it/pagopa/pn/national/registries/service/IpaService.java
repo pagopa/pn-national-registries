@@ -10,6 +10,7 @@ import it.pagopa.pn.national.registries.model.ipa.ResultDto;
 import it.pagopa.pn.national.registries.model.ipa.WS05ResponseDto;
 import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -26,13 +27,13 @@ public class IpaService {
 
     private final IpaConverter ipaConverter;
     private final IpaClient ipaClient;
+    private final ValidateTaxIdUtils validateTaxIdUtils;
     private final Predicate<Throwable> isResponseDataEmpty = throwable ->
             throwable instanceof PnNationalRegistriesException exception
                     && exception.getStatusCode() == HttpStatus.NOT_FOUND
                     && (Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase("Service WS23 responded with 0 items - IPA PEC not found")
                     || Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase("Service WS05 responded with 0 items - IPA PEC not found"));
 
-    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     public IpaService(IpaConverter ipaConverter, IpaClient ipaClient, ValidateTaxIdUtils validateTaxIdUtils) {
         this.ipaConverter = ipaConverter;
@@ -60,6 +61,8 @@ public class IpaService {
 
     private Mono<WS23ResponseDto> callWS23(String cf) {
         return ipaClient.callEServiceWS23(cf)
+                .doOnNext(ws23ResponseDto -> log.info("Got WS23Response for cf: {}", MaskDataUtils.maskString(cf)))
+                .doOnError(throwable -> log.info("Failed to callWS23 for taxId: {}", MaskDataUtils.maskString(cf)))
                 .map(ws23ResponseDto -> {
                     checkErrorWsResultDto(ws23ResponseDto.getResult());
                     checkNumItemsResultDto(ws23ResponseDto.getResult(), "WS23");
@@ -69,6 +72,8 @@ public class IpaService {
 
     private Mono<WS05ResponseDto> callWS05(String codAmm) {
         return ipaClient.callEServiceWS05(codAmm)
+                .doOnNext(ws05ResponseDto -> log.info("Got WS05Response for codAmm: {}", codAmm))
+                .doOnError(throwable -> log.info("Failed to callWS05 for codAmm: {}", codAmm))
                 .map(ws05ResponseDto -> {
                     checkErrorWsResultDto(ws05ResponseDto.getResult());
                     checkNumItemsResultDto(ws05ResponseDto.getResult(), "WS05");

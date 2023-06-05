@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddre
 import it.pagopa.pn.national.registries.model.anpr.*;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -29,7 +30,6 @@ public class AnprService {
     private final AnprClient anprClient;
     private final String anprSendType;
     private final CounterRepositoryImpl counterRepository;
-
     private final ValidateTaxIdUtils validateTaxIdUtils;
 
     public AnprService(AnprConverter anprConverter,
@@ -54,7 +54,9 @@ public class AnprService {
         }
 
         return createRequest(request)
+                .doOnNext(batchRequest -> log.info("Created ANPR request for taxId: {}", MaskDataUtils.maskString(cf)))
                 .flatMap(anprClient::callEService)
+                .doOnNext(batchRequest -> log.info("Got ResponseE002OKDto fox taxId: {}", MaskDataUtils.maskString(cf)))
                 .map(rispostaE002OKDto -> anprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, cf));
     }
 
