@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +43,9 @@ class InfoCamereServiceTest {
     InfoCamereClient infoCamereClient;
     @MockBean
     IniPecBatchRequestRepository batchRequestRepository;
+
+    @MockBean
+    ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
     void testGetDigitalAddress() {

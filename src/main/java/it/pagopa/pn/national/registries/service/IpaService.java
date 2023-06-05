@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPARequest
 import it.pagopa.pn.national.registries.model.ipa.ResultDto;
 import it.pagopa.pn.national.registries.model.ipa.WS05ResponseDto;
 import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -17,8 +18,7 @@ import java.nio.charset.Charset;
 import java.util.Objects;
 import java.util.function.Predicate;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_ERROR_IPA;
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_ITEMS_IPA;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
 
 @Service
 @lombok.CustomLog
@@ -32,13 +32,16 @@ public class IpaService {
                     && (Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase("Service WS23 responded with 0 items - IPA PEC not found")
                     || Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase("Service WS05 responded with 0 items - IPA PEC not found"));
 
+    private final ValidateTaxIdUtils validateTaxIdUtils;
 
-    public IpaService(IpaConverter ipaConverter, IpaClient ipaClient) {
+    public IpaService(IpaConverter ipaConverter, IpaClient ipaClient, ValidateTaxIdUtils validateTaxIdUtils) {
         this.ipaConverter = ipaConverter;
         this.ipaClient = ipaClient;
+        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     public Mono<IPAPecDto> getIpaPec(IPARequestBodyDto request) {
+        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_IPA_ADDRESS);
         return callWS23(request.getFilter().getTaxId())
                 .flatMap(ws23ResponseDto -> {
                     if (ws23ResponseDto.getResult().getNumItems() > 1) {

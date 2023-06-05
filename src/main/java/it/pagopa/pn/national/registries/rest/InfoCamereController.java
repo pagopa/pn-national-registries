@@ -22,12 +22,10 @@ public class InfoCamereController  implements InfoCamereApi {
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
-    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     public InfoCamereController(InfoCamereService infoCamereService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.infoCamereService = infoCamereService;
         this.scheduler = scheduler;
-        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -43,10 +41,9 @@ public class InfoCamereController  implements InfoCamereApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(Mono<GetDigitalAddressIniPECRequestBodyDto> getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
         log.logStartingProcess(PROCESS_NAME_INIPEC_PEC);
-        validateTaxIdUtils.validateTaxId(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_INIPEC_PEC);
-        return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, getDigitalAddressIniPECRequestBodyDto)
+        return getDigitalAddressIniPECRequestBodyDto.flatMap(requestBody -> infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, requestBody))
                 .map(t -> ResponseEntity.ok().body(t))
                 .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_INIPEC_PEC))
                 .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_INIPEC_PEC,false,throwable.getMessage()))
@@ -66,10 +63,9 @@ public class InfoCamereController  implements InfoCamereApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(GetAddressRegistroImpreseRequestBodyDto getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
         log.logStartingProcess(PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS);
-        validateTaxIdUtils.validateTaxId(getAddressRegistroImpreseRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS);
-        return infoCamereService.getRegistroImpreseLegalAddress(getAddressRegistroImpreseRequestBodyDto)
+        return getAddressRegistroImpreseRequestBodyDto.flatMap(infoCamereService::getRegistroImpreseLegalAddress)
                 .map(t -> ResponseEntity.ok().body(t))
                 .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS))
                 .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS,false,throwable.getMessage()))
@@ -91,10 +87,9 @@ public class InfoCamereController  implements InfoCamereApi {
      */
 
     @Override
-    public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(InfoCamereLegalRequestBodyDto infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(Mono<InfoCamereLegalRequestBodyDto> infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
         log.logStartingProcess(PROCESS_NAME_INFO_CAMERE_LEGAL);
-        validateTaxIdUtils.validateTaxId(infoCamereLegalRequestBodyDto.getFilter().getTaxId(),PROCESS_NAME_INFO_CAMERE_LEGAL);
-        return infoCamereService.checkTaxIdAndVatNumber(infoCamereLegalRequestBodyDto)
+        return infoCamereLegalRequestBodyDto.flatMap(infoCamereService::checkTaxIdAndVatNumber)
                 .map(t -> ResponseEntity.ok().body(t))
                 .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_INFO_CAMERE_LEGAL))
                 .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_INFO_CAMERE_LEGAL,false,throwable.getMessage()))

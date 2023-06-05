@@ -10,6 +10,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressReq
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -52,7 +53,7 @@ public class GatewayService extends GatewayConverter {
         checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
 
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
-
+        MDC.put("correlationId", correlationId);
         Map<String, String> copyOfContext = MDCUtils.retrieveMDCContextMap();
 
         Sinks.One<Tuple3<String, String, AddressRequestBodyDto>> sink = Sinks.one();

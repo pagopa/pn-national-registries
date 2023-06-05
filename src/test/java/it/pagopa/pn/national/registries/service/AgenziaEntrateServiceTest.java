@@ -10,6 +10,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxId
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -26,9 +27,7 @@ import javax.xml.bind.JAXBException;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {AgenziaEntrateService.class})
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +40,8 @@ class AgenziaEntrateServiceTest {
     AdELegalClient adELegalClient;
     @Mock
     AgenziaEntrateConverter agenziaEntrateConverter;
-
+    @Mock
+    ValidateTaxIdUtils validateTaxIdUtils;
     @Test
     void callEService() {
         CheckTaxIdRequestBodyDto requestBodyDto = new CheckTaxIdRequestBodyDto();
@@ -123,22 +123,14 @@ class AgenziaEntrateServiceTest {
      */
     @Test
     void testCheckTaxIdAndVatNumber3() {
+        ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
+        adeLegalRequestBodyFilterDto.setTaxId("42");
         ADELegalRequestBodyDto adeLegalRequestBodyDto = new ADELegalRequestBodyDto();
+        adeLegalRequestBodyDto.setFilter(adeLegalRequestBodyFilterDto);
         when(adELegalClient.checkTaxIdAndVatNumberAdE(org.mockito.Mockito.any()))
                 .thenThrow(new IllegalArgumentException());
         assertThrows(IllegalArgumentException.class,
                 () -> agenziaEntrateService.checkTaxIdAndVatNumber(adeLegalRequestBodyDto));
-        verify(adELegalClient).checkTaxIdAndVatNumberAdE(Mockito.any());
-    }
-
-    /**
-     * Method under test: {@link AgenziaEntrateService#checkTaxIdAndVatNumber(ADELegalRequestBodyDto)}
-     */
-    @Test
-    void testCheckTaxIdAndVatNumber4() {
-        when(adELegalClient.checkTaxIdAndVatNumberAdE(org.mockito.Mockito.any()))
-                .thenReturn((Mono<String>) mock(Mono.class));
-        agenziaEntrateService.checkTaxIdAndVatNumber(new ADELegalRequestBodyDto());
         verify(adELegalClient).checkTaxIdAndVatNumberAdE(Mockito.any());
     }
 

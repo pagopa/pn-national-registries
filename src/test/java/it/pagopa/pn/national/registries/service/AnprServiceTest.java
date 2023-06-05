@@ -11,6 +11,7 @@ import it.pagopa.pn.national.registries.model.anpr.SubjectsInstitutionDataDto;
 import it.pagopa.pn.national.registries.model.anpr.SubjectsListDto;
 import it.pagopa.pn.national.registries.model.anpr.ResidenceDto;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +43,9 @@ class AnprServiceTest {
 
     @Mock
     CounterRepositoryImpl counterRepository;
+
+    @Mock
+    ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
     void testGetAddressANPR2() {

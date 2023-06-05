@@ -38,9 +38,7 @@ class GatewayControllerTest {
         addressRequestBodyFilterDto.setTaxId("PPPPLT80A01H501V");
         addressRequestBodyDto.setFilter(addressRequestBodyFilterDto);
         AddressOKDto addressOKDto = new AddressOKDto();
-        when(gatewayService.retrieveDigitalOrPhysicalAddressAsync("", "clientId",addressRequestBodyDto))
-                .thenReturn(Mono.just(addressOKDto));
-        StepVerifier.create(gatewayController.getAddresses("",addressRequestBodyDto, "clientId", serverWebExchange))
+        StepVerifier.create(gatewayController.getAddresses("",Mono.just(addressRequestBodyDto), "clientId", serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(addressOKDto));
     }
 

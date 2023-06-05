@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.model.inad.ElementDigitalAddressDto;
 import it.pagopa.pn.national.registries.model.inad.MotivationTerminationDto;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 import it.pagopa.pn.national.registries.model.inad.UsageInfo;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -29,6 +30,9 @@ class InadServiceTest {
 
     @Mock
     InadClient inadClient;
+
+    @Mock
+    ValidateTaxIdUtils validateTaxIdUtils;
 
     private static final String TAX_ID = "taxId";
     private static final String DIGITAL_ADDRESS_1 = "da_1";

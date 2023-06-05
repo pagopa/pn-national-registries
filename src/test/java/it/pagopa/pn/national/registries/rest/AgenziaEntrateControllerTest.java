@@ -11,10 +11,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AgenziaEntrateControllerTest {
@@ -31,6 +29,9 @@ class AgenziaEntrateControllerTest {
     @Mock
     ValidateTaxIdUtils validateTaxIdUtils;
 
+    @Mock
+    Scheduler scheduler;
+
     @Test
     void checkTaxId() {
         CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto = new CheckTaxIdRequestBodyDto();
@@ -41,8 +42,7 @@ class AgenziaEntrateControllerTest {
         CheckTaxIdOKDto checkTaxIdOKDto = new CheckTaxIdOKDto();
         checkTaxIdOKDto.setTaxId("PPPPLT80A01H501V");
         checkTaxIdOKDto.setIsValid(true);
-        when(agenziaEntrateService.callEService(any())).thenReturn(Mono.just(checkTaxIdOKDto));
-        StepVerifier.create(agenziaEntrateController.checkTaxId(checkTaxIdRequestBodyDto, serverWebExchange))
+        StepVerifier.create(agenziaEntrateController.checkTaxId(Mono.just(checkTaxIdRequestBodyDto), serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(checkTaxIdOKDto));
     }
 
@@ -57,7 +57,7 @@ class AgenziaEntrateControllerTest {
         adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue("00"));
         adeLegalOKDto.setVerificationResult(true);
         adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue("XX00"));
-        when(agenziaEntrateService.checkTaxIdAndVatNumber(any())).thenReturn(Mono.just(adeLegalOKDto));
-        StepVerifier.create(agenziaEntrateController.adeLegal(adeLegalRequestBodyDto, serverWebExchange)).expectNext(ResponseEntity.ok().body(adeLegalOKDto));
+        StepVerifier.create(agenziaEntrateController.adeLegal(Mono.just(adeLegalRequestBodyDto), serverWebExchange))
+                .expectNext(ResponseEntity.ok().body(adeLegalOKDto));
     }
 }

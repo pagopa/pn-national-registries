@@ -23,12 +23,12 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
     private final AgenziaEntrateService agenziaEntrateService;
     private final Scheduler scheduler;
 
-    private final ValidateTaxIdUtils validateTaxIdUtils;
+
 
     public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
         this.agenziaEntrateService = agenziaEntrateService;
         this.scheduler = scheduler;
-        this.validateTaxIdUtils = validateTaxIdUtils;
+
     }
 
     /**
@@ -41,10 +41,10 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      *         or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
         log.logStartingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID);
-        validateTaxIdUtils.validateTaxId(checkTaxIdRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID);
-        return agenziaEntrateService.callEService(checkTaxIdRequestBodyDto)
+
+        return checkTaxIdRequestBodyDto.flatMap(agenziaEntrateService::callEService)
                 .map(t -> ResponseEntity.ok().body(t))
                 .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID))
                 .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID,false,throwable.getMessage()))
@@ -63,10 +63,9 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
 
     @Override
-    public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(ADELegalRequestBodyDto adELegalRequestBodyDto,  final ServerWebExchange exchange) {
+    public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(Mono<ADELegalRequestBodyDto> adELegalRequestBodyDto,  final ServerWebExchange exchange) {
         log.logStartingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL);
-        validateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL);
-        return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
+        return adELegalRequestBodyDto.flatMap(agenziaEntrateService::checkTaxIdAndVatNumber)
                 .map(t -> ResponseEntity.ok().body(t))
                 .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL))
                 .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL,false,throwable.getMessage()))

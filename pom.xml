@@ -214,19 +214,19 @@
                             <modelNameSuffix>Dto</modelNameSuffix>
                             <generateApiTests>false</generateApiTests>
                             <generateModelTests>false</generateModelTests>
-                            <templateDirectory>src/main/resources/openapi-templates</templateDirectory>
+                            <templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/6.0.0/server</templateDirectory>
                             <configOptions>
                                 <basePackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.rest.v1
+                                    it.pagopa.pn.national.registries.generated.openapi.server.v1
                                 </basePackage>
                                 <modelPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto
+                                    it.pagopa.pn.national.registries.generated.openapi.server.v1.dto
                                 </modelPackage>
                                 <apiPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.rest.v1.api
+                                    it.pagopa.pn.national.registries.generated.openapi.server.v1.api
                                 </apiPackage>
                                 <configPackage>
-                                    it.pagopa.pn.national.registries.generated.openapi.rest.v1.config
+                                    it.pagopa.pn.national.registries.generated.openapi.server.v1.config
                                 </configPackage>
                                 <dateLibrary>java11</dateLibrary>
                                 <delegatePattern>true</delegatePattern>

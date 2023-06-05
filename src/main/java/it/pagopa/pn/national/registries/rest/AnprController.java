@@ -4,7 +4,6 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.AddressAnp
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AnprService;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,12 +22,11 @@ public class AnprController implements AddressAnprApi {
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
-    private final ValidateTaxIdUtils validateTaxIdUtils;
+
     
-    public AnprController(AnprService anprService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
+    public AnprController(AnprService anprService, Scheduler scheduler) {
         this.anprService = anprService;
         this.scheduler = scheduler;
-        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -42,10 +40,9 @@ public class AnprController implements AddressAnprApi {
      *         or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(Mono<GetAddressANPRRequestBodyDto> getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
         log.logStartingProcess(PROCESS_NAME_ANPR_ADDRESS);
-        validateTaxIdUtils.validateTaxId(getAddressANPRRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_ANPR_ADDRESS);
-        return anprService.getAddressANPR(getAddressANPRRequestBodyDto)
+        return getAddressANPRRequestBodyDto.flatMap(anprService::getAddressANPR)
                 .map(t -> ResponseEntity.ok().body(t))
                 .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_ANPR_ADDRESS))
                 .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_ANPR_ADDRESS,false,throwable.getMessage()))

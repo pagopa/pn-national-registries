@@ -45,9 +45,7 @@ class AnprControllerTest {
         GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
         getAddressANPROKDto.setResidentialAddresses(new ArrayList<>());
 
-        when(anprService.getAddressANPR(any())).thenReturn(Mono.just(getAddressANPROKDto));
-
-       StepVerifier.create(anprController.addressANPR(getAddressANPRRequestBodyDto, serverWebExchange))
+       StepVerifier.create(anprController.addressANPR(Mono.just(getAddressANPRRequestBodyDto), serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(getAddressANPROKDto));
     }
 }

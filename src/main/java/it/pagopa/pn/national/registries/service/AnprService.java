@@ -8,6 +8,7 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddress
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.model.anpr.*;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -18,6 +19,8 @@ import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_ANPR_ADDRESS;
+
 @Service
 @Slf4j
 public class AnprService {
@@ -27,23 +30,29 @@ public class AnprService {
     private final String anprSendType;
     private final CounterRepositoryImpl counterRepository;
 
+    private final ValidateTaxIdUtils validateTaxIdUtils;
+
     public AnprService(AnprConverter anprConverter,
                        AnprClient anprClient,
                        @Value("${pn.national.registries.anpr.tipo-invio}") String anprSendType,
-                       CounterRepositoryImpl counterRepository) {
+                       CounterRepositoryImpl counterRepository, ValidateTaxIdUtils validateTaxIdUtils) {
         this.anprConverter = anprConverter;
         this.anprClient = anprClient;
         this.anprSendType = anprSendType;
         this.counterRepository = counterRepository;
+        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     public Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto request) {
+        String cf = request.getFilter().getTaxId();
+        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_ANPR_ADDRESS);
+
         if (StringUtils.isNullOrEmpty(request.getFilter().getReferenceRequestDate())) {
             throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null,
                     Charset.defaultCharset(), AnprResponseKO.class);
         }
-        String cf = request.getFilter().getTaxId();
+
         return createRequest(request)
                 .flatMap(anprClient::callEService)
                 .map(rispostaE002OKDto -> anprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, cf));

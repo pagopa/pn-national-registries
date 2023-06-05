@@ -4,7 +4,6 @@ import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.IpaApi;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,12 +22,9 @@ public class IpaController implements IpaApi {
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
-    private final ValidateTaxIdUtils validateTaxIdUtils;
-
-    public IpaController(IpaService ipaService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
+    public IpaController(IpaService ipaService, Scheduler scheduler) {
         this.ipaService = ipaService;
         this.scheduler = scheduler;
-        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -42,13 +38,12 @@ public class IpaController implements IpaApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<IPAPecDto>> ipaPec(IPARequestBodyDto ipARequestBodyDto, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<IPAPecDto>> ipaPec(Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
         log.logStartingProcess(PROCESS_NAME_IPA_ADDRESS);
-        validateTaxIdUtils.validateTaxId(ipARequestBodyDto.getFilter().getTaxId(),PROCESS_NAME_IPA_ADDRESS);
-        return ipaService.getIpaPec(ipARequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_IPA_ADDRESS))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_IPA_ADDRESS,false,throwable.getMessage()))
-                .publishOn(scheduler);
+        return ipARequestBodyDto.flatMap(ipaService::getIpaPec)
+            .map(t -> ResponseEntity.ok().body(t))
+            .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_IPA_ADDRESS))
+            .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_IPA_ADDRESS,false,throwable.getMessage()))
+            .publishOn(scheduler);
     }
 }
