@@ -1,33 +1,33 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.AgenziaEntrateApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AgenziaEntrateApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_AGENZIA_ENTRATE_LEGAL;
+
 @RestController
-@Slf4j
+@lombok.CustomLog
 public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     private final AgenziaEntrateService agenziaEntrateService;
     private final Scheduler scheduler;
 
-    private final ValidateTaxIdUtils validateTaxIdUtils;
 
 
-    public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
+    public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler) {
         this.agenziaEntrateService = agenziaEntrateService;
         this.scheduler = scheduler;
-        this.validateTaxIdUtils = validateTaxIdUtils;
+
     }
 
     /**
@@ -40,10 +40,13 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      *         or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        validateTaxIdUtils.validateTaxId(checkTaxIdRequestBodyDto.getFilter().getTaxId());
-        return agenziaEntrateService.callEService(checkTaxIdRequestBodyDto)
+    public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID);
+
+        return checkTaxIdRequestBodyDto.flatMap(agenziaEntrateService::callEService)
                 .map(t -> ResponseEntity.ok().body(t))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 
@@ -59,10 +62,12 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
 
     @Override
-    public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(ADELegalRequestBodyDto adELegalRequestBodyDto,  final ServerWebExchange exchange) {
-        validateTaxIdUtils.validateTaxId(adELegalRequestBodyDto.getFilter().getTaxId());
-        return agenziaEntrateService.checkTaxIdAndVatNumber(adELegalRequestBodyDto)
+    public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(Mono<ADELegalRequestBodyDto> adELegalRequestBodyDto,  final ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL);
+        return adELegalRequestBodyDto.flatMap(agenziaEntrateService::checkTaxIdAndVatNumber)
                 .map(t -> ResponseEntity.ok().body(t))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }

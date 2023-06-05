@@ -1,14 +1,14 @@
 package it.pagopa.pn.national.registries.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.commons.utils.DynamoDbAsyncTableDecorator;
+import it.pagopa.pn.commons.utils.dynamodb.async.DynamoDbAsyncTableDecorator;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
@@ -23,6 +23,7 @@ import it.pagopa.pn.national.registries.service.InadService;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
 import it.pagopa.pn.national.registries.service.IpaService;
 import it.pagopa.pn.national.registries.service.SqsService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -344,8 +345,9 @@ class GatewayConverterTest {
         CounterRepositoryImpl counterRepository = new CounterRepositoryImpl(dynamoDbEnhancedAsyncClient,
                 "correlationId: {} - IPA - WS23 - domicili digitali non presenti");
 
+        ValidateTaxIdUtils validateTaxIdUtils = mock(ValidateTaxIdUtils.class);
         AnprService anprService = new AnprService(new AnprConverter(), mock(AnprClient.class),
-                "correlationId: {} - IPA - WS23 - domicili digitali non presenti", counterRepository);
+                "correlationId: {} - IPA - WS23 - domicili digitali non presenti", counterRepository, validateTaxIdUtils);
 
         DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient2 = mock(DynamoDbEnhancedAsyncClient.class);
         when(dynamoDbEnhancedAsyncClient2.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(
@@ -356,10 +358,10 @@ class GatewayConverterTest {
 
         InfoCamereClient infoCamereClient = mock(InfoCamereClient.class);
         InfoCamereService infoCamereService = new InfoCamereService(infoCamereClient,
-                new InfoCamereConverter(new ObjectMapper(), 2L), iniPecBatchRequestRepository, 2L);
+                new InfoCamereConverter(new ObjectMapper(), 2L), iniPecBatchRequestRepository, 2L, validateTaxIdUtils);
 
-        InadService inadService = new InadService(mock(InadClient.class));
-        IpaService ipaService = new IpaService(new IpaConverter(), mock(IpaClient.class));
+        InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils);
+        IpaService ipaService = new IpaService(new IpaConverter(), mock(IpaClient.class), validateTaxIdUtils);
 
         SqsClient sqsClient = mock(SqsClient.class);
         GatewayService gatewayService = new GatewayService(anprService, inadService, infoCamereService, ipaService,

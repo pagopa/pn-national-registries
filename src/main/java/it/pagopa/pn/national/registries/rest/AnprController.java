@@ -1,11 +1,9 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.AddressAnprApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AddressAnprApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AnprService;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,8 +11,10 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_ANPR_ADDRESS;
+
 @RestController
-@Slf4j
+@lombok.CustomLog
 public class AnprController implements AddressAnprApi {
 
     private final AnprService anprService;
@@ -22,12 +22,11 @@ public class AnprController implements AddressAnprApi {
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
-    private final ValidateTaxIdUtils validateTaxIdUtils;
 
-    public AnprController(AnprService anprService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
+    
+    public AnprController(AnprService anprService, Scheduler scheduler) {
         this.anprService = anprService;
         this.scheduler = scheduler;
-        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -41,10 +40,12 @@ public class AnprController implements AddressAnprApi {
      *         or Internal server error (status code 500)
      */
     @Override
-    public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
-        validateTaxIdUtils.validateTaxId(getAddressANPRRequestBodyDto.getFilter().getTaxId());
-        return anprService.getAddressANPR(getAddressANPRRequestBodyDto)
+    public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(Mono<GetAddressANPRRequestBodyDto> getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
+        log.logStartingProcess(PROCESS_NAME_ANPR_ADDRESS);
+        return getAddressANPRRequestBodyDto.flatMap(anprService::getAddressANPR)
                 .map(t -> ResponseEntity.ok().body(t))
+                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_ANPR_ADDRESS))
+                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_ANPR_ADDRESS,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }

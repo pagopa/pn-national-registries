@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ResidentialAddressDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
 import it.pagopa.pn.national.registries.model.anpr.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;

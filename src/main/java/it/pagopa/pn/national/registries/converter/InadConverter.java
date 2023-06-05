@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.DigitalAddressDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.UsageInfoDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.UsageInfoDto;
 import it.pagopa.pn.national.registries.model.inad.ElementDigitalAddressDto;
 import it.pagopa.pn.national.registries.model.inad.MotivationTerminationDto;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;

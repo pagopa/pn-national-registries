@@ -4,12 +4,12 @@ import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
-import lombok.extern.slf4j.Slf4j;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -17,28 +17,34 @@ import reactor.core.publisher.Mono;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
+
 @Service
-@Slf4j
+@lombok.CustomLog
 public class InfoCamereService {
 
     private final InfoCamereClient infoCamereClient;
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
     private final long iniPecTtl;
+    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     public InfoCamereService(InfoCamereClient infoCamereClient,
                              InfoCamereConverter infoCamereConverter,
                              IniPecBatchRequestRepository iniPecBatchRequestRepository,
-                             @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
+                             @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl,
+                             ValidateTaxIdUtils validateTaxIdUtils) {
         this.infoCamereClient = infoCamereClient;
         this.infoCamereConverter = infoCamereConverter;
         this.iniPecBatchRequestRepository = iniPecBatchRequestRepository;
         this.iniPecTtl = iniPecTtl;
+        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto) {
         String cf = dto.getFilter().getTaxId();
         String correlationId = dto.getFilter().getCorrelationId();
+        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_INIPEC_PEC);
         return createBatchRequestByCf(pnNationalRegistriesCxId, dto)
                 .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(cf), correlationId))
                 .doOnError(throwable -> log.info("Failed to create Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(cf), correlationId))
@@ -46,7 +52,9 @@ public class InfoCamereService {
     }
 
     public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseLegalAddress(GetAddressRegistroImpreseRequestBodyDto request) {
-        return infoCamereClient.getLegalAddress(request.getFilter().getTaxId())
+        String cf = request.getFilter().getTaxId();
+        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS);
+        return infoCamereClient.getLegalAddress(cf)
                 .doOnError(throwable -> log.info("Failed to get Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId())))
                 .flatMap(response -> processResponseLegalAddressOk(request, response));
     }
@@ -83,15 +91,24 @@ public class InfoCamereService {
     }
 
     public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
+        log.logChecking(PROCESS_CHEKING_INFO_CAMERE_LEGAL);
+
+        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INFO_CAMERE_LEGAL);
+
         return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
+                .doOnNext(infoCamereVerification -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL,true))
+                .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL,false,throwable.getMessage()))
                 .flatMap(response -> processResponseCheckTaxIdAndVatNumberOk(request, response));
     }
 
     private Mono<InfoCamereLegalOKDto> processResponseCheckTaxIdAndVatNumberOk(InfoCamereLegalRequestBodyDto request, InfoCamereVerification response) {
+        String process = "validating taxId and vatNumber";
         if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
+            log.logCheckingOutcome(process, false, "Failed to check taxId and vatNumber with error: "+response.getDescription());
             log.info("Failed to check tax id: {} and vat number: {}, with error : {}", MaskDataUtils.maskString(request.getFilter().getTaxId()), MaskDataUtils.maskString(request.getFilter().getVatNumber()), response.getDescription());
             return Mono.just(infoCamereConverter.infoCamereResponseToDtoByRequest(request));
         } else {
+            log.logCheckingOutcome(process, true);
             log.info("Got Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId()));
             return Mono.just(infoCamereConverter.infoCamereResponseToDtoByResponse(response));
         }

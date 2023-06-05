@@ -6,8 +6,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
-import it.pagopa.pn.commons.log.MDCWebFilter;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecErrorDto;
+import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.NationalRegistriesProblem;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.anpr.ErrorListAnpr;
@@ -86,7 +86,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
                 log.warn(LOG_EX, problem.getStatus(), MaskDataUtils.maskInformation(throwable.getMessage()), serverWebExchange.getRequest().getURI());
             }
 
-            problem.setTraceId(MDC.get(MDCWebFilter.MDC_TRACE_ID_KEY));
+            problem.setTraceId(MDC.get(MDCUtils.MDC_TRACE_ID_KEY));
             problem.setTimestamp(OffsetDateTime.now());
 
             dataBuffer = bufferFactory.wrap(objectMapper.writeValueAsBytes(problem));

@@ -446,6 +446,7 @@ components:
             - domicileType
           properties:
             taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: AAAZZZ00H00T000Z
             referenceRequestDate:
@@ -470,12 +471,14 @@ components:
             - taxId
           properties:
             taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: AAAZZZ00H00T000Z
     CheckTaxIdOK:
       type: object
       properties:
         taxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
           example: AAAZZZ00H00T000Z
         isValid:
@@ -530,6 +533,7 @@ components:
             - requestReason
           properties:
             taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: AAAZZZ00H00T000Z
             referenceRequestDate:
@@ -549,22 +553,31 @@ components:
       type: object
       properties:
         description:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         at:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         address:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         addressDetail:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         zip:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         municipality:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         municipalityDetails:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         province:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         foreignState:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
     GetAddressANPRError:
       type: object
@@ -603,6 +616,7 @@ components:
             - practicalReference
           properties:
             taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: AAAZZZ00H00T000Z
             practicalReference:
@@ -612,6 +626,7 @@ components:
       type: object
       properties:
         taxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
           example: AAAZZZ00H00T000Z
         since:
@@ -674,6 +689,7 @@ components:
             - correlationId
           properties:
             taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: AAAZZZ00H00T000Z
             correlationId:
@@ -717,6 +733,7 @@ components:
             - taxId
           properties:
             taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: AAAZZZ00H00T0
     IPAPec:
@@ -737,6 +754,7 @@ components:
           type: string
           format: date-time
         taxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
           example: AAAZZZ00H00T000Z
         professionalAddress:
@@ -814,9 +832,11 @@ components:
             - vatNumber
           properties:
             taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: AAAZZZ00H00T000Z
             vatNumber:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: 12345678901
     InfoCamereLegalOK:
@@ -826,6 +846,7 @@ components:
           type: string
           format: date-time
         taxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
           example: AAAZZZ00H00T000Z
         vatNumber:
@@ -867,6 +888,7 @@ components:
             - taxId
           properties:
             taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: AAAZZZ00H00T000Z
     ADELegalRequestBody:
@@ -879,9 +901,11 @@ components:
             - vatNumber
           properties:
             taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: AAAZZZ00H00T000Z
             vatNumber:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: BBBCCC00H00T000Z
     ADELegalOK:
@@ -986,6 +1010,7 @@ components:
         correlationId:
           type: string
         taxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         error:
           type: string
@@ -1042,6 +1067,7 @@ components:
         correlationId:
           type: string
         taxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         error:
           type: string

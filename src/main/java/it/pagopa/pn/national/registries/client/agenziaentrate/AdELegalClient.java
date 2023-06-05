@@ -1,10 +1,10 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalErrorDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyFilterDto;
-import lombok.extern.slf4j.Slf4j;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalErrorDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyFilterDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -15,11 +15,12 @@ import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_AGENZIA_ENTRATE_LEGAL;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADE_UNAUTHORIZED;
 
-@Slf4j
 @Component
+@lombok.CustomLog
 public class AdELegalClient {
 
     private final WebClient webClient;
@@ -38,6 +39,7 @@ public class AdELegalClient {
     }
 
     private Mono<String> callCheck(ADELegalRequestBodyFilterDto request) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_AGENZIA_ENTRATE_LEGAL);
         return webClient.post()
                 .uri("/legalerappresentateAdE/check")
                 .contentType(MediaType.TEXT_XML)
