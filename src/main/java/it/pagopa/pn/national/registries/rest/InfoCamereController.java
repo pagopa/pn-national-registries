@@ -3,7 +3,6 @@ package it.pagopa.pn.national.registries.rest;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.InfoCamereApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -23,7 +22,7 @@ public class InfoCamereController  implements InfoCamereApi {
     private final Scheduler scheduler;
 
 
-    public InfoCamereController(InfoCamereService infoCamereService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
+    public InfoCamereController(InfoCamereService infoCamereService, Scheduler scheduler) {
         this.infoCamereService = infoCamereService;
         this.scheduler = scheduler;
     }
