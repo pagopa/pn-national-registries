@@ -331,6 +331,9 @@ Parameters:
     Type: Number
     Description: maximum autoscaling number of tasks 
 
+  LogAlarmStrategy:
+    Type: String
+    Default: 'FATAL'
 Resources:
 
   # PN-National-Registry microservice
@@ -400,6 +403,7 @@ Resources:
         LoadbalancerRulePriority: !Ref MicroserviceNumber
         TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskManagedPolicy
         EcsLogGroup: !Ref EcsLogGroup
+        LogAlarmStrategyV1: !Ref LogAlarmStrategy
 
   NationalRegistryMicroserviceTaskManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
