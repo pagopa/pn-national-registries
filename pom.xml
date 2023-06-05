@@ -207,6 +207,7 @@
                         <goals>
                             <goal>generate</goal>
                         </goals>
+                        <phase>process-resources</phase>
                         <configuration>
                             <inputSpec>${project.basedir}/docs/openapi/PNT2Y-OpenAPI3_PN-NationalRegistries.yaml</inputSpec>
                             <generatorName>spring</generatorName>
