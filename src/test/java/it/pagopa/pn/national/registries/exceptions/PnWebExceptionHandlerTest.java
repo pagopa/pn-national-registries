@@ -3,7 +3,7 @@ package it.pagopa.pn.national.registries.exceptions;
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.common.rest.error.v1.dto.ProblemError;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecErrorDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.ipa.IpaResponseKO;

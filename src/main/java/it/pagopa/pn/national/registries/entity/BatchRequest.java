@@ -21,6 +21,7 @@ public class BatchRequest {
     }))
     private String correlationId;
 
+    @ToString.Exclude
     @Getter(onMethod = @__({
             @DynamoDbAttribute(COL_CF)
     }))

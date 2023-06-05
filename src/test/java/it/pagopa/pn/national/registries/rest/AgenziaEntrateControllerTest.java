@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;

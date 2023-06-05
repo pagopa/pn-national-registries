@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.DigitalAddressInadApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.DigitalAddressInadApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.service.InadService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;

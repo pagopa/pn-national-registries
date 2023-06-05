@@ -7,7 +7,7 @@ import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.InfoCamereLegalRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;

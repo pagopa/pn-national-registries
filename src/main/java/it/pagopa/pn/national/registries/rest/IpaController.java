@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.IpaApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPARequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.IpaApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;

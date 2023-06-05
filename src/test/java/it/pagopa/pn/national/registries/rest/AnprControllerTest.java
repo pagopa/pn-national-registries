@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.service.AnprService;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
@@ -16,9 +16,6 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AnprControllerTest {

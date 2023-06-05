@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.utils;
 
 import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressErrorDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressErrorDto;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 

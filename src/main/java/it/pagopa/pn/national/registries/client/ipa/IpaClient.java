@@ -3,7 +3,7 @@ package it.pagopa.pn.national.registries.client.ipa;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecErrorDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.ipa.WS05ResponseDto;
 import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
 import org.springframework.http.MediaType;

@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.InfoCamereApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.InfoCamereApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;

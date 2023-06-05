@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

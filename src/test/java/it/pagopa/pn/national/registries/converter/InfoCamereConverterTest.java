@@ -12,7 +12,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;

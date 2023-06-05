@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.AddressAnprApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AddressAnprApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AnprService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;

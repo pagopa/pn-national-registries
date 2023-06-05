@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPARequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

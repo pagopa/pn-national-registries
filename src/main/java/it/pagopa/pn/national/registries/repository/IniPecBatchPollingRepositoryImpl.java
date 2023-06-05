@@ -20,6 +20,7 @@ import java.util.Map;
 import static it.pagopa.pn.national.registries.constant.BatchPollingConstant.*;
 
 @Component
+@lombok.CustomLog
 public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepository {
 
     private final DynamoDbAsyncTable<BatchPolling> table;
@@ -37,7 +38,10 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
 
     @Override
     public Mono<BatchPolling> create(BatchPolling batchPolling) {
-        return Mono.fromFuture(table.putItem(batchPolling)).thenReturn(batchPolling);
+        log.debug("Inserting data {} in DynamoDB table {}",batchPolling,table);
+        return Mono.fromFuture(table.putItem(batchPolling))
+                .doOnNext(unused -> log.info("Inserted data in DynamoDB table {}", table))
+                .thenReturn(batchPolling);
     }
 
     @Override

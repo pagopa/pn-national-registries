@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.AddressApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AddressApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.service.GatewayService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
