@@ -33,24 +33,6 @@ Resources:
   ###   La chiave viene impiegata per firmare il client assertion che serve          ###
   ###   per richedere a PDND il JWT da utilizzare per invocare i servizi M2M di PDND ###
   ######################################################################################
-  PnBatchRequestEncryptKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: Symmetric default key to encrypt table
-      KeySpec: SYMMETRIC_DEFAULT
-      KeyUsage: ENCRYPT_DECRYPT
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
-
   PDNDSessionTokenSigningKey:
     Type: 'AWS::KMS::Key'
     DeletionPolicy: Retain
@@ -187,10 +169,6 @@ Resources:
         AttributeName: ttl
         Enabled: true
       BillingMode: "PAY_PER_REQUEST"
-      SSESpecification:
-        KMSMasterKeyId: !Ref PnBatchRequestEncryptKey
-        SSEEnabled: true
-        SSEType: KMS
 
   BatchPollingTable:
     Type: AWS::DynamoDB::Table
@@ -231,9 +209,6 @@ Resources:
 
 #Necessario a causa di bug script deploy
 Outputs:
-  PnBatchRequestEncryptKeyARN:
-    Description: PnBatchRequestEncryptKeyARN
-    Value: !Sub '${PnBatchRequestEncryptKey.Arn}'
   PDNDSessionTokenSigningKeyARN:
     Description: PDNDSessionTokenSigningKeyARN
     Value: !Sub '${PDNDSessionTokenSigningKey.Arn}'
