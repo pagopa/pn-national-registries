@@ -2,7 +2,7 @@
 #   aws sso login --profile sso_pn-core-dev
 #
 # command must be in the form (sudo is needed for certbot):
-#   sudo ./generate.sh --fqdn cert4.dev.notifichedigitali.it --profile sso_pn-core-dev --region eu-south-1 --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --email marco.iannaccone@pagopa.it
+#   sudo ./generate.sh --fqdn cert4.dev.notifichedigitali.it --profile sso_pn-core-dev --region eu-south-1 --keyid 50431e00-79d4-4966-ad70-881d965bdb07
 #
 # see generated certificate request with:
 #   openssl req -noout -text -in LOCAL_CSR.csr
@@ -16,8 +16,8 @@
 
 
 # Check if the user has provided a FQDN #and a passphrase
-if [ $# -ne 10 ]; then # if [ $# -ne 3 ]; then
-    echo "Usage: ./generate.sh --fqdn <FQDN> --profile <PROFILE> --region <REGION> --keyid <KEYID_OR_ALIAS> --email <EMAIL>"
+if [ $# -ne 8 ]; then
+    echo "Usage: ./generate.sh --fqdn <FQDN> --profile <PROFILE> --region <REGION> --keyid <KEYID>"
     exit 1
 fi
 
@@ -26,7 +26,6 @@ FQDN=$2
 PROFILE=$4
 REGION=$6
 KEYID=$8
-EMAIL=$10
 
 # fixed parameterså
 CSR_FILE=LOCAL_CSR.csr
@@ -36,7 +35,7 @@ NEW_CSR_FILE=new.csr
 FIXED=/C=IT/ST=Italy/L=Rome/O=PagoPA/OU=SEND
 
 # generate private key and CSR (e-mail address is optional)
-openssl req -newkey rsa:2048 -keyout ${PRIVATE_KEY_FILE} -out ${CSR_FILE} -subj ${FIXED}/CN=${FQDN}/emailAddress=${EMAIL} -passout pass:${PASSPHRASE}
+openssl req -newkey rsa:2048 -keyout ${PRIVATE_KEY_FILE} -out ${CSR_FILE} -subj ${FIXED}/CN=${FQDN} -passout pass:${PASSPHRASE}
 
 # sign the CSR with AWS KMS (https://github.com/g-a-d/aws-kms-sign-csr)
 python3 aws-kms-sign-csr/aws-kms-sign-csr.py --region ${REGION} --profile ${PROFILE} --keyid ${KEYID} --hashalgo sha256 --signalgo RSA ${CSR_FILE} > ${NEW_CSR_FILE}
@@ -78,8 +77,8 @@ export AWS_CONFIG_FILE=temp_aws_config_file
 # there's also AWS_PROFILE
 # create the certificate from the certificate request, creating records on AWS Route53
     # comment these two lines for avoiding multiple requests to certbot (not two many for the same FQDN are allowed)
-rm -f *.pem
-certbot certonly --csr ${NEW_CSR_FILE} --dns-route53 -d ${FQDN}
+#rm -f *.pem
+#certbot certonly --csr ${NEW_CSR_FILE} --dns-route53 -d ${FQDN}
 
 # Requesting a certificate for cert.dev.notifichedigitali.it
 #Successfully received certificate.
