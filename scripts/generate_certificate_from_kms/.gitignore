@@ -1,0 +1,8 @@
+# certificates and keys
+*.csr
+*.key
+*.pem
+
+temp_aws_config_file
+
+venv
