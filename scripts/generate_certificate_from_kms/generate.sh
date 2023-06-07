@@ -2,7 +2,9 @@
 #   aws sso login --profile sso_pn-core-dev
 #
 # command must be in the form (sudo is needed for certbot):
-#   sudo ./generate.sh --fqdn cert6.dev.notifichedigitali.it --profile sso_pn-core-dev --region eu-south-1 --keyid 50431e00-79d4-4966-ad70-881d965bdb07
+#   sudo ./generate.sh --fqdn cert6.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name testcert6 --region eu-south-1
+#
+#   sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1
 #
 # see generated certificate request with:
 #   openssl req -noout -text -in LOCAL_CSR.csr
@@ -16,6 +18,9 @@
 #   python -m venv aws-kms-sign-csr/venv
 #   source venv/bin/activate
 #   pip install -r aws-kms-sign-csr/requirements.txt
+#
+# FQDN schema:
+#   infocamere.client.<env>.notifichedigitali.it
 
 
 # uncomment and set the profile name for executing locally, or make the wanted profile the default one
@@ -23,14 +28,15 @@
 
 # Check if the user has provided a FQDN #and a passphrase
 if [ $# -ne 8 ]; then
-    echo "Usage: ./generate.sh --fqdn <FQDN> --region <REGION> --keyid <KEYID>"
+    echo "Usage: ./generate.sh --fqdn <FQDN> --keyid <KEYID> --parameter-name <PARAMETER> --region <REGION>"
     exit 1
 fi
 
 # read variable data from the command line
 FQDN=$2
-REGION=$6
-KEYID=$8
+KEYID=$4
+PARAMETER_NAME=$6
+REGION=$8
 
 # fixed parameters
 CSR_FILE=LOCAL_CSR.csr
@@ -74,9 +80,8 @@ if [ -f "0000_cert.pem" ]; then
 
     # convert the file to base64 and send that to AWS parameter store
         # -i works on Linux and Mac, without -i
-    aws ssm put-parameter --name "/certificates/${FQDN}/cert" --type "String" --value "${parameter_json}" --overwrite --region ${REGION} # now default profile
+    aws ssm put-parameter --name "${PARAMETER_NAME}" --type "String" --value "${parameter_json}" --overwrite --region ${REGION}
 fi
 
-# profile rimosso
-# leggere parameter store per keyId e dns
+# in case we need to read parameters from AWS parameter store:
 # aws ssm --profile sso_pn-core-dev --region eu-south-1 get-parameter --name /certificates/cert1.dev.notifichedigitali.it/cert --output json --no-paginate | jq -r .Parameter.Name
