@@ -4,7 +4,9 @@
 # command must be in the form (sudo is needed for certbot):
 #   sudo ./generate.sh --fqdn cert6.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name testcert6 --region eu-south-1
 #
-#   sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1
+#   (sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1)
+#       or
+#   sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1 --profile sso_pn-core-dev
 #
 # see generated certificate request with:
 #   openssl req -noout -text -in LOCAL_CSR.csr
@@ -23,12 +25,12 @@
 #   infocamere.client.<env>.notifichedigitali.it
 
 
-# uncomment and set the profile name for executing locally, or make the wanted profile the default one
-#export AWS_PROFILE=sso_pn-core-dev
+# uncomment and set the profile name for executing locally, or make the wanted profile the default one, or pass the profile name as a parameter
+# export AWS_PROFILE=sso_pn-core-dev
 
-# Check if the user has provided a FQDN #and a passphrase
-if [ $# -ne 8 ]; then
-    echo "Usage: ./generate.sh --fqdn <FQDN> --keyid <KEYID> --parameter-name <PARAMETER> --region <REGION>"
+# Check if the user has provided the correct number of parameters (--profile <PROFILE> is optional)
+if [ $# -ne 8 ] && [ $# -ne 10 ]; then
+    echo "Usage: ./generate.sh --fqdn <FQDN> --keyid <KEYID> --parameter-name <PARAMETER> --region <REGION> (--profile <PROFILE>))"
     exit 1
 fi
 
@@ -37,6 +39,12 @@ FQDN=$2
 KEYID=$4
 PARAMETER_NAME=$6
 REGION=$8
+# read optional profile from the command line
+if [ $# -eq 10 ]; then
+    PROFILE=${10}
+    export AWS_PROFILE=${PROFILE}
+fi
+
 
 # fixed parameters
 CSR_FILE=LOCAL_CSR.csr
