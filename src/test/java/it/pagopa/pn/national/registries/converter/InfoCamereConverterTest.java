@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -19,7 +18,6 @@ import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 
-import java.util.ArrayList;
 
 import java.util.Collections;
 import java.util.List;
@@ -154,57 +152,6 @@ class InfoCamereConverterTest {
         assertFalse(actualInfoCamereResponseToDtoByRequestResult.getVerificationResult());
     }
 
-    /**
-     * Method under test: {@link InfoCamereConverter#checkListPecInProgress(IniPecPollingResponse)}
-     */
-    @Test
-    void testCheckListPecInProgress() {
-        //   Diffblue Cover was unable to write a Spring test,
-        //   so wrote a non-Spring test instead.
-        //   Reason: R027 Missing beans when creating Spring context.
-        //   Failed to create Spring context due to missing beans
-        //   in the current Spring profile:
-        //       it.pagopa.pn.national.registries.converter.InfoCamereConverter
-        //   See https://diff.blue/R027 to resolve this issue.
-
-        InfoCamereConverter infoCamereConverter = new InfoCamereConverter(new ObjectMapper(), 1L);
-
-        IniPecPollingResponse response = new IniPecPollingResponse();
-        response.setAppName("App Name");
-        response.setCode("Code");
-        response.setDataOraDownload("Data Ora Download");
-        response.setDescription("The characteristics of someone or something");
-        response.setElencoPec(new ArrayList<>());
-        response.setIdentificativoRichiesta("Identificativo Richiesta");
-        response.setTimestamp("Timestamp");
-        assertFalse(infoCamereConverter.checkListPecInProgress(response));
-    }
-
-    /**
-     * Method under test: {@link InfoCamereConverter#checkListPecInProgress(IniPecPollingResponse)}
-     */
-    @Test
-    void testCheckListPecInProgress2() {
-        //   Diffblue Cover was unable to write a Spring test,
-        //   so wrote a non-Spring test instead.
-        //   Reason: R027 Missing beans when creating Spring context.
-        //   Failed to create Spring context due to missing beans
-        //   in the current Spring profile:
-        //       it.pagopa.pn.national.registries.converter.InfoCamereConverter
-        //   See https://diff.blue/R027 to resolve this issue.
-
-        InfoCamereConverter infoCamereConverter = new InfoCamereConverter(mock(ObjectMapper.class), 1L);
-
-        IniPecPollingResponse response = new IniPecPollingResponse();
-        response.setAppName("App Name");
-        response.setCode("Code");
-        response.setDataOraDownload("Data Ora Download");
-        response.setDescription("The characteristics of someone or something");
-        response.setElencoPec(new ArrayList<>());
-        response.setIdentificativoRichiesta("Identificativo Richiesta");
-        response.setTimestamp("Timestamp");
-        assertFalse(infoCamereConverter.checkListPecInProgress(response));
-    }
 
     /**
      * Method under test: {@link InfoCamereConverter#mapToResponseOkByRequest(GetAddressRegistroImpreseRequestBodyDto)}
