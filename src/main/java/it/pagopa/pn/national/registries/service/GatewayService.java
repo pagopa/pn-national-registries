@@ -129,9 +129,9 @@ public class GatewayService extends GatewayConverter {
                                 response.getTipo() == null) {
                             return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto));
                         }
+                        log.info("retrieved digital address from IPA for correlationId: {} - cf: {}",addressRequestBodyDto.getFilter().getCorrelationId(),MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId()));
                         return sqsService.push(ipaToSqsDto(correlationId, response), pnNationalRegistriesCxId);
                     })
-                    .doOnNext(sendMessageResponse -> log.info("retrieved digital address from IPA for correlationId: {} - cf: {}",addressRequestBodyDto.getFilter().getCorrelationId(),MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId())))
                     .doOnError(e -> logEServiceError(e, "can not retrieve digital address from IPA: {}"))
                     .onErrorResume(e -> sqsService.push(errorIpaToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sqs -> mapToAddressesOKDto(correlationId));
