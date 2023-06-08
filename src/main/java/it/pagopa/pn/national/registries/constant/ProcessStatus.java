@@ -18,8 +18,6 @@ public final class ProcessStatus {
     public static final String PROCESS_SERVICE_ANPR_ADDRESS = "[ANPR] retrieving address";
 
 
-    public static final String PROCESS_NAME_GATEWAY_ADDRESS = "[GATEWAY] address";
-
     public static final String PROCESS_NAME_INIPEC_PEC = "[INIPEC] pec";
 
     public static final String PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS = "[REGISTRO IMPRESE] address";

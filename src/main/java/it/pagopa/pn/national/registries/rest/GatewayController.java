@@ -11,8 +11,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_GATEWAY_ADDRESS;
-
 @RestController
 @lombok.CustomLog
 public class GatewayController implements AddressApi {
@@ -41,11 +39,8 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, Mono<AddressRequestBodyDto> monoAddressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_NAME_GATEWAY_ADDRESS);
         return monoAddressRequestBodyDto.flatMap(addressRequestBodyDto -> gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto))
                 .map(s -> ResponseEntity.ok().body(s))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_GATEWAY_ADDRESS))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_GATEWAY_ADDRESS, false, throwable.getMessage()))
                 .publishOn(scheduler);
     }
 

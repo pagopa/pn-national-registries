@@ -11,8 +11,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_ANPR_ADDRESS;
-
 @RestController
 @lombok.CustomLog
 public class AnprController implements AddressAnprApi {
@@ -41,11 +39,8 @@ public class AnprController implements AddressAnprApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(Mono<GetAddressANPRRequestBodyDto> getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_NAME_ANPR_ADDRESS);
         return getAddressANPRRequestBodyDto.flatMap(anprService::getAddressANPR)
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_ANPR_ADDRESS))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_ANPR_ADDRESS,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }
