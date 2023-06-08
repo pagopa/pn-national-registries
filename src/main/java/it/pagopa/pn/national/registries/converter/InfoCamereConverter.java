@@ -36,7 +36,7 @@ public class InfoCamereConverter {
     private final ObjectMapper mapper;
     private final long iniPecTtl;
 
-    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress.";
+    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress";
 
     public InfoCamereConverter(ObjectMapper mapper,
                                @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
@@ -178,6 +178,6 @@ public class InfoCamereConverter {
     }
 
     public boolean checkListPecInProgress(IniPecPollingResponse response) {
-        return response.getCode().equalsIgnoreCase("WSPA_ERR_05") && response.getDescription().equalsIgnoreCase(PEC_REQUEST_IN_PROGRESS_MESSAGE);
+        return response.getCode().equalsIgnoreCase("WSPA_ERR_05") && response.getDescription().startsWith(PEC_REQUEST_IN_PROGRESS_MESSAGE);
     }
 }
