@@ -10,8 +10,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_INAD_ADDRESS;
-
 @RestController
 @lombok.CustomLog
 public class InadController implements DigitalAddressInadApi {
@@ -41,11 +39,8 @@ public class InadController implements DigitalAddressInadApi {
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_NAME_INAD_ADDRESS);
         return extractDigitalAddressINADRequestBodyDto.flatMap(inadService::callEService)
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_INAD_ADDRESS))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_INAD_ADDRESS,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }

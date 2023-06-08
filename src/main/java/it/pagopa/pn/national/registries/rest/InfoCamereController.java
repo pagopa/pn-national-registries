@@ -10,8 +10,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
-
 @RestController
 @lombok.CustomLog
 public class InfoCamereController  implements InfoCamereApi {
@@ -41,11 +39,8 @@ public class InfoCamereController  implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(Mono<GetDigitalAddressIniPECRequestBodyDto> getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_NAME_INIPEC_PEC);
         return getDigitalAddressIniPECRequestBodyDto.flatMap(requestBody -> infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, requestBody))
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_INIPEC_PEC))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_INIPEC_PEC,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 
@@ -63,11 +58,8 @@ public class InfoCamereController  implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS);
         return getAddressRegistroImpreseRequestBodyDto.flatMap(infoCamereService::getRegistroImpreseLegalAddress)
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 
@@ -87,11 +79,8 @@ public class InfoCamereController  implements InfoCamereApi {
 
     @Override
     public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(Mono<InfoCamereLegalRequestBodyDto> infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_NAME_INFO_CAMERE_LEGAL);
         return infoCamereLegalRequestBodyDto.flatMap(infoCamereService::checkTaxIdAndVatNumber)
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_INFO_CAMERE_LEGAL))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_INFO_CAMERE_LEGAL,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 
