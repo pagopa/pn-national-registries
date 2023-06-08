@@ -12,9 +12,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID;
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_AGENZIA_ENTRATE_LEGAL;
-
 @RestController
 @lombok.CustomLog
 public class AgenziaEntrateController implements AgenziaEntrateApi {
@@ -41,12 +38,8 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID);
-
         return checkTaxIdRequestBodyDto.flatMap(agenziaEntrateService::callEService)
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 
@@ -63,11 +56,8 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     @Override
     public  Mono<ResponseEntity<ADELegalOKDto>> adeLegal(Mono<ADELegalRequestBodyDto> adELegalRequestBodyDto,  final ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL);
         return adELegalRequestBodyDto.flatMap(agenziaEntrateService::checkTaxIdAndVatNumber)
                 .map(t -> ResponseEntity.ok().body(t))
-                .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL))
-                .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_AGENZIA_ENTRATE_LEGAL,false,throwable.getMessage()))
                 .publishOn(scheduler);
     }
 }
