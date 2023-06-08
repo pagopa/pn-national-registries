@@ -11,8 +11,6 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_IPA_ADDRESS;
-
 @RestController
 @lombok.CustomLog
 public class IpaController implements IpaApi {
@@ -39,11 +37,8 @@ public class IpaController implements IpaApi {
      */
     @Override
     public Mono<ResponseEntity<IPAPecDto>> ipaPec(Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
-        log.logStartingProcess(PROCESS_NAME_IPA_ADDRESS);
         return ipARequestBodyDto.flatMap(ipaService::getIpaPec)
             .map(t -> ResponseEntity.ok().body(t))
-            .doOnNext(checkTaxIdOKDtoResponseEntity -> log.logEndingProcess(PROCESS_NAME_IPA_ADDRESS))
-            .doOnError(throwable -> log.logEndingProcess(PROCESS_NAME_IPA_ADDRESS,false,throwable.getMessage()))
             .publishOn(scheduler);
     }
 }
