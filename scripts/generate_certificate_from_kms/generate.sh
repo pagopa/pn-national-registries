@@ -9,8 +9,17 @@
 #   sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1 --profile sso_pn-core-dev
 #
 #           real generations:
-#       infocamere:
+#       infocamere (InfoCamereSigningKeyARN):
 #   sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 6fcca06c-077a-4819-ac87-a8fc9bdcecf6 --parameter-name /pn-national-registries/infocamere-cert --region eu-south-1 --profile sso_pn-core-dev
+#
+#       ade-api (CheckCfSigningKeyARN):
+#   sudo ./generate.sh --fqdn ade-api.client.dev.notifichedigitali.it --keyid 03486de6-2da8-48bc-a498-b323d29ff3b6 --parameter-name /pn-national-registries/ade-api-cert --region eu-south-1 --profile sso_pn-core-dev
+#
+#       anpr-auth (AnprAuthChannelSigningKeyARN):
+#   sudo ./generate.sh --fqdn anpr-auth.client.dev.notifichedigitali.it --keyid b341f795-41cf-4b6c-acdd-8172c874f2c2 --parameter-name /pn-national-registries/anpr-auth-cert --region eu-south-1 --profile sso_pn-core-dev
+#
+#       anpr-api (AnprIntegrityRestSigningKeyARN):
+#   sudo ./generate.sh --fqdn anpr-api.client.dev.notifichedigitali.it --keyid 6a67324a-e0ea-4bb8-ae21-912cb1b2ba01 --parameter-name /pn-national-registries/anpr-api-cert --region eu-south-1 --profile sso_pn-core-dev
 #
 #
 # see generated certificate request with:
