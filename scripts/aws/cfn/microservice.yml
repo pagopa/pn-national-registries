@@ -177,6 +177,22 @@ Parameters:
     Type: String
     Description: 'PDND Session Token Signing Key for eservice INAD'
 
+  CheckCfSigningKeyARN:
+    Type: String
+    Description: 'CheckCf Signing Key for MTLS'
+
+  AnprAuthChannelSigningKeyARN:
+    Type: String
+    Description: 'Anpr Auth Channel Signing Key for Modl ID_AUTH_CHANNEL_02'
+
+  AnprIntegrityRestSigningKeyARN:
+    Type: String
+    Description: 'Anpr Integrity Rest Signing Key for Modl INTEGRITY_REST_01 '
+
+  InfoCamereSigningKeyARN:
+    Type: String
+    Description: 'Info Camere Signing Key'
+
   PnBatchRequestEncryptKeyARN:
     Type: String
     Description: 'ARN Key DynamoDB batchRequest table'
@@ -265,17 +281,17 @@ Parameters:
     Description: health check timeout seconds
     Type: Number
     Default: 15
-  
+
   HealthyThresholdCount:
     Description: |
       The number of consecutive health checks successes required before considering 
-      an unhealthy target healthy. 
+      an unhealthy target healthy.
     Type: Number
     Default: 5
-  
+
   UnhealthyThresholdCount:
     Description: |
-      The number of consecutive health check failures required before considering a target unhealthy. 
+      The number of consecutive health check failures required before considering a target unhealthy.
     Type: Number
     Default: 2
 
@@ -320,7 +336,7 @@ Parameters:
   AutoscalingThreshold:
     Default: 70
     Type: String
-  
+
   MinTasksNumber:
     Default: 1
     Type: Number
@@ -423,6 +439,10 @@ Resources:
               - !Ref PDNDSessionTokenSigningKeyARN
               - !Ref CheckCfPDNDSessionTokenSigningKeyARN
               - !Ref InadPDNDSessionTokenSigningKeyARN
+              - !Ref CheckCfSigningKeyARN
+              - !Ref AnprAuthChannelSigningKeyARN
+              - !Ref AnprIntegrityRestSigningKeyARN
+              - !Ref InfoCamereSigningKeyARN
           - Effect: Allow
             Action:
               - kms:Encrypt
