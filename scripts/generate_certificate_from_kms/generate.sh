@@ -8,6 +8,11 @@
 #       or
 #   sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1 --profile sso_pn-core-dev
 #
+#           real generations:
+#       infocamere:
+#   sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 6fcca06c-077a-4819-ac87-a8fc9bdcecf6 --parameter-name /pn-national-registries/infocamere-cert --region eu-south-1 --profile sso_pn-core-dev
+#
+#
 # see generated certificate request with:
 #   openssl req -noout -text -in LOCAL_CSR.csr
 #   openssl req -noout -text -in new.csr
