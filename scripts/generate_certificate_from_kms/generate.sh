@@ -1,3 +1,5 @@
+#! /bin/sh -e
+
 # preliminary AWS login:
 #   aws sso login --profile sso_pn-core-dev
 #
@@ -6,7 +8,7 @@
 #
 #   (sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1)
 #       or
-#   sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1 --profile sso_pn-core-dev
+#   sudo ./generate.sh --fqdn test1.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client-test --region eu-south-1 --profile sso_pn-core-dev
 #
 #           real generations:
 #       infocamere (InfoCamereSigningKeyARN):
