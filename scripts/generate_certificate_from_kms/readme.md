@@ -33,3 +33,7 @@ openssl req -newkey rsa:2048 -keyout PRIVATEKEY.key -out MYCSR.csr -subj /C=IT/S
 
 # see the certificate request:
 openssl req -noout -text -in MYCSR.csr
+
+# deploy the Dockerfile
+aws sso login --profile sso_pn-cicd
+./deploy.sh -p sso_pn-cicd -e dev -t v00.00.01
