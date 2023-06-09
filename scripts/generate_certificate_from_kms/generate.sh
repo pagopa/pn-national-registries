@@ -4,24 +4,24 @@
 #   aws sso login --profile sso_pn-core-dev
 #
 # command must be in the form (sudo is needed for certbot):
-#   sudo ./generate.sh --fqdn cert6.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name testcert6 --region eu-south-1
+#   sudo ./generate.sh --fqdn cert6.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name testcert6 --region eu-south-1 --e-mail test@pagopa.it
 #
-#   (sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1)
+#   (sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1 --e-mail test@pagopa.it)
 #       or
-#   sudo ./generate.sh --fqdn test1.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client-test --region eu-south-1 --profile sso_pn-core-dev
+#   sudo ./generate.sh --fqdn test1.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client-test --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 #
 #           real generations:
 #       infocamere (InfoCamereSigningKeyARN):
-#   sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 6fcca06c-077a-4819-ac87-a8fc9bdcecf6 --parameter-name /pn-national-registries/infocamere-cert --region eu-south-1 --profile sso_pn-core-dev
+#   sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 6fcca06c-077a-4819-ac87-a8fc9bdcecf6 --parameter-name /pn-national-registries/infocamere-cert --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 #
 #       ade-api (CheckCfSigningKeyARN):
-#   sudo ./generate.sh --fqdn ade-api.client.dev.notifichedigitali.it --keyid 03486de6-2da8-48bc-a498-b323d29ff3b6 --parameter-name /pn-national-registries/ade-api-cert --region eu-south-1 --profile sso_pn-core-dev
+#   sudo ./generate.sh --fqdn ade-api.client.dev.notifichedigitali.it --keyid 03486de6-2da8-48bc-a498-b323d29ff3b6 --parameter-name /pn-national-registries/ade-api-cert --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 #
 #       anpr-auth (AnprAuthChannelSigningKeyARN):
-#   sudo ./generate.sh --fqdn anpr-auth.client.dev.notifichedigitali.it --keyid b341f795-41cf-4b6c-acdd-8172c874f2c2 --parameter-name /pn-national-registries/anpr-auth-cert --region eu-south-1 --profile sso_pn-core-dev
+#   sudo ./generate.sh --fqdn anpr-auth.client.dev.notifichedigitali.it --keyid b341f795-41cf-4b6c-acdd-8172c874f2c2 --parameter-name /pn-national-registries/anpr-auth-cert --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 #
 #       anpr-api (AnprIntegrityRestSigningKeyARN):
-#   sudo ./generate.sh --fqdn anpr-api.client.dev.notifichedigitali.it --keyid 6a67324a-e0ea-4bb8-ae21-912cb1b2ba01 --parameter-name /pn-national-registries/anpr-api-cert --region eu-south-1 --profile sso_pn-core-dev
+#   sudo ./generate.sh --fqdn anpr-api.client.dev.notifichedigitali.it --keyid 6a67324a-e0ea-4bb8-ae21-912cb1b2ba01 --parameter-name /pn-national-registries/anpr-api-cert --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 #
 #
 # see generated certificate request with:
@@ -45,8 +45,8 @@
 # export AWS_PROFILE=sso_pn-core-dev
 
 # Check if the user has provided the correct number of parameters (--profile <PROFILE> is optional)
-if [ $# -ne 8 ] && [ $# -ne 10 ]; then
-    echo "Usage: ./generate.sh --fqdn <FQDN> --keyid <KEYID> --parameter-name <PARAMETER> --region <REGION> (--profile <PROFILE>))"
+if [ $# -ne 10 ] && [ $# -ne 12 ]; then
+    echo "Usage: ./generate.sh --fqdn <FQDN> --keyid <KEYID> --parameter-name <PARAMETER> --region <REGION> --e-mail <E-MAIL> (--profile <PROFILE>))"
     exit 1
 fi
 
@@ -55,9 +55,10 @@ FQDN=$2
 KEYID=$4
 PARAMETER_NAME=$6
 REGION=$8
+EMAIL=${10}
 # read optional profile from the command line
-if [ $# -eq 10 ]; then
-    PROFILE=${10}
+if [ $# -eq 12 ]; then
+    PROFILE=${12}
     export AWS_PROFILE=${PROFILE}
 fi
 
@@ -78,9 +79,7 @@ python3 aws-kms-sign-csr/aws-kms-sign-csr.py --region ${REGION} --keyid ${KEYID}
 # create the certificate from the certificate request, creating records on AWS Route53
     # comment these two lines for avoiding multiple requests to certbot (not two many for the same FQDN are allowed)
 rm -f *.pem
-certbot certonly --csr ${NEW_CSR_FILE} --dns-route53 -d ${FQDN} --register-unsafely-without-email <<EOF
-Y
-EOF
+certbot certonly --csr ${NEW_CSR_FILE} --dns-route53 -d ${FQDN} --non-interactive --agree-tos -m ${EMAIL} 
 
 # Requesting a certificate for cert.dev.notifichedigitali.it
 #Successfully received certificate.
