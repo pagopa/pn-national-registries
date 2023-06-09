@@ -346,15 +346,24 @@ Outputs:
   CheckCfSigningKeyARN:
     Description: CheckCfSigningKeyARN
     Value: !Sub '${CheckCfSigningKey.Arn}'
+  CheckCfSigningKeyId:
+    Description: CheckCfSigningKeyARN
+    Value: !Ref CheckCfSigningKey
   AnprAuthChannelSigningKeyARN:
     Description: AnprAuthChannelSigningKeyARN
     Value: !Sub '${AnprAuthChannelSigningKey.Arn}'
+  AnprAuthChannelSigningKeyId:
+    Value: !Ref AnprAuthChannelSigningKey
   AnprIntegrityRestSigningKeyARN:
     Description: AnprIntegrityRestSigningKeyARN
     Value: !Sub '${AnprIntegrityRestSigningKey.Arn}'
+  AnprIntegrityRestSigningKeyId:
+    Value: !Ref AnprIntegrityRestSigningKey
   InfoCamereSigningKeyARN:
     Description: InfoCamereSigningKeyARN
     Value: !Sub '${InfoCamereSigningKey.Arn}'
+  InfoCamereSigningKeyId:
+    Value: !Ref InfoCamereSigningKey
   CounterTableArn:
     Description: ARN Dynamo Name used by application to access the key-value store of CounterTable
     Value: !Sub '${CounterTable.Arn}'

@@ -350,6 +350,26 @@ Parameters:
   LogAlarmStrategy:
     Type: String
     Default: 'FATAL'
+
+  # Certificate renewal
+  CertificateRenewalServiceRepo:
+    Type: String
+    Default: '911845998067.dkr.ecr.eu-south-1.amazonaws.com/pn-test-certbot:v00.00.01'
+
+  InfocamereFQDN:
+    Type: String
+    Description: infocamere.client.<codice-ambiente>.notifichedigitali.it
+
+  InfocamereParameterName:
+    Type: String
+    Default: '/pn-national-registries/infocamere-cert'
+
+  CertificateRenewalEmail:
+    Type: String
+    Default: 'alarm@notifichedigitali.it' # aggiornare
+
+  InfoCamereSigningKeyId:
+    Type: String
 Resources:
 
   # PN-National-Registry microservice
@@ -498,3 +518,190 @@ Resources:
         WAFName: !Sub '${ProjectName}-national-registries-pnpg'
         IntendedUsage: PNPG
         APIGatewayARNs: !GetAtt NationalRegistryApiGateway.Outputs.APIGatewayARN
+
+  CertificateRenewalServiceECSCluster:
+    Type: "AWS::ECS::Cluster"
+    Properties:
+      ClusterName: !Sub '${ProjectName}-certificate-renewal-cluster'
+
+  CertificateRenewalServiceECSRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub '${ProjectName}-certificate-renewal-role'
+      PermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/PermissionBoundary-DevOps"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "ecs-tasks.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-certificate-renewal-policy'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ssm:DescribeParameters
+                  - ssm:GetParametersByPath
+                  - ecs:RunTask
+                Resource: "*"
+      Path: "/"
+
+  CertificateRenewalServiceECSTaskExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub '${ProjectName}-certificate-renewal-execution-role'
+      PermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/PermissionBoundary-DevOps"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "ecs-tasks.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-certificate-renewal-execution-policy'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecr:GetAuthorizationToken
+                  - ecr:BatchCheckLayerAvailability
+                  - ecr:GetDownloadUrlForLayer
+                  - ecr:BatchGetImage
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                  - logs:CreateLogGroup
+                  - logs:DescribeLogGroups
+                Resource: "*"
+      Path: "/"
+
+  CertificateRenewalServiceCloudWatchEventRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      RoleName: !Sub '${ProjectName}-certificate-renewal-cloudwatch-event-role'
+      PermissionsBoundary: !Sub "arn:aws:iam::${AWS::AccountId}:policy/PermissionBoundary-DevOps"
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "events.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Policies:
+        - PolicyName: !Sub '${ProjectName}-certificate-renewal-ExecutionPolicy'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - ecs:RunTask
+                Resource: !Ref InfocamereCertificateRenewalServiceEcsTaskDefinition
+        - PolicyName: !Sub '${ProjectName}-certificate-renewal-ExecutionIAMPolicy'
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - iam:PassRole
+                Resource: "*"
+      Path: "/"
+
+  InfocamereCertificateRenewalServiceEcsLogsGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/ecs/certificate-renewal-service-infocamere
+      RetentionInDays: 14
+
+  # AdeCertificateRenewalServiceEcsLogsGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   Properties:
+  #     LogGroupName: /aws/ecs/certificate-renewal-service-ade
+  #     RetentionInDays: 14
+
+  # AnprAuthCertificateRenewalServiceEcsLogsGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   Properties:
+  #     LogGroupName: /aws/ecs/certificate-renewal-service-anpr-auth
+  #     RetentionInDays: 14
+
+  # AnprRestCertificateRenewalServiceEcsLogsGroup:
+  #   Type: AWS::Logs::LogGroup
+  #   Properties:
+  #     LogGroupName: /aws/ecs/certificate-renewal-service-anpr-rest
+  #     RetentionInDays: 14
+
+  CertificateRenewalServiceFargateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: ECS Fargate Security Group
+      VpcId: !Ref VpcId
+
+  InfocamereCertificateRenewalServiceEcsTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Cpu: 512
+      Memory: 1024
+      ExecutionRoleArn: !GetAtt
+        - CertificateRenewalServiceECSTaskExecutionRole
+        - Arn
+      Family: !Sub '${ProjectName}-infocamere-certificate-renewal-task-definition'
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      TaskRoleArn: !GetAtt CertificateRenewalServiceECSRole.Arn
+      ContainerDefinitions:
+        - Image: !Sub "${AWS::AccountId}.dkr.ecr.${AWS::Region}.amazonaws.com/${CertificateRenewalServiceRepo}:latest"
+          Privileged: true
+          Command: 
+            - "/bin/bash" 
+            - "./generate.sh"
+            - "--fqdn"
+            - !Ref InfocamereFQDN
+            - "--keyid" 
+            - !Ref InfoCamereSigningKeyId
+            - "--parameter-name" 
+            - !Ref InfocamereParameterName
+            - "--region" 
+            - !Ref AWS::Region
+            - "--e-mail"
+            - !Ref CertificateRenewalEmail
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-group: !Ref InfocamereCertificateRenewalServiceEcsLogsGroup
+              awslogs-region: !Ref "AWS::Region"
+              awslogs-stream-prefix: ecs
+          Name: !Sub '${ProjectName}-infocamere-certificate-renewal-MyServiceTaskContainer'
+          Memory: 1024
+          Cpu: 512
+
+  InfocamereCertificateRenewalServiceScheduleRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: "Schedule rule for Infocamere Certificate Renewal Service"
+      Name: !Sub '${ProjectName}-certificate-renewal-schedule-rule'
+      State: ENABLED
+      ScheduleExpression: cron(0 0 ? */2 ? *)
+      Targets:
+        - Arn: !GetAtt CertificateRenewalServiceECSCluster.Arn
+          Id: ScheduledTask
+          RoleArn: !GetAtt CertificateRenewalServiceCloudWatchEventRole.Arn
+          EcsParameters:
+            TaskDefinitionArn: !Ref InfocamereCertificateRenewalServiceEcsTaskDefinition
+            LaunchType: FARGATE
+            NetworkConfiguration:
+              AwsVpcConfiguration:
+                AssignPublicIp: DISABLED
+                SecurityGroups:
+                  - !Ref CertificateRenewalServiceFargateSecurityGroup
+                Subnets: !Split [ ",", !Ref VpcEgressSubnetsIds ]
