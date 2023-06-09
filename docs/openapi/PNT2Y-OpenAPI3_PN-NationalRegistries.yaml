@@ -761,14 +761,19 @@ components:
           type: object
           properties:
             description:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             municipality:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             province:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             address:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             zip:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
     GetAddressRegistroImpreseError:
       type: object
@@ -850,6 +855,7 @@ components:
           type: string
           example: AAAZZZ00H00T000Z
         vatNumber:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
           example: BBBCCC00H00T000Z
         verificationResult:
@@ -1046,20 +1052,28 @@ components:
           type: object
           properties:
             at:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             address:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             addressDetails:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             zip:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             municipality:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             municipalityDetails:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             province:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
             foreignState:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
     GetDigitalAddressIniPECSQSMessage:
       type: object
