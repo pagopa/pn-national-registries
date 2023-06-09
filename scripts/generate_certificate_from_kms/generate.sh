@@ -78,7 +78,9 @@ python3 aws-kms-sign-csr/aws-kms-sign-csr.py --region ${REGION} --keyid ${KEYID}
 # create the certificate from the certificate request, creating records on AWS Route53
     # comment these two lines for avoiding multiple requests to certbot (not two many for the same FQDN are allowed)
 rm -f *.pem
-certbot certonly --csr ${NEW_CSR_FILE} --dns-route53 -d ${FQDN}
+certbot certonly --csr ${NEW_CSR_FILE} --dns-route53 -d ${FQDN} --register-unsafely-without-email <<EOF
+Y
+EOF
 
 # Requesting a certificate for cert.dev.notifichedigitali.it
 #Successfully received certificate.
