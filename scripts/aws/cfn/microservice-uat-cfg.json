@@ -17,7 +17,7 @@
     "PDNDInadSecret": "",
     "InfoCamereBaseURL": "",
     "InfoCamereClientId": "",
-    "InfoCamereAuthSecret": "",
+    "InfoCamereAuth": "",
     "IPABaseURL": "",
     "IPASecret": "",
     "SecretPrefix": "",
