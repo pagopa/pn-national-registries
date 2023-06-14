@@ -13,6 +13,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.ArrayList;
+
 
 @ExtendWith(MockitoExtension.class)
 class InfoCamereControllerTest {
@@ -72,6 +74,22 @@ class InfoCamereControllerTest {
         body.setFilter(dto);
 
         StepVerifier.create(infoCamereController.infoCamereLegal(Mono.just(body), serverWebExchange))
+                .expectNext(ResponseEntity.ok().body(response));
+    }
+
+    @Test
+    void getLegalInstitutions() {
+
+        InfoCamereLegalInstitutionsOKDto response = new InfoCamereLegalInstitutionsOKDto();
+        response.setBusinessList(new ArrayList<>());
+        response.setLegalTaxId("PPPPLT80A01H501V");
+
+        InfoCamereLegalInstitutionsRequestBodyDto body = new InfoCamereLegalInstitutionsRequestBodyDto();
+        CheckTaxIdRequestBodyFilterDto dto = new CheckTaxIdRequestBodyFilterDto();
+        dto.setTaxId("PPPPLT80A01H501V");
+        body.setFilter(dto);
+
+        StepVerifier.create(infoCamereController.infoCamereLegalInstitutions(Mono.just(body), serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(response));
     }
 }

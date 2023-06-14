@@ -7,7 +7,9 @@ import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
@@ -27,8 +29,7 @@ import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.Optional;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_INFO_CAMERE_LEGAL;
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_REGISTRO_IMPRESE_ADDRESS;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 
 @Component
@@ -144,6 +145,38 @@ public class InfoCamereClient {
                 })
                 .retrieve()
                 .bodyToMono(AddressRegistroImprese.class)
+                .doOnError(throwable -> {
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                                e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), InfocamereResponseKO.class);
+                    }
+                });
+    }
+
+    public Mono<InfoCamereLegalInstituionsResponse> getLegalInstitutions(CheckTaxIdRequestBodyFilterDto filter) {
+        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value())
+                .flatMap(token -> callGetLegalInstitutions(filter.getTaxId(), token.getTokenValue()))
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
+                );
+    }
+
+    public Mono<InfoCamereLegalInstituionsResponse> callGetLegalInstitutions(String taxId, String token) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS);
+        return webClient.get()
+                .uri(uriBuilder -> uriBuilder
+                        .path("/listaLegaleRappresentante/{cfPersona}")
+                        .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
+                        .build(Map.of("cfPersona", taxId)))
+                .headers(httpHeaders -> {
+                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+                    httpHeaders.setBearerAuth(token);
+                    httpHeaders.set(SCOPE, InipecScopeEnum.LEGALE_RAPPRESENTANTE.value());
+                })
+                .retrieve()
+                .bodyToMono(InfoCamereLegalInstituionsResponse.class)
                 .doOnError(throwable -> {
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
