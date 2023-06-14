@@ -40,6 +40,9 @@ class AnprClientTest {
 
     @MockBean
     AgidJwtSignature agidJwtSignature;
+    
+    @MockBean
+    AgidJwtTrackingEvidence agidJwtTrackingEvidence;
 
     @MockBean
     AnprWebClient anprWebClient;
@@ -50,7 +53,7 @@ class AnprClientTest {
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
     void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
-        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature,
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, agidJwtTrackingEvidence,
                 anprWebClient, "purposeId", anprSecretConfig);
         assertFalse(anprClient.shouldRetry(new Exception()));
     }
@@ -58,7 +61,7 @@ class AnprClientTest {
     @Test
     @DisplayName("Should return true when the exception is webclientresponseexception and the status code is 401")
     void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature,
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, agidJwtTrackingEvidence,
                 anprWebClient, "purposeId", anprSecretConfig);
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
@@ -68,7 +71,7 @@ class AnprClientTest {
     @Test
     void callEService() {
         when(anprWebClient.init()).thenReturn(webClient);
-        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature,
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, agidJwtTrackingEvidence,
                 anprWebClient, "purposeId", anprSecretConfig);
 
         E002RequestDto e002RequestDto = new E002RequestDto();
@@ -106,7 +109,7 @@ class AnprClientTest {
     @Test
     void callEService2() {
         when(anprWebClient.init()).thenReturn(webClient);
-        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature,
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, agidJwtTrackingEvidence,
                 anprWebClient, "purposeId", anprSecretConfig);
 
         E002RequestDto e002RequestDto = new E002RequestDto();
@@ -142,7 +145,7 @@ class AnprClientTest {
     @Test
     void callEService3() {
         when(anprWebClient.init()).thenReturn(webClient);
-        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature,
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, agidJwtTrackingEvidence,
                 anprWebClient, "purposeId", anprSecretConfig);
 
         E002RequestDto e002RequestDto = new E002RequestDto();

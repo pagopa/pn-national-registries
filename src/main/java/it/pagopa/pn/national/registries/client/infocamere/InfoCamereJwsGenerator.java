@@ -5,23 +5,20 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.RegisteredClaims;
 import com.auth0.jwt.algorithms.Algorithm;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.utils.ClientUtils;
 import it.pagopa.pn.national.registries.config.infocamere.InfoCamereSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_INFOCAMERE;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INFOCAMERE;
@@ -49,7 +46,7 @@ public class InfoCamereJwsGenerator {
             return JWT.create()
                     .withHeader(createHeaderMap(sslData))
                     .withPayload(createClaimMap(scope))
-                    .sign(Algorithm.RSA256(getPublicKey(sslData.getPub()), getPrivateKey(sslData.getKey())));
+                    .sign(Algorithm.RSA256(ClientUtils.getPublicKey(sslData.getPub()), ClientUtils.getPrivateKey(sslData.getKey())));
         } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_INFOCAMERE, ERROR_CODE_INFOCAMERE, e);
         }
@@ -81,19 +78,4 @@ public class InfoCamereJwsGenerator {
         return map;
     }
 
-    protected RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
-        log.debug("start getPublicKey");
-        InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(pub));
-        X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(is.readAllBytes());
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return (RSAPublicKey) kf.generatePublic(encodedKeySpec);
-    }
-
-    protected RSAPrivateKey getPrivateKey(String key) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
-        log.debug("start getPrivateKey");
-        InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(key));
-        PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(is.readAllBytes());
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return (RSAPrivateKey) kf.generatePrivate(encodedKeySpec);
-    }
 }

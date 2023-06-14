@@ -12,8 +12,6 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import java.security.spec.InvalidKeySpecException;
-
 @ContextConfiguration(classes = {InfoCamereJwsGenerator.class, String.class})
 @ExtendWith(SpringExtension.class)
 class InfoCamereJwsGeneratorTest {
@@ -36,9 +34,5 @@ class InfoCamereJwsGeneratorTest {
         Assertions.assertThrows(PnInternalException.class, () -> authRest.createAuthRest(scope));
     }
 
-    @Test
-    void testgetPrivateKey() {
-        InfoCamereJwsGenerator authRest = new InfoCamereJwsGenerator("secret1","", infoCamereSecretConfig);
-        Assertions.assertThrows(InvalidKeySpecException.class,()->authRest.getPrivateKey("dGVzdA=="));
-    }
+
 }

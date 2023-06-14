@@ -38,17 +38,20 @@ public class AnprClient {
     private final String purposeId;
     private final WebClient webClient;
     private final AgidJwtSignature agidJwtSignature;
+    private final AgidJwtTrackingEvidence agidJwtTrackingEvidence;
     private final ObjectMapper mapper;
     private final AnprSecretConfig anprSecretConfig;
 
     protected AnprClient(AccessTokenExpiringMap accessTokenExpiringMap,
                          ObjectMapper mapper,
                          AgidJwtSignature agidJwtSignature,
+                         AgidJwtTrackingEvidence agidJwtTrackingEvidence,
                          AnprWebClient anprWebClient,
                          @Value("${pn.national.registries.pdnd.anpr.purpose-id}") String purposeId,
                          AnprSecretConfig anprSecretConfig) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.agidJwtSignature = agidJwtSignature;
+        this.agidJwtTrackingEvidence = agidJwtTrackingEvidence;
         this.purposeId = purposeId;
         this.mapper = mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         this.anprSecretConfig = anprSecretConfig;
@@ -76,6 +79,7 @@ public class AnprClient {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setBearerAuth(tokenEntry.getTokenValue());
                     httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
+                    httpHeaders.add("Agid-JWT-TrackingEvidence",agidJwtTrackingEvidence.createAgidJwt());
                     httpHeaders.add("Content-Encoding", "UTF-8");
                     httpHeaders.add("Digest", digest);
                     httpHeaders.add("bearerAuth", tokenEntry.getTokenValue());

@@ -16,19 +16,13 @@ public class AnprSecretConfig extends PnNationalRegistriesSecretConfig {
 
     private final SecretManagerService secretManagerService;
 
-    private final SSLData anprAuthChannelSecret;
-    private final SSLData anprIntegritySecret;
     private final PdndSecretValue anprPdndSecretValue;
 
     public AnprSecretConfig(SecretManagerService secretManagerService,
                             @Value("${pn.national.registries.pdnd.anpr.purpose-id}") String purposeId,
-                            @Value("${pn.national.registries.pdnd.anpr.secret}") String pdndSecret,
-                            @Value("${pn.national.registries.anpr.secret.integrity}") String integritySecret,
-                            @Value("${pn.national.registries.anpr.secret.auth-channel}") String authChannelSecret) {
+                            @Value("${pn.national.registries.pdnd.anpr.secret}") String pdndSecret) {
         super(secretManagerService);
         this.secretManagerService = secretManagerService;
-        this.anprAuthChannelSecret = getSslDataSecretValue(authChannelSecret);
-        this.anprIntegritySecret = getSslDataSecretValue(integritySecret);
         this.anprPdndSecretValue = getPdndSecretValue(purposeId, pdndSecret);
     }
 }
