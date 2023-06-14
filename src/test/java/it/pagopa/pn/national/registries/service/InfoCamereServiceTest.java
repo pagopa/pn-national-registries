@@ -5,6 +5,7 @@ import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
@@ -91,7 +92,7 @@ class InfoCamereServiceTest {
         addressRegistroImpreseResponse.setAddress(legalAddress);
 
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
-        when(infoCamereConverter.mapToResponseOkByResponse(any())).thenReturn(response);
+        when(infoCamereConverter.mapToResponseOkByResponse((AddressRegistroImprese) any())).thenReturn(response);
 
         StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
                 .expectNext(response)
@@ -119,7 +120,7 @@ class InfoCamereServiceTest {
 
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
         when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
-        when(infoCamereConverter.mapToResponseOkByRequest(any())).thenReturn(response);
+        when(infoCamereConverter.mapToResponseOkByRequest((GetAddressRegistroImpreseRequestBodyDto) any())).thenReturn(response);
 
         StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
                 .expectNext(response)
@@ -178,6 +179,27 @@ class InfoCamereServiceTest {
 
         StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
                 .expectNext(infoCamereLegalOKDto)
+                .verifyComplete();
+    }
+
+    @Test
+    void getInstitutions() {
+        InfoCamereLegalInstitutionsRequestBodyDto request = new InfoCamereLegalInstitutionsRequestBodyDto();
+        CheckTaxIdRequestBodyFilterDto dto = new CheckTaxIdRequestBodyFilterDto();
+        dto.setTaxId("cf");
+        request.setFilter(dto);
+
+        InfoCamereLegalInstitutionsOKDto response = new InfoCamereLegalInstitutionsOKDto();
+        response.setLegalTaxId("cf");
+
+        InfoCamereLegalInstituionsResponse infoCamereLegalInstituionsResponse = new InfoCamereLegalInstituionsResponse();
+        infoCamereLegalInstituionsResponse.setLegalTaxId("cf");
+
+        when(infoCamereClient.getLegalInstitutions(any())).thenReturn(Mono.just(infoCamereLegalInstituionsResponse));
+        when(infoCamereConverter.mapToResponseOkByResponse((InfoCamereLegalInstituionsResponse) any())).thenReturn(response);
+
+        StepVerifier.create(infoCamereService.getLegalInstitutions(request))
+                .expectNext(response)
                 .verifyComplete();
     }
 }

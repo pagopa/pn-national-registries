@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.national.registries.client.agenziaentrate.AdELegalClient;
 import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfClient;
 import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
@@ -42,6 +43,10 @@ class AgenziaEntrateServiceTest {
     AgenziaEntrateConverter agenziaEntrateConverter;
     @Mock
     ValidateTaxIdUtils validateTaxIdUtils;
+
+    @Mock
+    ValidateUtils validateUtils;
+
     @Test
     void callEService() {
         CheckTaxIdRequestBodyDto requestBodyDto = new CheckTaxIdRequestBodyDto();
@@ -57,10 +62,30 @@ class AgenziaEntrateServiceTest {
         CheckTaxIdOKDto checkTaxIdOKDto = new CheckTaxIdOKDto();
         checkTaxIdOKDto.setIsValid(true);
         checkTaxIdOKDto.setTaxId("test");
-        checkTaxIdOKDto.setErrorCode(CheckTaxIdOKDto.ErrorCodeEnum.ERR01);
+        when(validateUtils.taxIdIsInWhiteList(any())).thenReturn(false);
         when(checkCfClient.callEService(any())).thenReturn(Mono.just(taxIdVerification));
-
         when(agenziaEntrateConverter.convertToCfStatusDto(any())).thenReturn(checkTaxIdOKDto);
+
+        StepVerifier.create(agenziaEntrateService.callEService(requestBodyDto)).expectNext(checkTaxIdOKDto).verifyComplete();
+
+    }
+
+    @Test
+    void callEService2() {
+        CheckTaxIdRequestBodyDto requestBodyDto = new CheckTaxIdRequestBodyDto();
+        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        filter.setTaxId("test");
+        requestBodyDto.setFilter(filter);
+
+        TaxIdVerification taxIdVerification = new TaxIdVerification();
+        taxIdVerification.setCodiceFiscale("test");
+        taxIdVerification.setMessaggio("trovato");
+        taxIdVerification.setValido(true);
+
+        CheckTaxIdOKDto checkTaxIdOKDto = new CheckTaxIdOKDto();
+        checkTaxIdOKDto.setIsValid(true);
+        checkTaxIdOKDto.setTaxId("test");
+        when(validateUtils.taxIdIsInWhiteList(any())).thenReturn(true);
 
         StepVerifier.create(agenziaEntrateService.callEService(requestBodyDto)).expectNext(checkTaxIdOKDto).verifyComplete();
 
@@ -79,6 +104,7 @@ class AgenziaEntrateServiceTest {
 
         CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto = new CheckTaxIdRequestBodyDto();
         checkTaxIdRequestBodyDto.filter(checkTaxIdRequestBodyFilterDto);
+        when(validateUtils.taxIdIsInWhiteList(any())).thenReturn(false);
         assertThrows(IllegalArgumentException.class, () -> agenziaEntrateService.callEService(checkTaxIdRequestBodyDto));
         verify(checkCfClient).callEService(org.mockito.Mockito.any());
     }

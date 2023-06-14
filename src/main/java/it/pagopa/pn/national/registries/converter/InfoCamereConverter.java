@@ -11,6 +11,7 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
@@ -121,6 +122,33 @@ public class InfoCamereConverter {
         getAddressRegistroImpreseOKDto.setProfessionalAddress(new GetAddressRegistroImpreseOKProfessionalAddressDto());
         return getAddressRegistroImpreseOKDto;
     }
+
+    public InfoCamereLegalInstitutionsOKDto mapToResponseOkByResponse(InfoCamereLegalInstituionsResponse response) {
+        InfoCamereLegalInstitutionsOKDto infoCamereLegalInstitutions = new InfoCamereLegalInstitutionsOKDto();
+        infoCamereLegalInstitutions.setLegalTaxId(response.getLegalTaxId());
+        infoCamereLegalInstitutions.setDateTimeExtraction(response.getDateTimeExtraction());
+        infoCamereLegalInstitutions.setBusinessList(convertToBusiness(response));
+        infoCamereLegalInstitutions.setDescription(response.getDescription());
+        infoCamereLegalInstitutions.setCode(response.getCode());
+        infoCamereLegalInstitutions.setAppName(response.getAppName());
+        infoCamereLegalInstitutions.setTimestamp(response.getTimestamp());
+        return infoCamereLegalInstitutions;
+    }
+
+    private List<BusinessDto> convertToBusiness(InfoCamereLegalInstituionsResponse response) {
+        if(response.getBusinessList() != null && !response.getBusinessList().isEmpty()) {
+            return response.getBusinessList().stream()
+                    .map(infoCamereInstitution -> {
+                        BusinessDto businessDto = new BusinessDto();
+                        businessDto.setBusinessName(infoCamereInstitution.getBusinessName());
+                        businessDto.setBusinessTaxId(infoCamereInstitution.getBusinessTaxId());
+                        return businessDto;
+                    })
+                    .toList();
+        }
+        return Collections.emptyList();
+    }
+
 
     private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImprese response) {
         GetAddressRegistroImpreseOKProfessionalAddressDto dto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
