@@ -474,6 +474,7 @@ Resources:
               - ssm:GetParameters
             Resource:
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
+              - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${InfoCamereAuth}'
 
   NationalRegistryApiGateway:
     Type: AWS::CloudFormation::Stack
