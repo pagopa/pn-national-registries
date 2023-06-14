@@ -167,7 +167,7 @@ public class InfoCamereClient {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
-                        .path("listaLegaleRappresentante/{cfPersona}")
+                        .path("/listaLegaleRappresentante/{cfPersona}")
                         .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
                         .build(Map.of("cfPersona", taxId)))
                 .headers(httpHeaders -> {
