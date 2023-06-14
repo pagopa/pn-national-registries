@@ -13,11 +13,12 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereInstitution;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
-
 
 import java.util.Collections;
 import java.util.List;
@@ -237,5 +238,22 @@ class InfoCamereConverterTest {
         assertEquals("taxId", actualResult.getTaxId());
         assertEquals("vatNumber", actualResult.getVatNumber());
         assertEquals(true, actualResult.getVerificationResult());
+    }
+
+    @Test
+    void mapToResponseOkByResponse() {
+        InfoCamereLegalInstituionsResponse response = new InfoCamereLegalInstituionsResponse();
+        response.setLegalTaxId("taxId");
+        InfoCamereInstitution businessDto = new InfoCamereInstitution();
+        businessDto.setBusinessTaxId("businessTaxId");
+        businessDto.setBusinessName("businessName");
+        response.setBusinessList(List.of(businessDto));
+        response.setDateTimeExtraction("2020-03-01");
+
+        InfoCamereLegalInstitutionsOKDto actualResult = infoCamereConverter
+                .mapToResponseOkByResponse(response);
+
+        assertEquals("taxId", actualResult.getLegalTaxId());
+        assertEquals(1, actualResult.getBusinessList().size());
     }
 }

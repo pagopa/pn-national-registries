@@ -156,10 +156,10 @@ Parameters:
     Type: String
     Description: 'PDND ANPR Integrity certs'
 
-  # Parametro obbligatorio (ARN del secret)
-  InfoCamereAuthSecret:
+  # Parametro obbligatorio (Nome del parametro su parameterStore)
+  InfoCamereAuth:
     Type: String
-    Description: 'InfoCamere auth cert'
+    Description: 'InfoCamere auth cert parameter name'
 
   SecretPrefix:
     Type: String
@@ -393,7 +393,7 @@ Resources:
         ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_INAD_PDND_CLIENT_SECRET=${PDNDInadSecret}'
         ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
         ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
-        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH=${InfoCamereAuth}'
         ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
         ContainerEnvEntry22: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'

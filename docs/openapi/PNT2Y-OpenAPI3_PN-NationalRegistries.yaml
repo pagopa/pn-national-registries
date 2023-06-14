@@ -142,6 +142,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalError'
+  /national-registries-private/infocamere/legal-institutions:
+    post:
+      tags:
+        - infoCamere
+      summary: 'Il servizio restituisce la lista delle imprese che hanno come legale rappresentante la persona fisica indicata.'
+      description: 'Il servizio restituisce la lista delle imprese che hanno come legale rappresentante la persona fisica indicata.'
+      operationId: infoCamereLegalInstitutions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InfoCamereLegalInstitutionsRequestBody'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoCamereLegalInstitutionsOK'
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoCamereLegalInstitutionsError'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoCamereLegalInstitutionsError'
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoCamereLegalInstitutionsError'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoCamereLegalInstitutionsError'
+        "503":
+          description: Service Unavailable
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InfoCamereLegalInstitutionsError'
   /national-registries-private/{recipient-type}/addresses:
     post:
       tags:
@@ -816,6 +866,72 @@ components:
           type: string
         timestamp:
           type: integer
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              code:
+                type: string
+              element:
+                type: string
+              detail:
+                type: string
+    InfoCamereLegalInstitutionsRequestBody:
+      type: object
+      properties:
+        filter:
+          type: object
+          required:
+            - taxId
+          properties:
+            taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+              type: string
+              example: AAAZZZ00H00T000Z
+    InfoCamereLegalInstitutionsOK:
+      type: object
+      properties:
+        dateTimeExtraction:
+          type: string
+        legalTaxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          example: AAAZZZ00H00T000Z
+        businessList:
+          type: array
+          items:
+            $ref: '#/components/schemas/Business'
+        code:
+          type: string
+        appName:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+    Business:
+      type: object
+      properties:
+        businessTaxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+        businessName:
+          type: string
+    InfoCamereLegalInstitutionsError:
+      type: object
+      properties:
+        status:
+          type: integer
+          description: Contiene il codice HTTP dell'errore
+        title:
+          type: string
+        detail:
+          type: string
+        traceId:
+          type: string
+        timestamp:
+          type: string
         errors:
           type: array
           items:
