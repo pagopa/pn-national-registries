@@ -20,7 +20,7 @@
     "InfoCamereAuth": "",
     "IPABaseURL": "",
     "IPASecret": "",
-    "SecretPrefix": "",
+    "SecretAndSSMPrefix": "",
     "PnCxIdValidationEnabled": "",
     "PnNationalRegistriesInipecTtl": "",
     "PnNationalRegistriesInipecBatchRequestDelay": "",

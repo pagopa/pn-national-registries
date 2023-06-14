@@ -20,7 +20,7 @@
     "InfoCamereAuth": "/pn-national-registries/infocamere-cert",
     "IPABaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "IPASecret": "pn-national-registries/ipa",
-    "SecretPrefix": "pn-national-registries",
+    "SecretAndSSMPrefix": "pn-national-registries",
     "PnCxIdValidationEnabled": "false",
     "PnNationalRegistriesInipecTtl": "1209600",
     "PnNationalRegistriesInipecBatchRequestDelay": "30000",

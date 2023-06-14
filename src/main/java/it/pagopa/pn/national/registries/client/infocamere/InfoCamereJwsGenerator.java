@@ -99,8 +99,8 @@ public class InfoCamereJwsGenerator {
         final Matcher matcher = certRegex.matcher(certString);
         while (matcher.find()) {
             x5c = matcher.group()
-                    .replace("\\n", "")
-                    .replace("\\r", "");
+                    .replaceAll(Pattern.compile("\\n").pattern(), "")
+                    .replaceAll(Pattern.compile("\\r").pattern(), "");
         }
         map.put("x5c", List.of(x5c));
         map.put("use", "sig");
