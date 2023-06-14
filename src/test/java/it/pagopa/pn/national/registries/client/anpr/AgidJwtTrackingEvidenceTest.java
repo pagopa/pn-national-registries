@@ -14,7 +14,7 @@ import software.amazon.awssdk.services.kms.KmsClient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
-class AgidJwtSignatureTest {
+class AgidJwtTrackingEvidenceTest {
 
     @MockBean
     AnprSecretConfig anprSecretConfig;
@@ -24,8 +24,7 @@ class AgidJwtSignatureTest {
 
     @Test
     void testCreateAgidJWT() {
-        AgidJwtSignature agidJwtSignature = new AgidJwtSignature(anprSecretConfig, kmsClient);
-        String digest = "digest";
+        AgidJwtTrackingEvidence agidJwtTrackingEvidence = new AgidJwtTrackingEvidence("aud", anprSecretConfig, kmsClient);
 
         PdndSecretValue pdndSecretValue = new PdndSecretValue();
         pdndSecretValue.setClientId("test");
@@ -39,7 +38,7 @@ class AgidJwtSignatureTest {
         sslData.setPub("TestPub");
         sslData.setTrust("TestTrust");
 
-        Assertions.assertThrows(NullPointerException.class,()->agidJwtSignature.createAgidJwt(digest));
+        Assertions.assertThrows(NullPointerException.class, agidJwtTrackingEvidence::createAgidJwt);
     }
 
 }
