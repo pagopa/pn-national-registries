@@ -29,7 +29,7 @@ class AnprWebClientTest {
         webClientConfig.setTcpPendingAcquiredTimeout(1);
         webClientConfig.setTcpPoolIdleTimeout(1);
 
-        AnprWebClient anprWebClient = new AnprWebClient(true, "", webClientConfig);
+        AnprWebClient anprWebClient = new AnprWebClient(true, "", webClientConfig, anprSecretConfig);
 
         assertThrows(NullPointerException.class, anprWebClient::init, "Input stream not contain valid certificates.");
     }

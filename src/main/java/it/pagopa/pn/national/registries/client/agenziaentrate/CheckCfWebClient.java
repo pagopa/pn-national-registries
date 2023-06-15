@@ -85,7 +85,7 @@ public class CheckCfWebClient extends CommonWebClient {
             keyManagerFactory.init(ks, null);
 
             return getSslContext(SslContextBuilder.forClient()
-                    .keyManager(keyManagerFactory), null);
+                    .keyManager(keyManagerFactory), checkCfSecretConfig.getTrustData().getTrust());
 
         } catch (IOException | KeyStoreException | NoSuchAlgorithmException | CertificateException |
                  UnrecoverableKeyException e) {
