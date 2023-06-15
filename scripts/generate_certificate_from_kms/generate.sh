@@ -4,11 +4,11 @@
 #   aws sso login --profile sso_pn-core-dev
 #
 # command must be in the form (sudo is needed for certbot):
-#   sudo ./generate.sh --fqdn cert6.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name testcert6 --region eu-south-1 --e-mail test@pagopa.it
+#   sudo ./generate.sh --fqdn cert7.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name testcert7 --region eu-south-1 --e-mail test@pagopa.it
 #
 #   (sudo ./generate.sh --fqdn infocamere.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client --region eu-south-1 --e-mail test@pagopa.it)
 #       or
-#   sudo ./generate.sh --fqdn test1.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client-test --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
+#   sudo ./generate.sh --fqdn test7.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name testcert7 --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 #
 #           real generations:
 #       infocamere (InfoCamereSigningKeyARN):
@@ -32,6 +32,7 @@
 # examine the generated certificate file with:
 #   openssl x509 -in 0000_cert.pem -text -noout
 
+# cd scripts/generate_certificate_from_kms
 # Python part:
 #   python -m venv aws-kms-sign-csr/venv
 #   source venv/bin/activate
@@ -73,8 +74,20 @@ FIXED=/C=IT/ST=Italy/L=Rome/O=PagoPA/OU=SEND
 # generate private key and CSR (e-mail address is optional)
 openssl req -newkey rsa:2048 -keyout ${PRIVATE_KEY_FILE} -out ${CSR_FILE} -subj ${FIXED}/CN=${FQDN} -passout pass:${PASSPHRASE}
 
+# continue only in case of success
+if [ $? -ne 0 ]; then
+    echo "Error generating CSR"
+    exit 1
+fi
+
 # sign the CSR with AWS KMS (https://github.com/g-a-d/aws-kms-sign-csr)
 python3 aws-kms-sign-csr/aws-kms-sign-csr.py --region ${REGION} --keyid ${KEYID} --hashalgo sha256 --signalgo RSA ${CSR_FILE} > ${NEW_CSR_FILE}
+
+# continue only in case of success
+if [ $? -ne 0 ]; then
+    echo "Error signing CSR"
+    exit 1
+fi
 
 # create the certificate from the certificate request, creating records on AWS Route53
     # comment these two lines for avoiding multiple requests to certbot (not two many for the same FQDN are allowed)
@@ -106,6 +119,18 @@ if [ -f "0000_cert.pem" ]; then
     # convert the file to base64 and send that to AWS parameter store
         # -i works on Linux and Mac, without -i
     aws ssm put-parameter --name "${PARAMETER_NAME}" --type "String" --value "${parameter_json}" --overwrite --region ${REGION}
+
+    # error in case of problems
+    if [ $? -ne 0 ]; then
+        echo "Error sending certificate to AWS parameter store"
+        exit 1
+    else
+        echo "Certificate generated from KMS and sent to AWS parameter store"
+        exit 0
+    fi
+else
+    echo "Error generating certificate"
+    exit 1
 fi
 
 # in case we need to read parameters from AWS parameter store:
