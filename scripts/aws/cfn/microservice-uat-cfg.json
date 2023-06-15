@@ -11,6 +11,7 @@
     "AdECheckCfSSL": "",
     "PDNDAdECheckCfSecret": "",
     "AdECheckCfTrustSecret": "",
+    "AnprTrustSecret": "",
     "INADBaseURL": "",
     "INADPurposeId": "",
     "PDNDInadSecret": "",

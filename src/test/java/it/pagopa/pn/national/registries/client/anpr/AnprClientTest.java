@@ -137,6 +137,7 @@ class AnprClientTest {
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         WebClientResponseException exception = mock(WebClientResponseException.class);
         when(exception.getStatusCode()).thenReturn(HttpStatus.NOT_FOUND);
+        when(exception.getHeaders()).thenReturn(new HttpHeaders());
         when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ResponseE002OKDto.class)).thenReturn(Mono.error(exception));

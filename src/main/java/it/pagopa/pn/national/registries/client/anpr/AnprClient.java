@@ -93,6 +93,7 @@ public class AnprClient {
                 .bodyToMono(ResponseE002OKDto.class)
                 .doOnError(throwable -> {
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        log.info("GovWay-Transaction-ID: {}", e.getHeaders().getFirst("GovWay-Transaction-ID"));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), AnprResponseKO.class);

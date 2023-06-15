@@ -26,9 +26,6 @@ class AnprSecretConfigTest {
     void getAnprSecretConfigTest() {
         GetSecretValueResponse getSecretValueResponse = GetSecretValueResponse.builder().secretString("""
                 {
-                "cert":"cert",
-                "key":"key",
-                "pub":"pub",
                 "trust":"trust"
                 }""").build();
         GetSecretValueResponse getSecretValueResponse2 = GetSecretValueResponse.builder().secretString("""
@@ -38,7 +35,9 @@ class AnprSecretConfigTest {
                 }""").build();
         when(secretManagerService.getSecretValue("test2"))
                 .thenReturn(Optional.of(getSecretValueResponse2));
-        AnprSecretConfig anprSecretConfig = new AnprSecretConfig(secretManagerService, "test1", "test2");
+        when(secretManagerService.getSecretValue("trustData"))
+                .thenReturn(Optional.of(getSecretValueResponse));
+        AnprSecretConfig anprSecretConfig = new AnprSecretConfig(secretManagerService, "test1", "test2", "trustData");
         Assertions.assertNotNull(anprSecretConfig.getAnprPdndSecretValue());
     }
 }
