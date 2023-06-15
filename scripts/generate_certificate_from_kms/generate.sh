@@ -46,7 +46,7 @@
 
 # Check if the user has provided the correct number of parameters (--profile <PROFILE> is optional)
 if [ $# -ne 10 ] && [ $# -ne 12 ]; then
-    echo "Usage: ./generate.sh --fqdn <FQDN> --keyid <KEYID> --parameter-name <PARAMETER> --region <REGION> --e-mail <E-MAIL> (--profile <PROFILE>))"
+    echo "Usage: sudo ./generate.sh --fqdn <FQDN> --keyid <KEYID> --parameter-name <PARAMETER> --region <REGION> --e-mail <E-MAIL> (--profile <PROFILE>))"
     exit 1
 fi
 
