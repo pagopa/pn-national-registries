@@ -74,7 +74,6 @@ FIXED=/C=IT/ST=Italy/L=Rome/O=PagoPA/OU=SEND
 # generate private key and CSR (e-mail address is optional)
 openssl req -newkey rsa:2048 -keyout ${PRIVATE_KEY_FILE} -out ${CSR_FILE} -subj ${FIXED}/CN=${FQDN} -passout pass:${PASSPHRASE}
 
-# continue only in case of success
 if [ $? -ne 0 ]; then
     echo "Error generating CSR"
     exit 1
@@ -83,7 +82,6 @@ fi
 # sign the CSR with AWS KMS (https://github.com/g-a-d/aws-kms-sign-csr)
 python3 aws-kms-sign-csr/aws-kms-sign-csr.py --region ${REGION} --keyid ${KEYID} --hashalgo sha256 --signalgo RSA ${CSR_FILE} > ${NEW_CSR_FILE}
 
-# continue only in case of success
 if [ $? -ne 0 ]; then
     echo "Error signing CSR"
     exit 1
@@ -120,7 +118,6 @@ if [ -f "0000_cert.pem" ]; then
         # -i works on Linux and Mac, without -i
     aws ssm put-parameter --name "${PARAMETER_NAME}" --type "String" --value "${parameter_json}" --overwrite --region ${REGION}
 
-    # error in case of problems
     if [ $? -ne 0 ]; then
         echo "Error sending certificate to AWS parameter store"
         exit 1
