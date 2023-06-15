@@ -29,7 +29,7 @@ public class PdndAssertionGenerator {
         long startTime = System.currentTimeMillis();
         try {
             TokenHeader th = new TokenHeader(jwtCfg.getJwtConfig());
-            TokenPayload tp = new TokenPayload(jwtCfg.getJwtConfig());
+            TokenPayload tp = new TokenPayload(jwtCfg.getJwtConfig(), jwtCfg.getAuditDigest());
 
             String jwtContent = ClientUtils.createJwtContent(th, tp);
 

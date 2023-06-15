@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.config.anpr;
 
 import it.pagopa.pn.national.registries.config.PnNationalRegistriesSecretConfig;
-import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.Getter;

@@ -3,8 +3,8 @@ package it.pagopa.pn.national.registries.config;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
+import it.pagopa.pn.national.registries.model.TrustData;
 import it.pagopa.pn.national.registries.model.ipa.IpaSecret;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.extern.slf4j.Slf4j;
@@ -36,13 +36,13 @@ public class PnNationalRegistriesSecretConfig {
         }
     }
 
-    protected SSLData getSslDataSecretValue(String secretId) {
+    protected TrustData getTrustedCertFromSecret(String secretId) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretId);
             if (opt.isPresent()) {
                 log.info("founded secret value for secret: {}", secretId);
-                return mapper.readValue(opt.get().secretString(), SSLData.class);
+                return mapper.readValue(opt.get().secretString(), TrustData.class);
             } else {
                 log.warn("secret value for secret: {} not found", secretId);
                 throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, new Throwable());

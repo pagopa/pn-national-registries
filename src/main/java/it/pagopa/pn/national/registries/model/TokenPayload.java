@@ -14,8 +14,9 @@ public class TokenPayload {
     long iat;
     long exp;
     String purposeId;
+    private JwtDigest digest;
 
-    public TokenPayload(JwtConfig jwtCfg) {
+    public TokenPayload(JwtConfig jwtCfg, String auditDigest) {
         long nowSeconds = System.currentTimeMillis() / 1000L;
         long expireSeconds = nowSeconds + 5000L;
 
@@ -29,5 +30,10 @@ public class TokenPayload {
         if (StringUtils.hasText(confpurposeId)) {
             purposeId = confpurposeId;
         }
+        if(StringUtils.hasText(auditDigest)) {
+            this.digest = new JwtDigest();
+            this.digest.setValue(auditDigest);
+        }
+
     }
 }

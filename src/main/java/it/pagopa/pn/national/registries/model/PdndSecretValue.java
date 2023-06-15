@@ -14,5 +14,6 @@ public class PdndSecretValue {
     private String clientId;
 
     private String keyId;
+    private String auditDigest;
 
 }

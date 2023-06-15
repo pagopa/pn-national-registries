@@ -45,7 +45,7 @@ public class AnprService {
 
     public Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto request) {
         String cf = request.getFilter().getTaxId();
-        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_ANPR_ADDRESS);
+        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_ANPR_ADDRESS, false);
 
         if (StringUtils.isNullOrEmpty(request.getFilter().getReferenceRequestDate())) {
             throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),

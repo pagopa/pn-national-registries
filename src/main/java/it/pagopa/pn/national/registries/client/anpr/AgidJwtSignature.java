@@ -43,7 +43,7 @@ public class AgidJwtSignature {
             PdndSecretValue pdndSecretValue = anprSecretConfig.getAnprPdndSecretValue();
 
             TokenHeader th = new TokenHeader(pdndSecretValue.getJwtConfig());
-            TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig());
+            TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig(), null);
 
             String jwtContent = ClientUtils.createJwtContent(createHeaderMap(th), createClaimMap(digest, tp));
 
@@ -66,6 +66,7 @@ public class AgidJwtSignature {
         Map<String, Object> map = new HashMap<>();
         map.put(HeaderParams.TYPE, th.getTyp());
         map.put(HeaderParams.ALGORITHM, th.getAlg());
+        map.put(HeaderParams.KEY_ID, th.getKid());
         log.debug("HeaderMap type: {}", map.get(HeaderParams.TYPE));
         return map;
     }

@@ -1,8 +1,9 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
+import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfWebClientConfig;
-import it.pagopa.pn.national.registries.model.SSLData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CheckCfWebClientTest {
@@ -24,22 +24,21 @@ class CheckCfWebClientTest {
     @Mock
     CheckCfSecretConfig checkCfSecretConfig;
 
+    @Mock
+    SsmParameterConsumerActivation ssmParameterConsumerActivation;
+
     @Test
     void testInit() {
         CheckCfWebClientConfig checkCfWebClientConfig = new CheckCfWebClientConfig();
-        CheckCfWebClient checkCfWebClient = new CheckCfWebClient(true, "test.it", checkCfSecretConfig, checkCfWebClientConfig);
+        CheckCfWebClient checkCfWebClient = new CheckCfWebClient(true, "test.it", "", checkCfWebClientConfig, ssmParameterConsumerActivation, checkCfSecretConfig);
         Assertions.assertThrows(NullPointerException.class, checkCfWebClient::init);
     }
 
     @Test
     @DisplayName("Should return sslcontext when trust is empty")
     void buildSSLHttpClientWhenTrustIsEmptyThenReturnSslContext() {
-        SSLData sslData = new SSLData();
-        sslData.setCert("cert");
-        sslData.setKey("key");
-        when(checkCfSecretConfig.getCheckCfAuthChannelSecret()).thenReturn(sslData);
 
-        assertThrows(IllegalArgumentException.class, () -> checkCfWebclient.buildSslContext(), "Input stream not contain valid certificates.");
+        assertThrows(PnInternalException.class, () -> checkCfWebclient.buildSslContext(), "Input stream not contain valid certificates.");
     }
 
     @Test
@@ -51,15 +50,9 @@ class CheckCfWebClientTest {
         webClientConfig.setTcpPendingAcquiredTimeout(1);
         webClientConfig.setTcpPoolIdleTimeout(1);
 
-        CheckCfWebClient checkCfWebclient = new CheckCfWebClient(true, "", checkCfSecretConfig, webClientConfig);
-        SSLData sslData = new SSLData();
-        sslData.setCert("cert");
-        sslData.setKey("key");
-        sslData.setPub("pub");
-        sslData.setTrust("trust");
-        when(checkCfSecretConfig.getCheckCfAuthChannelSecret()).thenReturn(sslData);
+        CheckCfWebClient checkCfWebclient = new CheckCfWebClient(true, "", "", webClientConfig, ssmParameterConsumerActivation, checkCfSecretConfig);
 
-        assertThrows(IllegalArgumentException.class, checkCfWebclient::init, "Input stream not contain valid certificates.");
+        assertThrows(PnInternalException.class, checkCfWebclient::init, "Input stream not contain valid certificates.");
     }
 
 }

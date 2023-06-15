@@ -55,7 +55,7 @@ class ClientUtilsTest {
         JwtConfig jwtCfg = mock(JwtConfig.class);
         when(jwtCfg.getKid()).thenReturn("Kid");
         TokenHeader header = new TokenHeader(jwtCfg);
-        ClientUtils.createJwtContent(header, new TokenPayload(new JwtConfig()));
+        ClientUtils.createJwtContent(header, new TokenPayload(new JwtConfig() , ""));
         verify(jwtCfg).getKid();
     }
 

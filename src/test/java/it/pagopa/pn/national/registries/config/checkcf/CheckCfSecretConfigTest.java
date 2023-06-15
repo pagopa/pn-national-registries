@@ -20,28 +20,23 @@ class CheckCfSecretConfigTest {
 
     @Test
     void getCheckCfSecretConfigTest() {
-        GetSecretValueResponse getSecretValueResponse = GetSecretValueResponse.builder()
-                .secretString("""
-                        {
-                        "cert":"cert",
-                        "key":"key",
-                        "pub":"pub",
-                        "trust":"trust"
-                        }""").build();
         GetSecretValueResponse getSecretValueResponse2 = GetSecretValueResponse.builder()
                 .secretString("""
                         {
-                        "keyId":"pub",
-                        "clientId":"trust"
+                        "keyId":"trust"
+                        }""").build();
+        GetSecretValueResponse getSecretValueResponse1 = GetSecretValueResponse.builder()
+                .secretString("""
+                        {
+                        "trust":"trust"
                         }""").build();
         when(secretManagerService.getSecretValue("test2"))
                 .thenReturn(Optional.of(getSecretValueResponse2));
-        when(secretManagerService.getSecretValue("test3"))
-                .thenReturn(Optional.of(getSecretValueResponse));
+        when(secretManagerService.getSecretValue("trustedCert"))
+                .thenReturn(Optional.of(getSecretValueResponse1));
 
-        CheckCfSecretConfig checkCfSecretConfig = new CheckCfSecretConfig(secretManagerService,"test1","test2", "test3");
+        CheckCfSecretConfig checkCfSecretConfig = new CheckCfSecretConfig(secretManagerService,"test1","test2", "trustedCert");
         Assertions.assertNotNull(checkCfSecretConfig.getCheckCfPdndSecretValue());
-        Assertions.assertNotNull(checkCfSecretConfig.getCheckCfAuthChannelSecret());
     }
 
 }

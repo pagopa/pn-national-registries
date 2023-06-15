@@ -21,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -46,9 +47,9 @@ public class AnprClient {
                          ObjectMapper mapper,
                          AgidJwtSignature agidJwtSignature,
                          AgidJwtTrackingEvidence agidJwtTrackingEvidence,
-                         AnprWebClient anprWebClient,
                          @Value("${pn.national.registries.pdnd.anpr.purpose-id}") String purposeId,
-                         AnprSecretConfig anprSecretConfig) {
+                         AnprSecretConfig anprSecretConfig,
+                         AnprWebClient anprWebClient) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.agidJwtSignature = agidJwtSignature;
         this.agidJwtTrackingEvidence = agidJwtTrackingEvidence;
@@ -59,15 +60,18 @@ public class AnprClient {
     }
 
     public Mono<ResponseE002OKDto> callEService(E002RequestDto requestDto) {
+        String agidTrackingEvidence = agidJwtTrackingEvidence.createAgidJwt();
+        String auditAudience = createDigestFromAuditJws(agidTrackingEvidence);
+        anprSecretConfig.getAnprPdndSecretValue().setAuditDigest(auditAudience);
         return accessTokenExpiringMap.getPDNDToken(purposeId, anprSecretConfig.getAnprPdndSecretValue())
-                .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry))
+                .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry, agidTrackingEvidence))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_ANPR_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
-    private Mono<ResponseE002OKDto> callAnpr(E002RequestDto requestDto, AccessTokenCacheEntry tokenEntry) {
+    private Mono<ResponseE002OKDto> callAnpr(E002RequestDto requestDto, AccessTokenCacheEntry tokenEntry, String agidTrackingEvidence) {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_ANPR_ADDRESS);
         String s = convertToJson(requestDto);
         String digest = createDigestFromPayload(s);
@@ -79,7 +83,7 @@ public class AnprClient {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setBearerAuth(tokenEntry.getTokenValue());
                     httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
-                    httpHeaders.add("Agid-JWT-TrackingEvidence",agidJwtTrackingEvidence.createAgidJwt());
+                    httpHeaders.add("Agid-JWT-TrackingEvidence", agidTrackingEvidence);
                     httpHeaders.add("Content-Encoding", "UTF-8");
                     httpHeaders.add("Digest", digest);
                     httpHeaders.add("bearerAuth", tokenEntry.getTokenValue());
@@ -108,6 +112,16 @@ public class AnprClient {
         try {
             byte[] hash = MessageDigest.getInstance("SHA-256").digest(request.getBytes(StandardCharsets.UTF_8));
             return "SHA-256=" + Base64.getEncoder().encodeToString(hash);
+        } catch (NoSuchAlgorithmException e) {
+            throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR, e);
+        }
+    }
+
+    private String createDigestFromAuditJws(String request) {
+        try {
+            String exadecimal = DatatypeConverter.printHexBinary(request.getBytes(StandardCharsets.UTF_8));
+            byte[] digest =  MessageDigest.getInstance("SHA-256").digest(exadecimal.getBytes());
+            return DatatypeConverter.printHexBinary(digest);
         } catch (NoSuchAlgorithmException e) {
             throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR, e);
         }

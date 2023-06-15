@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.config;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
+import it.pagopa.pn.national.registries.model.TrustData;
 import it.pagopa.pn.national.registries.service.SecretManagerService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -37,7 +37,7 @@ class PnNationalRegistriesSecretConfigTest {
         when(secretManagerService.getSecretValue(anyString())).thenReturn(Optional.empty());
         assertThrows(
                 PnInternalException.class,
-                () -> pnNationalRegistriesSecretConfig.getSslDataSecretValue("secretName"));
+                () -> pnNationalRegistriesSecretConfig.getTrustedCertFromSecret("secretName"));
     }
 
     @Test
@@ -45,17 +45,14 @@ class PnNationalRegistriesSecretConfigTest {
     void getSslDataSecretValueWhenSecretNameIsFound() {
         String secretName = "secretName";
         String secretString =
-                "{\"cert\":\"cert\",\"key\":\"key\",\"pub\":\"pub\",\"trust\":\"trust\"}";
+                "{\"trust\":\"trust\"}";
         GetSecretValueResponse getSecretValueResponse =
                 GetSecretValueResponse.builder().secretString(secretString).build();
         when(secretManagerService.getSecretValue(anyString()))
                 .thenReturn(Optional.of(getSecretValueResponse));
-        SSLData sslData = pnNationalRegistriesSecretConfig.getSslDataSecretValue(secretName);
-        assertNotNull(sslData);
-        assertEquals("cert", sslData.getCert());
-        assertEquals("key", sslData.getKey());
-        assertEquals("pub", sslData.getPub());
-        assertEquals("trust", sslData.getTrust());
+        TrustData trust = pnNationalRegistriesSecretConfig.getTrustedCertFromSecret(secretName);
+        assertNotNull(trust);
+        assertEquals("trust", trust.getTrust());
     }
 
     /**

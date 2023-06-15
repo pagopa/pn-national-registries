@@ -46,7 +46,7 @@ public class AgidJwtTrackingEvidence {
             PdndSecretValue pdndSecretValue = anprSecretConfig.getAnprPdndSecretValue();
 
             TokenHeader th = new TokenHeader(pdndSecretValue.getJwtConfig());
-            TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig());
+            TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig(), null);
 
             String jwtContent = ClientUtils.createJwtContent(createHeaderMap(th), createClaimMap(tp));
 
@@ -79,6 +79,9 @@ public class AgidJwtTrackingEvidence {
         map.put(RegisteredClaims.ISSUER, tp.getIss());
         map.put("purposeId",tp.getPurposeId());
         map.put("dnonce", generateRandomDnonce());
+        map.put("userID","userID"); //TODO: SET VARIABILE
+        map.put("userLocation","userLocation"); //TODO: SET VARIABILE
+        map.put("LoA","LoA"); //TODO: SET VARIABILE
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
         map.put(RegisteredClaims.EXPIRES_AT, tp.getExp());
         map.put(RegisteredClaims.JWT_ID, tp.getJti());

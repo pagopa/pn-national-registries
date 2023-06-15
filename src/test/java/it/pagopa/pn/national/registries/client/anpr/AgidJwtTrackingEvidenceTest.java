@@ -34,9 +34,6 @@ class AgidJwtTrackingEvidenceTest {
 
         SSLData sslData = new SSLData();
         sslData.setCert("TestCert");
-        sslData.setKey("TestKey");
-        sslData.setPub("TestPub");
-        sslData.setTrust("TestTrust");
 
         Assertions.assertThrows(NullPointerException.class, agidJwtTrackingEvidence::createAgidJwt);
     }

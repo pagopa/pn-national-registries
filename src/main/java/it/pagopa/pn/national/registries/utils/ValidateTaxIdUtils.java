@@ -25,9 +25,9 @@ public class ValidateTaxIdUtils {
         this.validateUtils = validateUtils;
     }
 
-    public void validateTaxId(String taxId, String processName) {
+    public void validateTaxId(String taxId, String processName, boolean skipWhiteList) {
         log.logChecking(PROCESS_CHECKING_VALIDATION_TAX_ID);
-        if (!validateUtils.validate(taxId, true)) {
+        if (!validateUtils.validate(taxId, skipWhiteList)) {
             log.logCheckingOutcome(PROCESS_CHECKING_VALIDATION_TAX_ID, false, "TaxId not valid");
             log.logEndingProcess(processName, false, " TaxId not valid");
             throw new PnNationalRegistriesException("TaxId not valid", HttpStatus.BAD_REQUEST.value(),
