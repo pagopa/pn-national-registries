@@ -536,6 +536,7 @@ Resources:
               - kms:UpdateAlias
               - kms:DescribeKey
               - kms:Sign
+              - kms:CreateKey
               - kms:GetPublicKey
               - kms:ScheduleKeyDeletion	
             Resource: 
