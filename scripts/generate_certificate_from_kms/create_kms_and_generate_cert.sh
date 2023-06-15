@@ -73,10 +73,12 @@ fi
 # test in macOS
 # KEYAGE_DAYS=$((($(date +%s) - $(date -j -f "%Y-%m-%dT%H:%M:%S" "${KEYDATE%.*}" +%s)) / 86400))
 
-# exit in case of error
-if [ $? -ne 0 ]; then
+# exit in case of empty key age
+if [ -z ${KEYAGE_DAYS} ]; then
     echo "Error calculating key age"
     exit 1
+else
+    echo "Found key age: ${KEYAGE_DAYS} days"
 fi
 
 # if the key is older than 365 days, rotate it
