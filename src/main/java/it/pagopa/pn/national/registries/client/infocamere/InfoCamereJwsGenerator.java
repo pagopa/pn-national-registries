@@ -79,6 +79,7 @@ public class InfoCamereJwsGenerator {
                 byte[] signature = signResult.signature().asByteArray();
                 String signatureString = bytesToUrlSafeBase64String(signature);
                 log.info("END - AdigJwtSignature.createAgidJwt Timelapse: {} ms", System.currentTimeMillis() - startTime);
+                log.info("generated jwt: {}", jwtContent + "." + signatureString);
                 return jwtContent + "." + signatureString;
             } else {
                 throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR);
