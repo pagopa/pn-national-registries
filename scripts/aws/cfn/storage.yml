@@ -73,7 +73,7 @@ Resources:
   AnprPDNDSessionTokenSigningKeyAlias:
     Type: 'AWS::KMS::Alias'
     Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-pdnd'
+      AliasName: !Sub 'alias/${ProjectName}-national-registries-anpr-pdnd'
       TargetKeyId: !Ref AnprPDNDSessionTokenSigningKey
 
   CheckCfPDNDSessionTokenSigningKey:
