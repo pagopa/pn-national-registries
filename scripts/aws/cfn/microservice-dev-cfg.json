@@ -1,6 +1,6 @@
 {
   "Parameters" : {
-    "PDNDBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
+    "PDNDBaseURL": "https://auth.uat.interop.pagopa.it",
     "ANPRBaseURL": "https://modipa-val.anpr.interno.it/govway/rest/in/MinInternoPortaANPR-PDND/C001-servizioNotifica/v1",
     "ANPRPurposeId": "fa2aa359-ab78-45b2-aa55-977d8ddb7d2b",
     "ANPRTipoInvio": "TEST",
