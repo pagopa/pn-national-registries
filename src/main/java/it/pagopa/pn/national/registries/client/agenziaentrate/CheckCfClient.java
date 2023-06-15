@@ -33,7 +33,7 @@ public class CheckCfClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
     private final String purposeId;
-    private final WebClient webClient;
+    private final CheckCfWebClient checkCfWebClient;
     private final ObjectMapper mapper;
     private final CheckCfSecretConfig checkCfSecretConfig;
 
@@ -46,7 +46,7 @@ public class CheckCfClient {
         this.purposeId = purposeId;
         this.mapper = objectMapper;
         this.checkCfSecretConfig = checkCfSecretConfig;
-        webClient = checkCfWebClient.init();
+        this.checkCfWebClient = checkCfWebClient;
     }
 
     public Mono<TaxIdVerification> callEService(Request richiesta) {
@@ -61,6 +61,7 @@ public class CheckCfClient {
     private Mono<TaxIdVerification> callVerifica(Request richiesta, AccessTokenCacheEntry tokenEntry) {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_AGENZIA_ENTRATE_CHECK_TAX_ID);
         String s = convertToJson(richiesta);
+        WebClient webClient = checkCfWebClient.init();
         return webClient.post()
                 .uri("/verifica")
                 .headers(httpHeaders -> {

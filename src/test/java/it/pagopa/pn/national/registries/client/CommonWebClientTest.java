@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.client;
 
 import io.netty.handler.ssl.SslContextBuilder;
-import it.pagopa.pn.national.registries.model.SSLData;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import javax.net.ssl.SSLException;
@@ -21,24 +21,20 @@ class CommonWebClientTest {
     @Test
     void testGetSslContext1() throws SSLException {
         TestCommonWebClient webClient = new TestCommonWebClient(true);
-        SSLData sslData = new SSLData();
-        assertNotNull(webClient.getSslContext(SslContextBuilder.forClient(), sslData));
+        assertNotNull(webClient.getSslContext(SslContextBuilder.forClient(),""));
     }
 
     @Test
     void testGetSslContext2() throws SSLException {
         TestCommonWebClient webClient = new TestCommonWebClient(false);
-        SSLData sslData = new SSLData();
-        assertNotNull(webClient.getSslContext(SslContextBuilder.forClient(), sslData));
+        assertNotNull(webClient.getSslContext(SslContextBuilder.forClient(),""));
     }
 
     @Test
     void testGetSslContext3() {
         TestCommonWebClient webClient = new TestCommonWebClient(true);
-        SSLData sslData = new SSLData();
-        sslData.setTrust("dGVzdA==");
         SslContextBuilder sslContextBuilder = SslContextBuilder.forClient();
-        assertThrows(IllegalArgumentException.class, () -> webClient.getSslContext(sslContextBuilder, sslData));
+        Assertions.assertDoesNotThrow(() -> webClient.getSslContext(sslContextBuilder,""));
     }
 
     @Test
@@ -46,17 +42,4 @@ class CommonWebClientTest {
         TestCommonWebClient webClient = new TestCommonWebClient(true);
         assertNotNull(webClient.getTrustCertInputStream("dGVzdA=="));
     }
-
-    @Test
-    void testGetKeyInputStream() {
-        TestCommonWebClient webClient = new TestCommonWebClient(true);
-        assertNotNull(webClient.getKeyInputStream("dGVzdA=="));
-    }
-
-    @Test
-    void testGetCertInputStream() {
-        TestCommonWebClient webClient = new TestCommonWebClient(true);
-        assertNotNull(webClient.getCertInputStream("dGVzdA=="));
-    }
-
 }

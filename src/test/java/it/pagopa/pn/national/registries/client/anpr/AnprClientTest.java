@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.anpr.E002RequestDto;
 import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
@@ -40,6 +41,9 @@ class AnprClientTest {
 
     @MockBean
     AgidJwtSignature agidJwtSignature;
+    
+    @MockBean
+    AgidJwtTrackingEvidence agidJwtTrackingEvidence;
 
     @MockBean
     AnprWebClient anprWebClient;
@@ -50,16 +54,16 @@ class AnprClientTest {
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
     void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
-        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature,
-                anprWebClient, "purposeId", anprSecretConfig);
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, agidJwtTrackingEvidence,
+                "purposeId", anprSecretConfig, anprWebClient);
         assertFalse(anprClient.shouldRetry(new Exception()));
     }
 
     @Test
     @DisplayName("Should return true when the exception is webclientresponseexception and the status code is 401")
     void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature,
-                anprWebClient, "purposeId", anprSecretConfig);
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, agidJwtTrackingEvidence,
+                "purposeId", anprSecretConfig, anprWebClient);
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
         assertTrue(anprClient.shouldRetry(webClientResponseException));
@@ -68,8 +72,8 @@ class AnprClientTest {
     @Test
     void callEService() {
         when(anprWebClient.init()).thenReturn(webClient);
-        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature,
-                anprWebClient, "purposeId", anprSecretConfig);
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, agidJwtTrackingEvidence,
+                 "purposeId", anprSecretConfig, anprWebClient);
 
         E002RequestDto e002RequestDto = new E002RequestDto();
         SearchCriteriaE002Dto dto = new SearchCriteriaE002Dto();
@@ -89,7 +93,8 @@ class AnprClientTest {
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
         when(accessTokenExpiringMap.getPDNDToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
-
+        when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
+        when(anprSecretConfig.getAnprPdndSecretValue()).thenReturn(new PdndSecretValue());
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/anpr-service-e002")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
@@ -106,8 +111,8 @@ class AnprClientTest {
     @Test
     void callEService2() {
         when(anprWebClient.init()).thenReturn(webClient);
-        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature,
-                anprWebClient, "purposeId", anprSecretConfig);
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, agidJwtTrackingEvidence,
+                 "purposeId", anprSecretConfig, anprWebClient);
 
         E002RequestDto e002RequestDto = new E002RequestDto();
         SearchCriteriaE002Dto dto = new SearchCriteriaE002Dto();
@@ -124,8 +129,9 @@ class AnprClientTest {
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
         when(accessTokenExpiringMap.getPDNDToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
-
+        when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(anprSecretConfig.getAnprPdndSecretValue()).thenReturn(new PdndSecretValue());
         when(requestBodyUriSpec.uri("/anpr-service-e002")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
@@ -142,8 +148,8 @@ class AnprClientTest {
     @Test
     void callEService3() {
         when(anprWebClient.init()).thenReturn(webClient);
-        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature,
-                anprWebClient, "purposeId", anprSecretConfig);
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, new ObjectMapper(), agidJwtSignature, agidJwtTrackingEvidence,
+                 "purposeId", anprSecretConfig, anprWebClient);
 
         E002RequestDto e002RequestDto = new E002RequestDto();
         SearchCriteriaE002Dto dto = new SearchCriteriaE002Dto();
@@ -160,8 +166,9 @@ class AnprClientTest {
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
         when(accessTokenExpiringMap.getPDNDToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
-
+        when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(webClient.post()).thenReturn(requestBodyUriSpec);
+        when(anprSecretConfig.getAnprPdndSecretValue()).thenReturn(new PdndSecretValue());
         when(requestBodyUriSpec.uri("/anpr-service-e002")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);

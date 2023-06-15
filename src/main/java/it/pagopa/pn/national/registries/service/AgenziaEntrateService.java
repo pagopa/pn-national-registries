@@ -5,10 +5,7 @@ import it.pagopa.pn.national.registries.client.agenziaentrate.AdELegalClient;
 import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfClient;
 import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
 import it.pagopa.pn.national.registries.exceptions.RuntimeJAXBException;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
@@ -47,7 +44,7 @@ public class AgenziaEntrateService {
         log.logChecking(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID);
         String cf = request.getFilter().getTaxId();
         if(!validateUtils.taxIdIsInWhiteList(cf)) {
-            validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID);
+            validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID, true);
 
             return checkCfClient.callEService(createRequest(request))
                     .doOnNext(taxIdVerification -> log.logCheckingOutcome(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID, true))
@@ -79,7 +76,7 @@ public class AgenziaEntrateService {
     public Mono<ADELegalOKDto> checkTaxIdAndVatNumber(ADELegalRequestBodyDto request) {
         log.logChecking(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL);
 
-        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL);
+        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL, false);
         return adELegalClient.checkTaxIdAndVatNumberAdE(request.getFilter())
                 .map(response -> {
                     try {

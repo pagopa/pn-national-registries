@@ -9,7 +9,7 @@ public class MaskDataUtils {
 
     private static final Pattern URI_CF_PATH = Pattern.compile("(/extract/|/legaleRappresentante/|/sede/)(.*?)(\\?)");
     private static final Pattern ELENCO_CF = Pattern.compile("(\"elencoCf\")\\s*:\\s*\\[\"(.*?)\"");
-    private static final Pattern TAX_ID = Pattern.compile("(\"taxId\"|\"cfPersona\"|\"cfImpresa\"|\"codice_fiscale\")\\s*:\\s*\"(.*?)\"");
+    private static final Pattern TAX_ID = Pattern.compile("(\"taxId\"|\"legalTaxId\"|\"businessTaxId\"|\"cfPersona\"|\"cfImpresa\"|\"codice_fiscale\")\\s*:\\s*\"(.*?)\"");
     private static final Pattern ADDRESS_1 = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|" +
             "\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\")\\s*:\\s*\"(.*?)\"");
     private static final Pattern ADDRESS_2 = Pattern.compile("(\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|" +

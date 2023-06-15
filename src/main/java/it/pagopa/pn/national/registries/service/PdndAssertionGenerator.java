@@ -1,22 +1,15 @@
 package it.pagopa.pn.national.registries.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
+import it.pagopa.pn.national.registries.utils.ClientUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Base64Utils;
-import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kms.KmsClient;
-import software.amazon.awssdk.services.kms.model.MessageType;
 import software.amazon.awssdk.services.kms.model.SignRequest;
 import software.amazon.awssdk.services.kms.model.SignResponse;
-import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
-
-import java.nio.charset.StandardCharsets;
-import java.util.regex.Pattern;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_CLIENTASSERTION;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_CLIENTASSERTION;
@@ -25,7 +18,6 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class PdndAssertionGenerator {
 
-    private static final Pattern myRegex = Pattern.compile("=+$");
     private final KmsClient kmsClient;
 
     public PdndAssertionGenerator(KmsClient kmsClient) {
@@ -37,29 +29,18 @@ public class PdndAssertionGenerator {
         long startTime = System.currentTimeMillis();
         try {
             TokenHeader th = new TokenHeader(jwtCfg.getJwtConfig());
-            TokenPayload tp = new TokenPayload(jwtCfg.getJwtConfig());
-            ObjectMapper mapper = new ObjectMapper();
+            TokenPayload tp = new TokenPayload(jwtCfg.getJwtConfig(), jwtCfg.getAuditDigest());
 
-            String headerBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(th));
-            String payloadBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(tp));
-            String jwtContent = headerBase64String + "." + payloadBase64String;
+            String jwtContent = ClientUtils.createJwtContent(th, tp);
 
-            SdkBytes awsBytesJwtContent = SdkBytes.fromByteArray(jwtContent.getBytes(StandardCharsets.UTF_8));
-            SignRequest signRequest = SignRequest.builder()
-                    .message(awsBytesJwtContent)
-                    .messageType(MessageType.RAW)
-                    .signingAlgorithm(SigningAlgorithmSpec.RSASSA_PKCS1_V1_5_SHA_256)
-                    .keyId(jwtCfg.getKeyId())
-                    .build();
+            SignRequest signRequest = ClientUtils.createSignRequest(jwtContent, jwtCfg.getKeyId());
 
-            log.info("START - KmsClient.sign Request: {}",
-                    signRequest);
+            log.info("START - KmsClient.sign Request: {}", signRequest);
             long startTimeKms = System.currentTimeMillis();
             SignResponse signResult = kmsClient.sign(signRequest);
             log.info("END - KmsClient.sign Timelapse: {} ms", System.currentTimeMillis() - startTimeKms);
 
-            byte[] signature = signResult.signature().asByteArray();
-            String signatureString = bytesToUrlSafeBase64String(signature);
+            String signatureString = ClientUtils.createSignature(signResult);
             log.info("END - PdndAssertionGenerator.generateClientAssertion Timelapse: {} ms", System.currentTimeMillis() - startTime);
             return jwtContent + "." + signatureString;
 
@@ -68,18 +49,4 @@ public class PdndAssertionGenerator {
         }
     }
 
-    private String stringToUrlSafeBase64String(String inString) {
-        byte[] jsonBytes = inString.getBytes(StandardCharsets.UTF_8);
-        return bytesToUrlSafeBase64String(jsonBytes);
-    }
-
-    private String bytesToUrlSafeBase64String(byte[] bytes) {
-        byte[] base64JsonBytes = Base64Utils.encodeUrlSafe(bytes);
-        return new String(base64JsonBytes, StandardCharsets.UTF_8)
-                .replaceFirst(String.valueOf(myRegex), "");
-    }
-
-    private String jsonObjectToUrlSafeBase64String(String jsonString) {
-        return stringToUrlSafeBase64String(jsonString);
-    }
 }
