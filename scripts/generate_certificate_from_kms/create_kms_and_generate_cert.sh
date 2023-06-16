@@ -15,6 +15,12 @@
 # sudo ./create_kms_and_generate_cert.sh --keyalias testcomplete --fqdn test8.client.dev.notifichedigitali.it --parameter-name testcert8 --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 #
 # sudo ./create_kms_and_generate_cert.sh --keyalias testcert --fqdn test10.client.dev.notifichedigitali.it --parameter-name testcert10 --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
+#
+# UAT:
+#   aws sso login --profile sso_pn-core-uat
+#
+#   infocamere:
+# sudo ./create_kms_and_generate_cert.sh --keyalias testcert --fqdn infocamere.client.dev.notifichedigitali.it --parameter-name /pn-national-registries/infocamere-cert --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-uat
 
 
 if [ $# -ne 10 ] && [ $# -ne 12 ]; then
@@ -49,6 +55,7 @@ if [ -z ${KEYID} ]; then
 else
     echo "Found key id: ${KEYID}"
 fi
+# should we create a new key? in case we don't find the key id?
 
 # in AWS KMS, get key creation date from key id
 KEYDATE=$(aws kms describe-key --key-id ${KEYID} --region ${REGION} | jq -r ".KeyMetadata.CreationDate")
