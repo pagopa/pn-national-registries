@@ -22,16 +22,33 @@
 # FQDN schema:
 #   infocamere.client.<env>.notifichedigitali.it
 #
+# new certificate generation process:
+# 1. generate new key pair RSA_2048 senza passphase
+# 2. generate CSR, signed with local private key
+# 3. generate certificate from CSR, signed with local private key
+# 4. save private key in AWS secret, creating or updating it (if as pem: openssl rsa -in private.key -out private.pem, che with https://8gwifi.org/PemParserFunctions.jsp)
+# 5. save certificate in AWS parameter store, together with dns (public key is already in the certificate) and secret id
 #
+#
+#   real dev infocamere:
 # sudo ./generate_no_kms.sh --fqdn infocamere.client.dev.notifichedigitali.it --secretid deploykey/pn-national-registries/infocamere-cert --parameter-name /pn-national-registries/infocamere-cert --e-mail test@pagopa.it --region eu-south-1 --profile sso_pn-core-dev
 #
-# sudo ./generate_no_kms.sh --fqdn testinfocamere2.dev.notifichedigitali.it --secretid deploykey/pn-national-registries/infocamere-test2 --parameter-name /infocamere/test2 --e-mail test@pagopa.it --region eu-south-1 --profile sso_pn-core-dev
+#   real dev ade-api:
+# sudo ./generate_no_kms.sh --fqdn ade-api.client.dev.notifichedigitali.it --secretid deploykey/pn-national-registries/ade-api-cert --parameter-name /pn-national-registries/ade-api-cert --e-mail test@pagopa.it --region eu-south-1 --profile sso_pn-core-dev
+#
+#
+#
+#
+#   test:
+# sudo ./generate_no_kms.sh --fqdn testinfocamere4.dev.notifichedigitali.it --secretid deploykey/pn-national-registries/infocamere-test4 --parameter-name /infocamere/test4 --e-mail test@pagopa.it --region eu-south-1 --profile sso_pn-core-dev
 
 
 # uncomment and set the profile name for executing locally, or make the wanted profile the default one, or pass the profile name as a parameter
 # export AWS_PROFILE=sso_pn-core-dev
 
 # Check if the user has provided the correct number of parameters (--profile <PROFILE> is optional)
+#
+# parameters ordering is important, as we are using positional parameters
 if [ $# -ne 10 ] && [ $# -ne 12 ]; then
     echo "Usage: sudo ./generate.sh --fqdn <FQDN> --secretid <SECRETID> --parameter-name <PARAMETER_NAME> --e-mail <E-MAIL> --region <REGION> (--profile <PROFILE>))"
     exit 1
@@ -55,11 +72,7 @@ fi
 # fixed parameters
 CSR_FILE=LOCAL_CSR.csr
 PRIVATE_KEY_FILE=PRIVATEKEY.key
-#PASSPHRASE=test
 FIXED=/C=IT/ST=Italy/L=Rome/O=PagoPA/OU=SEND
-
-# generate private key and CSR (e-mail address is optional)
-#openssl req -newkey rsa:2048 -keyout ${PRIVATE_KEY_FILE} -out ${CSR_FILE} -subj ${FIXED}/CN=${FQDN} -passout pass:${PASSPHRASE}
 
 # generate private key and CSR (e-mail address is optional), without passphrase
 openssl req -newkey rsa:2048 -keyout ${PRIVATE_KEY_FILE} -out ${CSR_FILE} -subj ${FIXED}/CN=${FQDN} -nodes
@@ -84,15 +97,19 @@ certbot certonly --csr ${CSR_FILE} --dns-route53 -d ${FQDN} --non-interactive --
 # if file exists...
 if [ -f "0000_cert.pem" ]; then
 
+    echo "Certificate generated"
+
     # save private key in AWS secret
     #
     # if the secret already exists, update it, else create it
-    aws secretsmanager create-secret --name ${SECRETID} --secret-string file://${PRIVATE_KEY_FILE} --region ${REGION}
-
-    if [ $? -eq 254 ]; then
+    if aws secretsmanager describe-secret --secret-id ${SECRETID} --region ${REGION} >/dev/null 2>&1; then
         echo "Secret already present, updating it"
         aws secretsmanager update-secret --secret-id ${SECRETID} --secret-string file://${PRIVATE_KEY_FILE} --region ${REGION}
+    else
+        echo "Secret not present, creating it"
+        aws secretsmanager create-secret --name ${SECRETID} --secret-string file://${PRIVATE_KEY_FILE} --region ${REGION}
     fi
+    # this way if describe-secret doesn't find the secret it doesn't stop the script
 
     # in case of error, exit
     if [ $? -ne 0 ]; then
@@ -130,14 +147,6 @@ fi
 
 # in case we need to read parameters from AWS parameter store:
 # aws ssm --profile sso_pn-core-dev --region eu-south-1 get-parameter --name /certificates/cert1.dev.notifichedigitali.it/cert --output json --no-paginate | jq -r .Parameter.Name
-
-# new flow to be implemented:
-# 1. generate new key pair RSA_2048 senza passphase
-# 2. generate CSR, signed with local private key
-# 3. generate certificate from CSR, signed with local private key
-# 4. save private key in AWS secret (as pem: openssl rsa -in private.key -out private.pem, che with https://8gwifi.org/PemParserFunctions.jsp)
-# 5. save certificate in AWS parameter store, together with dns (public key is already in the certificate) and secret id
-
 
 # write the PRIVATE_KEY_FILE to AWS Secrets Manager
 # aws secretsmanager create-secret --name ${PARAMETER_NAME} --secret-string file://${PRIVATE_KEY_FILE} --region ${REGION}
