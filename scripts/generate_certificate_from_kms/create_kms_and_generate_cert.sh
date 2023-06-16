@@ -14,7 +14,7 @@
 #
 # sudo ./create_kms_and_generate_cert.sh --keyalias testcomplete --fqdn test8.client.dev.notifichedigitali.it --parameter-name testcert8 --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 #
-# sudo ./create_kms_and_generate_cert.sh --keyalias testcert --fqdn test8.client.dev.notifichedigitali.it --parameter-name testcert8 --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
+# sudo ./create_kms_and_generate_cert.sh --keyalias testcert --fqdn test10.client.dev.notifichedigitali.it --parameter-name testcert10 --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 
 
 if [ $# -ne 10 ] && [ $# -ne 12 ]; then
@@ -24,7 +24,6 @@ fi
 
 # fixed parameters
 DAYS_FOR_ROTATION=365
-#DAYS_FOR_ROTATION=4
 
 # read variable data from the command line
 KEYALIAS=$2
@@ -109,7 +108,7 @@ if [ ${KEYAGE_DAYS} -gt ${DAYS_FOR_ROTATION} ]; then
         exit 1
     fi
 
-    aws kms update-alias --alias-name alias/${KEYALIAS} --target-key-id ${KEYID} --region ${REGION}
+    aws kms update-alias --alias-name alias/${KEYALIAS} --target-key-id ${NEWKEYID} --region ${REGION}
 
     # exit in case of error
     if [ $? -ne 0 ]; then
