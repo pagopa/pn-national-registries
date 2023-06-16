@@ -94,6 +94,9 @@ certbot certonly --csr ${CSR_FILE} --dns-route53 -d ${FQDN} --non-interactive --
 #Full certificate chain is saved at: /Users/marcoiannaccone/dev/work/PagoPA/testcert/0001_chain.pem
 #This certificate expires on 2023-09-04.
 
+# obtain public key from certificate
+# openssl x509 -pubkey -noout -in 0000_cert.pem  > 0000_public_key.pem
+
 # if file exists...
 if [ -f "0000_cert.pem" ]; then
 
