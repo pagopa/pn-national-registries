@@ -16,4 +16,7 @@ public class PdndSecretValue {
     private String keyId;
     private String auditDigest;
 
+    @JsonProperty("eservice_audience")
+    private String eserviceAudience;
+
 }
