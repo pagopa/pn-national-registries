@@ -13,6 +13,8 @@
 #
 #
 # sudo ./create_kms_and_generate_cert.sh --keyalias testcomplete --fqdn test8.client.dev.notifichedigitali.it --parameter-name testcert8 --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
+#
+# sudo ./create_kms_and_generate_cert.sh --keyalias testcert --fqdn test8.client.dev.notifichedigitali.it --parameter-name testcert8 --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 
 
 if [ $# -ne 10 ] && [ $# -ne 12 ]; then
@@ -22,6 +24,7 @@ fi
 
 # fixed parameters
 DAYS_FOR_ROTATION=365
+#DAYS_FOR_ROTATION=4
 
 # read variable data from the command line
 KEYALIAS=$2
@@ -81,16 +84,20 @@ else
     echo "Found key age: ${KEYAGE_DAYS} days"
 fi
 
+
 # if the key is older than 365 days, rotate it
 if [ ${KEYAGE_DAYS} -gt ${DAYS_FOR_ROTATION} ]; then
     echo "Rotating key ${KEYID}..."
+
     # create a new key asymmetric key
-    NEWKEYID=$(aws kms create-key --region ${REGION} | jq -r ".KeyMetadata.KeyId")
+    NEWKEYID=$(aws kms create-key --key-spec RSA_2048 --key-usage SIGN_VERIFY --region ${REGION} | jq -r ".KeyMetadata.KeyId")
 
     # continue only in case of success
     if [ $? -ne 0 ]; then
         echo "Error creating new key"
         exit 1
+    else
+        echo "New key id: ${NEWKEYID}"
     fi
 
     # launch the generate script with the new key id
@@ -108,6 +115,8 @@ if [ ${KEYAGE_DAYS} -gt ${DAYS_FOR_ROTATION} ]; then
     if [ $? -ne 0 ]; then
         echo "Error updating alias"
         exit 1
+    else
+        echo "Alias updated"
     fi
 
     aws kms schedule-key-deletion --key-id ${KEYID} --pending-window-in-days 7 --region ${REGION}
