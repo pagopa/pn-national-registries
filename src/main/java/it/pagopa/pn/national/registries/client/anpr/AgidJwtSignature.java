@@ -45,7 +45,7 @@ public class AgidJwtSignature {
             TokenHeader th = new TokenHeader(pdndSecretValue.getJwtConfig());
             TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig(), null);
 
-            String jwtContent = ClientUtils.createJwtContent(createHeaderMap(th), createClaimMap(digest, tp));
+            String jwtContent = ClientUtils.createJwtContent(createHeaderMap(th), createClaimMap(digest, tp, pdndSecretValue.getEserviceAudience()));
 
             SignRequest signRequest = ClientUtils.createSignRequest(jwtContent, pdndSecretValue.getKeyId());
             log.info("START - KmsClient.sign Request: {}", signRequest);
@@ -71,12 +71,12 @@ public class AgidJwtSignature {
         return map;
     }
 
-    private Map<String, Object> createClaimMap(String digest, TokenPayload tp) {
+    private Map<String, Object> createClaimMap(String digest, TokenPayload tp, String eserviceAudience) {
         Map<String, Object> map = new HashMap<>();
         map.put(RegisteredClaims.ISSUER, tp.getIss());
         map.put(RegisteredClaims.SUBJECT, tp.getSub());
         map.put(RegisteredClaims.EXPIRES_AT, tp.getExp());
-        map.put(RegisteredClaims.AUDIENCE, tp.getAud());
+        map.put(RegisteredClaims.AUDIENCE, eserviceAudience);
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
         map.put(RegisteredClaims.JWT_ID, tp.getJti());
         map.put("signed_headers", createSignedHeaders(digest));

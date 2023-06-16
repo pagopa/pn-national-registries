@@ -9,13 +9,13 @@ import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.SignRequest;
 import software.amazon.awssdk.services.kms.model.SignResponse;
 
 import java.io.IOException;
+import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -27,14 +27,11 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class AgidJwtTrackingEvidence {
 
-    private final String aud;
     private final AnprSecretConfig anprSecretConfig;
     private final KmsClient kmsClient;
 
-    public AgidJwtTrackingEvidence(@Value("${pn.national.registries.anpr.base-path}") String aud,
-                                   AnprSecretConfig anprSecretConfig,
+    public AgidJwtTrackingEvidence(AnprSecretConfig anprSecretConfig,
                                    KmsClient kmsClient) {
-        this.aud = aud;
         this.anprSecretConfig = anprSecretConfig;
         this.kmsClient = kmsClient;
     }
@@ -48,7 +45,7 @@ public class AgidJwtTrackingEvidence {
             TokenHeader th = new TokenHeader(pdndSecretValue.getJwtConfig());
             TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig(), null);
 
-            String jwtContent = ClientUtils.createJwtContent(createHeaderMap(th), createClaimMap(tp));
+            String jwtContent = ClientUtils.createJwtContent(createHeaderMap(th), createClaimMap(tp, pdndSecretValue.getEserviceAudience()));
 
             SignRequest signRequest = ClientUtils.createSignRequest(jwtContent, pdndSecretValue.getKeyId());
             log.info("START - KmsClient.sign Request: {}", signRequest);
@@ -73,9 +70,9 @@ public class AgidJwtTrackingEvidence {
         return map;
     }
 
-    private Map<String, Object> createClaimMap(TokenPayload tp) {
+    private Map<String, Object> createClaimMap(TokenPayload tp, String eserviceAudience) {
         Map<String, Object> map = new HashMap<>();
-        map.put(RegisteredClaims.AUDIENCE, aud);
+        map.put(RegisteredClaims.AUDIENCE, eserviceAudience);
         map.put(RegisteredClaims.ISSUER, tp.getIss());
         map.put("purposeId",tp.getPurposeId());
         map.put("dnonce", generateRandomDnonce());
@@ -90,7 +87,7 @@ public class AgidJwtTrackingEvidence {
     }
 
     private String generateRandomDnonce() {
-        Random random = new Random();
+        Random random = new SecureRandom();
         StringBuilder sb = new StringBuilder(13);
 
         for (int i = 0; i < 13; i++) {

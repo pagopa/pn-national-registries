@@ -24,7 +24,7 @@ class AgidJwtTrackingEvidenceTest {
 
     @Test
     void testCreateAgidJWT() {
-        AgidJwtTrackingEvidence agidJwtTrackingEvidence = new AgidJwtTrackingEvidence("aud", anprSecretConfig, kmsClient);
+        AgidJwtTrackingEvidence agidJwtTrackingEvidence = new AgidJwtTrackingEvidence(anprSecretConfig, kmsClient);
 
         PdndSecretValue pdndSecretValue = new PdndSecretValue();
         pdndSecretValue.setClientId("test");
