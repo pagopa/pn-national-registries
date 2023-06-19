@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.client.anpr;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
+import it.pagopa.pn.national.registries.model.SSLData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,7 +14,7 @@ import software.amazon.awssdk.services.kms.KmsClient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
-class AgidJwtSignatureTest {
+class AgidJwtTrackingEvidenceTest {
 
     @MockBean
     AnprSecretConfig anprSecretConfig;
@@ -23,8 +24,7 @@ class AgidJwtSignatureTest {
 
     @Test
     void testCreateAgidJWT() {
-        AgidJwtSignature agidJwtSignature = new AgidJwtSignature(anprSecretConfig, kmsClient);
-        String digest = "digest";
+        AgidJwtTrackingEvidence agidJwtTrackingEvidence = new AgidJwtTrackingEvidence(anprSecretConfig, kmsClient);
 
         PdndSecretValue pdndSecretValue = new PdndSecretValue();
         pdndSecretValue.setClientId("test");
@@ -32,7 +32,10 @@ class AgidJwtSignatureTest {
         pdndSecretValue.setJwtConfig(new JwtConfig());
         when(anprSecretConfig.getAnprPdndSecretValue()).thenReturn(pdndSecretValue);
 
-        Assertions.assertThrows(NullPointerException.class,()->agidJwtSignature.createAgidJwt(digest));
+        SSLData sslData = new SSLData();
+        sslData.setCert("TestCert");
+
+        Assertions.assertThrows(NullPointerException.class, agidJwtTrackingEvidence::createAgidJwt);
     }
 
 }

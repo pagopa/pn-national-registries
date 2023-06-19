@@ -42,7 +42,7 @@ public class IpaService {
     }
 
     public Mono<IPAPecDto> getIpaPec(IPARequestBodyDto request) {
-        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_IPA_ADDRESS);
+        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_IPA_ADDRESS, false);
         return callWS23(request.getFilter().getTaxId())
                 .flatMap(ws23ResponseDto -> {
                     if (ws23ResponseDto.getResult().getNumItems() > 1) {

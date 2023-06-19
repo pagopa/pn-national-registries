@@ -51,7 +51,7 @@ Resources:
             Action: 'kms:*'
             Resource: '*'
 
-  PDNDSessionTokenSigningKey:
+  AnprPDNDSessionTokenSigningKey:
     Type: 'AWS::KMS::Key'
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
@@ -70,11 +70,11 @@ Resources:
             Resource: '*'
 
   # Application use this alias to access the public/private key pair
-  PDNDSessionTokenSigningKeyAlias:
+  AnprPDNDSessionTokenSigningKeyAlias:
     Type: 'AWS::KMS::Alias'
     Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-pdnd'
-      TargetKeyId: !Ref PDNDSessionTokenSigningKey
+      AliasName: !Sub 'alias/${ProjectName}-national-registries-anpr-pdnd'
+      TargetKeyId: !Ref AnprPDNDSessionTokenSigningKey
 
   CheckCfPDNDSessionTokenSigningKey:
     Type: 'AWS::KMS::Key'
@@ -150,56 +150,6 @@ Resources:
     Properties:
       AliasName: !Sub 'alias/${ProjectName}-national-registries-check-cf'
       TargetKeyId: !Ref CheckCfSigningKey
-
-  AnprAuthChannelSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
-
-  # Application use this alias to access the public/private key pair
-  AnprAuthChannelSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-anpr-auth-channel'
-      TargetKeyId: !Ref AnprAuthChannelSigningKey
-
-  AnprIntegrityRestSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
-
-  # Application use this alias to access the public/private key pair
-  AnprIntegrityRestSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-anpr-integrity-rest'
-      TargetKeyId: !Ref AnprIntegrityRestSigningKey
 
   InfoCamereSigningKey:
     Type: 'AWS::KMS::Key'
@@ -334,9 +284,9 @@ Outputs:
   PnBatchRequestEncryptKeyARN:
     Description: PnBatchRequestEncryptKeyARN
     Value: !Sub '${PnBatchRequestEncryptKey.Arn}'
-  PDNDSessionTokenSigningKeyARN:
-    Description: PDNDSessionTokenSigningKeyARN
-    Value: !Sub '${PDNDSessionTokenSigningKey.Arn}'
+  AnprPDNDSessionTokenSigningKeyARN:
+    Description: AnprPDNDSessionTokenSigningKeyARN
+    Value: !Sub '${AnprPDNDSessionTokenSigningKey.Arn}'
   CheckCfPDNDSessionTokenSigningKeyARN:
     Description: CheckCfPDNDSessionTokenSigningKeyARN
     Value: !Sub '${CheckCfPDNDSessionTokenSigningKey.Arn}'
@@ -349,16 +299,6 @@ Outputs:
   CheckCfSigningKeyId:
     Description: CheckCfSigningKeyARN
     Value: !Ref CheckCfSigningKey
-  AnprAuthChannelSigningKeyARN:
-    Description: AnprAuthChannelSigningKeyARN
-    Value: !Sub '${AnprAuthChannelSigningKey.Arn}'
-  AnprAuthChannelSigningKeyId:
-    Value: !Ref AnprAuthChannelSigningKey
-  AnprIntegrityRestSigningKeyARN:
-    Description: AnprIntegrityRestSigningKeyARN
-    Value: !Sub '${AnprIntegrityRestSigningKey.Arn}'
-  AnprIntegrityRestSigningKeyId:
-    Value: !Ref AnprIntegrityRestSigningKey
   InfoCamereSigningKeyARN:
     Description: InfoCamereSigningKeyARN
     Value: !Sub '${InfoCamereSigningKey.Arn}'

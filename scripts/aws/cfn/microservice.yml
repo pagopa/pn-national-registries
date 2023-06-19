@@ -126,15 +126,18 @@ Parameters:
     Type: String
     Description: 'InfoCamere Client ID'
 
-  # Parametro obbligatorio (ARN del secret)
-  ANPRSSLSecret:
+  # Parametro obbligatorio (Nome del parametro)
+  AdECheckCfSSL:
     Type: String
-    Description: 'ANPR SecretName'
+    Description: 'CheckCF MTLS parameterName'
 
-  # Parametro obbligatorio (ARN del secret)
-  AdECheckCfSSLSecret:
+  AdECheckCfTrustSecret:
     Type: String
-    Description: 'PDND SecretName'
+    Description: 'SSL trusted cert CheckCF SecretName'
+
+  AnprTrustSecret:
+    Type: String
+    Description: 'SSL trusted cert ANPR SecretName'
 
   # Parametro obbligatorio (ARN del secret)
   PDNDANPRSecret:
@@ -151,11 +154,6 @@ Parameters:
     Type: String
     Description: 'PDND INAD Client assertion claims'
 
-  # Parametro obbligatorio (ARN del secret)
-  ANPRIntegritySecret:
-    Type: String
-    Description: 'PDND ANPR Integrity certs'
-
   # Parametro obbligatorio (Nome del parametro su parameterStore)
   InfoCamereAuth:
     Type: String
@@ -165,7 +163,7 @@ Parameters:
     Type: String
     Description: 'Secret name prefix'
 
-  PDNDSessionTokenSigningKeyARN:
+  AnprPDNDSessionTokenSigningKeyARN:
     Type: String
     Description: 'PDND Session Token Signing Key for eservice C001'
 
@@ -180,14 +178,6 @@ Parameters:
   CheckCfSigningKeyARN:
     Type: String
     Description: 'CheckCf Signing Key for MTLS'
-
-  AnprAuthChannelSigningKeyARN:
-    Type: String
-    Description: 'Anpr Auth Channel Signing Key for Modl ID_AUTH_CHANNEL_02'
-
-  AnprIntegrityRestSigningKeyARN:
-    Type: String
-    Description: 'Anpr Integrity Rest Signing Key for Modl INTEGRITY_REST_01 '
 
   InfoCamereSigningKeyARN:
     Type: String
@@ -390,14 +380,12 @@ Resources:
         ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
         ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_BASE_URL=${PDNDBaseURL}'
         ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
-        ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_AUTH_SECRET=${ANPRSSLSecret}'
-        ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_ANPR_INTEGRITY_SECRET=${ANPRIntegritySecret}'
         ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
         ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
         ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
         ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_BASE_URL=${AdELegalBaseURL}'
         ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
-        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_AUTH_SECRET=${AdECheckCfSSLSecret}'
+        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_AUTH=${AdECheckCfSSL}'
         ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PURPOSE_ID=${AdECheckCfPurposeId}'
         ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PDND_CLIENT_SECRET=${PDNDAdECheckCfSecret}'
         ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
@@ -420,6 +408,8 @@ Resources:
         ContainerEnvEntry31: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchPollingRecoveryAfter}'
         ContainerEnvEntry32: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
         ContainerEnvEntry33: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
+        ContainerEnvEntry34: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_TRUST_SECRET=${AdECheckCfTrustSecret}'
+        ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -448,12 +438,10 @@ Resources:
             Action:
               - kms:Sign
             Resource:
-              - !Ref PDNDSessionTokenSigningKeyARN
+              - !Ref AnprPDNDSessionTokenSigningKeyARN
               - !Ref CheckCfPDNDSessionTokenSigningKeyARN
               - !Ref InadPDNDSessionTokenSigningKeyARN
               - !Ref CheckCfSigningKeyARN
-              - !Ref AnprAuthChannelSigningKeyARN
-              - !Ref AnprIntegrityRestSigningKeyARN
               - !Ref InfoCamereSigningKeyARN
           - Effect: Allow
             Action:
@@ -540,7 +528,12 @@ Resources:
               - kms:GetPublicKey
               - kms:ScheduleKeyDeletion	
             Resource: 
-              - '*'            
+              - '*'   
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+              - secretsmanager:CreateSecret
+            Resource: "*"         
           - Effect: Allow
             Action:
               - route53:ListHostedZones

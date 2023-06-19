@@ -79,7 +79,7 @@ public class InfoCamereJwsGenerator {
                 byte[] signature = signResult.signature().asByteArray();
                 String signatureString = bytesToUrlSafeBase64String(signature);
                 log.info("END - AdigJwtSignature.createAgidJwt Timelapse: {} ms", System.currentTimeMillis() - startTime);
-                log.info("GeneratedToken: {}", jwtContent + "." + signatureString);
+                log.info("generated jwt: {}", jwtContent + "." + signatureString);
                 return jwtContent + "." + signatureString;
             } else {
                 throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR);
@@ -93,7 +93,7 @@ public class InfoCamereJwsGenerator {
         Map<String, Object> map = new HashMap<>();
         String x5c = "";
         map.put(HeaderParams.TYPE, "JWT");
-        map.put(HeaderParams.ALGORITHM, "ES256");
+        map.put(HeaderParams.ALGORITHM, "RS256");
         byte[] cert = Base64.getDecoder().decode(sslData.getCert());
         String certString = new String(cert, StandardCharsets.UTF_8);
         final Matcher matcher = certRegex.matcher(certString);
