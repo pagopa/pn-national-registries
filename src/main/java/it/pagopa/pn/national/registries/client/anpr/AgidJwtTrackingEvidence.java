@@ -55,6 +55,7 @@ public class AgidJwtTrackingEvidence {
 
             String signatureString = ClientUtils.createSignature(signResult);
             log.info("END - AgidJwtTrackingEvidence.createAgidJwt Timelapse: {} ms", System.currentTimeMillis() - startTime);
+            log.info("AgidTrackingEvidence: {}", jwtContent + "." + signatureString);
             return jwtContent + "." + signatureString;
 
         } catch (IOException e) {

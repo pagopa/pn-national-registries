@@ -55,6 +55,7 @@ public class AgidJwtSignature {
 
             String signatureString = ClientUtils.createSignature(signResult);
             log.info("END - AgidJwtSignature.createAgidJwt Timelapse: {} ms", System.currentTimeMillis() - startTime);
+            log.info("AgidJWTSignature: {}", jwtContent + "." + signatureString);
             return jwtContent + "." + signatureString;
 
         } catch (IOException e) {
