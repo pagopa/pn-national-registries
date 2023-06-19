@@ -1,12 +1,12 @@
 {
   "Parameters" : {
-    "PDNDBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
-    "ANPRBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
+    "PDNDBaseURL": "https://auth.uat.interop.pagopa.it",
+    "ANPRBaseURL": "https://modipa-val.anpr.interno.it/govway/rest/in/MinInternoPortaANPR-PDND/C001-servizioNotifica/v1",
     "ANPRPurposeId": "fa2aa359-ab78-45b2-aa55-977d8ddb7d2b",
     "ANPRTipoInvio": "TEST",
     "PDNDANPRSecret": "pn-national-registries/pdnd/ANPR",
     "AdELegalBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
-    "AdECheckCfBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
+    "AdECheckCfBaseURL": "https://modipa-val.agenziaentrate.it/govway/rest/in/AgenziaEntrate/verifica-cf/v1",
     "AdECheckCfPurposeId": "f89d88b0-8913-4771-b566-6b88fdcb484d",
     "AdECheckCfSSL": "/pn-national-registries/ade-api-cert",
     "AdECheckCfTrustSecret": "pn-national-registries/CheckCF/auth-rest",
@@ -21,6 +21,7 @@
     "IPABaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "IPASecret": "pn-national-registries/ipa",
     "SecretAndSSMPrefix": "pn-national-registries",
+    "SecretKeyPrefix": "deploykey/pn-national-registries",
     "PnCxIdValidationEnabled": "false",
     "MaxTasksNumber": "1",
     "PnNationalRegistriesInipecTtl": "1209600",
