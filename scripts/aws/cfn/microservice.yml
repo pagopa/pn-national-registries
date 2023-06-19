@@ -135,6 +135,9 @@ Parameters:
     Type: String
     Description: 'SSL trusted cert CheckCF SecretName'
 
+  AdECheckCfSSLSecret: 
+    Type: String
+
   AnprTrustSecret:
     Type: String
     Description: 'SSL trusted cert ANPR SecretName'
@@ -354,8 +357,14 @@ Parameters:
     Type: String
     Default: 'alarm@notifichedigitali.it' # aggiornare
 
-  InfoCamereSigningKeyId:
+  InfoCamereSigningKeyAlias:
     Type: String
+    Default: pn-national-registries-infocamere-signing-key-alias
+
+  AdeFQDN:
+    Type: String
+    Description: ade-api.client.<codice-ambiente>.notifichedigitali.it
+
 Resources:
 
   # PN-National-Registry microservice
@@ -447,7 +456,7 @@ Resources:
               - !Ref CheckCfPDNDSessionTokenSigningKeyARN
               - !Ref InadPDNDSessionTokenSigningKeyARN
               - !Ref CheckCfSigningKeyARN
-              - !Ref InfoCamereSigningKeyARN
+              - !Sub alias/${InfoCamereSigningKeyAlias}
           - Effect: Allow
             Action:
               - kms:Encrypt
@@ -538,7 +547,7 @@ Resources:
             Action:
               - secretsmanager:GetSecretValue
               - secretsmanager:CreateSecret
-            Resource: "*"         
+            Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretKeyPrefix}*      
           - Effect: Allow
             Action:
               - route53:ListHostedZones
@@ -582,7 +591,7 @@ Resources:
                 - cd pn-national-registries/scripts/generate_certificate_from_kms
                 - python --version
                 - pip install -r requirements.txt
-                - ./generate.sh --fqdn ${FQDN} --keyid ${KEY_ID} --parameter-name ${PARAM_NAME} --region ${REGION} --e-mail ${EMAIL}
+                - ./create_kms_and_generate_cert.sh --keyalias ${KEY_ALIAS} --fqdn ${FQDN} --parameter-name ${PARAM_NAME} --region ${REGION} --e-mail ${EMAIL}
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:
@@ -593,15 +602,6 @@ Resources:
           - Name: REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
-          - Name: FQDN
-            Type: PLAINTEXT
-            Value: !Ref InfocamereFQDN
-          - Name: KEY_ID
-            Type: PLAINTEXT
-            Value: !Ref InfoCamereSigningKeyId            
-          - Name: PARAM_NAME
-            Type: PLAINTEXT
-            Value: !Ref InfoCamereAuth     
           - Name: EMAIL
             Type: PLAINTEXT
             Value: !Ref CertificateRenewalEmail
@@ -645,7 +645,7 @@ Resources:
             Value: !Ref InfocamereFQDN
           - Name: SECRET_ID
             Type: PLAINTEXT
-            Value: !Ref InfoCamereSigningKeyId            
+            Value: !Ref AdECheckCfSSLSecret            
           - Name: PARAM_NAME
             Type: PLAINTEXT
             Value: !Ref InfoCamereAuth     
@@ -688,3 +688,66 @@ Resources:
             Fn::GetAtt: 
               - "InfocamereCertRenewalCodebuildProject"
               - "Arn"
+          InputTransformer:
+            InputPathsMap:
+              "key_alias": !Ref InfoCamereSigningKeyAlias
+              "fqdn": !Ref InfocamereFQDN
+              "param_name": !Ref InfoCamereAuth
+            InputTemplate: |
+              {
+                "environmentVariablesOverride": [{
+                    "name": "FQDN",
+                    "type": "PLAINTEXT",
+                    "value": <fqdn>
+                  },
+                  {
+                    "name": "KEY_ALIAS",
+                    "type": "PLAINTEXT",
+                    "value": <key_alias>
+                  },
+                  {
+                    "name": "PARAM_NAME",
+                    "type": "PLAINTEXT",
+                    "value": <param_name>
+                  }
+                ]
+              }
+
+  MtlsScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub "${ProjectName}-mtls-cert-renewal-schedule-rule"
+      ScheduleExpression: "cron(0 0 ? */2 ? *)"
+      State: "ENABLED"
+      RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+      Targets: 
+        - Id: "CertRenewalRunner"
+          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+          Arn: 
+            Fn::GetAtt: 
+              - "InfocamereCertRenewalCodebuildProject"
+              - "Arn"
+          InputTransformer:
+            InputPathsMap:
+              "fqdn": !Ref AdeFQDN
+              "secret_id": !Ref AdECheckCfSSLSecret
+              "param_name": !Ref AdECheckCfSSL
+            InputTemplate: |
+              {
+                "environmentVariablesOverride": [{
+                    "name": "FQDN",
+                    "type": "PLAINTEXT",
+                    "value": <fqdn>
+                  },
+                  {
+                    "name": "SECRET_ID",
+                    "type": "PLAINTEXT",
+                    "value": <secret_id>
+                  },
+                  {
+                    "name": "PARAM_NAME",
+                    "type": "PLAINTEXT",
+                    "value": <param_name>
+                  }
+                ]
+              }

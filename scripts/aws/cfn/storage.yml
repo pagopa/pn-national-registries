@@ -151,30 +151,30 @@ Resources:
       AliasName: !Sub 'alias/${ProjectName}-national-registries-check-cf'
       TargetKeyId: !Ref CheckCfSigningKey
 
-  InfoCamereSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
+  # InfoCamereSigningKey:
+  #   Type: 'AWS::KMS::Key'
+  #   DeletionPolicy: Retain
+  #   UpdateReplacePolicy: Retain
+  #   Properties:
+  #     Description: RSA-2048 key to generate session token
+  #     KeySpec: RSA_2048
+  #     KeyUsage: SIGN_VERIFY
+  #     KeyPolicy:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: Enable IAM User Permissions
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+  #           Action: 'kms:*'
+  #           Resource: '*'
 
   # Application use this alias to access the public/private key pair
-  InfoCamereSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-info-camere'
-      TargetKeyId: !Ref InfoCamereSigningKey
+  # InfoCamereSigningKeyAlias:
+  #   Type: 'AWS::KMS::Alias'
+  #   Properties:
+  #     AliasName: !Sub 'alias/${ProjectName}-national-registries-info-camere'
+  #     TargetKeyId: !Ref InfoCamereSigningKey
 
   CounterTable:
     Type: AWS::DynamoDB::Table
@@ -299,11 +299,11 @@ Outputs:
   CheckCfSigningKeyId:
     Description: CheckCfSigningKeyARN
     Value: !Ref CheckCfSigningKey
-  InfoCamereSigningKeyARN:
-    Description: InfoCamereSigningKeyARN
-    Value: !Sub '${InfoCamereSigningKey.Arn}'
-  InfoCamereSigningKeyId:
-    Value: !Ref InfoCamereSigningKey
+  # InfoCamereSigningKeyARN:
+  #   Description: InfoCamereSigningKeyARN
+  #   Value: !Sub '${InfoCamereSigningKey.Arn}'
+  # InfoCamereSigningKeyId:
+  #   Value: !Ref InfoCamereSigningKey
   CounterTableArn:
     Description: ARN Dynamo Name used by application to access the key-value store of CounterTable
     Value: !Sub '${CounterTable.Arn}'
