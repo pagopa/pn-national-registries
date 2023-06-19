@@ -8,23 +8,17 @@ import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfWebClientConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
+import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
+import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
-import javax.net.ssl.KeyManagerFactory;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.*;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.cert.X509Certificate;
 import java.time.Duration;
-import java.util.Base64;
 import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_CHECK_CF;
@@ -39,19 +33,22 @@ public class CheckCfWebClient extends CommonWebClient {
     private final SsmParameterConsumerActivation ssmParameterConsumerActivation;
     private final String authChannelData;
     private final CheckCfSecretConfig checkCfSecretConfig;
+    private final SecretManagerService secretManagerService;
 
     public CheckCfWebClient(@Value("${pn.national.registries.webclient.ssl-cert-ver}") Boolean sslCertVer,
                             @Value("${pn.national.registries.ade-check-cf.base-path}") String basePath,
                             @Value("${pn.national.registries.ssm.ade-check-cf.auth-channel}") String authChannelData,
                             CheckCfWebClientConfig webClientConfig,
                             SsmParameterConsumerActivation ssmParameterConsumerActivation,
-                            CheckCfSecretConfig checkCfSecretConfig) {
+                            CheckCfSecretConfig checkCfSecretConfig,
+                            SecretManagerService secretManagerService) {
         super(sslCertVer);
         this.basePath = basePath;
         this.webClientConfig = webClientConfig;
         this.ssmParameterConsumerActivation = ssmParameterConsumerActivation;
         this.authChannelData = authChannelData;
         this.checkCfSecretConfig = checkCfSecretConfig;
+        this.secretManagerService = secretManagerService;
     }
 
     protected WebClient init() {
@@ -74,21 +71,17 @@ public class CheckCfWebClient extends CommonWebClient {
             if(optSslData.isEmpty()) {
                 throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF);
             }
-            byte[] certificateBytes = Base64.getDecoder().decode(optSslData.get().getCert());
-            InputStream inputStream = new ByteArrayInputStream(certificateBytes);
-            CertificateFactory cf = CertificateFactory.getInstance("X.509");
-            X509Certificate caCert = (X509Certificate)cf.generateCertificate(inputStream);
-            KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType(), cf.getProvider());
-            ks.load(null);
-            ks.setCertificateEntry("caCert", caCert);
-            KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
-            keyManagerFactory.init(ks, null);
+            SSLData sslData = optSslData.get();
+            Optional<GetSecretValueResponse> secretValue = secretManagerService.getSecretValue(sslData.getSecretid());
+            if(secretValue.isEmpty()) {
+                throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF);
+            }
+            String privateKey = secretValue.get().secretString();
+            SslContextBuilder sslContext = SslContextBuilder.forClient()
+                    .keyManager(getCertInputStream(sslData.getCert()), getKeyInputStream(privateKey));
+            return getSslContext(sslContext, checkCfSecretConfig.getTrustData().getTrust());
 
-            return getSslContext(SslContextBuilder.forClient()
-                    .keyManager(keyManagerFactory), checkCfSecretConfig.getTrustData().getTrust());
-
-        } catch (IOException | KeyStoreException | NoSuchAlgorithmException | CertificateException |
-                 UnrecoverableKeyException e) {
+        } catch (IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, e);
         }
     }

@@ -42,4 +42,17 @@ class CommonWebClientTest {
         TestCommonWebClient webClient = new TestCommonWebClient(true);
         assertNotNull(webClient.getTrustCertInputStream("dGVzdA=="));
     }
+
+    @Test
+    void testGetKeyInputStream() {
+        TestCommonWebClient webClient = new TestCommonWebClient(true);
+        assertNotNull(webClient.getKeyInputStream("dGVzdA=="));
+    }
+
+    @Test
+    void testGetCertInputStream() {
+        TestCommonWebClient webClient = new TestCommonWebClient(true);
+        assertNotNull(webClient.getCertInputStream("dGVzdA=="));
+    }
+
 }

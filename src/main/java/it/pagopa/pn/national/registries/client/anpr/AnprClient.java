@@ -76,6 +76,7 @@ public class AnprClient {
         String s = convertToJson(requestDto);
         String digest = createDigestFromPayload(s);
         log.debug("digest: {}", digest);
+        log.info("PDND token: {}", tokenEntry.getTokenValue());
         return webClient.post()
                 .uri("/anpr-service-e002")
                 .contentType(MediaType.APPLICATION_JSON)

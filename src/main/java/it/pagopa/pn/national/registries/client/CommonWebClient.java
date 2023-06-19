@@ -16,6 +16,7 @@ import reactor.netty.http.client.HttpClient;
 import javax.net.ssl.SSLException;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 @Slf4j
@@ -60,5 +61,13 @@ public abstract class CommonWebClient extends CommonBaseClient {
 
     protected final InputStream getTrustCertInputStream(String clientKeyPem) {
         return new ByteArrayInputStream(Base64.getDecoder().decode(clientKeyPem));
+    }
+
+    protected final InputStream getKeyInputStream(String clientKeyPem) {
+        return new ByteArrayInputStream(clientKeyPem.getBytes(StandardCharsets.UTF_8));
+    }
+
+    protected final InputStream getCertInputStream(String stringCert) {
+        return new ByteArrayInputStream(Base64.getDecoder().decode(stringCert));
     }
 }

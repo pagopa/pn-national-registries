@@ -42,6 +42,7 @@ public class PdndAssertionGenerator {
 
             String signatureString = ClientUtils.createSignature(signResult);
             log.info("END - PdndAssertionGenerator.generateClientAssertion Timelapse: {} ms", System.currentTimeMillis() - startTime);
+            log.info("PdndAssertionGenerator: {}", jwtContent + "." + signatureString);
             return jwtContent + "." + signatureString;
 
         } catch (Exception e) {
