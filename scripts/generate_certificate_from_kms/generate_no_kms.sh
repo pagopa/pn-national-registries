@@ -30,17 +30,17 @@
 # 5. save certificate in AWS parameter store, together with dns (public key is already in the certificate) and secret id
 #
 #
-#   real dev infocamere:
-# sudo ./generate_no_kms.sh --fqdn infocamere.client.dev.notifichedigitali.it --secretid deploykey/pn-national-registries/infocamere-cert --parameter-name /pn-national-registries/infocamere-cert --e-mail test@pagopa.it --region eu-south-1 --profile sso_pn-core-dev
+#   real dev infocamere (example, NOT to be used for infocamere):
+# sudo ./generate_no_kms.sh --fqdn infocamere.client.dev.notifichedigitali.it --secretid pn-national-registries/infocamere-cert --parameter-name /pn-national-registries/infocamere-cert --e-mail test@pagopa.it --region eu-south-1 --profile sso_pn-core-dev
 #
 #   real dev ade-api:
-# sudo ./generate_no_kms.sh --fqdn ade-api.client.dev.notifichedigitali.it --secretid deploykey/pn-national-registries/ade-api-cert --parameter-name /pn-national-registries/ade-api-cert --e-mail test@pagopa.it --region eu-south-1 --profile sso_pn-core-dev
+# sudo ./generate_no_kms.sh --fqdn ade-api.client.dev.notifichedigitali.it --secretid pn-national-registries/ade-api-cert --parameter-name /pn-national-registries/ade-api-cert --e-mail test@pagopa.it --region eu-south-1 --profile sso_pn-core-dev
 #
 #
 #
 #
 #   test:
-# sudo ./generate_no_kms.sh --fqdn testinfocamere4.dev.notifichedigitali.it --secretid deploykey/pn-national-registries/infocamere-test4 --parameter-name /infocamere/test4 --e-mail test@pagopa.it --region eu-south-1 --profile sso_pn-core-dev
+# sudo ./generate_no_kms.sh --fqdn testinfocamere4.dev.notifichedigitali.it --secretid pn-national-registries/infocamere-test4 --parameter-name /infocamere/test4 --e-mail test@pagopa.it --region eu-south-1 --profile sso_pn-core-dev
 
 
 # uncomment and set the profile name for executing locally, or make the wanted profile the default one, or pass the profile name as a parameter
