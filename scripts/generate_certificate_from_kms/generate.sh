@@ -109,10 +109,10 @@ if [ -f "0000_cert.pem" ]; then
     # }
     parameter_json="{ \
         \"keyId\": \"${KEYID}\", \
-        \"cert\": \"$(base64 -i 0000_cert.pem)\", \
+        \"cert\": \"$(base64 -i 0000_cert.pem | tr -d '\n')\", \
         \"dns\": \"${FQDN}\" \
     }"
-    #echo $parameter_json
+    # the base 64 conversion must not contain newlines, for the JSON to be valid
 
     # convert the file to base64 and send that to AWS parameter store
         # -i works on Linux and Mac, without -i
