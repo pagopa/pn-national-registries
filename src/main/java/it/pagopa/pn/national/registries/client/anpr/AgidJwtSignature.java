@@ -68,7 +68,6 @@ public class AgidJwtSignature {
         map.put(HeaderParams.TYPE, th.getTyp());
         map.put(HeaderParams.ALGORITHM, th.getAlg());
         map.put(HeaderParams.KEY_ID, th.getKid());
-        log.debug("HeaderMap type: {}", map.get(HeaderParams.TYPE));
         return map;
     }
 

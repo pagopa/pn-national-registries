@@ -65,8 +65,8 @@ public class AgidJwtTrackingEvidence {
 
     private Map<String, Object> createHeaderMap(TokenHeader th) {
         Map<String, Object> map = new HashMap<>();
-        map.put(HeaderParams.ALGORITHM, "ES256");
-        map.put(HeaderParams.TYPE, "JWT");
+        map.put(HeaderParams.ALGORITHM, th.getAlg());
+        map.put(HeaderParams.TYPE, th.getTyp());
         map.put(HeaderParams.KEY_ID, th.getKid());
         return map;
     }
