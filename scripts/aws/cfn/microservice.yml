@@ -163,10 +163,6 @@ Parameters:
     Type: String
     Description: 'Secret and Parameter name prefix'
 
-  SecretKeyPrefix:
-    Type: String
-    Description: 'Secret Key name prefix'
-
   AnprPDNDSessionTokenSigningKeyARN:
     Type: String
     Description: 'PDND Session Token Signing Key for eservice C001'
@@ -426,7 +422,6 @@ Resources:
               - secretsmanager:GetSecretValue
             Resource:
               - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}*'
-              - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretKeyPrefix}*'
           - Effect: Allow
             Action:
               - kms:Sign
