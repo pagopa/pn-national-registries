@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.client.anpr;
 import com.auth0.jwt.HeaderParams;
 import com.auth0.jwt.RegisteredClaims;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.utils.ClientUtils;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
@@ -10,6 +11,7 @@ import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.SignRequest;
 import software.amazon.awssdk.services.kms.model.SignResponse;
@@ -20,6 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ANPR;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ANPR;
 
@@ -72,14 +75,15 @@ public class AgidJwtTrackingEvidence {
     }
 
     private Map<String, Object> createClaimMap(TokenPayload tp, String eserviceAudience) {
+        String traceId = MDCUtils.retrieveMDCContextMap().get(MDC_TRACE_ID_KEY);
         Map<String, Object> map = new HashMap<>();
         map.put(RegisteredClaims.AUDIENCE, eserviceAudience);
         map.put(RegisteredClaims.ISSUER, tp.getIss());
         map.put("purposeId",tp.getPurposeId());
         map.put("dnonce", generateRandomDnonce());
-        map.put("userID","userID"); //TODO: SET VARIABILE
-        map.put("userLocation","userLocation"); //TODO: SET VARIABILE
-        map.put("LoA","LoA"); //TODO: SET VARIABILE
+        map.put("userID", StringUtils.hasText(traceId) ? traceId : "unknown");
+        map.put("userLocation","userLocation");
+        map.put("LoA","LoA3");
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
         map.put(RegisteredClaims.EXPIRES_AT, tp.getExp());
         map.put(RegisteredClaims.JWT_ID, tp.getJti());
