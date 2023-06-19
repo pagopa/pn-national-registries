@@ -608,6 +608,53 @@ Resources:
             Type: PLAINTEXT
             Value: !Ref CertificateRenewalEmail
 
+  MtlsCertRenewalCodebuildProject:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Sub ${ProjectName}-Mtls-Cert-Renewal
+      ServiceRole: !GetAtt CertificateRenewalCodeBuildServiceRole.Arn
+      ConcurrentBuildLimit: 1
+      TimeoutInMinutes: 10
+      Source: 
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo "### NO PRE_BUILD"
+            build:
+              commands:
+                - git clone https://github.com/pagopa/pn-national-registries.git
+                - (cd pn-national-registries && git checkout f1b1a40c79d2abd8b1af01aeb82b9cc9fd07cd49)
+                - cd pn-national-registries/scripts/generate_certificate_from_kms
+                - python --version
+                - pip install -r requirements.txt
+                - sudo ./generate_no_kms.sh --fqdn ${FQDN} --secretid ${SECRET_ID} --parameter-name ${PARAM_NAME} --e-mail ${EMAIL} --region ${REGION}
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        PrivilegedMode: true
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: "aws/codebuild/standard:7.0"
+        EnvironmentVariables:
+          - Name: REGION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Region
+          - Name: FQDN
+            Type: PLAINTEXT
+            Value: !Ref InfocamereFQDN
+          - Name: SECRET_ID
+            Type: PLAINTEXT
+            Value: !Ref InfoCamereSigningKeyId            
+          - Name: PARAM_NAME
+            Type: PLAINTEXT
+            Value: !Ref InfoCamereAuth     
+          - Name: EMAIL
+            Type: PLAINTEXT
+            Value: !Ref CertificateRenewalEmail
+
   CertificateRenewalCodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
