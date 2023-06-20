@@ -11,6 +11,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Component
@@ -92,7 +93,7 @@ public class AnprConverter {
     private String createAddressString(AddressDto indirizzo) {
         if (indirizzo.getToponimo() != null && indirizzo.getNumeroCivico() != null) {
             return indirizzo.getToponimo().getSpecie() + " " + indirizzo.getToponimo().getDenominazioneToponimo() + " "
-                    + indirizzo.getNumeroCivico().getNumero() + indirizzo.getNumeroCivico().getLettera();
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getNumero()).orElse("") + Optional.ofNullable(indirizzo.getNumeroCivico().getLettera()).orElse("");
         } else {
             return "";
         }
