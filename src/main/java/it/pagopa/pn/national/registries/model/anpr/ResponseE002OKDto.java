@@ -10,7 +10,7 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ResponseE002OKDto {
-    private ResponseHeaderE002Dto testataRisposta;
+    private String idOperazioneANPR;
     private SubjectsListDto listaSoggetti;
     private List<ErrorListAnpr> listaAnomalie = null;
 }

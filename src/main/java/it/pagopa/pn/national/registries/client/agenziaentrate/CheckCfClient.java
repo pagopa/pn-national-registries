@@ -50,7 +50,7 @@ public class CheckCfClient {
     }
 
     public Mono<TaxIdVerification> callEService(Request richiesta) {
-        return accessTokenExpiringMap.getPDNDToken(purposeId, checkCfSecretConfig.getCheckCfPdndSecretValue())
+        return accessTokenExpiringMap.getPDNDToken(purposeId, checkCfSecretConfig.getCheckCfPdndSecretValue(), false)
                 .flatMap(tokenEntry -> callVerifica(richiesta, tokenEntry))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->

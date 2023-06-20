@@ -10,4 +10,5 @@ import java.util.List;
 public class SubjectsInstitutionDataDto {
     private GeneralInformationDto generalita;
     private List<ResidenceDto> residenza = null;
+    private AnprIdentifier identificativi = null;
 }

@@ -13,6 +13,6 @@ public class ResponseKO {
     @JsonAlias({"errorsList","listaErrori"})
     private List<ErrorListAnpr> errorsList;
 
-    @JsonAlias({"responseHeader","testataRisposta"})
-    private ResponseHeaderAnpr responseHeader;
+    @JsonAlias({"anprOperationId","idOperazioneANPR"})
+    private String anprOperationId;
 }

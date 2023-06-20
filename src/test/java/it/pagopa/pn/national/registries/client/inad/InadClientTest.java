@@ -2,7 +2,6 @@ package it.pagopa.pn.national.registries.client.inad;
 
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.client.anpr.AgidJwtSignature;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
@@ -40,9 +39,6 @@ class InadClientTest {
     WebClient webClient;
 
     @MockBean
-    AgidJwtSignature agidJwtSignature;
-
-    @MockBean
     InadWebClient inadWebClient;
 
     @MockBean
@@ -65,7 +61,7 @@ class InadClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
-        when(accessTokenExpiringMap.getPDNDToken(eq("purposeId"), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(eq("purposeId"), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
@@ -87,7 +83,7 @@ class InadClientTest {
         String test = "test";
         WebClientResponseException webClientResponseException = new WebClientResponseException(test, HttpStatus.NOT_FOUND.value(), test, headers, testByteArray, Charset.defaultCharset());
 
-        when(accessTokenExpiringMap.getPDNDToken(eq("purposeId"), any())).thenReturn(Mono.error(webClientResponseException));
+        when(accessTokenExpiringMap.getPDNDToken(eq("purposeId"), any(), anyBoolean())).thenReturn(Mono.error(webClientResponseException));
 
         StepVerifier.create(inadClient.callEService("cf", "test"))
                 .verifyError(WebClientResponseException.class);
