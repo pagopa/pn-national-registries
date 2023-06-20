@@ -129,9 +129,9 @@ public class AnprClient {
     }
 
     protected boolean shouldRetry(Throwable throwable) {
-        if (throwable instanceof WebClientResponseException exception) {
+        if (throwable instanceof WebClientResponseException exception && exception.getStatusCode() == HttpStatus.UNAUTHORIZED) {
             log.debug("Try Retry call to ANPR");
-            return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
+            return true;
         }
         return false;
     }
