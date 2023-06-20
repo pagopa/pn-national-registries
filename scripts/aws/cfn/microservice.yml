@@ -167,18 +167,6 @@ Parameters:
     Default: pn-national-registries
     Description: 'Secret and Parameter name prefix'
 
-  AnprPDNDSessionTokenSigningKeyARN:
-    Type: String
-    Description: 'PDND Session Token Signing Key for eservice C001'
-
-  CheckCfPDNDSessionTokenSigningKeyARN:
-    Type: String
-    Description: 'PDND Session Token Signing Key for eservice B001'
-
-  InadPDNDSessionTokenSigningKeyARN:
-    Type: String
-    Description: 'PDND Session Token Signing Key for eservice INAD'
-
   PnBatchRequestEncryptKeyARN:
     Type: String
     Description: 'ARN Key DynamoDB batchRequest table'
@@ -354,6 +342,9 @@ Parameters:
     Type: String
     Description: ade-api.client.<codice-ambiente>.notifichedigitali.it
 
+  PnNationalRegistriesCertificateDLQARN:
+    Type: String
+
 Resources:
 
   # PN-National-Registry microservice
@@ -440,10 +431,7 @@ Resources:
             Action:
               - kms:Sign
             Resource:
-              - !Ref AnprPDNDSessionTokenSigningKeyARN
-              - !Ref CheckCfPDNDSessionTokenSigningKeyARN
-              - !Ref InadPDNDSessionTokenSigningKeyARN
-              - !Sub alias/${InfoCamereSigningKeyAlias}*
+              - !Sub alias/${SecretAndSSMPrefix}*
           - Effect: Allow
             Action:
               - kms:Encrypt
@@ -516,9 +504,12 @@ Resources:
               - logs:PutLogEvents
             Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
           - Effect: Allow
-            Action: ssm:PutParameter
+            Action: 
+              - ssm:PutParameter
+              - ssm:GetParameter
             Resource: 
               - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${InfoCamereAuth}
+              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${InfoCamereAuth}-next
           - Effect: Allow
             Action: 
               - kms:ListAliases
@@ -541,6 +532,16 @@ Resources:
               - route53:GetChange
               - route53:ChangeResourceRecordSets
             Resource: "*"
+          - Effect: Allow
+            Action:
+              - sqs:ChangeMessageVisibility
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+              - sqs:ReceiveMessage
+              - sqs:SendMessage
+            Resource:
+              - !Ref PnNationalRegistriesCertificateDLQARN
                   
   CertificateRenewalCodeBuildServiceRole:
     Type: AWS::IAM::Role
@@ -652,10 +653,13 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-infocamere-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(11 0 [Mon] */2 ? *)"
+      ScheduleExpression: "cron(11 0 ? */2 WED *)"
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
+        - Id: "CertRenewalAlarm"
+          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+          Arn: !Ref PnNationalRegistriesCertificateDLQARN
         - Id: "CertRenewalRunner"
           RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
           Arn: 
@@ -691,10 +695,13 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-mtls-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(11 0 [Mon] */2 ? *)"
+      ScheduleExpression: "cron(11 0 ? */2 WED *)"
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
+        - Id: "CertRenewalAlarm"
+          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+          Arn: !Ref PnNationalRegistriesCertificateDLQARN
         - Id: "CertRenewalRunner"
           RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
           Arn: 

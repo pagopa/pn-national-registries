@@ -125,15 +125,15 @@ if [ ${KEYAGE_DAYS} -gt ${DAYS_FOR_ROTATION} ]; then
         echo "Alias updated"
     fi
 
-    aws kms schedule-key-deletion --key-id ${KEYID} --pending-window-in-days 7 --region ${REGION}
+    #aws kms schedule-key-deletion --key-id ${KEYID} --pending-window-in-days 7 --region ${REGION}
 
     # exit in case of error or give success message
-    if [ $? -ne 0 ]; then
-        echo "Error scheduling key deletion"
-        exit 1
-    else
-        echo "New Key ${NEWKEYID} created and associated to alias. Certificate generated. Key ${KEYID} scheduled for deletion in 7 days"
-    fi
+    #if [ $? -ne 0 ]; then
+    #    echo "Error scheduling key deletion"
+    #    exit 1
+    #else
+    #    echo "New Key ${NEWKEYID} created and associated to alias. Certificate generated. Key ${KEYID} scheduled for deletion in 7 days"
+    #fi
 else
     echo "Key ${KEYID} is ${KEYAGE_DAYS} days old, not rotating it."
 
