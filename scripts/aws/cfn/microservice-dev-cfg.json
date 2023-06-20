@@ -6,7 +6,7 @@
     "ANPRTipoInvio": "TEST",
     "PDNDANPRSecret": "pn-national-registries/pdnd/ANPR",
     "AdELegalBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
-    "AdECheckCfBaseURL": "https://modipa-val.agenziaentrate.it/govway/rest/in/AgenziaEntrate/verifica-cf/v1",
+    "AdECheckCfBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "AdECheckCfPurposeId": "f89d88b0-8913-4771-b566-6b88fdcb484d",
     "AdECheckCfSSL": "/pn-national-registries/ade-api-cert",
     "AdECheckCfTrustSecret": "pn-national-registries/CheckCF/auth-rest",

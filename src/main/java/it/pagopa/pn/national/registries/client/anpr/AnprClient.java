@@ -121,8 +121,7 @@ public class AnprClient {
 
     private String createDigestFromAuditJws(String request) {
         try {
-            String exadecimal = DatatypeConverter.printHexBinary(request.getBytes(StandardCharsets.UTF_8));
-            byte[] digest =  MessageDigest.getInstance("SHA-256").digest(exadecimal.getBytes());
+            byte[] digest =  MessageDigest.getInstance("SHA-256").digest(request.getBytes(StandardCharsets.UTF_8));
             return DatatypeConverter.printHexBinary(digest);
         } catch (NoSuchAlgorithmException e) {
             throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR, e);
