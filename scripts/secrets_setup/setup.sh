@@ -76,6 +76,7 @@ function prepare_key_and_alias(){
     keyArn=$1
     alias=$2
     description=$3
+    createNextAlias=$4
     if ( [ -z "$keyArn" ] ) then
         keyArn=$(aws --profile ${profile} --region ${region} kms create-key \
         --description $3 \
@@ -99,6 +100,28 @@ function prepare_key_and_alias(){
             --target-key-id $keyArn
         echo "Updated alias alias/${alias}"
     fi
+
+
+    if ( [ ! -z "$createNextAlias" ] ) then
+      # prepare the "next"
+
+      $nextAlias="${alias}-next"
+      aliasExists=$(aws --profile ${profile} --region ${region} kms list-aliases | jq -r --arg aliasName "alias/$nextAlias" '.Aliases[] | select(.AliasName == $aliasName)' | jq -r '.AliasName' )
+      echo "Alias exists: "$aliasExists
+
+      if ( [ -z "$aliasExists" ] ) then
+          aws --profile ${profile} --region ${region} kms create-alias \
+              --alias-name alias/${nextAlias} \
+              --target-key-id $keyArn
+          
+          echo "Created NEXT alias alias/${nextAlias}"
+      else
+          aws --profile ${profile} --region ${region} kms update-alias \
+              --alias-name alias/${nextAlias} \
+              --target-key-id $keyArn
+          echo "Updated NEXT alias alias/${nextAlias}"
+      fi
+    fi
 }
 
 read -p "Enter AnprPDNDSessionTokenSigningKeyARN or leave it empty to create a new one: " AnprPDNDSessionTokenSigningKeyARN
@@ -119,14 +142,8 @@ echo "You entered InadPDNDSessionTokenSigningKeyARN: ${InadPDNDSessionTokenSigni
 echo "You entered InadPDNDSessionTokenSigningKeyAlias: ${InadPDNDSessionTokenSigningKeyAlias}"
 prepare_key_and_alias "$InadPDNDSessionTokenSigningKeyARN" "$InadPDNDSessionTokenSigningKeyAlias" "InadPDNDSessionTokenSigningKey"
 
-read -p "Enter CheckCfSigningKeyARN or leave it empty to create a new one: " CheckCfSigningKeyARN
-read -p "Enter CheckCfSigningKeyAlias (without alias/ prefix): " CheckCfSigningKeyAlias
-echo "You entered CheckCfSigningKeyARN: ${CheckCfSigningKeyARN}"
-echo "You entered CheckCfSigningKeyAlias: ${CheckCfSigningKeyAlias}"
-prepare_key_and_alias "$CheckCfSigningKeyARN" "$CheckCfSigningKeyAlias" "CheckCfSigningKey"
-
 read -p "Enter InfoCamereSigningKeyARN or leave it empty to create a new one: " InfoCamereSigningKeyARN
 read -p "Enter InfoCamereSigningKeyAlias (without alias/ prefix): " InfoCamereSigningKeyAlias
 echo "You entered InfoCamereSigningKeyARN: ${InfoCamereSigningKeyARN}"
 echo "You entered InfoCamereSigningKeyAlias: ${InfoCamereSigningKeyAlias}"
-prepare_key_and_alias "$InfoCamereSigningKeyARN" "$InfoCamereSigningKeyAlias" "InfoCamereSigningKey"
+prepare_key_and_alias "$InfoCamereSigningKeyARN" "$InfoCamereSigningKeyAlias" "InfoCamereSigningKey" true
