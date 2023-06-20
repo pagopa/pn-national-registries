@@ -164,11 +164,8 @@ Parameters:
 
   SecretAndSSMPrefix:
     Type: String
+    Default: pn-national-registries
     Description: 'Secret and Parameter name prefix'
-
-  SecretKeyPrefix:
-    Type: String
-    Description: 'Secret Key name prefix'
 
   AnprPDNDSessionTokenSigningKeyARN:
     Type: String
@@ -181,14 +178,6 @@ Parameters:
   InadPDNDSessionTokenSigningKeyARN:
     Type: String
     Description: 'PDND Session Token Signing Key for eservice INAD'
-
-  CheckCfSigningKeyARN:
-    Type: String
-    Description: 'CheckCf Signing Key for MTLS'
-
-  InfoCamereSigningKeyARN:
-    Type: String
-    Description: 'Info Camere Signing Key'
 
   PnBatchRequestEncryptKeyARN:
     Type: String
@@ -447,7 +436,6 @@ Resources:
               - secretsmanager:GetSecretValue
             Resource:
               - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}*'
-              - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretKeyPrefix}*'
           - Effect: Allow
             Action:
               - kms:Sign
@@ -455,8 +443,7 @@ Resources:
               - !Ref AnprPDNDSessionTokenSigningKeyARN
               - !Ref CheckCfPDNDSessionTokenSigningKeyARN
               - !Ref InadPDNDSessionTokenSigningKeyARN
-              - !Ref CheckCfSigningKeyARN
-              - !Sub alias/${InfoCamereSigningKeyAlias}
+              - !Sub alias/${InfoCamereSigningKeyAlias}*
           - Effect: Allow
             Action:
               - kms:Encrypt
@@ -547,7 +534,7 @@ Resources:
             Action:
               - secretsmanager:GetSecretValue
               - secretsmanager:CreateSecret
-            Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretKeyPrefix}*      
+            Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}*      
           - Effect: Allow
             Action:
               - route53:ListHostedZones
@@ -587,9 +574,7 @@ Resources:
             build:
               commands:
                 - git clone https://github.com/pagopa/pn-national-registries.git
-                - (cd pn-national-registries && git checkout f1b1a40c79d2abd8b1af01aeb82b9cc9fd07cd49)
                 - cd pn-national-registries/scripts/generate_certificate_from_kms
-                - python --version
                 - pip install -r requirements.txt
                 - ./create_kms_and_generate_cert.sh --keyalias ${KEY_ALIAS} --fqdn ${FQDN} --parameter-name ${PARAM_NAME} --region ${REGION} --e-mail ${EMAIL}
       Artifacts:
@@ -624,9 +609,7 @@ Resources:
             build:
               commands:
                 - git clone https://github.com/pagopa/pn-national-registries.git
-                - (cd pn-national-registries && git checkout f1b1a40c79d2abd8b1af01aeb82b9cc9fd07cd49)
                 - cd pn-national-registries/scripts/generate_certificate_from_kms
-                - python --version
                 - pip install -r requirements.txt
                 - sudo ./generate_no_kms.sh --fqdn ${FQDN} --secretid ${SECRET_ID} --parameter-name ${PARAM_NAME} --e-mail ${EMAIL} --region ${REGION}
       Artifacts:
@@ -640,15 +623,6 @@ Resources:
           - Name: REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
-          - Name: FQDN
-            Type: PLAINTEXT
-            Value: !Ref InfocamereFQDN
-          - Name: SECRET_ID
-            Type: PLAINTEXT
-            Value: !Ref AdECheckCfSSLSecret            
-          - Name: PARAM_NAME
-            Type: PLAINTEXT
-            Value: !Ref InfoCamereAuth     
           - Name: EMAIL
             Type: PLAINTEXT
             Value: !Ref CertificateRenewalEmail
@@ -678,7 +652,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-infocamere-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(0 0 ? */2 ? *)"
+      ScheduleExpression: "cron(11 0 [Mon] */2 ? *)"
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
@@ -690,9 +664,9 @@ Resources:
               - "Arn"
           InputTransformer:
             InputPathsMap:
-              "key_alias": !Ref InfoCamereSigningKeyAlias
+              "key_alias": !Sub ${InfoCamereSigningKeyAlias}-next
               "fqdn": !Ref InfocamereFQDN
-              "param_name": !Ref InfoCamereAuth
+              "param_name": !Sub ${InfoCamereAuth}-next
             InputTemplate: |
               {
                 "environmentVariablesOverride": [{
@@ -717,7 +691,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-mtls-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(0 0 ? */2 ? *)"
+      ScheduleExpression: "cron(11 0 [Mon] */2 ? *)"
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
@@ -730,8 +704,8 @@ Resources:
           InputTransformer:
             InputPathsMap:
               "fqdn": !Ref AdeFQDN
-              "secret_id": !Ref AdECheckCfSSLSecret
-              "param_name": !Ref AdECheckCfSSL
+              "secret_id": !Sub ${AdECheckCfSSLSecret}-next
+              "param_name": !Sub ${AdECheckCfSSL}-next
             InputTemplate: |
               {
                 "environmentVariablesOverride": [{

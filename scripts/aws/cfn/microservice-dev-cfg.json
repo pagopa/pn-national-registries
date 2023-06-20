@@ -21,8 +21,6 @@
     "InfoCamereAuth": "/pn-national-registries/infocamere-cert",
     "IPABaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "IPASecret": "pn-national-registries/ipa",
-    "SecretAndSSMPrefix": "pn-national-registries",
-    "SecretKeyPrefix": "deploykey/pn-national-registries",
     "InfocamereFQDN": "infocamere.client.dev.notifichedigitali.it",
     "AdeFQDN": "ade-api.client.dev.notifichedigitali.it",
     "PnCxIdValidationEnabled": "false",
