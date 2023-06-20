@@ -44,7 +44,7 @@ public class InadClient {
     }
 
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
-        return accessTokenExpiringMap.getPDNDToken(purposeId, inadSecretConfig.getInadPdndSecretValue())
+        return accessTokenExpiringMap.getPDNDToken(purposeId, inadSecretConfig.getInadPdndSecretValue(), false)
                 .flatMap(tokenEntry -> callExtract(taxId, practicalReference, tokenEntry))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->

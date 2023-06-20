@@ -187,10 +187,6 @@ Parameters:
     Type: String
     Description: 'ARN Key DynamoDB batchRequest table'
 
-  ANPRTipoInvio:
-    Type: String
-    Description: 'Input parameter for eservice C001'
-
   CounterTableArn:
     Type: String
     Description: 'ARN of DynamoDB table containing eservice counter information'
@@ -370,7 +366,6 @@ Resources:
         ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
         ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
         ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
-        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
         ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_BASE_URL=${AdELegalBaseURL}'
         ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
         ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_AUTH=${AdECheckCfSSL}'

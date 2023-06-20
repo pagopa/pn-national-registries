@@ -20,8 +20,8 @@ public class AnprConverter {
 
     public GetAddressANPROKDto convertToGetAddressANPROKDto(ResponseE002OKDto responseE002OKDto, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
-        if (responseE002OKDto != null && responseE002OKDto.getTestataRisposta() != null) {
-            response.setClientOperationId(responseE002OKDto.getTestataRisposta().getIdOperazioneClient());
+        if (responseE002OKDto != null) {
+            response.setClientOperationId(responseE002OKDto.getIdOperazioneANPR());
         }
         if (responseE002OKDto != null && responseE002OKDto.getListaSoggetti() != null
                 && responseE002OKDto.getListaSoggetti().getDatiSoggetto() != null) {

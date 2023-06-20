@@ -92,7 +92,7 @@ class AnprClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(anprSecretConfig.getAnprPdndSecretValue()).thenReturn(new PdndSecretValue());
         when(webClient.post()).thenReturn(requestBodyUriSpec);
@@ -128,7 +128,7 @@ class AnprClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(anprSecretConfig.getAnprPdndSecretValue()).thenReturn(new PdndSecretValue());
@@ -166,7 +166,7 @@ class AnprClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(anprSecretConfig.getAnprPdndSecretValue()).thenReturn(new PdndSecretValue());

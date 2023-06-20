@@ -143,8 +143,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         if (StringUtils.hasText(responseBody)) {
             responseKO = objectMapper.readValue(responseBody, ResponseKO.class);
         }
-        String clientOperationId =
-                responseKO.getResponseHeader() != null ? responseKO.getResponseHeader().getClientOperationId() : null;
+        String clientOperationId = responseKO.getAnprOperationId();
         List<AnprResponseKO> responseErrors = Collections.emptyList();
         if (responseKO.getErrorsList() != null) {
             responseErrors = responseKO.getErrorsList().stream()

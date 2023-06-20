@@ -30,14 +30,12 @@ class AnprConverterTest {
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
-        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
         assertNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
     @Test
     void testConvertToGetAddressANPROKDto5() {
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
-        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
         assertNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
@@ -75,7 +73,6 @@ class AnprConverterTest {
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
-        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
         assertNotNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
@@ -142,7 +139,6 @@ class AnprConverterTest {
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
-        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
         assertNotNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
@@ -267,7 +263,6 @@ class AnprConverterTest {
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
-        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
         assertNotNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
@@ -311,7 +306,6 @@ class AnprConverterTest {
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
-        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
         assertNotNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
@@ -362,7 +356,6 @@ class AnprConverterTest {
         ResponseE002OKDto responseE002OKDto = new ResponseE002OKDto();
         responseE002OKDto.setListaAnomalie(new ArrayList<>());
         responseE002OKDto.setListaSoggetti(subjectsListDto);
-        responseE002OKDto.setTestataRisposta(new ResponseHeaderE002Dto());
         assertNotNull(anprConverter.convertToGetAddressANPROKDto(responseE002OKDto, "Cf").getResidentialAddresses());
     }
 
