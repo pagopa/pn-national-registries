@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.client.anpr;
 import com.auth0.jwt.HeaderParams;
 import com.auth0.jwt.RegisteredClaims;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.utils.ClientUtils;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
@@ -20,7 +21,10 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ANPR;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ANPR;
 
@@ -28,7 +32,7 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class AgidJwtTrackingEvidence {
 
-    private static final String PN_NATIONAL_REGISTRIES = "pn-national-registries-";
+    final Pattern pattern = Pattern.compile(".*Root=(.*);P.*");
     private final AnprSecretConfig anprSecretConfig;
     private final KmsClient kmsClient;
     private final String environmentType;
@@ -77,12 +81,18 @@ public class AgidJwtTrackingEvidence {
     }
 
     private Map<String, Object> createClaimMap(TokenPayload tp, String eserviceAudience) {
+        String traceId = "unknown";
+        String allTraceId  = MDCUtils.retrieveMDCContextMap().get(MDC_TRACE_ID_KEY);
+        final Matcher matcher = pattern.matcher(allTraceId);
+        if(matcher.find()) {
+            traceId = matcher.group(1);
+        }
         Map<String, Object> map = new HashMap<>();
         map.put(RegisteredClaims.AUDIENCE, eserviceAudience);
         map.put(RegisteredClaims.ISSUER, tp.getIss());
         map.put("purposeId",tp.getPurposeId());
         map.put("dnonce", generateRandomDnonce());
-        map.put("userID", PN_NATIONAL_REGISTRIES + environmentType);
+        map.put("userID", traceId);
         map.put("userLocation",environmentType);
         map.put("LoA","LoA3");
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
