@@ -44,7 +44,7 @@ public class InadClient {
     }
 
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
-        return accessTokenExpiringMap.getPDNDToken(purposeId, inadSecretConfig.getInadPdndSecretValue())
+        return accessTokenExpiringMap.getPDNDToken(purposeId, inadSecretConfig.getInadPdndSecretValue(), false)
                 .flatMap(tokenEntry -> callExtract(taxId, practicalReference, tokenEntry))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -77,9 +77,9 @@ public class InadClient {
     }
 
     protected boolean shouldRetry(Throwable throwable) {
-        if (throwable instanceof WebClientResponseException exception) {
+        if (throwable instanceof WebClientResponseException exception && exception.getStatusCode() == HttpStatus.UNAUTHORIZED) {
             log.debug("Try Retry call to INAD");
-            return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
+            return true;
         }
         return false;
     }

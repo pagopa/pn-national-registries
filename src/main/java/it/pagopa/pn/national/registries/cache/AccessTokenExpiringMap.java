@@ -37,8 +37,8 @@ public class AccessTokenExpiringMap {
         this.infoCamereDeadline = infoCamereDeadline;
     }
 
-    public Mono<AccessTokenCacheEntry> getPDNDToken(String purposeId, PdndSecretValue pdndSecretValue) {
-        if (expiringMap.isEmpty() || !expiringMap.containsKey(purposeId)) {
+    public Mono<AccessTokenCacheEntry> getPDNDToken(String purposeId, PdndSecretValue pdndSecretValue, boolean isAnpr) {
+        if (isAnpr || expiringMap.isEmpty() || !expiringMap.containsKey(purposeId)) {
             return requireNewPDNDAccessToken(purposeId, pdndSecretValue);
         }
         try {

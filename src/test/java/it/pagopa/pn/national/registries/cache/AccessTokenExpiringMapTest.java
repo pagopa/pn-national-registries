@@ -47,13 +47,13 @@ class AccessTokenExpiringMapTest {
 
         when(tokenProvider.getTokenPdnd(new PdndSecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
-        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose", new PdndSecretValue()))
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose", new PdndSecretValue(), false))
                 .expectNext(accessTokenCacheEntry)
                 .verifyComplete();
 
         expiringMap.put("purpose", accessTokenCacheEntry);
 
-        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose", new PdndSecretValue()))
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose", new PdndSecretValue(), false))
                 .expectNext(expiringMap.get("purpose"))
                 .verifyComplete();
     }
@@ -69,13 +69,13 @@ class AccessTokenExpiringMapTest {
 
         when(tokenProvider.getTokenPdnd(new PdndSecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
 
-        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose", new PdndSecretValue()))
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose", new PdndSecretValue(), false))
                 .expectNext(accessTokenCacheEntry)
                 .verifyComplete();
 
         expiringMap.put("purpose", accessTokenCacheEntry);
 
-        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose", new PdndSecretValue()))
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose", new PdndSecretValue(), false))
                 .expectNext(accessTokenCacheEntry)
                 .verifyComplete();
     }

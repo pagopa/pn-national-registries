@@ -346,8 +346,7 @@ class GatewayConverterTest {
                 "correlationId: {} - IPA - WS23 - domicili digitali non presenti");
 
         ValidateTaxIdUtils validateTaxIdUtils = mock(ValidateTaxIdUtils.class);
-        AnprService anprService = new AnprService(new AnprConverter(), mock(AnprClient.class),
-                "correlationId: {} - IPA - WS23 - domicili digitali non presenti", counterRepository, validateTaxIdUtils);
+        AnprService anprService = new AnprService(new AnprConverter(), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
 
         DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient2 = mock(DynamoDbEnhancedAsyncClient.class);
         when(dynamoDbEnhancedAsyncClient2.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(
