@@ -10,8 +10,8 @@ import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.SignRequest;
 import software.amazon.awssdk.services.kms.model.SignResponse;
@@ -21,6 +21,8 @@ import java.security.SecureRandom;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ANPR;
@@ -30,13 +32,17 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class AgidJwtTrackingEvidence {
 
+    final Pattern pattern = Pattern.compile(".*Root=(.*);P.*");
     private final AnprSecretConfig anprSecretConfig;
     private final KmsClient kmsClient;
+    private final String environmentType;
 
     public AgidJwtTrackingEvidence(AnprSecretConfig anprSecretConfig,
-                                   KmsClient kmsClient) {
+                                   KmsClient kmsClient,
+                                   @Value("${pn.national.registries.environment.type}") String environmentType) {
         this.anprSecretConfig = anprSecretConfig;
         this.kmsClient = kmsClient;
+        this.environmentType = environmentType;
     }
 
     public String createAgidJwt() {
@@ -75,14 +81,19 @@ public class AgidJwtTrackingEvidence {
     }
 
     private Map<String, Object> createClaimMap(TokenPayload tp, String eserviceAudience) {
-        String traceId = MDCUtils.retrieveMDCContextMap().get(MDC_TRACE_ID_KEY);
+        String traceId = "unknown";
+        String allTraceId  = MDCUtils.retrieveMDCContextMap().get(MDC_TRACE_ID_KEY);
+        final Matcher matcher = pattern.matcher(allTraceId);
+        if(matcher.find()) {
+            traceId = matcher.group(1);
+        }
         Map<String, Object> map = new HashMap<>();
         map.put(RegisteredClaims.AUDIENCE, eserviceAudience);
         map.put(RegisteredClaims.ISSUER, tp.getIss());
         map.put("purposeId",tp.getPurposeId());
         map.put("dnonce", generateRandomDnonce());
-        map.put("userID", StringUtils.hasText(traceId) ? traceId : "unknown");
-        map.put("userLocation","userLocation");
+        map.put("userID", traceId);
+        map.put("userLocation",environmentType);
         map.put("LoA","LoA3");
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
         map.put(RegisteredClaims.EXPIRES_AT, tp.getExp());

@@ -336,6 +336,10 @@ Parameters:
   LogAlarmStrategy:
     Type: String
     Default: 'FATAL'
+
+  EnvironmentType:
+    Type: String
+    Description: environment name
 Resources:
 
   # PN-National-Registry microservice
@@ -393,6 +397,7 @@ Resources:
         ContainerEnvEntry33: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
         ContainerEnvEntry34: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_TRUST_SECRET=${AdECheckCfTrustSecret}'
         ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
+        ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
