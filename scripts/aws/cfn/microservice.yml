@@ -675,7 +675,6 @@ Resources:
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
         - Id: "CertRenewalAlarm"
-          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
           Arn: !Ref PnNationalRegistriesCertificateDLQARN
         - Id: "CertRenewalRunner"
           RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
@@ -693,7 +692,6 @@ Resources:
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
         - Id: "CertRenewalAlarm"
-          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
           Arn: !Ref PnNationalRegistriesCertificateDLQARN
         - Id: "CertRenewalRunner"
           RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
