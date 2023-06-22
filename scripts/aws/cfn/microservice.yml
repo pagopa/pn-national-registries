@@ -430,7 +430,7 @@ Resources:
             Action:
               - kms:Sign
             Resource:
-              - !Sub alias/${SecretAndSSMPrefix}*
+              - !Sub 'arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/${SecretAndSSMPrefix}*'
           - Effect: Allow
             Action:
               - kms:Encrypt
