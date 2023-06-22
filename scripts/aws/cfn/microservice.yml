@@ -507,8 +507,7 @@ Resources:
               - ssm:PutParameter
               - ssm:GetParameter
             Resource: 
-              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${InfoCamereAuth}
-              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${InfoCamereAuth}-next
+              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SecretAndSSMPrefix}*
           - Effect: Allow
             Action: 
               - kms:ListAliases
@@ -524,6 +523,7 @@ Resources:
             Action:
               - secretsmanager:GetSecretValue
               - secretsmanager:CreateSecret
+              - secretsmanager:UpdateSecret
             Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}*      
           - Effect: Allow
             Action:
@@ -652,7 +652,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-infocamere-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(11 0 ? */2 WED *)"
+      ScheduleExpression: "cron(11 0 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
@@ -694,7 +694,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-mtls-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(11 0 ? */2 WED *)"
+      ScheduleExpression: "cron(11 0 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 

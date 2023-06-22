@@ -54,80 +54,80 @@ Resources:
             Action: 'kms:*'
             Resource: '*'
 
-  AnprPDNDSessionTokenSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
+  # AnprPDNDSessionTokenSigningKey:
+  #   Type: 'AWS::KMS::Key'
+  #   DeletionPolicy: Retain
+  #   UpdateReplacePolicy: Retain
+  #   Properties:
+  #     Description: RSA-2048 key to generate session token
+  #     KeySpec: RSA_2048
+  #     KeyUsage: SIGN_VERIFY
+  #     KeyPolicy:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: Enable IAM User Permissions
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+  #           Action: 'kms:*'
+  #           Resource: '*'
 
-  # Application use this alias to access the public/private key pair
-  AnprPDNDSessionTokenSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-anpr-pdnd'
-      TargetKeyId: !Ref AnprPDNDSessionTokenSigningKey
+  # # Application use this alias to access the public/private key pair
+  # AnprPDNDSessionTokenSigningKeyAlias:
+  #   Type: 'AWS::KMS::Alias'
+  #   Properties:
+  #     AliasName: !Sub 'alias/${ProjectName}-national-registries-anpr-pdnd'
+  #     TargetKeyId: !Ref AnprPDNDSessionTokenSigningKey
 
-  CheckCfPDNDSessionTokenSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
+  # CheckCfPDNDSessionTokenSigningKey:
+  #   Type: 'AWS::KMS::Key'
+  #   DeletionPolicy: Retain
+  #   UpdateReplacePolicy: Retain
+  #   Properties:
+  #     Description: RSA-2048 key to generate session token
+  #     KeySpec: RSA_2048
+  #     KeyUsage: SIGN_VERIFY
+  #     KeyPolicy:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: Enable IAM User Permissions
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+  #           Action: 'kms:*'
+  #           Resource: '*'
 
-    # Application use this alias to access the public/private key pair
-  CheckCfPDNDSessionTokenSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-check-cf-pdnd'
-      TargetKeyId: !Ref CheckCfPDNDSessionTokenSigningKey
+  #   # Application use this alias to access the public/private key pair
+  # CheckCfPDNDSessionTokenSigningKeyAlias:
+  #   Type: 'AWS::KMS::Alias'
+  #   Properties:
+  #     AliasName: !Sub 'alias/${ProjectName}-national-registries-check-cf-pdnd'
+  #     TargetKeyId: !Ref CheckCfPDNDSessionTokenSigningKey
 
-  InadPDNDSessionTokenSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
+  # InadPDNDSessionTokenSigningKey:
+  #   Type: 'AWS::KMS::Key'
+  #   DeletionPolicy: Retain
+  #   UpdateReplacePolicy: Retain
+  #   Properties:
+  #     Description: RSA-2048 key to generate session token
+  #     KeySpec: RSA_2048
+  #     KeyUsage: SIGN_VERIFY
+  #     KeyPolicy:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: Enable IAM User Permissions
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+  #           Action: 'kms:*'
+  #           Resource: '*'
 
-  # Application use this alias to access the public/private key pair
-  InadPDNDSessionTokenSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-inad-pdnd'
-      TargetKeyId: !Ref InadPDNDSessionTokenSigningKey
+  # # Application use this alias to access the public/private key pair
+  # InadPDNDSessionTokenSigningKeyAlias:
+  #   Type: 'AWS::KMS::Alias'
+  #   Properties:
+  #     AliasName: !Sub 'alias/${ProjectName}-national-registries-inad-pdnd'
+  #     TargetKeyId: !Ref InadPDNDSessionTokenSigningKey
 
   # CheckCfSigningKey:
   #   Type: 'AWS::KMS::Key'
@@ -300,15 +300,15 @@ Outputs:
   PnBatchRequestEncryptKeyARN:
     Description: PnBatchRequestEncryptKeyARN
     Value: !Sub '${PnBatchRequestEncryptKey.Arn}'
-  AnprPDNDSessionTokenSigningKeyARN:
-    Description: AnprPDNDSessionTokenSigningKeyARN
-    Value: !Sub '${AnprPDNDSessionTokenSigningKey.Arn}'
-  CheckCfPDNDSessionTokenSigningKeyARN:
-    Description: CheckCfPDNDSessionTokenSigningKeyARN
-    Value: !Sub '${CheckCfPDNDSessionTokenSigningKey.Arn}'
-  InadPDNDSessionTokenSigningKeyARN:
-    Description: InadPDNDSessionTokenSigningKeyARN
-    Value: !Sub '${InadPDNDSessionTokenSigningKey.Arn}'
+  # AnprPDNDSessionTokenSigningKeyARN:
+  #   Description: AnprPDNDSessionTokenSigningKeyARN
+  #   Value: !Sub '${AnprPDNDSessionTokenSigningKey.Arn}'
+  # CheckCfPDNDSessionTokenSigningKeyARN:
+  #   Description: CheckCfPDNDSessionTokenSigningKeyARN
+  #   Value: !Sub '${CheckCfPDNDSessionTokenSigningKey.Arn}'
+  # InadPDNDSessionTokenSigningKeyARN:
+  #   Description: InadPDNDSessionTokenSigningKeyARN
+  #   Value: !Sub '${InadPDNDSessionTokenSigningKey.Arn}'
   # CheckCfSigningKeyARN:
   #   Description: CheckCfSigningKeyARN
   #   Value: !Sub '${CheckCfSigningKey.Arn}'
