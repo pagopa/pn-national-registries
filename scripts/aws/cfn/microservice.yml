@@ -590,6 +590,15 @@ Resources:
           - Name: EMAIL
             Type: PLAINTEXT
             Value: !Ref CertificateRenewalEmail
+          - Name: FQDN
+            Type: PLAINTEXT
+            Value: !Ref InfocamereFQDN
+          - Name: KEY_ALIAS
+            Type: PLAINTEXT
+            Value: !Sub ${InfoCamereSigningKeyAlias}-next
+          - Name: PARAM_NAME
+            Type: PLAINTEXT
+            Value: !Sub ${InfoCamereAuth}-next
 
   MtlsCertRenewalCodebuildProject:
     Type: 'AWS::CodeBuild::Project'
@@ -626,6 +635,15 @@ Resources:
           - Name: EMAIL
             Type: PLAINTEXT
             Value: !Ref CertificateRenewalEmail
+          - Name: FQDN
+            Type: PLAINTEXT
+            Value: !Ref AdeFQDN
+          - Name: SECRET_ID
+            Type: PLAINTEXT
+            Value: !Sub ${AdECheckCfSSLSecret}-next
+          - Name: PARAM_NAME
+            Type: PLAINTEXT
+            Value: !Sub ${AdECheckCfSSL}-next
 
   CertificateRenewalCodeBuildRole:
     Type: AWS::IAM::Role
@@ -657,7 +675,6 @@ Resources:
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
         - Id: "CertRenewalAlarm"
-          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
           Arn: !Ref PnNationalRegistriesCertificateDLQARN
         - Id: "CertRenewalRunner"
           RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
@@ -665,31 +682,7 @@ Resources:
             Fn::GetAtt: 
               - "InfocamereCertRenewalCodebuildProject"
               - "Arn"
-          InputTransformer:
-            InputPathsMap:
-              "key_alias": !Sub ${InfoCamereSigningKeyAlias}-next
-              "fqdn": !Ref InfocamereFQDN
-              "param_name": !Sub ${InfoCamereAuth}-next
-            InputTemplate: |
-              {
-                "environmentVariablesOverride": [{
-                    "name": "FQDN",
-                    "type": "PLAINTEXT",
-                    "value": <fqdn>
-                  },
-                  {
-                    "name": "KEY_ALIAS",
-                    "type": "PLAINTEXT",
-                    "value": <key_alias>
-                  },
-                  {
-                    "name": "PARAM_NAME",
-                    "type": "PLAINTEXT",
-                    "value": <param_name>
-                  }
-                ]
-              }
-
+      
   MtlsScheduledRule:
     Type: AWS::Events::Rule
     Properties:
@@ -699,7 +692,6 @@ Resources:
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
         - Id: "CertRenewalAlarm"
-          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
           Arn: !Ref PnNationalRegistriesCertificateDLQARN
         - Id: "CertRenewalRunner"
           RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
@@ -707,27 +699,3 @@ Resources:
             Fn::GetAtt: 
               - "InfocamereCertRenewalCodebuildProject"
               - "Arn"
-          InputTransformer:
-            InputPathsMap:
-              "fqdn": !Ref AdeFQDN
-              "secret_id": !Sub ${AdECheckCfSSLSecret}-next
-              "param_name": !Sub ${AdECheckCfSSL}-next
-            InputTemplate: |
-              {
-                "environmentVariablesOverride": [{
-                    "name": "FQDN",
-                    "type": "PLAINTEXT",
-                    "value": <fqdn>
-                  },
-                  {
-                    "name": "SECRET_ID",
-                    "type": "PLAINTEXT",
-                    "value": <secret_id>
-                  },
-                  {
-                    "name": "PARAM_NAME",
-                    "type": "PLAINTEXT",
-                    "value": <param_name>
-                  }
-                ]
-              }
