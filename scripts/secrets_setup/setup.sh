@@ -76,7 +76,6 @@ function prepare_key_and_alias(){
     keyArn=$1
     alias=$2
     description=$3
-    createNextAlias=$4
     if ( [ -z "$keyArn" ] ) then
         keyArn=$(aws --profile ${profile} --region ${region} kms create-key \
         --description $3 \
@@ -102,10 +101,10 @@ function prepare_key_and_alias(){
     fi
 
 
-    if ( [ ! -z "$createNextAlias" ] ) then
+    if ( [ ! -z "$4" ] ) then
       # prepare the "next"
 
-      $nextAlias="${alias}-next"
+      nextAlias="${alias}-next"
       aliasExists=$(aws --profile ${profile} --region ${region} kms list-aliases | jq -r --arg aliasName "alias/$nextAlias" '.Aliases[] | select(.AliasName == $aliasName)' | jq -r '.AliasName' )
       echo "Alias exists: "$aliasExists
 
@@ -129,21 +128,21 @@ read -p "Enter AnprPDNDSessionTokenSigningKeyAlias (default is pn-national-regis
 echo "You entered AnprPDNDSessionTokenSigningKeyARN: ${AnprPDNDSessionTokenSigningKeyARN}"
 echo "You entered AnprPDNDSessionTokenSigningKeyAlias: ${AnprPDNDSessionTokenSigningKeyAlias}"
 AnprPDNDSessionTokenSigningKeyAlias=${AnprPDNDSessionTokenSigningKeyAlias:=pn-national-registries-anpr-pdnd}
-prepare_key_and_alias "$AnprPDNDSessionTokenSigningKeyARN" "$AnprPDNDSessionTokenSigningKeyAlias" "AnprPDNDSessionTokenSigningKey"
+prepare_key_and_alias "$AnprPDNDSessionTokenSigningKeyARN" "$AnprPDNDSessionTokenSigningKeyAlias" "AnprPDNDSessionTokenSigningKey" ""
 
 read -p "Enter CheckCfPDNDSessionTokenSigningKeyARN or leave it empty to create a new one: " CheckCfPDNDSessionTokenSigningKeyARN
 read -p "Enter CheckCfPDNDSessionTokenSigningKeyAlias (default is pn-national-registries-check-cf-pdnd): " CheckCfPDNDSessionTokenSigningKeyAlias
 echo "You entered CheckCfPDNDSessionTokenSigningKeyARN: ${CheckCfPDNDSessionTokenSigningKeyARN}"
 echo "You entered CheckCfPDNDSessionTokenSigningKeyAlias: ${CheckCfPDNDSessionTokenSigningKeyAlias}"
 CheckCfPDNDSessionTokenSigningKeyAlias=${CheckCfPDNDSessionTokenSigningKeyAlias:=pn-national-registries-check-cf-pdnd}
-prepare_key_and_alias "$CheckCfPDNDSessionTokenSigningKeyARN" "$CheckCfPDNDSessionTokenSigningKeyAlias" "CheckCfPDNDSessionTokenSigningKey"
+prepare_key_and_alias "$CheckCfPDNDSessionTokenSigningKeyARN" "$CheckCfPDNDSessionTokenSigningKeyAlias" "CheckCfPDNDSessionTokenSigningKey" ""
 
 read -p "Enter InadPDNDSessionTokenSigningKeyARN or leave it empty to create a new one: " InadPDNDSessionTokenSigningKeyARN
 read -p "Enter InadPDNDSessionTokenSigningKeyAlias (default is pn-national-registries-inad-pdnd): " InadPDNDSessionTokenSigningKeyAlias
 echo "You entered InadPDNDSessionTokenSigningKeyARN: ${InadPDNDSessionTokenSigningKeyARN}"
 echo "You entered InadPDNDSessionTokenSigningKeyAlias: ${InadPDNDSessionTokenSigningKeyAlias}"
 InadPDNDSessionTokenSigningKeyAlias=${InadPDNDSessionTokenSigningKeyAlias:=pn-national-registries-inad-pdnd}
-prepare_key_and_alias "$InadPDNDSessionTokenSigningKeyARN" "$InadPDNDSessionTokenSigningKeyAlias" "InadPDNDSessionTokenSigningKey"
+prepare_key_and_alias "$InadPDNDSessionTokenSigningKeyARN" "$InadPDNDSessionTokenSigningKeyAlias" "InadPDNDSessionTokenSigningKey" ""
 
 read -p "Enter InfoCamereSigningKeyARN or leave it empty to create a new one: " InfoCamereSigningKeyARN
 read -p "Enter InfoCamereSigningKeyAlias (default is pn-national-registries-infocamere-signing-key-alias): " InfoCamereSigningKeyAlias
