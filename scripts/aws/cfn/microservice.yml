@@ -430,7 +430,7 @@ Resources:
             Action:
               - kms:Sign
             Resource:
-              - !Sub 'arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:alias/${SecretAndSSMPrefix}*'
+              - !Sub 'arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*'
           - Effect: Allow
             Action:
               - kms:Encrypt
@@ -575,8 +575,8 @@ Resources:
               commands:
                 - git clone https://github.com/pagopa/pn-national-registries.git
                 - cd pn-national-registries/scripts/generate_certificate_from_kms
-                - pip install -r requirements.txt
-                - ./create_kms_and_generate_cert.sh --keyalias ${KEY_ALIAS} --fqdn ${FQDN} --parameter-name ${PARAM_NAME} --region ${REGION} --e-mail ${EMAIL}
+                - docker build -t certificate-manager .
+                - docker run -i --rm certificate-manager:latest /bin/bash ./create_kms_and_generate_cert.sh --keyalias ${KEY_ALIAS} --fqdn ${FQDN} --parameter-name ${PARAM_NAME} --region ${REGION} --e-mail ${EMAIL}
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:
@@ -619,8 +619,8 @@ Resources:
               commands:
                 - git clone https://github.com/pagopa/pn-national-registries.git
                 - cd pn-national-registries/scripts/generate_certificate_from_kms
-                - pip install -r requirements.txt
-                - sudo ./generate_no_kms.sh --fqdn ${FQDN} --secretid ${SECRET_ID} --parameter-name ${PARAM_NAME} --e-mail ${EMAIL} --region ${REGION}
+                - docker build -t certificate-manager .
+                - docker run -i --rm certificate-manager:latest /bin/bash ./generate_no_kms.sh --fqdn ${FQDN} --secretid ${SECRET_ID} --parameter-name ${PARAM_NAME} --e-mail ${EMAIL} --region ${REGION}
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:
