@@ -516,7 +516,7 @@ Resources:
               - kms:Sign
               - kms:CreateKey
               - kms:GetPublicKey
-              - kms:ScheduleKeyDeletion	
+              - kms:ScheduleKeyDeletion
             Resource: 
               - '*'   
           - Effect: Allow
