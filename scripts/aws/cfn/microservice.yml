@@ -504,6 +504,11 @@ Resources:
             Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
           - Effect: Allow
             Action: 
+              - sts:AssumeRole
+            Resource: 
+              - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+          - Effect: Allow
+            Action: 
               - ssm:PutParameter
               - ssm:GetParameter
             Resource: 
@@ -555,6 +560,12 @@ Resources:
                 - "codebuild.amazonaws.com"
             Action:
               - "sts:AssumeRole"
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+            Action:
+              - "sts:AssumeRole"              
 
   InfocamereCertRenewalCodebuildProject:
     Type: 'AWS::CodeBuild::Project'
@@ -573,10 +584,14 @@ Resources:
                 - echo "### NO PRE_BUILD"
             build:
               commands:
+                - session=$(aws sts assume-role --role-arn ${ASSUME_ROLE} --role-session-name test)
+                - export AWS_ACCESS_KEY_ID=$(echo "${session}" | jq -r '.Credentials.AccessKeyId')
+                - export AWS_SECRET_ACCESS_KEY=$(echo "${session}" | jq -r '.Credentials.SecretAccessKey')
+                - export AWS_SESSION_TOKEN=$(echo "${session}" | jq -r '.Credentials.SessionToken')                    
                 - git clone https://github.com/pagopa/pn-national-registries.git
                 - cd pn-national-registries/scripts/generate_certificate_from_kms
                 - docker build -t certificate-manager .
-                - docker run -i --rm certificate-manager:latest /bin/bash ./create_kms_and_generate_cert.sh --keyalias ${KEY_ALIAS} --fqdn ${FQDN} --parameter-name ${PARAM_NAME} --region ${REGION} --e-mail ${EMAIL}
+                - docker run -i --rm --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN certificate-manager:latest /bin/bash ./create_kms_and_generate_cert.sh --keyalias ${KEY_ALIAS} --fqdn ${FQDN} --parameter-name ${PARAM_NAME} --region ${REGION} --e-mail ${EMAIL}
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:
@@ -584,6 +599,9 @@ Resources:
         Type: LINUX_CONTAINER
         Image: "aws/codebuild/standard:7.0"
         EnvironmentVariables:
+          - Name: ASSUME_ROLE
+            Type: PLAINTEXT
+            Value: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
           - Name: REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
@@ -617,10 +635,14 @@ Resources:
                 - echo "### NO PRE_BUILD"
             build:
               commands:
+                - session=$(aws sts assume-role --role-arn ${ASSUME_ROLE} --role-session-name test)
+                - export AWS_ACCESS_KEY_ID=$(echo "${session}" | jq -r '.Credentials.AccessKeyId')
+                - export AWS_SECRET_ACCESS_KEY=$(echo "${session}" | jq -r '.Credentials.SecretAccessKey')
+                - export AWS_SESSION_TOKEN=$(echo "${session}" | jq -r '.Credentials.SessionToken')                    
                 - git clone https://github.com/pagopa/pn-national-registries.git
                 - cd pn-national-registries/scripts/generate_certificate_from_kms
                 - docker build -t certificate-manager .
-                - docker run -i --rm certificate-manager:latest /bin/bash ./generate_no_kms.sh --fqdn ${FQDN} --secretid ${SECRET_ID} --parameter-name ${PARAM_NAME} --e-mail ${EMAIL} --region ${REGION}
+                - docker run -i --rm --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN certificate-manager:latest /bin/bash ./generate_no_kms.sh --fqdn ${FQDN} --secretid ${SECRET_ID} --parameter-name ${PARAM_NAME} --e-mail ${EMAIL} --region ${REGION}
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:
@@ -629,6 +651,9 @@ Resources:
         Type: LINUX_CONTAINER
         Image: "aws/codebuild/standard:7.0"
         EnvironmentVariables:
+          - Name: ASSUME_ROLE
+            Type: PLAINTEXT
+            Value: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
           - Name: REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
