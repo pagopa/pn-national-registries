@@ -506,7 +506,32 @@ Resources:
             Action: 
               - sts:AssumeRole
             Resource: 
-              - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+              - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${ProjectName}-cert-renewal-ecs
+          - Effect: Allow
+            Action:
+              - sqs:ChangeMessageVisibility
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+              - sqs:ReceiveMessage
+              - sqs:SendMessage
+            Resource:
+              - !Ref PnNationalRegistriesCertificateDLQARN
+
+  CertificateRenewalEcsManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub ${ProjectName}-Certificate-Renewal-Ecs-Managed-Policy
+      Roles:
+        - !Ref CertificateRenewalCodeBuildEcsRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
           - Effect: Allow
             Action: 
               - ssm:PutParameter
@@ -536,17 +561,7 @@ Resources:
               - route53:GetChange
               - route53:ChangeResourceRecordSets
             Resource: "*"
-          - Effect: Allow
-            Action:
-              - sqs:ChangeMessageVisibility
-              - sqs:DeleteMessage
-              - sqs:GetQueueAttributes
-              - sqs:GetQueueUrl
-              - sqs:ReceiveMessage
-              - sqs:SendMessage
-            Resource:
-              - !Ref PnNationalRegistriesCertificateDLQARN
-                  
+
   CertificateRenewalCodeBuildServiceRole:
     Type: AWS::IAM::Role
     Properties:
@@ -560,12 +575,20 @@ Resources:
                 - "codebuild.amazonaws.com"
             Action:
               - "sts:AssumeRole"
-          # - Effect: Allow
-          #   Principal:
-          #     AWS:
-          #       - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
-          #   Action:
-          #     - "sts:AssumeRole"              
+
+  CertificateRenewalCodeBuildEcsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-cert-renewal-ecs
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${ProjectName}-cert-renewal-codebuild
+            Action:
+              - "sts:AssumeRole"   
 
   InfocamereCertRenewalCodebuildProject:
     Type: 'AWS::CodeBuild::Project'
@@ -601,7 +624,7 @@ Resources:
         EnvironmentVariables:
           - Name: ASSUME_ROLE
             Type: PLAINTEXT
-            Value: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+            Value: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${ProjectName}-cert-renewal-ecs
           - Name: REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
@@ -653,7 +676,7 @@ Resources:
         EnvironmentVariables:
           - Name: ASSUME_ROLE
             Type: PLAINTEXT
-            Value: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+            Value: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${ProjectName}-cert-renewal-ecs
           - Name: REGION
             Type: PLAINTEXT
             Value: !Ref AWS::Region
