@@ -89,7 +89,7 @@ function prepare_key_and_alias(){
     aliasExists=$(aws --profile ${profile} --region ${region} kms list-aliases | jq -r --arg aliasName "alias/$alias" '.Aliases[] | select(.AliasName == $aliasName)' | jq -r '.AliasName' )
     echo "Alias exists: "$aliasExists
 
-    if ( [ -z "$createNextAlias" ] ) then
+    if ( [ -z "$aliasExists" ] ) then
         aws --profile ${profile} --region ${region} kms create-alias \
             --alias-name alias/${alias} \
             --target-key-id $keyArn
@@ -103,7 +103,7 @@ function prepare_key_and_alias(){
     fi
 
 
-    if ( [ ! -z "$4" ] ) then
+    if ( [ ! -z "$createNextAlias" ] ) then
       # prepare the "next"
 
       nextAlias="${alias}-next"

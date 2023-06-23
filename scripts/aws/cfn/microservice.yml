@@ -560,12 +560,12 @@ Resources:
                 - "codebuild.amazonaws.com"
             Action:
               - "sts:AssumeRole"
-          - Effect: Allow
-            Principal:
-              AWS:
-                - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
-            Action:
-              - "sts:AssumeRole"              
+          # - Effect: Allow
+          #   Principal:
+          #     AWS:
+          #       - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+          #   Action:
+          #     - "sts:AssumeRole"              
 
   InfocamereCertRenewalCodebuildProject:
     Type: 'AWS::CodeBuild::Project'
