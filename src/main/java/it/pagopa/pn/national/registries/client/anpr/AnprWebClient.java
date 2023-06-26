@@ -6,6 +6,8 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.client.CommonWebClient;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.config.anpr.AnprWebClientConfig;
+import it.pagopa.pn.national.registries.model.TrustData;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -25,15 +27,18 @@ public class AnprWebClient extends CommonWebClient {
     private final String basePath;
     private final AnprWebClientConfig webClientConfig;
     private final AnprSecretConfig anprSecretConfig;
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
     public AnprWebClient(@Value("${pn.national.registries.webclient.ssl-cert-ver}") Boolean sslCertVer,
                          @Value("${pn.national.registries.anpr.base-path}") String basePath,
                          AnprWebClientConfig webClientConfig,
-                         AnprSecretConfig anprSecretConfig) {
+                         AnprSecretConfig anprSecretConfig,
+                         PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
         super(sslCertVer);
         this.basePath = basePath;
         this.webClientConfig = webClientConfig;
         this.anprSecretConfig = anprSecretConfig;
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
     public WebClient init() {
@@ -52,7 +57,8 @@ public class AnprWebClient extends CommonWebClient {
 
     protected SslContext buildSslContext() {
         try {
-            return getSslContext(SslContextBuilder.forClient(), anprSecretConfig.getTrustData().getTrust());
+            TrustData trustData = pnNationalRegistriesSecretService.getTrustedCertFromSecret(anprSecretConfig.getTrustSecret());
+            return getSslContext(SslContextBuilder.forClient(), trustData.getTrust());
         } catch (IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, e);
         }

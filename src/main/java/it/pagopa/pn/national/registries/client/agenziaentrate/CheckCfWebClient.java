@@ -8,14 +8,14 @@ import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfWebClientConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
-import it.pagopa.pn.national.registries.service.SecretManagerService;
+import it.pagopa.pn.national.registries.model.TrustData;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 import reactor.netty.resources.ConnectionProvider;
-import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
 
 import java.io.IOException;
 import java.time.Duration;
@@ -33,7 +33,7 @@ public class CheckCfWebClient extends CommonWebClient {
     private final SsmParameterConsumerActivation ssmParameterConsumerActivation;
     private final String authChannelData;
     private final CheckCfSecretConfig checkCfSecretConfig;
-    private final SecretManagerService secretManagerService;
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
     public CheckCfWebClient(@Value("${pn.national.registries.webclient.ssl-cert-ver}") Boolean sslCertVer,
                             @Value("${pn.national.registries.ade-check-cf.base-path}") String basePath,
@@ -41,14 +41,14 @@ public class CheckCfWebClient extends CommonWebClient {
                             CheckCfWebClientConfig webClientConfig,
                             SsmParameterConsumerActivation ssmParameterConsumerActivation,
                             CheckCfSecretConfig checkCfSecretConfig,
-                            SecretManagerService secretManagerService) {
+                            PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
         super(sslCertVer);
         this.basePath = basePath;
         this.webClientConfig = webClientConfig;
         this.ssmParameterConsumerActivation = ssmParameterConsumerActivation;
         this.authChannelData = authChannelData;
         this.checkCfSecretConfig = checkCfSecretConfig;
-        this.secretManagerService = secretManagerService;
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
     protected WebClient init() {
@@ -67,19 +67,16 @@ public class CheckCfWebClient extends CommonWebClient {
 
     protected SslContext buildSslContext() {
         try {
+            TrustData trustData = pnNationalRegistriesSecretService.getTrustedCertFromSecret(checkCfSecretConfig.getTrustData());
             Optional<SSLData> optSslData = ssmParameterConsumerActivation.getParameterValue(authChannelData, SSLData.class);
             if(optSslData.isEmpty()) {
                 throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF);
             }
             SSLData sslData = optSslData.get();
-            Optional<GetSecretValueResponse> secretValue = secretManagerService.getSecretValue(sslData.getSecretid());
-            if(secretValue.isEmpty()) {
-                throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF);
-            }
-            String privateKey = secretValue.get().secretString();
+            String privateKey = pnNationalRegistriesSecretService.getSecret(sslData.getSecretid());
             SslContextBuilder sslContext = SslContextBuilder.forClient()
                     .keyManager(getCertInputStream(sslData.getCert()), getKeyInputStream(privateKey));
-            return getSslContext(sslContext, checkCfSecretConfig.getTrustData().getTrust());
+            return getSslContext(sslContext, trustData.getTrust());
 
         } catch (IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, e);

@@ -24,7 +24,6 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ANPR;
 
 @Slf4j
 @Component
@@ -54,36 +53,34 @@ public class InfoCamereJwsGenerator {
         log.info("start to createAuthRest");
         long startTime = System.currentTimeMillis();
         try {
-            Optional<SSLData> optSslData = ssmParameterConsumerActivation.getAuthParameter(infoCamereAuthRestSecret, SSLData.class);
-            if (optSslData.isPresent()) {
-
-                ObjectMapper mapper = new ObjectMapper();
-                String headerBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(createHeaderMap(optSslData.get())));
-                String payloadBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(createClaimMap(scope)));
-                String jwtContent = headerBase64String + "." + payloadBase64String;
-
-                SdkBytes awsBytesJwtContent = SdkBytes.fromByteArray(jwtContent.getBytes(StandardCharsets.UTF_8));
-                SignRequest signRequest = SignRequest.builder()
-                        .message(awsBytesJwtContent)
-                        .messageType(MessageType.RAW)
-                        .signingAlgorithm(SigningAlgorithmSpec.RSASSA_PKCS1_V1_5_SHA_256)
-                        .keyId(optSslData.get().getKeyId())
-                        .build();
-
-                log.info("START - KmsClient.sign Request: {}",
-                        signRequest);
-                long startTimeKms = System.currentTimeMillis();
-                SignResponse signResult = kmsClient.sign(signRequest);
-                log.info("END - KmsClient.sign Timelapse: {} ms", System.currentTimeMillis() - startTimeKms);
-
-                byte[] signature = signResult.signature().asByteArray();
-                String signatureString = bytesToUrlSafeBase64String(signature);
-                log.info("END - AdigJwtSignature.createAgidJwt Timelapse: {} ms", System.currentTimeMillis() - startTime);
-                log.info("generated jwt: {}", jwtContent + "." + signatureString);
-                return jwtContent + "." + signatureString;
-            } else {
-                throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR);
+            Optional<SSLData> optSslData = ssmParameterConsumerActivation.getParameterValue(infoCamereAuthRestSecret, SSLData.class);
+            if (optSslData.isEmpty()) {
+                throw new PnInternalException(ERROR_MESSAGE_INFOCAMERE, ERROR_CODE_INFOCAMERE);
             }
+            ObjectMapper mapper = new ObjectMapper();
+            String headerBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(createHeaderMap(optSslData.get())));
+            String payloadBase64String = jsonObjectToUrlSafeBase64String(mapper.writeValueAsString(createClaimMap(scope)));
+            String jwtContent = headerBase64String + "." + payloadBase64String;
+
+            SdkBytes awsBytesJwtContent = SdkBytes.fromByteArray(jwtContent.getBytes(StandardCharsets.UTF_8));
+            SignRequest signRequest = SignRequest.builder()
+                    .message(awsBytesJwtContent)
+                    .messageType(MessageType.RAW)
+                    .signingAlgorithm(SigningAlgorithmSpec.RSASSA_PKCS1_V1_5_SHA_256)
+                    .keyId(optSslData.get().getKeyId())
+                    .build();
+
+            log.info("START - KmsClient.sign Request: {}",
+                    signRequest);
+            long startTimeKms = System.currentTimeMillis();
+            SignResponse signResult = kmsClient.sign(signRequest);
+            log.info("END - KmsClient.sign Timelapse: {} ms", System.currentTimeMillis() - startTimeKms);
+
+            byte[] signature = signResult.signature().asByteArray();
+            String signatureString = bytesToUrlSafeBase64String(signature);
+            log.info("END - AdigJwtSignature.createAgidJwt Timelapse: {} ms", System.currentTimeMillis() - startTime);
+            log.info("generated jwt: {}", jwtContent + "." + signatureString);
+            return jwtContent + "." + signatureString;
         } catch (IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_INFOCAMERE, ERROR_CODE_INFOCAMERE, e);
         }
@@ -104,7 +101,7 @@ public class InfoCamereJwsGenerator {
         }
         map.put("x5c", List.of(x5c));
         map.put("use", "sig");
-        log.debug("HeaderMap type: {}, alg: {}",map.get(HeaderParams.TYPE), map.get(HeaderParams.ALGORITHM));
+        log.debug("HeaderMap type: {}, alg: {}", map.get(HeaderParams.TYPE), map.get(HeaderParams.ALGORITHM));
         return map;
     }
 
