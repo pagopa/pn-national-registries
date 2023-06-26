@@ -3,7 +3,7 @@ package it.pagopa.pn.national.registries.config;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TrustData;
-import it.pagopa.pn.national.registries.service.SecretManagerService;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,23 +21,23 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {PnNationalRegistriesSecretConfig.class})
+@ContextConfiguration(classes = {PnNationalRegistriesSecretService.class})
 @ExtendWith(MockitoExtension.class)
-class PnNationalRegistriesSecretConfigTest {
-
-    @Mock
-    private SecretManagerService secretManagerService;
+class PnNationalRegistriesSecretServiceTest {
 
     @InjectMocks
-    private PnNationalRegistriesSecretConfig pnNationalRegistriesSecretConfig;
+    private PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+
+    @Mock
+    private CachedSecretsManagerConsumer cachedSecretsManagerConsumer;
 
     @Test
     @DisplayName("Should throw an exception when the secretname is not found")
     void getSslDataSecretValueWhenSecretNameIsNotFoundThenThrowException() {
-        when(secretManagerService.getSecretValue(anyString())).thenReturn(Optional.empty());
+        when(cachedSecretsManagerConsumer.getSecretValue(anyString())).thenReturn(Optional.empty());
         assertThrows(
                 PnInternalException.class,
-                () -> pnNationalRegistriesSecretConfig.getTrustedCertFromSecret("secretName"));
+                () -> pnNationalRegistriesSecretService.getTrustedCertFromSecret("secretName"));
     }
 
     @Test
@@ -48,40 +48,40 @@ class PnNationalRegistriesSecretConfigTest {
                 "{\"trust\":\"trust\"}";
         GetSecretValueResponse getSecretValueResponse =
                 GetSecretValueResponse.builder().secretString(secretString).build();
-        when(secretManagerService.getSecretValue(anyString()))
+        when(cachedSecretsManagerConsumer.getSecretValue(anyString()))
                 .thenReturn(Optional.of(getSecretValueResponse));
-        TrustData trust = pnNationalRegistriesSecretConfig.getTrustedCertFromSecret(secretName);
+        TrustData trust = pnNationalRegistriesSecretService.getTrustedCertFromSecret(secretName);
         assertNotNull(trust);
         assertEquals("trust", trust.getTrust());
     }
 
     /**
-     * Method under test: {@link PnNationalRegistriesSecretConfig#getIpaSecret(String)}
+     * Method under test: {@link PnNationalRegistriesSecretService#getIpaSecret(String)}
      */
     @Test
     void testGetIpaSecret() {
-        when(secretManagerService.getSecretValue(org.mockito.Mockito.any())).thenReturn(Optional.empty());
-        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretConfig.getIpaSecret("Auth Id Secret"));
-        verify(secretManagerService).getSecretValue(org.mockito.Mockito.any());
+        when(cachedSecretsManagerConsumer.getSecretValue(org.mockito.Mockito.any())).thenReturn(Optional.empty());
+        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getIpaSecret("Auth Id Secret"));
+        verify(cachedSecretsManagerConsumer).getSecretValue(org.mockito.Mockito.any());
     }
 
 
     /**
-     * Method under test: {@link PnNationalRegistriesSecretConfig#getIpaSecret(String)}
+     * Method under test: {@link PnNationalRegistriesSecretService#getIpaSecret(String)}
      */
     @Test
     void testGetIpaSecret2() {
-        when(secretManagerService.getSecretValue(org.mockito.Mockito.any()))
+        when(cachedSecretsManagerConsumer.getSecretValue(org.mockito.Mockito.any()))
                 .thenThrow(new PnInternalException("An error occurred", ""));
-        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretConfig.getIpaSecret("Auth Id Secret"));
-        verify(secretManagerService).getSecretValue(org.mockito.Mockito.any());
+        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getIpaSecret("Auth Id Secret"));
+        verify(cachedSecretsManagerConsumer).getSecretValue(org.mockito.Mockito.any());
     }
 
     @Test
     @DisplayName("Should throw an exception when the secret is not found")
     void getSecretValueWhenSecretIsNotFoundThenThrowException() {
-        when(secretManagerService.getSecretValue(any())).thenReturn(Optional.empty());
-        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretConfig.getPdndSecretValue("", ""));
+        when(cachedSecretsManagerConsumer.getSecretValue(any())).thenReturn(Optional.empty());
+        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getPdndSecretValue("", ""));
     }
 
     @Test
@@ -93,10 +93,10 @@ class PnNationalRegistriesSecretConfigTest {
                 "{\"client_id\":\"clientId\",\"key_id\":\"keyId\",\"jwt_config\":{\"issuer\":\"issuer\",\"audience\":\"audience\",\"subject\":\"subject\",\"expires_in\":3600,\"algorithm\":\"RS256\",\"key_type\":\"RSA\",\"key_size\":2048}}";
         GetSecretValueResponse getSecretValueResponse =
                 GetSecretValueResponse.builder().secretString(secretValue).build();
-        when(secretManagerService.getSecretValue(any()))
+        when(cachedSecretsManagerConsumer.getSecretValue(any()))
                 .thenReturn(Optional.of(getSecretValueResponse));
 
-        PdndSecretValue secret = pnNationalRegistriesSecretConfig.getPdndSecretValue(purposeId, secretId);
+        PdndSecretValue secret = pnNationalRegistriesSecretService.getPdndSecretValue(purposeId, secretId);
 
         assertNotNull(secret);
         assertEquals("clientId", secret.getClientId());

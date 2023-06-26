@@ -40,7 +40,7 @@ class InfoCamereJwsGeneratorTest {
         SSLData sslData = new SSLData();
         sslData.setCert("TestCert");
         sslData.setKeyId("KeyID");
-        when(ssmParameterConsumerActivation.getAuthParameter(any(), any())).thenReturn(Optional.of(sslData));
+        when(ssmParameterConsumerActivation.getParameterValue(any(), any())).thenReturn(Optional.of(sslData));
         SignResponse signResponse = SignResponse.builder()
                 .signature(SdkBytes.fromByteArray("".getBytes(StandardCharsets.UTF_8)))
                 .build();

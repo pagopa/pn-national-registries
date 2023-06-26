@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
+import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.converter.IpaConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
@@ -28,6 +29,8 @@ public class IpaService {
     private final IpaConverter ipaConverter;
     private final IpaClient ipaClient;
     private final ValidateTaxIdUtils validateTaxIdUtils;
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+    private final IpaSecretConfig ipaSecretConfig;
     private final Predicate<Throwable> isResponseDataEmpty = throwable ->
             throwable instanceof PnNationalRegistriesException exception
                     && exception.getStatusCode() == HttpStatus.NOT_FOUND
@@ -35,19 +38,26 @@ public class IpaService {
                     || Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase("Service WS05 responded with 0 items - IPA PEC not found"));
 
 
-    public IpaService(IpaConverter ipaConverter, IpaClient ipaClient, ValidateTaxIdUtils validateTaxIdUtils) {
+    public IpaService(IpaConverter ipaConverter,
+                      IpaClient ipaClient,
+                      ValidateTaxIdUtils validateTaxIdUtils,
+                      PnNationalRegistriesSecretService pnNationalRegistriesSecretService,
+                      IpaSecretConfig ipaSecretConfig) {
         this.ipaConverter = ipaConverter;
         this.ipaClient = ipaClient;
         this.validateTaxIdUtils = validateTaxIdUtils;
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
+        this.ipaSecretConfig = ipaSecretConfig;
     }
 
     public Mono<IPAPecDto> getIpaPec(IPARequestBodyDto request) {
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_IPA_ADDRESS, false);
-        return callWS23(request.getFilter().getTaxId())
+        String authId = pnNationalRegistriesSecretService.getIpaSecret(ipaSecretConfig.getIpaSecret()).getAuthId();
+        return callWS23(request.getFilter().getTaxId(), authId)
                 .flatMap(ws23ResponseDto -> {
                     if (ws23ResponseDto.getResult().getNumItems() > 1) {
                         String codAmm = ws23ResponseDto.getData().get(0).getCodEnte();
-                        return callWS05(codAmm).map(ipaConverter::convertToIPAPecDtoFromWS05);
+                        return callWS05(codAmm, authId).map(ipaConverter::convertToIPAPecDtoFromWS05);
                     } else {
                         return Mono.just(ipaConverter.convertToIpaPecDtoFromWS23(ws23ResponseDto));
                     }
@@ -59,8 +69,8 @@ public class IpaService {
                 .doOnError(throwable -> log.error("Error while calling IPA service", throwable));
     }
 
-    private Mono<WS23ResponseDto> callWS23(String cf) {
-        return ipaClient.callEServiceWS23(cf)
+    private Mono<WS23ResponseDto> callWS23(String cf, String authId) {
+        return ipaClient.callEServiceWS23(cf, authId)
                 .doOnNext(ws23ResponseDto -> log.info("Got WS23Response for cf: {}", MaskDataUtils.maskString(cf)))
                 .doOnError(throwable -> log.info("Failed to callWS23 for taxId: {}", MaskDataUtils.maskString(cf)))
                 .map(ws23ResponseDto -> {
@@ -70,8 +80,8 @@ public class IpaService {
                 });
     }
 
-    private Mono<WS05ResponseDto> callWS05(String codAmm) {
-        return ipaClient.callEServiceWS05(codAmm)
+    private Mono<WS05ResponseDto> callWS05(String codAmm, String authId) {
+        return ipaClient.callEServiceWS05(codAmm, authId)
                 .doOnNext(ws05ResponseDto -> log.info("Got WS05Response for codAmm: {}", codAmm))
                 .doOnError(throwable -> log.info("Failed to callWS05 for codAmm: {}", codAmm))
                 .map(ws05ResponseDto -> {

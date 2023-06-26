@@ -3,7 +3,6 @@
     "PDNDBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "ANPRBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "ANPRPurposeId": "fa2aa359-ab78-45b2-aa55-977d8ddb7d2b",
-    "ANPRTipoInvio": "TEST",
     "PDNDANPRSecret": "pn-national-registries/pdnd/ANPR",
     "AdELegalBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",
     "AdECheckCfBaseURL": "http://pn-ex-Appli-1TF83JFIR9AF3-439926467.eu-south-1.elb.amazonaws.com:8080/nationalregistriesmock",

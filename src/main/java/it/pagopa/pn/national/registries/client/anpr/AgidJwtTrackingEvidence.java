@@ -4,13 +4,13 @@ import com.auth0.jwt.HeaderParams;
 import com.auth0.jwt.RegisteredClaims;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.utils.ClientUtils;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.SignRequest;
@@ -35,21 +35,21 @@ public class AgidJwtTrackingEvidence {
     final Pattern pattern = Pattern.compile(".*Root=(.*);P.*");
     private final AnprSecretConfig anprSecretConfig;
     private final KmsClient kmsClient;
-    private final String environmentType;
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
     public AgidJwtTrackingEvidence(AnprSecretConfig anprSecretConfig,
                                    KmsClient kmsClient,
-                                   @Value("${pn.national.registries.environment.type}") String environmentType) {
+                                   PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
         this.anprSecretConfig = anprSecretConfig;
         this.kmsClient = kmsClient;
-        this.environmentType = environmentType;
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
     public String createAgidJwt() {
         log.info("START - AgidJwtTrackingEvidence.createAgidJwt");
         long startTime = System.currentTimeMillis();
         try {
-            PdndSecretValue pdndSecretValue = anprSecretConfig.getAnprPdndSecretValue();
+            PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPurposeId(), anprSecretConfig.getPdndSecretName());
 
             TokenHeader th = new TokenHeader(pdndSecretValue.getJwtConfig());
             TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig(), null);
@@ -64,7 +64,6 @@ public class AgidJwtTrackingEvidence {
 
             String signatureString = ClientUtils.createSignature(signResult);
             log.info("END - AgidJwtTrackingEvidence.createAgidJwt Timelapse: {} ms", System.currentTimeMillis() - startTime);
-            log.info("AgidTrackingEvidence: {}", jwtContent + "." + signatureString);
             return jwtContent + "." + signatureString;
 
         } catch (IOException e) {
@@ -93,7 +92,7 @@ public class AgidJwtTrackingEvidence {
         map.put("purposeId",tp.getPurposeId());
         map.put("dnonce", generateRandomDnonce());
         map.put("userID", traceId);
-        map.put("userLocation",environmentType);
+        map.put("userLocation",anprSecretConfig.getEnvironmentType());
         map.put("LoA","LoA3");
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
         map.put(RegisteredClaims.EXPIRES_AT, tp.getExp());

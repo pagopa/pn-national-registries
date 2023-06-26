@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.client.anpr;
 
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.config.anpr.AnprWebClientConfig;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +21,9 @@ class AnprWebClientTest {
     @Mock
     AnprSecretConfig anprSecretConfig;
 
+    @Mock
+    PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+
     @Test
     @DisplayName("Should return a web client when the secret value is found")
     void initWhenSecretValueIsFoundThenReturnWebClient() {
@@ -29,7 +33,7 @@ class AnprWebClientTest {
         webClientConfig.setTcpPendingAcquiredTimeout(1);
         webClientConfig.setTcpPoolIdleTimeout(1);
 
-        AnprWebClient anprWebClient = new AnprWebClient(true, "", webClientConfig, anprSecretConfig);
+        AnprWebClient anprWebClient = new AnprWebClient(true, "", webClientConfig, anprSecretConfig, pnNationalRegistriesSecretService);
 
         assertThrows(NullPointerException.class, anprWebClient::init, "Input stream not contain valid certificates.");
     }

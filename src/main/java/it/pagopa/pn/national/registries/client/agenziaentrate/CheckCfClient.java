@@ -8,10 +8,11 @@ import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdResponseKO;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
-import org.springframework.beans.factory.annotation.Value;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -32,25 +33,23 @@ import static reactor.core.Exceptions.isRetryExhausted;
 public class CheckCfClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
-    private final String purposeId;
     private final CheckCfWebClient checkCfWebClient;
-    private final ObjectMapper mapper;
     private final CheckCfSecretConfig checkCfSecretConfig;
 
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
     protected CheckCfClient(AccessTokenExpiringMap accessTokenExpiringMap,
                             CheckCfWebClient checkCfWebClient,
-                            @Value("${pn.national.registries.pdnd.ade-check-cf.purpose-id}") String purposeId,
-                            ObjectMapper objectMapper,
-                            CheckCfSecretConfig checkCfSecretConfig) {
+                            CheckCfSecretConfig checkCfSecretConfig,
+                            PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
-        this.purposeId = purposeId;
-        this.mapper = objectMapper;
         this.checkCfSecretConfig = checkCfSecretConfig;
         this.checkCfWebClient = checkCfWebClient;
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
     public Mono<TaxIdVerification> callEService(Request richiesta) {
-        return accessTokenExpiringMap.getPDNDToken(purposeId, checkCfSecretConfig.getCheckCfPdndSecretValue(), false)
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(checkCfSecretConfig.getPurposeId(), checkCfSecretConfig.getPdndSecret());
+        return accessTokenExpiringMap.getPDNDToken(checkCfSecretConfig.getPurposeId(), pdndSecretValue, false)
                 .flatMap(tokenEntry -> callVerifica(richiesta, tokenEntry))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -96,6 +95,7 @@ public class CheckCfClient {
 
     private String convertToJson(Request richiesta) {
         try {
+            ObjectMapper mapper = new ObjectMapper();
             return mapper.writeValueAsString(richiesta);
         } catch (JsonProcessingException e) {
             throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, e);

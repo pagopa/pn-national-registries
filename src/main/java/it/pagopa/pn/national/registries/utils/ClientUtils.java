@@ -31,6 +31,8 @@ import java.util.regex.Pattern;
 @lombok.CustomLog
 public class ClientUtils {
 
+    private ClientUtils(){}
+
     private static final Pattern myRegex = Pattern.compile("=+$");
 
     public static RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {

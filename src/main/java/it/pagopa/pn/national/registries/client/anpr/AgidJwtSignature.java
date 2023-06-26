@@ -7,6 +7,7 @@ import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.utils.ClientUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -29,18 +30,21 @@ public class AgidJwtSignature {
 
     private final AnprSecretConfig anprSecretConfig;
     private final KmsClient kmsClient;
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
     public AgidJwtSignature(AnprSecretConfig anprSecretConfig,
-                            KmsClient kmsClient) {
+                            KmsClient kmsClient,
+                            PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
         this.anprSecretConfig = anprSecretConfig;
         this.kmsClient = kmsClient;
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
     public String createAgidJwt(String digest) {
         log.info("START - AgidJwtSignature.createAgidJwt");
         long startTime = System.currentTimeMillis();
         try {
-            PdndSecretValue pdndSecretValue = anprSecretConfig.getAnprPdndSecretValue();
+            PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPurposeId(), anprSecretConfig.getPdndSecretName());
 
             TokenHeader th = new TokenHeader(pdndSecretValue.getJwtConfig());
             TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig(), null);
@@ -55,7 +59,6 @@ public class AgidJwtSignature {
 
             String signatureString = ClientUtils.createSignature(signResult);
             log.info("END - AgidJwtSignature.createAgidJwt Timelapse: {} ms", System.currentTimeMillis() - startTime);
-            log.info("AgidJWTSignature: {}", jwtContent + "." + signatureString);
             return jwtContent + "." + signatureString;
 
         } catch (IOException e) {

@@ -6,9 +6,10 @@ import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
-import org.springframework.beans.factory.annotation.Value;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -29,22 +30,23 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 public class InadClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
-    private final String purposeId;
     private final WebClient webClient;
     private final InadSecretConfig inadSecretConfig;
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
     protected InadClient(AccessTokenExpiringMap accessTokenExpiringMap,
                          InadWebClient inadWebClient,
-                         @Value("${pn.national.registries.pdnd.inad.purpose-id}") String purposeId,
-                         InadSecretConfig inadSecretConfig) {
+                         InadSecretConfig inadSecretConfig,
+                         PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
-        this.purposeId = purposeId;
         this.webClient = inadWebClient.init();
         this.inadSecretConfig = inadSecretConfig;
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
     public Mono<ResponseRequestDigitalAddressDto> callEService(String taxId, String practicalReference) {
-        return accessTokenExpiringMap.getPDNDToken(purposeId, inadSecretConfig.getInadPdndSecretValue(), false)
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(inadSecretConfig.getPurposeId(), inadSecretConfig.getPdndSecret());
+        return accessTokenExpiringMap.getPDNDToken(inadSecretConfig.getPurposeId(), pdndSecretValue, false)
                 .flatMap(tokenEntry -> callExtract(taxId, practicalReference, tokenEntry))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
