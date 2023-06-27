@@ -8,10 +8,11 @@ import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdResponseKO;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
-import org.springframework.beans.factory.annotation.Value;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -32,25 +33,23 @@ import static reactor.core.Exceptions.isRetryExhausted;
 public class CheckCfClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
-    private final String purposeId;
-    private final WebClient webClient;
-    private final ObjectMapper mapper;
+    private final CheckCfWebClient checkCfWebClient;
     private final CheckCfSecretConfig checkCfSecretConfig;
 
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
     protected CheckCfClient(AccessTokenExpiringMap accessTokenExpiringMap,
                             CheckCfWebClient checkCfWebClient,
-                            @Value("${pn.national.registries.pdnd.ade-check-cf.purpose-id}") String purposeId,
-                            ObjectMapper objectMapper,
-                            CheckCfSecretConfig checkCfSecretConfig) {
+                            CheckCfSecretConfig checkCfSecretConfig,
+                            PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
-        this.purposeId = purposeId;
-        this.mapper = objectMapper;
         this.checkCfSecretConfig = checkCfSecretConfig;
-        webClient = checkCfWebClient.init();
+        this.checkCfWebClient = checkCfWebClient;
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
     public Mono<TaxIdVerification> callEService(Request richiesta) {
-        return accessTokenExpiringMap.getPDNDToken(purposeId, checkCfSecretConfig.getCheckCfPdndSecretValue())
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(checkCfSecretConfig.getPurposeId(), checkCfSecretConfig.getPdndSecret());
+        return accessTokenExpiringMap.getPDNDToken(checkCfSecretConfig.getPurposeId(), pdndSecretValue, false)
                 .flatMap(tokenEntry -> callVerifica(richiesta, tokenEntry))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
@@ -61,6 +60,7 @@ public class CheckCfClient {
     private Mono<TaxIdVerification> callVerifica(Request richiesta, AccessTokenCacheEntry tokenEntry) {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_AGENZIA_ENTRATE_CHECK_TAX_ID);
         String s = convertToJson(richiesta);
+        WebClient webClient = checkCfWebClient.init();
         return webClient.post()
                 .uri("/verifica")
                 .headers(httpHeaders -> {
@@ -86,15 +86,16 @@ public class CheckCfClient {
     }
 
     protected boolean shouldRetry(Throwable throwable) {
-        if (throwable instanceof WebClientResponseException exception) {
+        if (throwable instanceof WebClientResponseException exception && exception.getStatusCode() == HttpStatus.UNAUTHORIZED) {
             log.debug("Try Retry call to CheckCf");
-            return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
+            return true;
         }
         return false;
     }
 
     private String convertToJson(Request richiesta) {
         try {
+            ObjectMapper mapper = new ObjectMapper();
             return mapper.writeValueAsString(richiesta);
         } catch (JsonProcessingException e) {
             throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, e);

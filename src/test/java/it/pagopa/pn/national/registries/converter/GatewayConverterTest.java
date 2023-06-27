@@ -6,6 +6,8 @@ import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
+import it.pagopa.pn.national.registries.config.CachedSecretsManagerConsumer;
+import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
@@ -17,12 +19,7 @@ import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
-import it.pagopa.pn.national.registries.service.AnprService;
-import it.pagopa.pn.national.registries.service.GatewayService;
-import it.pagopa.pn.national.registries.service.InadService;
-import it.pagopa.pn.national.registries.service.InfoCamereService;
-import it.pagopa.pn.national.registries.service.IpaService;
-import it.pagopa.pn.national.registries.service.SqsService;
+import it.pagopa.pn.national.registries.service.*;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -38,6 +35,7 @@ import java.util.List;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
+import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,6 +48,7 @@ class GatewayConverterTest {
 
     private static final String C_ID = "correlationId";
     private static final String CF = "CF";
+
 
     /**
      * Method under test: {@link GatewayConverter#mapToAddressesOKDto(String)}
@@ -346,8 +345,7 @@ class GatewayConverterTest {
                 "correlationId: {} - IPA - WS23 - domicili digitali non presenti");
 
         ValidateTaxIdUtils validateTaxIdUtils = mock(ValidateTaxIdUtils.class);
-        AnprService anprService = new AnprService(new AnprConverter(), mock(AnprClient.class),
-                "correlationId: {} - IPA - WS23 - domicili digitali non presenti", counterRepository, validateTaxIdUtils);
+        AnprService anprService = new AnprService(new AnprConverter(), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
 
         DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient2 = mock(DynamoDbEnhancedAsyncClient.class);
         when(dynamoDbEnhancedAsyncClient2.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(
@@ -361,7 +359,9 @@ class GatewayConverterTest {
                 new InfoCamereConverter(new ObjectMapper(), 2L), iniPecBatchRequestRepository, 2L, validateTaxIdUtils);
 
         InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils);
-        IpaService ipaService = new IpaService(new IpaConverter(), mock(IpaClient.class), validateTaxIdUtils);
+        PnNationalRegistriesSecretService pnNationalRegistriesSecretService = new PnNationalRegistriesSecretService(new CachedSecretsManagerConsumer(mock(SecretsManagerClient.class)));
+        IpaSecretConfig ipaSecretConfig = new IpaSecretConfig("ipaSecret");
+        IpaService ipaService = new IpaService(new IpaConverter(), mock(IpaClient.class), validateTaxIdUtils, pnNationalRegistriesSecretService, ipaSecretConfig);
 
         SqsClient sqsClient = mock(SqsClient.class);
         GatewayService gatewayService = new GatewayService(anprService, inadService, infoCamereService, ipaService,

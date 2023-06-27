@@ -7,12 +7,13 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.anpr.E002RequestDto;
 import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -21,6 +22,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -35,40 +37,46 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 public class AnprClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
-    private final String purposeId;
-    private final WebClient webClient;
+    private final AnprWebClient anprWebClient;
     private final AgidJwtSignature agidJwtSignature;
-    private final ObjectMapper mapper;
+    private final AgidJwtTrackingEvidence agidJwtTrackingEvidence;
     private final AnprSecretConfig anprSecretConfig;
 
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+
     protected AnprClient(AccessTokenExpiringMap accessTokenExpiringMap,
-                         ObjectMapper mapper,
                          AgidJwtSignature agidJwtSignature,
+                         AgidJwtTrackingEvidence agidJwtTrackingEvidence,
+                         AnprSecretConfig anprSecretConfig,
                          AnprWebClient anprWebClient,
-                         @Value("${pn.national.registries.pdnd.anpr.purpose-id}") String purposeId,
-                         AnprSecretConfig anprSecretConfig) {
+                         PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.agidJwtSignature = agidJwtSignature;
-        this.purposeId = purposeId;
-        this.mapper = mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+        this.agidJwtTrackingEvidence = agidJwtTrackingEvidence;
         this.anprSecretConfig = anprSecretConfig;
-        webClient = anprWebClient.init();
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
+        this.anprWebClient = anprWebClient;
     }
 
     public Mono<ResponseE002OKDto> callEService(E002RequestDto requestDto) {
-        return accessTokenExpiringMap.getPDNDToken(purposeId, anprSecretConfig.getAnprPdndSecretValue())
-                .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry))
+        String agidTrackingEvidence = agidJwtTrackingEvidence.createAgidJwt();
+        String auditAudience = createDigestFromAuditJws(agidTrackingEvidence);
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPurposeId(), anprSecretConfig.getPdndSecretName());
+        pdndSecretValue.setAuditDigest(auditAudience);
+        return accessTokenExpiringMap.getPDNDToken(anprSecretConfig.getPurposeId(), pdndSecretValue, true)
+                .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry, agidTrackingEvidence))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_ANPR_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
-    private Mono<ResponseE002OKDto> callAnpr(E002RequestDto requestDto, AccessTokenCacheEntry tokenEntry) {
+    private Mono<ResponseE002OKDto> callAnpr(E002RequestDto requestDto, AccessTokenCacheEntry tokenEntry, String agidTrackingEvidence) {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_ANPR_ADDRESS);
         String s = convertToJson(requestDto);
         String digest = createDigestFromPayload(s);
         log.debug("digest: {}", digest);
+        WebClient webClient = anprWebClient.init();
         return webClient.post()
                 .uri("/anpr-service-e002")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -76,6 +84,7 @@ public class AnprClient {
                     httpHeaders.setContentType(MediaType.APPLICATION_JSON);
                     httpHeaders.setBearerAuth(tokenEntry.getTokenValue());
                     httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
+                    httpHeaders.add("Agid-JWT-TrackingEvidence", agidTrackingEvidence);
                     httpHeaders.add("Content-Encoding", "UTF-8");
                     httpHeaders.add("Digest", digest);
                     httpHeaders.add("bearerAuth", tokenEntry.getTokenValue());
@@ -85,6 +94,7 @@ public class AnprClient {
                 .bodyToMono(ResponseE002OKDto.class)
                 .doOnError(throwable -> {
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        log.info("GovWay-Transaction-ID: {}", e.getHeaders().getFirst("GovWay-Transaction-ID"));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), AnprResponseKO.class);
@@ -94,6 +104,8 @@ public class AnprClient {
 
     private String convertToJson(E002RequestDto requestDto) {
         try {
+            ObjectMapper mapper = new ObjectMapper();
+            mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
             return mapper.writeValueAsString(requestDto);
         } catch (JsonProcessingException e) {
             throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR, e);
@@ -109,10 +121,19 @@ public class AnprClient {
         }
     }
 
+    private String createDigestFromAuditJws(String request) {
+        try {
+            byte[] digest =  MessageDigest.getInstance("SHA-256").digest(request.getBytes(StandardCharsets.UTF_8));
+            return DatatypeConverter.printHexBinary(digest);
+        } catch (NoSuchAlgorithmException e) {
+            throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR, e);
+        }
+    }
+
     protected boolean shouldRetry(Throwable throwable) {
-        if (throwable instanceof WebClientResponseException exception) {
+        if (throwable instanceof WebClientResponseException exception && exception.getStatusCode() == HttpStatus.UNAUTHORIZED) {
             log.debug("Try Retry call to ANPR");
-            return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
+            return true;
         }
         return false;
     }

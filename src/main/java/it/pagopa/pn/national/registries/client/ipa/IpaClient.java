@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.client.ipa;
 
 import it.pagopa.pn.commons.log.PnLogger;
-import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.ipa.WS05ResponseDto;
@@ -26,47 +25,42 @@ public class IpaClient {
 
     private final WebClient webClient;
 
-    private final IpaSecretConfig ipaSecretConfig;
-
-    protected IpaClient(IpaWebClient ipaWebClient, IpaSecretConfig ipaSecretConfig) {
-        this.ipaSecretConfig = ipaSecretConfig;
+    protected IpaClient(IpaWebClient ipaWebClient) {
         webClient = ipaWebClient.init();
     }
 
-    public Mono<WS23ResponseDto> callEServiceWS23(String taxId) {
+    public Mono<WS23ResponseDto> callEServiceWS23(String taxId, String authId) {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_WS23_PEC);
         return webClient.post()
                 .uri("/ws/WS23DOMDIGCFServices/api/WS23_DOM_DIG_CF")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA))
-                .body(BodyInserters.fromFormData(createRequestWS23(taxId)))
+                .body(BodyInserters.fromFormData(createRequestWS23(taxId, authId)))
                 .retrieve()
                 .bodyToMono(WS23ResponseDto.class)
                 .doOnError(this::checkIPAException);
     }
 
 
-    private MultiValueMap<String, String> createRequestWS23(String taxId) {
+    private MultiValueMap<String, String> createRequestWS23(String taxId, String authId) {
         LinkedMultiValueMap<String, String> requestWS23 = new LinkedMultiValueMap<>();
-        String authId = ipaSecretConfig.getIpaSecret().getAuthId();
         requestWS23.add("CF", taxId);
         requestWS23.add("AUTH_ID", authId);
         return requestWS23;
     }
 
-    public Mono<WS05ResponseDto> callEServiceWS05(String codAmm) {
+    public Mono<WS05ResponseDto> callEServiceWS05(String codAmm, String authId) {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_WS05_PEC);
         return webClient.post()
                 .uri("ws/WS05AMMServices/api/WS05_AMM")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA))
-                .body(BodyInserters.fromFormData(createRequestWS05(codAmm)))
+                .body(BodyInserters.fromFormData(createRequestWS05(codAmm, authId)))
                 .retrieve()
                 .bodyToMono(WS05ResponseDto.class)
                 .doOnError(this::checkIPAException);
     }
 
-    private MultiValueMap<String, String> createRequestWS05(String codAmm) {
+    private MultiValueMap<String, String> createRequestWS05(String codAmm, String authId) {
         LinkedMultiValueMap<String, String> requestWS05 = new LinkedMultiValueMap<>();
-        String authId = ipaSecretConfig.getIpaSecret().getAuthId();
         requestWS05.add("COD_AMM", codAmm);
         requestWS05.add("AUTH_ID", authId);
         return requestWS05;

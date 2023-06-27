@@ -126,15 +126,21 @@ Parameters:
     Type: String
     Description: 'InfoCamere Client ID'
 
-  # Parametro obbligatorio (ARN del secret)
-  ANPRSSLSecret:
+  # Parametro obbligatorio (Nome del parametro)
+  AdECheckCfSSL:
     Type: String
-    Description: 'ANPR SecretName'
+    Description: 'CheckCF MTLS parameterName'
 
-  # Parametro obbligatorio (ARN del secret)
-  AdECheckCfSSLSecret:
+  AdECheckCfTrustSecret:
     Type: String
-    Description: 'PDND SecretName'
+    Description: 'SSL trusted cert CheckCF SecretName'
+
+  AdECheckCfSSLSecret: 
+    Type: String
+
+  AnprTrustSecret:
+    Type: String
+    Description: 'SSL trusted cert ANPR SecretName'
 
   # Parametro obbligatorio (ARN del secret)
   PDNDANPRSecret:
@@ -151,55 +157,19 @@ Parameters:
     Type: String
     Description: 'PDND INAD Client assertion claims'
 
-  # Parametro obbligatorio (ARN del secret)
-  ANPRIntegritySecret:
+  # Parametro obbligatorio (Nome del parametro su parameterStore)
+  InfoCamereAuth:
     Type: String
-    Description: 'PDND ANPR Integrity certs'
+    Description: 'InfoCamere auth cert parameter name'
 
-  # Parametro obbligatorio (ARN del secret)
-  InfoCamereAuthSecret:
+  SecretAndSSMPrefix:
     Type: String
-    Description: 'InfoCamere auth cert'
-
-  SecretPrefix:
-    Type: String
-    Description: 'Secret name prefix'
-
-  PDNDSessionTokenSigningKeyARN:
-    Type: String
-    Description: 'PDND Session Token Signing Key for eservice C001'
-
-  CheckCfPDNDSessionTokenSigningKeyARN:
-    Type: String
-    Description: 'PDND Session Token Signing Key for eservice B001'
-
-  InadPDNDSessionTokenSigningKeyARN:
-    Type: String
-    Description: 'PDND Session Token Signing Key for eservice INAD'
-
-  CheckCfSigningKeyARN:
-    Type: String
-    Description: 'CheckCf Signing Key for MTLS'
-
-  AnprAuthChannelSigningKeyARN:
-    Type: String
-    Description: 'Anpr Auth Channel Signing Key for Modl ID_AUTH_CHANNEL_02'
-
-  AnprIntegrityRestSigningKeyARN:
-    Type: String
-    Description: 'Anpr Integrity Rest Signing Key for Modl INTEGRITY_REST_01 '
-
-  InfoCamereSigningKeyARN:
-    Type: String
-    Description: 'Info Camere Signing Key'
+    Default: pn-national-registries
+    Description: 'Secret and Parameter name prefix'
 
   PnBatchRequestEncryptKeyARN:
     Type: String
     Description: 'ARN Key DynamoDB batchRequest table'
-
-  ANPRTipoInvio:
-    Type: String
-    Description: 'Input parameter for eservice C001'
 
   CounterTableArn:
     Type: String
@@ -350,6 +320,30 @@ Parameters:
   LogAlarmStrategy:
     Type: String
     Default: 'FATAL'
+
+  # Certificate renewal
+  InfocamereFQDN:
+    Type: String
+    Description: infocamere.client.<codice-ambiente>.notifichedigitali.it
+
+  CertificateRenewalEmail:
+    Type: String
+    Default: 'alarm@notifichedigitali.it' # aggiornare
+
+  InfoCamereSigningKeyAlias:
+    Type: String
+    Default: pn-national-registries-infocamere-signing-key-alias
+
+  AdeFQDN:
+    Type: String
+    Description: ade-api.client.<codice-ambiente>.notifichedigitali.it
+
+  PnNationalRegistriesCertificateDLQARN:
+    Type: String
+
+  EnvironmentType:
+    Type: String
+    Description: environment name
 Resources:
 
   # PN-National-Registry microservice
@@ -378,14 +372,11 @@ Resources:
         ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
         ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_BASE_URL=${PDNDBaseURL}'
         ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
-        ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_AUTH_SECRET=${ANPRSSLSecret}'
-        ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_ANPR_INTEGRITY_SECRET=${ANPRIntegritySecret}'
         ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
         ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
-        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
         ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_BASE_URL=${AdELegalBaseURL}'
         ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
-        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_AUTH_SECRET=${AdECheckCfSSLSecret}'
+        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_AUTH=${AdECheckCfSSL}'
         ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PURPOSE_ID=${AdECheckCfPurposeId}'
         ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PDND_CLIENT_SECRET=${PDNDAdECheckCfSecret}'
         ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
@@ -393,7 +384,7 @@ Resources:
         ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_INAD_PDND_CLIENT_SECRET=${PDNDInadSecret}'
         ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
         ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
-        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH_SECRET=${InfoCamereAuthSecret}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH=${InfoCamereAuth}'
         ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
         ContainerEnvEntry22: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
@@ -408,8 +399,11 @@ Resources:
         ContainerEnvEntry31: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchPollingRecoveryAfter}'
         ContainerEnvEntry32: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
         ContainerEnvEntry33: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
+        ContainerEnvEntry34: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_TRUST_SECRET=${AdECheckCfTrustSecret}'
+        ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
+        ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
 
-        # MicroServiceSecretPrefix: !Sub '${SecretPrefix}'
+        # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
         Subnets: !Ref VpcEgressSubnetsIds
@@ -431,18 +425,12 @@ Resources:
             Action:
               - secretsmanager:GetSecretValue
             Resource:
-              - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretPrefix}*'
+              - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}*'
           - Effect: Allow
             Action:
               - kms:Sign
             Resource:
-              - !Ref PDNDSessionTokenSigningKeyARN
-              - !Ref CheckCfPDNDSessionTokenSigningKeyARN
-              - !Ref InadPDNDSessionTokenSigningKeyARN
-              - !Ref CheckCfSigningKeyARN
-              - !Ref AnprAuthChannelSigningKeyARN
-              - !Ref AnprIntegrityRestSigningKeyARN
-              - !Ref InfoCamereSigningKeyARN
+              - !Sub 'arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*'
           - Effect: Allow
             Action:
               - kms:Encrypt
@@ -474,6 +462,7 @@ Resources:
               - ssm:GetParameters
             Resource:
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
+              - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SecretAndSSMPrefix}/*'
 
   NationalRegistryApiGateway:
     Type: AWS::CloudFormation::Stack
@@ -498,3 +487,243 @@ Resources:
         WAFName: !Sub '${ProjectName}-national-registries-pnpg'
         IntendedUsage: PNPG
         APIGatewayARNs: !GetAtt NationalRegistryApiGateway.Outputs.APIGatewayARN
+
+  CertificateRenewalManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub ${ProjectName}-Certificate-Renewal-Managed-Policy
+      Roles:
+        - !Ref CertificateRenewalCodeBuildServiceRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+          - Effect: Allow
+            Action: 
+              - sts:AssumeRole
+            Resource: 
+              - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+          - Effect: Allow
+            Action: 
+              - ssm:PutParameter
+              - ssm:GetParameter
+            Resource: 
+              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SecretAndSSMPrefix}*
+          - Effect: Allow
+            Action: 
+              - kms:ListAliases
+              - kms:UpdateAlias
+              - kms:DescribeKey
+              - kms:Sign
+              - kms:CreateKey
+              - kms:GetPublicKey
+              - kms:ScheduleKeyDeletion
+            Resource: 
+              - '*'   
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+              - secretsmanager:CreateSecret
+              - secretsmanager:UpdateSecret
+            Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}*      
+          - Effect: Allow
+            Action:
+              - route53:ListHostedZones
+              - route53:GetChange
+              - route53:ChangeResourceRecordSets
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - sqs:ChangeMessageVisibility
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+              - sqs:ReceiveMessage
+              - sqs:SendMessage
+            Resource:
+              - !Ref PnNationalRegistriesCertificateDLQARN
+                  
+  CertificateRenewalCodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-cert-renewal-codebuild
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Condition:
+              ArnEquals:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+            Action:
+              - "sts:AssumeRole"              
+
+  InfocamereCertRenewalCodebuildProject:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Sub ${ProjectName}-Infocamere-Cert-Renewal
+      ServiceRole: !GetAtt CertificateRenewalCodeBuildServiceRole.Arn
+      ConcurrentBuildLimit: 1
+      TimeoutInMinutes: 10
+      Source: 
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo "### NO PRE_BUILD"
+            build:
+              commands:
+                - session=$(aws sts assume-role --role-arn ${ASSUME_ROLE} --role-session-name test)
+                - export AWS_ACCESS_KEY_ID=$(echo "${session}" | jq -r '.Credentials.AccessKeyId')
+                - export AWS_SECRET_ACCESS_KEY=$(echo "${session}" | jq -r '.Credentials.SecretAccessKey')
+                - export AWS_SESSION_TOKEN=$(echo "${session}" | jq -r '.Credentials.SessionToken')                    
+                - git clone https://github.com/pagopa/pn-national-registries.git
+                - cd pn-national-registries/scripts/generate_certificate_from_kms
+                - docker build -t certificate-manager .
+                - docker run -i --rm --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN certificate-manager:latest /bin/bash ./create_kms_and_generate_cert.sh --keyalias ${KEY_ALIAS} --fqdn ${FQDN} --parameter-name ${PARAM_NAME} --region ${REGION} --e-mail ${EMAIL}
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: "aws/codebuild/standard:7.0"
+        EnvironmentVariables:
+          - Name: ASSUME_ROLE
+            Type: PLAINTEXT
+            Value: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+          - Name: REGION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Region
+          - Name: EMAIL
+            Type: PLAINTEXT
+            Value: !Ref CertificateRenewalEmail
+          - Name: FQDN
+            Type: PLAINTEXT
+            Value: !Ref InfocamereFQDN
+          - Name: KEY_ALIAS
+            Type: PLAINTEXT
+            Value: !Sub ${InfoCamereSigningKeyAlias}-next
+          - Name: PARAM_NAME
+            Type: PLAINTEXT
+            Value: !Sub ${InfoCamereAuth}-next
+
+  MtlsCertRenewalCodebuildProject:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Sub ${ProjectName}-Mtls-Cert-Renewal
+      ServiceRole: !GetAtt CertificateRenewalCodeBuildServiceRole.Arn
+      ConcurrentBuildLimit: 1
+      TimeoutInMinutes: 10
+      Source: 
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo "### NO PRE_BUILD"
+            build:
+              commands:
+                - session=$(aws sts assume-role --role-arn ${ASSUME_ROLE} --role-session-name test)
+                - export AWS_ACCESS_KEY_ID=$(echo "${session}" | jq -r '.Credentials.AccessKeyId')
+                - export AWS_SECRET_ACCESS_KEY=$(echo "${session}" | jq -r '.Credentials.SecretAccessKey')
+                - export AWS_SESSION_TOKEN=$(echo "${session}" | jq -r '.Credentials.SessionToken')                    
+                - git clone https://github.com/pagopa/pn-national-registries.git
+                - cd pn-national-registries/scripts/generate_certificate_from_kms
+                - docker build -t certificate-manager .
+                - docker run -i --rm --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN certificate-manager:latest /bin/bash ./generate_no_kms.sh --fqdn ${FQDN} --secretid ${SECRET_ID} --parameter-name ${PARAM_NAME} --e-mail ${EMAIL} --region ${REGION}
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        PrivilegedMode: true
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: "aws/codebuild/standard:7.0"
+        EnvironmentVariables:
+          - Name: ASSUME_ROLE
+            Type: PLAINTEXT
+            Value: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+          - Name: REGION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Region
+          - Name: EMAIL
+            Type: PLAINTEXT
+            Value: !Ref CertificateRenewalEmail
+          - Name: FQDN
+            Type: PLAINTEXT
+            Value: !Ref AdeFQDN
+          - Name: SECRET_ID
+            Type: PLAINTEXT
+            Value: !Sub ${AdECheckCfSSLSecret}-next
+          - Name: PARAM_NAME
+            Type: PLAINTEXT
+            Value: !Sub ${AdECheckCfSSL}-next
+
+  CertificateRenewalCodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+        Version: "2012-10-17"
+      Policies:
+        - PolicyName: runCodeBuild
+          PolicyDocument:
+            Statement:
+              - Sid: startProjectRun
+                Action:
+                  - "codebuild:*"
+                Effect: Allow
+                Resource: 
+                  - !GetAtt InfocamereCertRenewalCodebuildProject.Arn
+                  
+  InfocamereScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub "${ProjectName}-infocamere-cert-renewal-schedule-rule"
+      ScheduleExpression: "cron(11 0 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
+      State: "ENABLED"
+      RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+      Targets: 
+        - Id: "CertRenewalAlarm"
+          Arn: !Ref PnNationalRegistriesCertificateDLQARN
+        - Id: "CertRenewalRunner"
+          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+          Arn: 
+            Fn::GetAtt: 
+              - "InfocamereCertRenewalCodebuildProject"
+              - "Arn"
+      
+  MtlsScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub "${ProjectName}-mtls-cert-renewal-schedule-rule"
+      ScheduleExpression: "cron(11 0 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
+      State: "ENABLED"
+      RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+      Targets: 
+        - Id: "CertRenewalAlarm"
+          Arn: !Ref PnNationalRegistriesCertificateDLQARN
+        - Id: "CertRenewalRunner"
+          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+          Arn: 
+            Fn::GetAtt: 
+              - "InfocamereCertRenewalCodebuildProject"
+              - "Arn"

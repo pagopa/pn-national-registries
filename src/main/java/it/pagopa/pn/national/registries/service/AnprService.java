@@ -11,14 +11,11 @@ import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.Charset;
-import java.time.LocalDateTime;
-import java.util.List;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_ANPR_ADDRESS;
 
@@ -28,24 +25,22 @@ public class AnprService {
 
     private final AnprConverter anprConverter;
     private final AnprClient anprClient;
-    private final String anprSendType;
     private final CounterRepositoryImpl counterRepository;
     private final ValidateTaxIdUtils validateTaxIdUtils;
 
     public AnprService(AnprConverter anprConverter,
                        AnprClient anprClient,
-                       @Value("${pn.national.registries.anpr.tipo-invio}") String anprSendType,
-                       CounterRepositoryImpl counterRepository, ValidateTaxIdUtils validateTaxIdUtils) {
+                       CounterRepositoryImpl counterRepository,
+                       ValidateTaxIdUtils validateTaxIdUtils) {
         this.anprConverter = anprConverter;
         this.anprClient = anprClient;
-        this.anprSendType = anprSendType;
         this.counterRepository = counterRepository;
         this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     public Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto request) {
         String cf = request.getFilter().getTaxId();
-        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_ANPR_ADDRESS);
+        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_ANPR_ADDRESS, false);
 
         if (StringUtils.isNullOrEmpty(request.getFilter().getReferenceRequestDate())) {
             throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),
@@ -67,25 +62,13 @@ public class AnprService {
 
     private E002RequestDto constructE002RequestDto(GetAddressANPRRequestBodyDto request, Long s) {
         E002RequestDto richiesta = new E002RequestDto();
+        richiesta.setIdOperazioneClient(s.toString());
         SearchCriteriaE002Dto criteriRicercaE002Dto = new SearchCriteriaE002Dto();
         criteriRicercaE002Dto.setCodiceFiscale(request.getFilter().getTaxId());
         richiesta.setCriteriRicerca(criteriRicercaE002Dto);
 
-        RequestHeaderE002Dto tipoTestata = new RequestHeaderE002Dto();
-        tipoTestata.setIdOperazioneClient(String.valueOf(s));
-        tipoTestata.setCodMittente("600010");
-        tipoTestata.setCodDestinatario("ANPR02");
-        tipoTestata.setOperazioneRichiesta("E002");
-        tipoTestata.setDataOraRichiesta(LocalDateTime.now().toString());
-        tipoTestata.setTipoOperazione("C");
-        tipoTestata.setTipoInvio(anprSendType);
-        tipoTestata.setDataDecorrenza(request.getFilter().getReferenceRequestDate());
-        richiesta.setTestataRichiesta(tipoTestata);
-
         RequestDateE002Dto dto = new RequestDateE002Dto();
-        dto.setSchedaAnagraficaRichiesta("1");
         dto.setDataRiferimentoRichiesta(request.getFilter().getReferenceRequestDate());
-        dto.setDatiAnagraficiRichiesti(List.of("1"));
         dto.setMotivoRichiesta(request.getFilter().getRequestReason());
         dto.setCasoUso("C001");
 

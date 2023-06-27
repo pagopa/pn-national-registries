@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.client.ipa;
 
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.model.ipa.*;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -33,12 +34,15 @@ class IpaClientTest {
     @Mock
     private IpaSecretConfig ipaSecretConfig;
 
+    @Mock
+    private PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+
     @Test
     void callWS23Service() {
 
         when(ipaWebClient.init()).thenReturn(webClient);
 
-        IpaClient ipaClient = new IpaClient(ipaWebClient, ipaSecretConfig);
+        IpaClient ipaClient = new IpaClient(ipaWebClient);
 
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
         List<DataWS23Dto> dataWS23DtoList = new ArrayList<>();
@@ -60,8 +64,6 @@ class IpaClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(ipaSecretConfig.getIpaSecret()).thenReturn(new IpaSecret());
-
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/ws/WS23DOMDIGCFServices/api/WS23_DOM_DIG_CF")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.MULTIPART_FORM_DATA)).thenReturn(requestBodySpec);
@@ -70,7 +72,7 @@ class IpaClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(WS23ResponseDto.class)).thenReturn(Mono.just(ws23ResponseDto));
 
-        StepVerifier.create(ipaClient.callEServiceWS23("taxId"))
+        StepVerifier.create(ipaClient.callEServiceWS23("taxId","secret"))
                 .expectNext(ws23ResponseDto)
                 .verifyComplete();
     }
@@ -80,7 +82,7 @@ class IpaClientTest {
 
         when(ipaWebClient.init()).thenReturn(webClient);
 
-        IpaClient ipaClient = new IpaClient(ipaWebClient, ipaSecretConfig);
+        IpaClient ipaClient = new IpaClient(ipaWebClient);
 
         WS05ResponseDto ws05ResponseDto = new WS05ResponseDto();
         DataWS05Dto dataWS05Dto = new DataWS05Dto();
@@ -118,8 +120,6 @@ class IpaClientTest {
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
-
-        when(ipaSecretConfig.getIpaSecret()).thenReturn(new IpaSecret());
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("ws/WS05AMMServices/api/WS05_AMM")).thenReturn(requestBodySpec);
@@ -129,7 +129,7 @@ class IpaClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(WS05ResponseDto.class)).thenReturn(Mono.just(ws05ResponseDto));
 
-        StepVerifier.create(ipaClient.callEServiceWS05("codiceAmministrazione"))
+        StepVerifier.create(ipaClient.callEServiceWS05("codiceAmministrazione", "secretName"))
                 .expectNext(ws05ResponseDto)
                 .verifyComplete();
     }
@@ -139,7 +139,7 @@ class IpaClientTest {
 
         when(ipaWebClient.init()).thenReturn(webClient);
 
-        IpaClient ipaClient = new IpaClient(ipaWebClient, ipaSecretConfig);
+        IpaClient ipaClient = new IpaClient(ipaWebClient);
 
         WS05ResponseDto ws05ResponseDto = new WS05ResponseDto();
         DataWS05Dto dataWS05Dto = new DataWS05Dto();
@@ -178,8 +178,6 @@ class IpaClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(ipaSecretConfig.getIpaSecret()).thenReturn(new IpaSecret());
-
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("ws/WS05AMMServices/api/WS05_AMM")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.MULTIPART_FORM_DATA)).thenReturn(requestBodySpec);
@@ -188,7 +186,7 @@ class IpaClientTest {
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(WS05ResponseDto.class)).thenReturn(Mono.error(new WebClientResponseException(500, "Internal Server Error", null, null, null)));
 
-        StepVerifier.create(ipaClient.callEServiceWS05("codiceAmministrazione"))
+        StepVerifier.create(ipaClient.callEServiceWS05("codiceAmministrazione","secreName"))
                 .expectError(WebClientResponseException.class)
                 .verify();
     }

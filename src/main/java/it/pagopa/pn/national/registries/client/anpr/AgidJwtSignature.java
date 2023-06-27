@@ -1,30 +1,25 @@
 package it.pagopa.pn.national.registries.client.anpr;
 
 import com.auth0.jwt.HeaderParams;
-import com.auth0.jwt.JWT;
 import com.auth0.jwt.RegisteredClaims;
-import com.auth0.jwt.algorithms.Algorithm;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
-import it.pagopa.pn.national.registries.model.JwtConfig;
-import it.pagopa.pn.national.registries.model.SSLData;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
+import it.pagopa.pn.national.registries.utils.ClientUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.services.kms.KmsClient;
+import software.amazon.awssdk.services.kms.model.SignRequest;
+import software.amazon.awssdk.services.kms.model.SignResponse;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ANPR;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ANPR;
@@ -33,52 +28,62 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class AgidJwtSignature {
 
-    private final String aud;
     private final AnprSecretConfig anprSecretConfig;
+    private final KmsClient kmsClient;
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
-    public AgidJwtSignature(@Value("${pn.national.registries.anpr.base-path}") String aud,
-                            AnprSecretConfig anprSecretConfig) {
-        this.aud = aud;
+    public AgidJwtSignature(AnprSecretConfig anprSecretConfig,
+                            KmsClient kmsClient,
+                            PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
         this.anprSecretConfig = anprSecretConfig;
+        this.kmsClient = kmsClient;
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
     public String createAgidJwt(String digest) {
+        log.info("START - AgidJwtSignature.createAgidJwt");
+        long startTime = System.currentTimeMillis();
         try {
-            log.info("start to createAgidJwt with digest: {}",digest);
-            JwtConfig jwtConfig = anprSecretConfig.getAnprPdndSecretValue().getJwtConfig();
-            SSLData sslData = anprSecretConfig.getAnprIntegritySecret();
-            TokenHeader th = new TokenHeader(jwtConfig);
-            log.debug("tokenHeader ALg: {}",th.getAlg());
-            TokenPayload tp = new TokenPayload(jwtConfig);
-            log.debug("tokenPayload Audience: {}",tp.getAud());
-            return JWT.create()
-                    .withHeader(createHeaderMap(th, sslData))
-                    .withPayload(createClaimMap(digest, tp))
-                    .sign(Algorithm.RSA256(getPublicKey(sslData.getPub()), getPrivateKey(sslData.getKey())));
-        } catch (NoSuchAlgorithmException | InvalidKeySpecException | IOException e) {
+            PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPurposeId(), anprSecretConfig.getPdndSecretName());
+
+            TokenHeader th = new TokenHeader(pdndSecretValue.getJwtConfig());
+            TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig(), null);
+
+            String jwtContent = ClientUtils.createJwtContent(createHeaderMap(th), createClaimMap(digest, tp, pdndSecretValue.getEserviceAudience()));
+
+            SignRequest signRequest = ClientUtils.createSignRequest(jwtContent, pdndSecretValue.getKeyId());
+            log.info("START - KmsClient.sign Request: {}", signRequest);
+            long startTimeKms = System.currentTimeMillis();
+            SignResponse signResult = kmsClient.sign(signRequest);
+            log.info("END - KmsClient.sign Timelapse: {} ms", System.currentTimeMillis() - startTimeKms);
+
+            String signatureString = ClientUtils.createSignature(signResult);
+            log.info("END - AgidJwtSignature.createAgidJwt Timelapse: {} ms", System.currentTimeMillis() - startTime);
+            return jwtContent + "." + signatureString;
+
+        } catch (IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_ANPR, ERROR_CODE_ANPR, e);
         }
     }
 
-    private Map<String, Object> createHeaderMap(TokenHeader th, SSLData sslData) {
+    private Map<String, Object> createHeaderMap(TokenHeader th) {
         Map<String, Object> map = new HashMap<>();
         map.put(HeaderParams.TYPE, th.getTyp());
         map.put(HeaderParams.ALGORITHM, th.getAlg());
-        map.put("x5c", List.of(sslData.getCert()));
-        log.debug("HeaderMap type: {}",map.get(HeaderParams.TYPE));
+        map.put(HeaderParams.KEY_ID, th.getKid());
         return map;
     }
 
-    private Map<String, Object> createClaimMap(String digest, TokenPayload tp) {
+    private Map<String, Object> createClaimMap(String digest, TokenPayload tp, String eserviceAudience) {
         Map<String, Object> map = new HashMap<>();
         map.put(RegisteredClaims.ISSUER, tp.getIss());
         map.put(RegisteredClaims.SUBJECT, tp.getSub());
         map.put(RegisteredClaims.EXPIRES_AT, tp.getExp());
-        map.put(RegisteredClaims.AUDIENCE, aud);
+        map.put(RegisteredClaims.AUDIENCE, eserviceAudience);
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
         map.put(RegisteredClaims.JWT_ID, tp.getJti());
         map.put("signed_headers", createSignedHeaders(digest));
-        log.debug("ClaimMap audience: {}",map.get(RegisteredClaims.AUDIENCE));
+        log.debug("ClaimMap audience: {}", map.get(RegisteredClaims.AUDIENCE));
         return map;
     }
 
@@ -95,21 +100,5 @@ public class AgidJwtSignature {
         list.add(map2);
 
         return list;
-    }
-
-    protected RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
-        log.debug("start getPublicKey");
-        InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(pub));
-        X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(is.readAllBytes());
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return (RSAPublicKey) kf.generatePublic(encodedKeySpec);
-    }
-
-    protected RSAPrivateKey getPrivateKey(String key) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
-        log.debug("start getPrivateKey");
-        InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(key));
-        PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(is.readAllBytes());
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return (RSAPrivateKey) kf.generatePrivate(encodedKeySpec);
     }
 }

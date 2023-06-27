@@ -2,7 +2,6 @@ package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
-import it.pagopa.pn.national.registries.utils.XMLWriter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,8 +23,7 @@ import java.nio.charset.Charset;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {AdELegalClient.class})
 @ExtendWith(SpringExtension.class)
@@ -38,15 +36,35 @@ class AdELegalClientTest {
     WebClient webClient;
 
     @MockBean
-    XMLWriter xmlWriter;
-
-    @MockBean
     AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP;
+
+    /**
+     * Method under test: {@link AdELegalClient#getToken()}
+     */
+    @Test
+    void testGetToken2() {
+        AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = mock(AgenziaEntrateWebClientSOAP.class);
+        when(agenziaEntrateWebClientSOAP.init()).thenReturn(null);
+        (new AdELegalClient(agenziaEntrateWebClientSOAP)).getToken();
+        verify(agenziaEntrateWebClientSOAP).init();
+    }
+
+    /**
+     * Method under test: {@link AdELegalClient#checkTaxIdAndVatNumberAdE(ADELegalRequestBodyFilterDto)}
+     */
+    @Test
+    void testCheckTaxIdAndVatNumberAdE2() {
+        AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = mock(AgenziaEntrateWebClientSOAP.class);
+        when(agenziaEntrateWebClientSOAP.init()).thenReturn(null);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
+        adELegalClient.checkTaxIdAndVatNumberAdE(new ADELegalRequestBodyFilterDto());
+        verify(agenziaEntrateWebClientSOAP).init();
+    }
 
     @Test
     void checkTaxIdAndVatNumberTest() {
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(webClient);
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, xmlWriter);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
 
         ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
         adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
@@ -85,7 +103,7 @@ class AdELegalClientTest {
     @Test
     void checkTaxIdAndVatNumberErrorTest() {
         when(agenziaEntrateWebClientSOAP.init()).thenReturn(webClient);
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, xmlWriter);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
 
         HttpHeaders headers = mock(HttpHeaders.class);
         byte[] testByteArray = new byte[0];
@@ -117,14 +135,14 @@ class AdELegalClientTest {
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
     void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, xmlWriter);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
         assertFalse(adELegalClient.shouldRetry(new Exception()));
     }
 
     @Test
     @DisplayName("Should return true when the exception is webclientresponseexception and the status code is 401")
     void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP, xmlWriter);
+        AdELegalClient adELegalClient = new AdELegalClient(agenziaEntrateWebClientSOAP);
 
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);

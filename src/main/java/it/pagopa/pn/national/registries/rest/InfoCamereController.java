@@ -10,9 +10,10 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+
 @RestController
 @lombok.CustomLog
-public class InfoCamereController  implements InfoCamereApi {
+public class InfoCamereController implements InfoCamereApi {
 
     private final InfoCamereService infoCamereService;
 
@@ -80,6 +81,26 @@ public class InfoCamereController  implements InfoCamereApi {
     @Override
     public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(Mono<InfoCamereLegalRequestBodyDto> infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
         return infoCamereLegalRequestBodyDto.flatMap(infoCamereService::checkTaxIdAndVatNumber)
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
+    }
+
+    /**
+     * POST /national-registries-private/infocamere/legal-institutions : Il servizio restituisce la lista delle imprese che hanno come legale rappresentante la persona fisica indicata.
+     * Il servizio restituisce la lista delle imprese che hanno come legale rappresentante la persona fisica indicata.
+     *
+     * @param infoCamereLegalInstitutionsRequestBodyDto (required)
+     * @return OK (status code 200)
+     * or Bad request (status code 400)
+     * or Unauthorized (status code 401)
+     * or Not Found (status code 404)
+     * or Internal server error (status code 500)
+     * or Service Unavailable (status code 503)
+     */
+    @Override
+    public Mono<ResponseEntity<InfoCamereLegalInstitutionsOKDto>> infoCamereLegalInstitutions(Mono<InfoCamereLegalInstitutionsRequestBodyDto> infoCamereLegalInstitutionsRequestBodyDto, final ServerWebExchange exchange) {
+        return infoCamereLegalInstitutionsRequestBodyDto
+                .flatMap(infoCamereService::getLegalInstitutions)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

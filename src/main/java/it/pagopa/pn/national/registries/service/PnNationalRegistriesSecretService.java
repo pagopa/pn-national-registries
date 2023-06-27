@@ -1,12 +1,12 @@
-package it.pagopa.pn.national.registries.config;
+package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.model.SSLData;
+import it.pagopa.pn.national.registries.config.CachedSecretsManagerConsumer;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
+import it.pagopa.pn.national.registries.model.TrustData;
 import it.pagopa.pn.national.registries.model.ipa.IpaSecret;
-import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueResponse;
@@ -17,16 +17,16 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 
 @Slf4j
 @Component
-public class PnNationalRegistriesSecretConfig {
+public class PnNationalRegistriesSecretService {
 
-    private final SecretManagerService secretManagerService;
+    private final CachedSecretsManagerConsumer cachedSecretsManagerConsumer;
 
-    public PnNationalRegistriesSecretConfig(SecretManagerService secretManagerService) {
-        this.secretManagerService = secretManagerService;
+    public PnNationalRegistriesSecretService(CachedSecretsManagerConsumer cachedSecretsManagerConsumer) {
+        this.cachedSecretsManagerConsumer = cachedSecretsManagerConsumer;
     }
 
-    protected PdndSecretValue getPdndSecretValue(String purposeId, String secretId) {
-        Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretId);
+    public PdndSecretValue getPdndSecretValue(String purposeId, String secretId) {
+        Optional<GetSecretValueResponse> opt = cachedSecretsManagerConsumer.getSecretValue(secretId);
         if (opt.isPresent()) {
             log.info("founded secret for purposeId: {} and secretId: {}", purposeId, secretId);
             return convertToSecretValueObject(opt.get().secretString(), PdndSecretValue.class);
@@ -36,13 +36,13 @@ public class PnNationalRegistriesSecretConfig {
         }
     }
 
-    protected SSLData getSslDataSecretValue(String secretId) {
+    public TrustData getTrustedCertFromSecret(String secretId) {
         try {
             ObjectMapper mapper = new ObjectMapper();
-            Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretId);
+            Optional<GetSecretValueResponse> opt = cachedSecretsManagerConsumer.getSecretValue(secretId);
             if (opt.isPresent()) {
                 log.info("founded secret value for secret: {}", secretId);
-                return mapper.readValue(opt.get().secretString(), SSLData.class);
+                return mapper.readValue(opt.get().secretString(), TrustData.class);
             } else {
                 log.warn("secret value for secret: {} not found", secretId);
                 throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, new Throwable());
@@ -52,8 +52,8 @@ public class PnNationalRegistriesSecretConfig {
         }
     }
 
-    protected IpaSecret getIpaSecret(String secretId) {
-        Optional<GetSecretValueResponse> opt = secretManagerService.getSecretValue(secretId);
+    public IpaSecret getIpaSecret(String secretId) {
+        Optional<GetSecretValueResponse> opt = cachedSecretsManagerConsumer.getSecretValue(secretId);
         if (opt.isPresent()) {
             log.info("founded AUTH_ID for Ipa client");
             return convertToSecretValueObject(opt.get().secretString(), IpaSecret.class);
@@ -70,5 +70,13 @@ public class PnNationalRegistriesSecretConfig {
         } catch (JsonProcessingException e) {
             throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER_CONVERTER, ERROR_CODE_SECRET_MANAGER, e);
         }
+    }
+
+    public String getSecret(String secretId) {
+        Optional<GetSecretValueResponse> opt = cachedSecretsManagerConsumer.getSecretValue(secretId);
+        if(opt.isEmpty()) {
+            throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF);
+        }
+        return opt.get().secretString();
     }
 }
