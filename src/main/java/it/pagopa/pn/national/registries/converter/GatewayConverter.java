@@ -3,7 +3,7 @@ package it.pagopa.pn.national.registries.converter;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 import java.util.regex.Pattern;
@@ -23,6 +25,7 @@ public class GatewayConverter {
             Pattern.CASE_INSENSITIVE);
     private static final Pattern INAD_CF_NOT_FOUND = Pattern.compile("(\"detail\")\\s*:\\s*\"(CF non trovato)\"",
             Pattern.CASE_INSENSITIVE);
+    private static final String DATE_PATTERN = "yyyy-MM-dd";
 
     protected AddressOKDto mapToAddressesOKDto(String correlationId) {
         AddressOKDto dto = new AddressOKDto();
@@ -89,6 +92,20 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
+    protected CodeSqsDto errorIpaToSqsDto(String correlationId, Throwable throwable) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
+        if (throwable instanceof PnNationalRegistriesException exception
+                && exception.getStatusCode() == HttpStatus.BAD_REQUEST
+                && StringUtils.hasText(exception.getResponseBodyAsString())) {
+            log.info("correlationId: {} - IPA - " + throwable.getMessage(), correlationId);
+            codeSqsDto.setDigitalAddress(Collections.emptyList());
+        } else {
+            codeSqsDto.setError(throwable.getMessage());
+        }
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
+        return codeSqsDto;
+    }
+
     protected CodeSqsDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
         if (registroImpreseDto != null && registroImpreseDto.getProfessionalAddress() != null) {
@@ -99,6 +116,24 @@ public class GatewayConverter {
         }
         codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
         return codeSqsDto;
+    }
+
+    protected CodeSqsDto ipaToSqsDto(String correlationId, IPAPecDto ipaResponse) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
+        if (ipaResponse != null && ipaResponse.getDomicilioDigitale() != null) {
+            codeSqsDto.setDigitalAddress(List.of(convertIpaPecToDigitalAddress(ipaResponse)));
+        } else {
+            log.info("correlationId: {} - IPA - WS23 - domicili digitali non presenti", correlationId);
+        }
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
+        return codeSqsDto;
+    }
+
+    private DigitalAddress convertIpaPecToDigitalAddress(IPAPecDto domicilioDigitale) {
+        return new DigitalAddress(DigitalAddressType.PEC.getValue(),
+                domicilioDigitale.getDomicilioDigitale(),
+                DigitalAddressRecipientType.IMPRESA.getValue());
+
     }
 
     protected CodeSqsDto errorRegImpToSqsDto(String correlationId, Throwable error) {
@@ -144,10 +179,12 @@ public class GatewayConverter {
     protected GetAddressANPRRequestBodyDto convertToGetAddressAnprRequest(AddressRequestBodyDto addressRequestBodyDto) {
         GetAddressANPRRequestBodyDto dto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto filterDto = new GetAddressANPRRequestBodyFilterDto();
-
         filterDto.setRequestReason(addressRequestBodyDto.getFilter().getCorrelationId());
         filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
-        filterDto.setReferenceRequestDate(addressRequestBodyDto.getFilter().getReferenceRequestDate());
+        filterDto.setReferenceRequestDate(DateTimeFormatter.ofPattern(DATE_PATTERN)
+                .withZone(ZoneId.systemDefault())
+                .format(addressRequestBodyDto.getFilter().getReferenceRequestDate().toInstant()));
+
 
         dto.setFilter(filterDto);
         return dto;
@@ -184,4 +221,13 @@ public class GatewayConverter {
         dto.setFilter(filterDto);
         return dto;
     }
+
+    protected IPARequestBodyDto convertToGetIpaPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
+        IPARequestBodyDto dto = new IPARequestBodyDto();
+        CheckTaxIdRequestBodyFilterDto filterDto = new CheckTaxIdRequestBodyFilterDto();
+        filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
+        dto.setFilter(filterDto);
+        return dto;
+    }
+
 }

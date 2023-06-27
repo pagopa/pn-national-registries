@@ -14,7 +14,7 @@ class ValidateTaxIdUtilsTest {
     private ValidateUtils validateUtils;
 
     /**
-     * Method under test: {@link ValidateTaxIdUtils#validateTaxId(String)}
+     * Method under test: {@link ValidateTaxIdUtils#validateTaxId(String, String)}
      */
     @BeforeEach
     void setup() {
@@ -23,7 +23,7 @@ class ValidateTaxIdUtilsTest {
 
     @Test
     void testValidateTaxId() {
-        assertThrows(PnNationalRegistriesException.class, () -> validateTaxIdUtils.validateTaxId("42"));
+        assertThrows(PnNationalRegistriesException.class, () -> validateTaxIdUtils.validateTaxId("42",""));
     }
 }
 

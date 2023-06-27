@@ -22,6 +22,18 @@
     "IPASecret": "pn-national-registries/ipa",
     "SecretPrefix": "pn-national-registries",
     "PnCxIdValidationEnabled": "false",
-    "MaxTasksNumber": "1"
+    "MaxTasksNumber": "1",
+    "PnNationalRegistriesInipecTtl": "1209600",
+    "PnNationalRegistriesInipecBatchRequestDelay": "30000",
+    "PnNationalRegistriesInipecBatchRequestRecoveryDelay": "30000",
+    "PnNationalRegistriesInipecBatchRequestRecoveryAfter": "3600",
+    "PnNationalRegistriesInipecBatchRequestMaxRetry": "3",
+    "PnNationalRegistriesInipecBatchPollingDelay": "30000",
+    "PnNationalRegistriesInipecBatchPollingRecoveryDelay": "30000",
+    "PnNationalRegistriesInipecBatchPollingRecoveryAfter": "3600",
+    "PnNationalRegistriesInipecBatchPollingMaxRetry": "3",
+    "PnNationalRegistriesInipecBatchSqsRecoveryDelay": "30000",
+    "CpuValue": "2048",
+    "MemoryAmount": "4GB"
   }
 }

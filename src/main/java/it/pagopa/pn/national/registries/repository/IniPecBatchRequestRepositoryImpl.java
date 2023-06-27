@@ -23,6 +23,7 @@ import java.util.Map;
 import static it.pagopa.pn.national.registries.constant.BatchRequestConstant.*;
 
 @Component
+@lombok.CustomLog
 public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepository {
 
     private final DynamoDbAsyncTable<BatchRequest> table;
@@ -53,7 +54,10 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
     @Override
     public Mono<BatchRequest> create(BatchRequest batchRequest) {
-        return Mono.fromFuture(table.putItem(batchRequest)).thenReturn(batchRequest);
+        log.debug("Inserting data {} in DynamoDB table {}", batchRequest, table);
+        return Mono.fromFuture(table.putItem(batchRequest))
+            .doOnNext(unused -> log.info("Inserted data in DynamoDB table {}", table))
+            .thenReturn(batchRequest);
     }
 
     @Override

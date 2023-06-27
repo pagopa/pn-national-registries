@@ -11,18 +11,22 @@ import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 
 @Component
-@Slf4j
+@lombok.CustomLog
 public class CounterRepositoryImpl implements CounterRepository {
 
     private final DynamoDbAsyncTable<CounterModel> table;
 
+    private String tableName;
+
     public CounterRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                                  @Value("${pn.national.registries.anpr.table}") String tableName) {
+        this.tableName = tableName;
         this.table = dynamoDbEnhancedAsyncClient.table(tableName, TableSchema.fromClass(CounterModel.class));
     }
 
     @Override
     public Mono<CounterModel> getCounter(String eService) {
+        log.logUpdateDynamoDBEntity(tableName, eService);
         return Mono.fromFuture(table.updateItem(createUpdateItemEnhancedRequest(eService)))
                 .map(counterModel -> counterModel);
     }

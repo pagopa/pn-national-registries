@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
@@ -11,7 +12,6 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.anpr.E002RequestDto;
 import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -27,10 +27,11 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_ANPR_ADDRESS;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 
-@Slf4j
 @Component
+@lombok.CustomLog
 public class AnprClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
@@ -64,6 +65,7 @@ public class AnprClient {
     }
 
     private Mono<ResponseE002OKDto> callAnpr(E002RequestDto requestDto, AccessTokenCacheEntry tokenEntry) {
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_ANPR_ADDRESS);
         String s = convertToJson(requestDto);
         String digest = createDigestFromPayload(s);
         log.debug("digest: {}", digest);

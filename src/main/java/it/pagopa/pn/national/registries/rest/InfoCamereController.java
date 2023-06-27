@@ -1,9 +1,8 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.InfoCamereApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.InfoCamereApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -12,6 +11,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 @RestController
+@lombok.CustomLog
 public class InfoCamereController  implements InfoCamereApi {
 
     private final InfoCamereService infoCamereService;
@@ -19,12 +19,10 @@ public class InfoCamereController  implements InfoCamereApi {
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
-    private final ValidateTaxIdUtils validateTaxIdUtils;
 
-    public InfoCamereController(InfoCamereService infoCamereService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
+    public InfoCamereController(InfoCamereService infoCamereService, Scheduler scheduler) {
         this.infoCamereService = infoCamereService;
         this.scheduler = scheduler;
-        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -40,9 +38,8 @@ public class InfoCamereController  implements InfoCamereApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(GetDigitalAddressIniPECRequestBodyDto getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
-        validateTaxIdUtils.validateTaxId(getDigitalAddressIniPECRequestBodyDto.getFilter().getTaxId());
-        return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, getDigitalAddressIniPECRequestBodyDto)
+    public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(Mono<GetDigitalAddressIniPECRequestBodyDto> getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
+        return getDigitalAddressIniPECRequestBodyDto.flatMap(requestBody -> infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, requestBody))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }
@@ -60,9 +57,8 @@ public class InfoCamereController  implements InfoCamereApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(GetAddressRegistroImpreseRequestBodyDto getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
-        validateTaxIdUtils.validateTaxId(getAddressRegistroImpreseRequestBodyDto.getFilter().getTaxId());
-        return infoCamereService.getRegistroImpreseLegalAddress(getAddressRegistroImpreseRequestBodyDto)
+    public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
+        return getAddressRegistroImpreseRequestBodyDto.flatMap(infoCamereService::getRegistroImpreseLegalAddress)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }
@@ -82,9 +78,8 @@ public class InfoCamereController  implements InfoCamereApi {
      */
 
     @Override
-    public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(InfoCamereLegalRequestBodyDto infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
-        validateTaxIdUtils.validateTaxId(infoCamereLegalRequestBodyDto.getFilter().getTaxId());
-        return infoCamereService.checkTaxIdAndVatNumber(infoCamereLegalRequestBodyDto)
+    public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(Mono<InfoCamereLegalRequestBodyDto> infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
+        return infoCamereLegalRequestBodyDto.flatMap(infoCamereService::checkTaxIdAndVatNumber)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

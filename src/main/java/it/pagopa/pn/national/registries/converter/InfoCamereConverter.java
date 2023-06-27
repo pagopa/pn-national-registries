@@ -9,7 +9,7 @@ import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.IniPecException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
@@ -35,7 +35,7 @@ public class InfoCamereConverter {
 
     private final ObjectMapper mapper;
     private final long iniPecTtl;
-
+    
     public InfoCamereConverter(ObjectMapper mapper,
                                @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
         this.mapper = mapper;

@@ -14,9 +14,14 @@ public class MaskDataUtils {
             "\"municipalityDetails\"|\"province\"|\"foreignState\"|\"codiceStato\"|\"descrizioneStato\")\\s*:\\s*\"(.*?)\"");
     private static final Pattern ADDRESS_2 = Pattern.compile("(\"descrizioneLocalita\"|\"denominazione\"|\"numeroCivico\"|" +
             "\"digitalAddress\"|\"comune\"|\"toponimo\"|\"via\"|\"cap\"|\"provincia\"|\"nCivico\")\\s*:\\s*\"(.*?)\"");
+    private static final Pattern ADDRESS_3 = Pattern.compile("(\"domicilioDigitale\"|\"tipo\"|\"codEnte\"" +
+            "|\"domicilio_digitale\"|\"cod_amm\"|\"des_amm\")\\s*:\\s*\"(.*?)\"");
     private static final Pattern IDENTITY = Pattern.compile("(\"pecProfessionista\"|\"cf\"|\"codFiscale\"|\"codiceFiscale\"|" +
             "\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
     private static final Pattern ACCESS_TOKEN = Pattern.compile("(\"access_token\")\\s*:\\s*\"(.*?)\"");
+
+    private static final Pattern ELENCO_CF_NOT_JSON = Pattern.compile("(CF)\\s*=\\s*(.*)");
+
 
     public static String maskInformation(String dataBuffered) {
         if (dataBuffered == null) {
@@ -28,8 +33,10 @@ public class MaskDataUtils {
         dataBuffered = maskMatcher(TAX_ID, dataBuffered);
         dataBuffered = maskMatcher(ADDRESS_1, dataBuffered);
         dataBuffered = maskMatcher(ADDRESS_2, dataBuffered);
+        dataBuffered = maskMatcher(ADDRESS_3, dataBuffered);
         dataBuffered = maskMatcher(IDENTITY, dataBuffered);
         dataBuffered = maskMatcher(ACCESS_TOKEN, dataBuffered);
+        dataBuffered = maskMatcher(ELENCO_CF_NOT_JSON,dataBuffered);
 
         return dataBuffered;
     }

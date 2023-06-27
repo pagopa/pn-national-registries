@@ -1,10 +1,9 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.IpaApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPAPecOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.IPARequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.IpaApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,6 +12,7 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 @RestController
+@lombok.CustomLog
 public class IpaController implements IpaApi {
 
     private final IpaService ipaService;
@@ -20,12 +20,9 @@ public class IpaController implements IpaApi {
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
-    private final ValidateTaxIdUtils validateTaxIdUtils;
-
-    public IpaController(IpaService ipaService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
+    public IpaController(IpaService ipaService, Scheduler scheduler) {
         this.ipaService = ipaService;
         this.scheduler = scheduler;
-        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -39,10 +36,9 @@ public class IpaController implements IpaApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<IPAPecOKDto>> ipaPec(IPARequestBodyDto ipARequestBodyDto, ServerWebExchange exchange) {
-        validateTaxIdUtils.validateTaxId(ipARequestBodyDto.getFilter().getTaxId());
-        return ipaService.getIpaPec(ipARequestBodyDto)
-                .map(t -> ResponseEntity.ok().body(t))
-                .publishOn(scheduler);
+    public Mono<ResponseEntity<IPAPecDto>> ipaPec(Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
+        return ipARequestBodyDto.flatMap(ipaService::getIpaPec)
+            .map(t -> ResponseEntity.ok().body(t))
+            .publishOn(scheduler);
     }
 }

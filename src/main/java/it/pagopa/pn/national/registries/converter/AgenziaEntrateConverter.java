@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.CheckTaxIdOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import org.springframework.stereotype.Component;

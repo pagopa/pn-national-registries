@@ -1,10 +1,9 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.api.DigitalAddressInadApi;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetDigitalAddressINADRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.DigitalAddressInadApi;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.service.InadService;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
@@ -12,17 +11,17 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 @RestController
+@lombok.CustomLog
 public class InadController implements DigitalAddressInadApi {
 
     private final InadService inadService;
     private final Scheduler scheduler;
 
-    private final ValidateTaxIdUtils validateTaxIdUtils;
 
-    public InadController(InadService inadService, Scheduler scheduler, ValidateTaxIdUtils validateTaxIdUtils) {
+
+    public InadController(InadService inadService, Scheduler scheduler) {
         this.inadService = inadService;
         this.scheduler = scheduler;
-        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     /**
@@ -39,9 +38,8 @@ public class InadController implements DigitalAddressInadApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
-        validateTaxIdUtils.validateTaxId(extractDigitalAddressINADRequestBodyDto.getFilter().getTaxId());
-        return inadService.callEService(extractDigitalAddressINADRequestBodyDto)
+    public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
+        return extractDigitalAddressINADRequestBodyDto.flatMap(inadService::callEService)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

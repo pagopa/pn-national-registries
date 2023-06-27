@@ -2,18 +2,18 @@ package it.pagopa.pn.national.registries.service;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import it.pagopa.pn.commons.log.MDCWebFilter;
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.AddressRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
 
 import java.util.Map;
 
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import org.joda.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,13 +42,14 @@ class GatewayServiceTest {
     private InfoCamereService infoCamereService;
     @MockBean
     private SqsService sqsService;
+    @MockBean
+    private IpaService ipaService;
 
     @Autowired
     private GatewayService gatewayService;
 
     private static final String CF = "CF";
     private static final String C_ID = "correlationId";
-    private static final String REF_REQ_DATE = "refReqDate";
 
     @Test
     @DisplayName("Test recipientType not valid")
@@ -93,7 +94,7 @@ class GatewayServiceTest {
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        MDC.setContextMap(Map.of(MDCWebFilter.MDC_TRACE_ID_KEY, "traceId"));
+        MDC.setContextMap(Map.of(MDCUtils.MDC_TRACE_ID_KEY, "traceId"));
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PF", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
@@ -224,8 +225,38 @@ class GatewayServiceTest {
     void testRetrieveDigitalOrPhysicalAddressIniPEC() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
-        when(infoCamereService.getIniPecDigitalAddress(eq("clientId"), any()))
-                .thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
+        IPAPecDto ipaPecOKDto = new IPAPecDto();
+        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale");
+        ipaPecOKDto.setTipo("tipo");
+        ipaPecOKDto.setCodEnte("codEnte");
+        ipaPecOKDto.setDenominazione("denominazione");
+
+        when(ipaService.getIpaPec(any()))
+                .thenReturn(Mono.just(ipaPecOKDto));
+
+        when(sqsService.push((CodeSqsDto) any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId(C_ID);
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Test retrieve from IPA")
+    void testRetrieveDigitalOrPhysicalAddressIpa() {
+        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+        IPAPecDto ipaPecOKDto = new IPAPecDto();
+        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale");
+        ipaPecOKDto.setTipo("tipo");
+        ipaPecOKDto.setCodEnte("codEnte");
+        ipaPecOKDto.setDenominazione("denominazione");
+
+        when(ipaService.getIpaPec(any()))
+                .thenReturn(Mono.just(ipaPecOKDto));
+        when(sqsService.push((CodeSqsDto) any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
@@ -258,7 +289,7 @@ class GatewayServiceTest {
         filterDto.setTaxId(CF);
         filterDto.setCorrelationId(C_ID);
         filterDto.setDomicileType(domicileType);
-        filterDto.setReferenceRequestDate(REF_REQ_DATE);
+        filterDto.setReferenceRequestDate(LocalDateTime.now().toDate());
 
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.setFilter(filterDto);

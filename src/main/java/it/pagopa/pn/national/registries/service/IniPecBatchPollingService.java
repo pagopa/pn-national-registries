@@ -31,8 +31,8 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
-import static it.pagopa.pn.commons.log.MDCWebFilter.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
+import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 
 @Slf4j
 @Service
@@ -47,8 +47,7 @@ public class IniPecBatchPollingService {
     private final int maxRetry;
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
-
-    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress.";
+    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress";
 
     public IniPecBatchPollingService(InfoCamereConverter infoCamereConverter,
                                      IniPecBatchRequestRepository batchRequestRepository,
@@ -147,13 +146,18 @@ public class IniPecBatchPollingService {
                                 HttpStatus.NOT_FOUND.getReasonPhrase() , null, null,
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
                     }
+                    else {
+                        log.info("IniPEC - batchId {} - pollingId {} - response pec size: {}", batchId, pollingId, response.getElencoPec().size());
+                    }
                 })
-                .doOnNext(response -> log.info("IniPEC - batchId {} - pollingId {} - response pec size: {}", batchId, pollingId, response.getElencoPec().size()))
-                .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e))
-                .onErrorResume(isResponseNotReady, e -> Mono.empty());
+                .onErrorResume(isPollingResponseNotReady, e -> {
+                    log.info("IniPEC - batchId {} - pollingId {} - " + PEC_REQUEST_IN_PROGRESS_MESSAGE, batchId, pollingId);
+                    return Mono.empty();
+                })
+                .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e));
     }
 
-    private final Predicate<Throwable> isResponseNotReady = throwable ->
+    private final Predicate<Throwable> isPollingResponseNotReady = throwable ->
             throwable instanceof PnNationalRegistriesException exception
                     && exception.getStatusCode() == HttpStatus.NOT_FOUND
                     && Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase(PEC_REQUEST_IN_PROGRESS_MESSAGE);
