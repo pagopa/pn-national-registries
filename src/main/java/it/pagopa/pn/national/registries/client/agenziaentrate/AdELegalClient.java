@@ -2,8 +2,8 @@ package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalErrorDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.ADELegalRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalErrorDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.utils.XMLWriter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -23,12 +23,12 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class AdELegalClient {
 
-    private final WebClient webClient;
-
+    private final AdELegalWebClient adELegalWebClient;
     private final XMLWriter xmlWriter;
-    protected AdELegalClient(AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP,
+
+    protected AdELegalClient(AdELegalWebClient adELegalWebClient,
                              XMLWriter xmlWriter) {
-        webClient = agenziaEntrateWebClientSOAP.init();
+        this.adELegalWebClient = adELegalWebClient;
         this.xmlWriter = xmlWriter;
     }
 
@@ -37,9 +37,9 @@ public class AdELegalClient {
     }
 
     private Mono<String> callCheck(ADELegalRequestBodyFilterDto request) {
-
+        WebClient webClient = adELegalWebClient.init();
         return webClient.post()
-                .uri("/legalerappresentateAdE/check")
+                .uri("/SPCBooleanoRappWS/VerificaRappresentanteEnteService")
                 .contentType(MediaType.TEXT_XML)
                 .bodyValue(xmlWriter.getEnvelope(request.getVatNumber(), request.getTaxId()))
                 .retrieve()

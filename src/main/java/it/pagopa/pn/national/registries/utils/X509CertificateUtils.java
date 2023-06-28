@@ -1,15 +1,14 @@
 package it.pagopa.pn.national.registries.utils;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
-import lombok.Getter;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.springframework.stereotype.Component;
 
-import javax.security.auth.x500.X500Principal;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
@@ -20,32 +19,42 @@ import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Base64;
+import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
 
 @Component
 public class X509CertificateUtils {
-    private final SSLData adeLegalSecret;
+    private final AdeLegalSecretConfig adeLegalSecretConfig;
 
-    @Getter
-    private final X509Certificate certificate;
+    private final SsmParameterConsumerActivation ssmParameterConsumerActivation;
+    private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
-    public X509CertificateUtils(AdeLegalSecretConfig adeLegalSecretConfig) {
-        this.adeLegalSecret = adeLegalSecretConfig.getAdeSecretConfig();
-        this.certificate = loadCertificate();
+    public X509CertificateUtils(AdeLegalSecretConfig adeLegalSecretConfig, SsmParameterConsumerActivation ssmParameterConsumerActivation, PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
+        this.adeLegalSecretConfig = adeLegalSecretConfig;
+        this.ssmParameterConsumerActivation = ssmParameterConsumerActivation;
+        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
-    public PrivateKey getPrivateKey() {
-        byte[] array = Base64.getDecoder().decode(adeLegalSecret.getKey());
+    public SSLData getKeyAndCertificate() {
+        Optional<SSLData> optSslData = ssmParameterConsumerActivation.getParameterValue(adeLegalSecretConfig.getAuthChannelData(), SSLData.class);
+        if(optSslData.isEmpty()) {
+            throw new PnInternalException(ERROR_MESSAGE_ADE_LEGAL_LOAD_CERT, ERROR_CODE_ADE_LEGAL_LOAD_CERT);
+        }
+        return optSslData.get();
+    }
 
-        String str = new String(array, StandardCharsets.UTF_8);
-        str = str.replace("-----BEGIN PRIVATE KEY-----", "")
+    public PrivateKey getPrivateKey(String secretId) {
+
+        String privateKey = pnNationalRegistriesSecretService.getSecret(secretId);
+
+        privateKey = privateKey.replace("-----BEGIN PRIVATE KEY-----", "")
                 .replace("-----END PRIVATE KEY-----", "")
                 .replace("\n", "")
                 .trim();
 
         try {
-            PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(str));
+            PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(Base64.getDecoder().decode(privateKey));
             KeyFactory kf = KeyFactory.getInstance("RSA");
             return kf.generatePrivate(encodedKeySpec);
         } catch (IllegalArgumentException | NoSuchAlgorithmException | InvalidKeySpecException e) {
@@ -53,8 +62,8 @@ public class X509CertificateUtils {
         }
     }
 
-    public X509Certificate loadCertificate() {
-        byte[] array = Base64.getDecoder().decode(adeLegalSecret.getCert());
+    public X509Certificate loadCertificate(String cert) {
+        byte[] array = Base64.getDecoder().decode(cert);
 
         String str = new String(array, StandardCharsets.UTF_8);
         str = str.replace("-----BEGIN CERTIFICATE-----", "")
@@ -69,13 +78,5 @@ public class X509CertificateUtils {
         } catch (CertificateException e) {
             throw new PnInternalException(ERROR_MESSAGE_ADE_LEGAL_LOAD_CERT, ERROR_CODE_ADE_LEGAL_LOAD_CERT, e);
         }
-    }
-
-    public BigInteger getSerialNumber() {
-        return certificate.getSerialNumber();
-    }
-
-    public String getIssuerName() {
-        return certificate.getIssuerX500Principal().getName(X500Principal.RFC1779);
     }
 }
