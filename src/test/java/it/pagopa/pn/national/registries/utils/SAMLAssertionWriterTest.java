@@ -1,23 +1,10 @@
 package it.pagopa.pn.national.registries.utils;
 
-import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
-import it.pagopa.pn.national.registries.model.SSLData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.opensaml.core.xml.NamespaceManager;
-import org.opensaml.saml.saml2.core.*;
-import org.opensaml.xmlsec.signature.*;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.context.annotation.PropertySource;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 //@ContextConfiguration(classes = {SAMLAssertionWriter.class})
 @ExtendWith(SpringExtension.class)

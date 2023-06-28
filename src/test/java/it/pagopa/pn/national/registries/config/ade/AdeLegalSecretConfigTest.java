@@ -1,21 +1,14 @@
 package it.pagopa.pn.national.registries.config.ade;
 
-import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
-import it.pagopa.pn.national.registries.model.SSLData;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Optional;
-
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AdeLegalSecretConfigTest {
     

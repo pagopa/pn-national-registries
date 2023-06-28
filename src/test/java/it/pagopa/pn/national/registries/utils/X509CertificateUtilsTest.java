@@ -1,8 +1,6 @@
 package it.pagopa.pn.national.registries.utils;
 
-import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
-import it.pagopa.pn.national.registries.model.SSLData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -11,11 +9,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.PropertySource;
 import org.springframework.test.context.ContextConfiguration;
 
-import java.math.BigInteger;
-import java.security.cert.Certificate;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ContextConfiguration(classes = {X509CertificateUtils.class})
 @PropertySource("classpath:application-test.properties")

@@ -2,19 +2,15 @@ package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import it.pagopa.pn.national.registries.client.CommonWebClient;
 import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
-import it.pagopa.pn.national.registries.config.adelegal.AdeLegalWebClientConfig;
 import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ContextConfiguration;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ContextConfiguration(classes = {AdELegalWebClient.class, CommonWebClient.class, ResponseExchangeFilter.class})
 @ExtendWith(MockitoExtension.class)
