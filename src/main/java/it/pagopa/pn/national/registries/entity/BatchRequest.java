@@ -76,6 +76,7 @@ public class BatchRequest {
     }))
     private String sendStatus;
 
+    @ToString.Exclude
     @Getter(onMethod = @__({
             @DynamoDbAttribute(COL_MESSAGE)
     }))

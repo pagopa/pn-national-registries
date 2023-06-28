@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.config;
 
-import it.pagopa.pn.national.registries.log.AwsClientLoggerInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -25,7 +24,6 @@ public class DynamoConfiguration {
                 .region(Region.of(awsRegion))
                 .credentialsProvider(DefaultCredentialsProvider.create())
                 .overrideConfiguration(ClientOverrideConfiguration.builder()
-                        .addExecutionInterceptor(new AwsClientLoggerInterceptor())
                         .build())
                 .build();
         return DynamoDbEnhancedAsyncClient.builder()
