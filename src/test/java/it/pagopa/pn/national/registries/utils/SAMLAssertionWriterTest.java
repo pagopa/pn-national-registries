@@ -1,24 +1,42 @@
 package it.pagopa.pn.national.registries.utils;
 
+import it.pagopa.pn.national.registries.model.SSLData;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.opensaml.core.xml.NamespaceManager;
+import org.opensaml.saml.saml2.core.*;
+import org.opensaml.saml.saml2.core.AttributeStatement;
+import org.opensaml.saml.saml2.core.AuthnContextClassRef;
+import org.opensaml.xmlsec.signature.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.PropertySource;
+import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-//@ContextConfiguration(classes = {SAMLAssertionWriter.class})
-@ExtendWith(SpringExtension.class)
-//@PropertySource("classpath:application-test.properties")
-//@EnableConfigurationProperties
+import javax.security.auth.x500.X500Principal;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
 class SAMLAssertionWriterTest {
-/*
-    @MockBean
+
+    @Mock
     private OpenSAMLUtils openSAMLUtils;
 
-    @Autowired
+    @InjectMocks
     private SAMLAssertionWriter sAMLAssertionWriter;
 
-    @MockBean
+    @Mock
     private X509CertificateUtils x509CertificateUtils;
 
     @Test
@@ -47,10 +65,13 @@ class SAMLAssertionWriterTest {
         SSLData sslData = new SSLData();
         sslData.setCert("cert");
         sslData.setSecretid("secretId");
-
-        java.security.cert.X509Certificate x509Certificate = mock(java.security.cert.X509Certificate.class);
         when(x509CertificateUtils.getKeyAndCertificate()).thenReturn(sslData);
 
+        java.security.cert.X509Certificate x509Certificate = mock(java.security.cert.X509Certificate.class);
+
+        when(x509CertificateUtils.loadCertificate(any())).thenReturn(x509Certificate);
+        X500Principal x500Principal = mock(X500Principal.class);
+        when(x509Certificate.getIssuerX500Principal()).thenReturn(x500Principal);
         when(openSAMLUtils.buildSAMLObject(Assertion.DEFAULT_ELEMENT_NAME, null)).thenReturn(assertion);
         when(openSAMLUtils.buildSAMLObject(AttributeStatement.DEFAULT_ELEMENT_NAME, null)).thenReturn(attrStatement);
         when(openSAMLUtils.buildSAMLObject(Attribute.DEFAULT_ELEMENT_NAME, null)).thenReturn(attribute);
@@ -80,7 +101,7 @@ class SAMLAssertionWriterTest {
         assertEquals(assertion, assertionTest);
     }
 
-    */
+
 
     @Test
     void test() {
