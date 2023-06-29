@@ -1,7 +1,8 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import it.pagopa.pn.national.registries.client.CommonWebClient;
-import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
+import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
+import it.pagopa.pn.national.registries.config.adelegal.AdeLegalWebClientConfig;
 import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.junit.jupiter.api.Test;
@@ -10,34 +11,26 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ContextConfiguration;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ContextConfiguration(classes = {AdELegalWebClient.class, CommonWebClient.class, ResponseExchangeFilter.class})
 @ExtendWith(MockitoExtension.class)
 class AdELegalWebClientTest {
 
     @Mock
-    SsmParameterConsumerActivation ssmParameterConsumerActivation;
-    @Mock
     PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+    @Mock
+    AdeLegalSecretConfig adeLegalSecretConfig;
 
-  /*  @Test
-    @DisplayName("Should return a web client when the secret value is found")
-    void initWhenSecretValueIsFoundThenReturnWebClient() {
-        AdeLegalWebClientConfig webClientConfig = new AdeLegalWebClientConfig();
-        webClientConfig.setTcpMaxPoolSize(1);
-        webClientConfig.setTcpMaxQueuedConnections(1);
-        webClientConfig.setTcpPendingAcquiredTimeout(1);
-        webClientConfig.setTcpPoolIdleTimeout(1);
-
-
-        AdELegalWebClient adELegalWebClient = new AdELegalWebClient(true, "", webClientConfig, adeLegalSecretConfig, pnNationalRegistriesSecretService);
-        Assertions.assertThrows(NullPointerException.class, () -> adELegalWebClient.init());
-    }
-
-    */
     @Test
-    void test() {
-        assertTrue(true);
+    void testInit() {
+        AdeLegalWebClientConfig adeLegalWebClientConfig = new AdeLegalWebClientConfig();
+        adeLegalWebClientConfig.setTcpMaxPoolSize(1);
+        adeLegalWebClientConfig.setTcpMaxQueuedConnections(1);
+        adeLegalWebClientConfig.setTcpPoolIdleTimeout(1);
+        adeLegalWebClientConfig.setTcpPendingAcquiredTimeout(1);
+        AdELegalWebClient adELegalWebClient = new AdELegalWebClient(true, "test.it", adeLegalWebClientConfig,adeLegalSecretConfig,pnNationalRegistriesSecretService);
+        assertThrows(NullPointerException.class, adELegalWebClient::init);
     }
+
 }
