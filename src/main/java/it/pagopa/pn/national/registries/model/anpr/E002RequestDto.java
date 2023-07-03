@@ -11,10 +11,7 @@ import lombok.ToString;
 @ToString
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class E002RequestDto {
+    private String idOperazioneClient;
     private SearchCriteriaE002Dto criteriRicerca;
-    private RequestHeaderE002Dto testataRichiesta;
     private RequestDateE002Dto datiRichiesta;
-
 }
-
-

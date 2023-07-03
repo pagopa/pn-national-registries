@@ -1,8 +1,5 @@
 package it.pagopa.pn.national.registries.config.checkcf;
 
-import it.pagopa.pn.national.registries.config.PnNationlRegistriesSecretConfig;
-import it.pagopa.pn.national.registries.model.SecretValue;
-import it.pagopa.pn.national.registries.service.SecretManagerService;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -11,15 +8,17 @@ import org.springframework.stereotype.Component;
 @Component
 @Slf4j
 @Getter
-public class CheckCfSecretConfig extends PnNationlRegistriesSecretConfig {
+public class CheckCfSecretConfig{
+    private final String pdndSecret;
+    private final String purposeId;
+    private final String trustData;
 
-    private final SecretManagerService secretManagerService;
-    private final SecretValue checkCfSecretValue;
-
-    public CheckCfSecretConfig(SecretManagerService secretManagerService,
-                               @Value("${pn.national.registries.pdnd.agenzia-entrate.purpose-id}") String purposeId) {
-        super(secretManagerService);
-        this.secretManagerService = secretManagerService;
-        this.checkCfSecretValue = getSecretValue(purposeId);
+    public CheckCfSecretConfig(
+            @Value("${pn.national.registries.pdnd.ade-check-cf.purpose-id}") String purposeId,
+                               @Value("${pn.national.registries.pdnd.ade-check-cf.secret}") String pdndSecret,
+                               @Value("${pn.national.registries.trust.ade-check-cf.secret}") String trustData) {
+        this.pdndSecret = pdndSecret;
+        this.purposeId = purposeId;
+        this.trustData = trustData;
     }
 }

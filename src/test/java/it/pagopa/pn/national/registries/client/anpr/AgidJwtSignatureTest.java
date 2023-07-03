@@ -1,48 +1,39 @@
 package it.pagopa.pn.national.registries.client.anpr;
 
-import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.JwtConfig;
-import it.pagopa.pn.national.registries.model.SSLData;
-import it.pagopa.pn.national.registries.model.SecretValue;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Mockito;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
+import software.amazon.awssdk.services.kms.KmsClient;
 
-import java.security.spec.InvalidKeySpecException;
-
-@ExtendWith(MockitoExtension.class)
+@ExtendWith(SpringExtension.class)
 class AgidJwtSignatureTest {
 
-    @Mock
+    @MockBean
     AnprSecretConfig anprSecretConfig;
+
+    @MockBean
+    KmsClient kmsClient;
+
+    @MockBean
+    PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
     @Test
     void testCreateAgidJWT() {
-        AgidJwtSignature agidJwtSignature = new AgidJwtSignature("aud", anprSecretConfig);
+        AgidJwtSignature agidJwtSignature = new AgidJwtSignature(anprSecretConfig, kmsClient, pnNationalRegistriesSecretService);
         String digest = "digest";
 
-        SecretValue secretValue = new SecretValue();
-        secretValue.setClientId("test");
-        secretValue.setKeyId("test");
-        secretValue.setJwtConfig(new JwtConfig());
-        Mockito.when(anprSecretConfig.getAnprSecretValue()).thenReturn(secretValue);
+        PdndSecretValue pdndSecretValue = new PdndSecretValue();
+        pdndSecretValue.setClientId("test");
+        pdndSecretValue.setKeyId("test");
+        pdndSecretValue.setJwtConfig(new JwtConfig());
 
-        SSLData sslData = new SSLData();
-        sslData.setCert("TestCert");
-        sslData.setKey("TestKey");
-        sslData.setPub("TestPub");
-        sslData.setTrust("TestTrust");
-        Mockito.when(anprSecretConfig.getAnprIntegritySecret()).thenReturn(sslData);
-        Assertions.assertThrows(PnInternalException.class,()->agidJwtSignature.createAgidJwt(digest));
-    }
-    @Test
-    void testgetPrivateKey() {
-        AgidJwtSignature agidJwtSignature = new AgidJwtSignature("secret1",anprSecretConfig);
-        Assertions.assertThrows(InvalidKeySpecException.class,()->agidJwtSignature.getPrivateKey("dGVzdA=="));
+        Assertions.assertThrows(NullPointerException.class,()->agidJwtSignature.createAgidJwt(digest));
     }
 
 }

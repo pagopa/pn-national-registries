@@ -1,11 +1,13 @@
 package it.pagopa.pn.national.registries.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.Data;
 
 @Data
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class SSLData {
     private String cert;
-    private String key;
-    private String pub;
-    private String trust;
+    private String keyId;
+    private String dns;
+    private String secretid;
 }

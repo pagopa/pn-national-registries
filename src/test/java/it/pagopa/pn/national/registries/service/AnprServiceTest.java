@@ -1,16 +1,17 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
-import it.pagopa.pn.national.registries.converter.AddressAnprConverter;
+import it.pagopa.pn.national.registries.converter.AnprConverter;
 import it.pagopa.pn.national.registries.entity.CounterModel;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
 import it.pagopa.pn.national.registries.model.anpr.SubjectsInstitutionDataDto;
 import it.pagopa.pn.national.registries.model.anpr.SubjectsListDto;
 import it.pagopa.pn.national.registries.model.anpr.ResidenceDto;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,13 +36,16 @@ class AnprServiceTest {
     AnprService anprService;
 
     @Mock
-    AddressAnprConverter addressAnprConverter;
+    AnprConverter anprConverter;
 
     @Mock
     AnprClient anprClient;
 
     @Mock
     CounterRepositoryImpl counterRepository;
+
+    @Mock
+    ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
     void testGetAddressANPR2() {
@@ -74,7 +78,7 @@ class AnprServiceTest {
         counterModel.setCounter(1L);
         when(counterRepository.getCounter("anpr")).thenReturn(Mono.just(counterModel));
         when(anprClient.callEService(any())).thenReturn(Mono.just(response));
-        when(addressAnprConverter.convertToGetAddressANPROKDto(any(), anyString())).thenReturn(getAddressANPROKDto);
+        when(anprConverter.convertToGetAddressANPROKDto(any(), anyString())).thenReturn(getAddressANPROKDto);
 
         StepVerifier.create(anprService.getAddressANPR(request)).expectNext(getAddressANPROKDto).expectComplete().verify();
     }

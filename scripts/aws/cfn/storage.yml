@@ -20,20 +20,30 @@ Parameters:
     Type: String
     Description: 'keep track of used projects commitIds'
 
+  LogsKinesisSourceStreamArn:
+    Type: String
+    Description: 'Where to send Logs'
+
+  LogRetention:
+    Type: Number
+    Default: 14
+
+  AlarmSNSTopicName:
+    Type: String
 
 Resources:
   ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI M2M DI PDND    ###
   ###   La chiave viene impiegata per firmare il client assertion che serve          ###
   ###   per richedere a PDND il JWT da utilizzare per invocare i servizi M2M di PDND ###
   ######################################################################################
-  PDNDSessionTokenSigningKey:
+  PnBatchRequestEncryptKey:
     Type: 'AWS::KMS::Key'
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
     Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
+      Description: Symmetric default key to encrypt table
+      KeySpec: SYMMETRIC_DEFAULT
+      KeyUsage: ENCRYPT_DECRYPT
       KeyPolicy:
         Version: 2012-10-17
         Statement:
@@ -43,66 +53,136 @@ Resources:
               AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
             Action: 'kms:*'
             Resource: '*'
+
+  # AnprPDNDSessionTokenSigningKey:
+  #   Type: 'AWS::KMS::Key'
+  #   DeletionPolicy: Retain
+  #   UpdateReplacePolicy: Retain
+  #   Properties:
+  #     Description: RSA-2048 key to generate session token
+  #     KeySpec: RSA_2048
+  #     KeyUsage: SIGN_VERIFY
+  #     KeyPolicy:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: Enable IAM User Permissions
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+  #           Action: 'kms:*'
+  #           Resource: '*'
+
+  # # Application use this alias to access the public/private key pair
+  # AnprPDNDSessionTokenSigningKeyAlias:
+  #   Type: 'AWS::KMS::Alias'
+  #   Properties:
+  #     AliasName: !Sub 'alias/${ProjectName}-national-registries-anpr-pdnd'
+  #     TargetKeyId: !Ref AnprPDNDSessionTokenSigningKey
+
+  # CheckCfPDNDSessionTokenSigningKey:
+  #   Type: 'AWS::KMS::Key'
+  #   DeletionPolicy: Retain
+  #   UpdateReplacePolicy: Retain
+  #   Properties:
+  #     Description: RSA-2048 key to generate session token
+  #     KeySpec: RSA_2048
+  #     KeyUsage: SIGN_VERIFY
+  #     KeyPolicy:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: Enable IAM User Permissions
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+  #           Action: 'kms:*'
+  #           Resource: '*'
+
+  #   # Application use this alias to access the public/private key pair
+  # CheckCfPDNDSessionTokenSigningKeyAlias:
+  #   Type: 'AWS::KMS::Alias'
+  #   Properties:
+  #     AliasName: !Sub 'alias/${ProjectName}-national-registries-check-cf-pdnd'
+  #     TargetKeyId: !Ref CheckCfPDNDSessionTokenSigningKey
+
+  # InadPDNDSessionTokenSigningKey:
+  #   Type: 'AWS::KMS::Key'
+  #   DeletionPolicy: Retain
+  #   UpdateReplacePolicy: Retain
+  #   Properties:
+  #     Description: RSA-2048 key to generate session token
+  #     KeySpec: RSA_2048
+  #     KeyUsage: SIGN_VERIFY
+  #     KeyPolicy:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: Enable IAM User Permissions
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+  #           Action: 'kms:*'
+  #           Resource: '*'
+
+  # # Application use this alias to access the public/private key pair
+  # InadPDNDSessionTokenSigningKeyAlias:
+  #   Type: 'AWS::KMS::Alias'
+  #   Properties:
+  #     AliasName: !Sub 'alias/${ProjectName}-national-registries-inad-pdnd'
+  #     TargetKeyId: !Ref InadPDNDSessionTokenSigningKey
+
+  # CheckCfSigningKey:
+  #   Type: 'AWS::KMS::Key'
+  #   DeletionPolicy: Retain
+  #   UpdateReplacePolicy: Retain
+  #   Properties:
+  #     Description: RSA-2048 key to generate session token
+  #     KeySpec: RSA_2048
+  #     KeyUsage: SIGN_VERIFY
+  #     KeyPolicy:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: Enable IAM User Permissions
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+  #           Action: 'kms:*'
+  #           Resource: '*'
+
+  #   # Application use this alias to access the public/private key pair
+  # CheckCfSigningKeyAlias:
+  #   Type: 'AWS::KMS::Alias'
+  #   Properties:
+  #     AliasName: !Sub 'alias/${ProjectName}-national-registries-check-cf'
+  #     TargetKeyId: !Ref CheckCfSigningKey
+
+  # InfoCamereSigningKey:
+  #   Type: 'AWS::KMS::Key'
+  #   DeletionPolicy: Retain
+  #   UpdateReplacePolicy: Retain
+  #   Properties:
+  #     Description: RSA-2048 key to generate session token
+  #     KeySpec: RSA_2048
+  #     KeyUsage: SIGN_VERIFY
+  #     KeyPolicy:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - Sid: Enable IAM User Permissions
+  #           Effect: Allow
+  #           Principal:
+  #             AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
+  #           Action: 'kms:*'
+  #           Resource: '*'
 
   # Application use this alias to access the public/private key pair
-  PDNDSessionTokenSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-pdnd'
-      TargetKeyId: !Ref PDNDSessionTokenSigningKey
-
-  CheckCfPDNDSessionTokenSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
-
-    # Application use this alias to access the public/private key pair
-  CheckCfPDNDSessionTokenSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-check-cf-pdnd'
-      TargetKeyId: !Ref CheckCfPDNDSessionTokenSigningKey
-
-  InadPDNDSessionTokenSigningKey:
-    Type: 'AWS::KMS::Key'
-    DeletionPolicy: Retain
-    UpdateReplacePolicy: Retain
-    Properties:
-      Description: RSA-2048 key to generate session token
-      KeySpec: RSA_2048
-      KeyUsage: SIGN_VERIFY
-      KeyPolicy:
-        Version: 2012-10-17
-        Statement:
-          - Sid: Enable IAM User Permissions
-            Effect: Allow
-            Principal:
-              AWS: !Sub 'arn:aws:iam::${AWS::AccountId}:root'
-            Action: 'kms:*'
-            Resource: '*'
-
-  # Application use this alias to access the public/private key pair
-  InadPDNDSessionTokenSigningKeyAlias:
-    Type: 'AWS::KMS::Alias'
-    Properties:
-      AliasName: !Sub 'alias/${ProjectName}-national-registries-inad-pdnd'
-      TargetKeyId: !Ref InadPDNDSessionTokenSigningKey
+  # InfoCamereSigningKeyAlias:
+  #   Type: 'AWS::KMS::Alias'
+  #   Properties:
+  #     AliasName: !Sub 'alias/${ProjectName}-national-registries-info-camere'
+  #     TargetKeyId: !Ref InfoCamereSigningKey
 
   CounterTable:
     Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain 
     Properties:
       TableName: !Sub '${ProjectName}-counter'
       AttributeDefinitions:
@@ -113,20 +193,154 @@ Resources:
           KeyType: "HASH"
       BillingMode: "PAY_PER_REQUEST"
 
+  BatchRequestTable:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain 
+    Properties:
+      TableName: !Sub '${ProjectName}-batchRequests'
+      AttributeDefinitions:
+        - AttributeName: "correlationId"
+          AttributeType: "S"
+        - AttributeName: "batchId"
+          AttributeType: "S"
+        - AttributeName: "status"
+          AttributeType: "S"
+        - AttributeName: "lastReserved"
+          AttributeType: "S"
+        - AttributeName: "sendStatus"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "correlationId"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "batchId-lastReserved-index"
+          KeySchema:
+            - AttributeName: batchId
+              KeyType: HASH
+            - AttributeName: lastReserved
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+        - IndexName: "status-index"
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+        - IndexName: "sendStatus-lastReserved-index"
+          KeySchema:
+            - AttributeName: sendStatus
+              KeyType: HASH
+            - AttributeName: lastReserved
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      BillingMode: "PAY_PER_REQUEST"
+      SSESpecification:
+        KMSMasterKeyId: !Ref PnBatchRequestEncryptKey
+        SSEEnabled: true
+        SSEType: KMS
+
+  BatchPollingTable:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain 
+    Properties:
+      TableName: !Sub '${ProjectName}-batchPolling'
+      AttributeDefinitions:
+        - AttributeName: "batchId"
+          AttributeType: "S"
+        - AttributeName: "status"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "batchId"
+          KeyType: "HASH"
+      GlobalSecondaryIndexes:
+        - IndexName: "status-index"
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      BillingMode: "PAY_PER_REQUEST"
+
+  PnNationalRegistriesLogGroup:
+    Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain 
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/log-group.yaml"
+      Parameters:
+        LogGroupName: !Sub '${ProjectName}-national-registries'
+        LogGroupRetention: !Ref LogRetention
+        LogsKinesisSourceStreamArn: !Ref LogsKinesisSourceStreamArn
+
+  PnNationalRegistriesCertificateDLQ:
+    Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain    
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
+      Parameters:
+        QueueName: !Sub '${ProjectName}-national_registries_certificate_DLQ'
+        DelaySeconds: 1
+        AlarmSNSTopicName: !Ref AlarmSNSTopicName
+        HasDLQ:  "false"
+        QueueHasAlarm:  "true"
+
 #Necessario a causa di bug script deploy
 Outputs:
-  PDNDSessionTokenSigningKeyARN:
-    Description: PDNDSessionTokenSigningKeyARN
-    Value: !Sub '${PDNDSessionTokenSigningKey.Arn}'
-  CheckCfPDNDSessionTokenSigningKeyARN:
-    Description: CehckCfPDNDSessionTokenSigningKeyARN
-    Value: !Sub '${CheckCfPDNDSessionTokenSigningKey.Arn}'
-  InadPDNDSessionTokenSigningKeyARN:
-    Description: CehckCfPDNDSessionTokenSigningKeyARN
-    Value: !Sub '${InadPDNDSessionTokenSigningKey.Arn}'
+  PnBatchRequestEncryptKeyARN:
+    Description: PnBatchRequestEncryptKeyARN
+    Value: !Sub '${PnBatchRequestEncryptKey.Arn}'
+  # AnprPDNDSessionTokenSigningKeyARN:
+  #   Description: AnprPDNDSessionTokenSigningKeyARN
+  #   Value: !Sub '${AnprPDNDSessionTokenSigningKey.Arn}'
+  # CheckCfPDNDSessionTokenSigningKeyARN:
+  #   Description: CheckCfPDNDSessionTokenSigningKeyARN
+  #   Value: !Sub '${CheckCfPDNDSessionTokenSigningKey.Arn}'
+  # InadPDNDSessionTokenSigningKeyARN:
+  #   Description: InadPDNDSessionTokenSigningKeyARN
+  #   Value: !Sub '${InadPDNDSessionTokenSigningKey.Arn}'
+  # CheckCfSigningKeyARN:
+  #   Description: CheckCfSigningKeyARN
+  #   Value: !Sub '${CheckCfSigningKey.Arn}'
+  # CheckCfSigningKeyId:
+  #   Description: CheckCfSigningKeyARN
+  #   Value: !Ref CheckCfSigningKey
+  # InfoCamereSigningKeyARN:
+  #   Description: InfoCamereSigningKeyARN
+  #   Value: !Sub '${InfoCamereSigningKey.Arn}'
+  # InfoCamereSigningKeyId:
+  #   Value: !Ref InfoCamereSigningKey
   CounterTableArn:
     Description: ARN Dynamo Name used by application to access the key-value store of CounterTable
     Value: !Sub '${CounterTable.Arn}'
+  BatchRequestTableArn:
+    Description: ARM Dynamo Name used by application to access the key-value store of BatchRequestTable
+    Value: !Sub '${BatchRequestTable.Arn}'
+  BatchPollingTableArn:
+    Description: ARM Dynamo Name used by application to access the key-value store of BatchPollingTable
+    Value: !Sub '${BatchPollingTable.Arn}'
+
+  # Log group exports
+  EcsLogGroup:
+    Value: !GetAtt PnNationalRegistriesLogGroup.Outputs.LogGroupName
 
 
-
+  # National Registries Certificate renewal alarm DLQ
+  PnNationalRegistriesCertificateDLQName:
+    Value: !GetAtt PnNationalRegistriesCertificateDLQ.Outputs.QueueName
+  PnNationalRegistriesCertificateDLQURL:
+    Value: !GetAtt PnNationalRegistriesCertificateDLQ.Outputs.QueueURL
+  PnNationalRegistriesCertificateDLQARN:
+    Value: !GetAtt PnNationalRegistriesCertificateDLQ.Outputs.QueueARN
+  PnNationalRegistriesCertificateDLQAlarmARN:
+    Value: !GetAtt PnNationalRegistriesCertificateDLQ.Outputs.SqsDLQAlarmArn

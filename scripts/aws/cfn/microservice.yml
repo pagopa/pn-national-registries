@@ -5,6 +5,14 @@ Transform:
   - UpdateDeploymentTransform
 
 Parameters:
+  NationalRegistryGatewayOutputsQueueName:
+    Type: String
+    Description: 'The name of the queue'
+
+  NationalRegistryGatewayOutputsQueueARN:
+    Type: String
+    Description: 'Identify the resource that the policy applies to.'
+
   ProjectName:
     Type: String
     Description: 'Usually pn can be pnXYZ where XYZ are the feature number, useful to create
@@ -13,6 +21,10 @@ Parameters:
   AlarmSNSTopicArn:
     Type: String
     Description: ARN of alarm topic
+
+  LogsKinesisSourceStreamArn:
+    Type: String
+    Description: 'Kinesis stream that receive logs'
 
   ContainerImageUri:
     Type: String
@@ -34,10 +46,18 @@ Parameters:
     Type: String
     Description: 'subnets ids comma separated list. Where to deploy the microservice'
 
+  VpcEgressSubnetsIds:
+    Type: String
+    Description: subnets where to install PN-CORE
+
   VpcId:
     Type: String
     Description: 'VpcId where the microservice is going to be deployed'
-  
+
+  SelcpgApiDnsName:
+    Type: String
+    Description: 'The DNS name used for SELC-PG rest API'
+
   EcsDefaultSecurityGroup:
     Type: String
     Description: 'Default security group required by infrastructure'
@@ -58,6 +78,14 @@ Parameters:
     Type: String
     Description: 'keep track of used projects commitIds'
 
+  IPASecret:
+    Type: String
+    Description: 'IPA SecretName'
+
+  IPABaseURL:
+    Type: String
+    Description: 'IPA Base URL'
+
   PDNDBaseURL:
     Type: String
     Description: 'PDND Base URL'
@@ -70,11 +98,15 @@ Parameters:
     Type: String
     Description: 'ANPR Base Purpose ID'
 
-  AgenziaEntrateBaseURL:
+  AdELegalBaseURL:
     Type: String
-    Description: 'Agenzia Entrate Base URL'
+    Description: 'Agenzia Entrate Legale Rappresentante Base URL'
 
-  AgenziaEntratePurposeId:
+  AdECheckCfBaseURL:
+    Type: String
+    Description: 'Agenzia Entrate Check CF Base URL'
+
+  AdECheckCfPurposeId:
     Type: String
     Description: 'Agenzia Entrate Purpose ID'
 
@@ -86,59 +118,232 @@ Parameters:
     Type: String
     Description: 'INAD Purpose ID'
 
-  INIPECBaseURL:
+  InfoCamereBaseURL:
     Type: String
-    Description: 'INIPEC Base URL'
+    Description: 'InfoCamere Base URL'
 
-  INIPECPurposeId:
+  InfoCamereClientId:
     Type: String
-    Description: 'INIPEC Purpose ID'
+    Description: 'InfoCamere Client ID'
+
+  # Parametro obbligatorio (Nome del parametro)
+  AdECheckCfSSL:
+    Type: String
+    Description: 'CheckCF MTLS parameterName'
+
+  AdECheckCfTrustSecret:
+    Type: String
+    Description: 'SSL trusted cert CheckCF SecretName'
+
+  AdECheckCfSSLSecret: 
+    Type: String
+
+  AnprTrustSecret:
+    Type: String
+    Description: 'SSL trusted cert ANPR SecretName'
 
   # Parametro obbligatorio (ARN del secret)
-  ANPRSSLSecretName:
-    Type: String
-    Description: 'ANPR SecretName'
-
-  # Parametro obbligatorio (ARN del secret)
-  PDNDANPRClientAssertionSecretName:
+  PDNDANPRSecret:
     Type: String
     Description: 'PDND ANPR Client assertion claims'
 
   # Parametro obbligatorio (ARN del secret)
-  PDNDCheckCfClientAssertionSecretName:
+  PDNDAdECheckCfSecret:
     Type: String
     Description: 'PDND CheckCf Client assertion claims'
 
   # Parametro obbligatorio (ARN del secret)
-  PDNDInadClientAssertionSecretName:
+  PDNDInadSecret:
     Type: String
     Description: 'PDND INAD Client assertion claims'
 
-  # Parametro obbligatorio (ARN del secret)
-  PDNDANPRIntegritySecretName:
+  # Parametro obbligatorio (Nome del parametro su parameterStore)
+  InfoCamereAuth:
     Type: String
-    Description: 'PDND ANPR Integrity certs'
+    Description: 'InfoCamere auth cert parameter name'
 
-  PDNDSessionTokenSigningKeyARN:
+  SecretAndSSMPrefix:
     Type: String
-    Description: 'PDND Session Token Signing Key for eservice C001'
+    Default: pn-national-registries
+    Description: 'Secret and Parameter name prefix'
 
-  CheckCfPDNDSessionTokenSigningKeyARN:
+  PnBatchRequestEncryptKeyARN:
     Type: String
-    Description: 'PDND Session Token Signing Key for eservice B001'
-
-  InadPDNDSessionTokenSigningKeyARN:
-    Type: String
-    Description: 'PDND Session Token Signing Key for eservice INAD'
-
-  ANPRTipoInvio:
-    Type: String
-    Description: 'Input parameter for eservice C001'
+    Description: 'ARN Key DynamoDB batchRequest table'
 
   CounterTableArn:
     Type: String
-    Description: 'ARN of dynamodb table containing eservice counter information'
+    Description: 'ARN of DynamoDB table containing eservice counter information'
 
+  BatchRequestTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table BatchRequest'
+
+  BatchPollingTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table BatchPolling'
+
+  PnCxIdValidationEnabled:
+    Type: String
+    Description: 'Validazione del pn-national-registries cx id'
+
+  PnNationalRegistriesInipecTtl:
+    Type: Number
+    Description: 'IniPEC TTL'
+    Default: 1209600
+
+  PnNationalRegistriesInipecBatchRequestDelay:
+    Type: Number
+    Description: 'IniPEC batch request delay'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchRequestRecoveryDelay:
+    Type: Number
+    Description: 'IniPEC batch request recovery delay'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchRequestRecoveryAfter:
+    Type: Number
+    Description: 'IniPEC batch request recovery after'
+    Default: 3600
+
+  PnNationalRegistriesInipecBatchRequestMaxRetry:
+    Type: Number
+    Description: 'IniPEC batch request max retry'
+    Default: 3
+
+  PnNationalRegistriesInipecBatchPollingDelay:
+    Type: Number
+    Description: 'IniPEC batch polling delay'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchPollingRecoveryDelay:
+    Type: Number
+    Description: 'IniPEC batch polling recovery delay'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchPollingRecoveryAfter:
+    Type: Number
+    Description: 'IniPEC batch polling recovery after'
+    Default: 3600
+
+  PnNationalRegistriesInipecBatchPollingMaxRetry:
+    Type: Number
+    Description: 'IniPEC batch polling max retry'
+    Default: 3
+
+  PnNationalRegistriesInipecBatchSqsRecoveryDelay:
+    Type: Number
+    Description: 'IniPEC batch SQS recovery delay'
+    Default: 30000
+
+  EcsLogGroup:
+    Type: String
+    Description: ECS log group name
+
+  # Heath Check parameters
+  HealthCheckInterval:
+    Description: Seconds between two health check
+    Type: Number
+    Default: 60
+
+  HealthCheckTimeout:
+    Description: health check timeout seconds
+    Type: Number
+    Default: 15
+
+  HealthyThresholdCount:
+    Description: |
+      The number of consecutive health checks successes required before considering 
+      an unhealthy target healthy.
+    Type: Number
+    Default: 5
+
+  UnhealthyThresholdCount:
+    Description: |
+      The number of consecutive health check failures required before considering a target unhealthy.
+    Type: Number
+    Default: 2
+
+  # Instance parameters
+  # 256 (.25 vCPU) - Available memory values: 0.5GB, 1GB, 2GB
+  # 512 (.5 vCPU) - Available memory values: 1GB, 2GB, 3GB, 4GB
+  # 1024 (1 vCPU) - Available memory values: 2GB, 3GB, 4GB, 5GB, 6GB, 7GB, 8GB
+  # 2048 (2 vCPU) - Available memory values: Between 4GB and 16GB in 1GB increments
+  # 4096 (4 vCPU) - Available memory values: Between 8GB and 30GB in 1GB increments
+  CpuValue:
+    Type: Number
+    Default: 1024
+    Description: Fargate virtual CPU quantity 1024 equals one vCPU
+
+  # 0.5GB, 1GB, 2GB - Available cpu values: 256 (.25 vCPU)
+  # 1GB, 2GB, 3GB, 4GB - Available cpu values: 512 (.5 vCPU)
+  # 2GB, 3GB, 4GB, 5GB, 6GB, 7GB, 8GB - Available cpu values: 1024 (1 vCPU)
+  # Between 4GB and 16GB in 1GB increments - Available cpu values: 2048 (2 vCPU)
+  # Between 8GB and 30GB in 1GB increments - Available cpu values: 4096 (4 vCPU)
+  MemoryAmount:
+    Type: String
+    Default: 2GB
+    Description: memory amount reserved to the task pod.
+    AllowedValues: [ 2GB, 4GB, 6GB, 8GB ]
+
+  # Autoscaling parameters
+  AutoscalingCheckPeriod:
+    Default: 60
+    Type: Number
+    Description: minimum autoscaling number of tasks\
+
+  AutoscalingDataPointN:
+    Default: 1
+    Type: Number
+    Description: activate when N datapoint on M
+
+  AutoscalingDataPointM:
+    Default: 1
+    Type: Number
+    Description: activate when N datapoint on M
+
+  AutoscalingThreshold:
+    Default: 70
+    Type: String
+
+  MinTasksNumber:
+    Default: 1
+    Type: Number
+    Description: minimum autoscaling number of tasks
+
+  MaxTasksNumber:
+    Default: 6
+    Type: Number
+    Description: maximum autoscaling number of tasks 
+
+  LogAlarmStrategy:
+    Type: String
+    Default: 'FATAL'
+
+  # Certificate renewal
+  InfocamereFQDN:
+    Type: String
+    Description: infocamere.client.<codice-ambiente>.notifichedigitali.it
+
+  CertificateRenewalEmail:
+    Type: String
+    Default: 'alarm@notifichedigitali.it' # aggiornare
+
+  InfoCamereSigningKeyAlias:
+    Type: String
+    Default: pn-national-registries-infocamere-signing-key-alias
+
+  AdeFQDN:
+    Type: String
+    Description: ade-api.client.<codice-ambiente>.notifichedigitali.it
+
+  PnNationalRegistriesCertificateDLQARN:
+    Type: String
+
+  EnvironmentType:
+    Type: String
+    Description: environment name
 Resources:
 
   # PN-National-Registry microservice
@@ -147,40 +352,72 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/ecs-service.yaml"
       Parameters:
+        CpuValue: !Ref CpuValue
+        MemoryAmount: !Ref MemoryAmount
+        HealthCheckTimeout: !Ref HealthCheckTimeout
+        HealthCheckInterval: !Ref HealthCheckInterval
+        HealthyThresholdCount: !Ref HealthyThresholdCount
+        UnhealthyThresholdCount: !Ref UnhealthyThresholdCount
+        AutoscalingThreshold: !Ref AutoscalingThreshold
+        AutoscalingCheckPeriod: !Ref AutoscalingCheckPeriod
+        MinTasksNumber: !Ref MinTasksNumber
+        MaxTasksNumber: !Ref MaxTasksNumber
+        AutoscalingDataPointN: !Ref AutoscalingDataPointN
+        AutoscalingDataPointM: !Ref AutoscalingDataPointM
         HealthCheckPath: /actuator/health
-        HealthCheckTimeout: 15
         AutoscalingStrategy: REST-API
-        AutoscalingThreshold: 70
-        MicroServiceUniqueName: !Sub '${ProjectName}-NationalRegistry'
-        CpuValue: 1024
-        MemoryAmount: 2GB
+        MicroServiceUniqueName: !Sub '${ProjectName}-national-registries'
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
-        ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_API_BASE_URL=${PDNDBaseURL}'
-        ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_API_BASE_URL=${ANPRBaseURL}'
-        ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
-        ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_API_BASE_URL=${AgenziaEntrateBaseURL}'
-        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_AGENZIA_ENTRATE_PURPOSE_ID=${AgenziaEntratePurposeId}'
-        ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_INAD_API_BASE_URL=${INADBaseURL}'
-        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_INAD_PURPOSE_ID=${INADPurposeId}'
-        ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_API_BASE_URL=${INIPECBaseURL}'
-        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_PURPOSE_ID=${INIPECPurposeId}'
-        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TIPO_INVIO=${ANPRTipoInvio}'
+        ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_BASE_URL=${PDNDBaseURL}'
+        ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
+        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
+        ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
+        ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_BASE_URL=${AdELegalBaseURL}'
+        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
+        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_AUTH=${AdECheckCfSSL}'
+        ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PURPOSE_ID=${AdECheckCfPurposeId}'
+        ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PDND_CLIENT_SECRET=${PDNDAdECheckCfSecret}'
+        ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
+        ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_INAD_PURPOSE_ID=${INADPurposeId}'
+        ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_INAD_PDND_CLIENT_SECRET=${PDNDInadSecret}'
+        ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
+        ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH=${InfoCamereAuth}'
+        ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
+        ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
+        ContainerEnvEntry22: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
+        ContainerEnvEntry23: !Sub 'PN_NATIONAL_REGISTRY_IPA_SECRET=${IPASecret}'
+        ContainerEnvEntry24: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
+        ContainerEnvEntry25: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_DELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
+        ContainerEnvEntry26: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
+        ContainerEnvEntry27: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
+        ContainerEnvEntry28: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_MAX_RETRY=${PnNationalRegistriesInipecBatchRequestMaxRetry}'
+        ContainerEnvEntry29: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_DELAY=${PnNationalRegistriesInipecBatchPollingDelay}'
+        ContainerEnvEntry30: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchPollingRecoveryDelay}'
+        ContainerEnvEntry31: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchPollingRecoveryAfter}'
+        ContainerEnvEntry32: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
+        ContainerEnvEntry33: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
+        ContainerEnvEntry34: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_TRUST_SECRET=${AdECheckCfTrustSecret}'
+        ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
+        ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
+
+        # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
-        Subnets: !Ref SubnetsIds
+        Subnets: !Ref VpcEgressSubnetsIds
         VpcId: !Ref VpcId
         EcsDefaultSecurityGroup: !Ref EcsDefaultSecurityGroup
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
         LoadbalancerRulePriority: !Ref MicroserviceNumber
+        TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskManagedPolicy
+        EcsLogGroup: !Ref EcsLogGroup
+        LogAlarmStrategyV1: !Ref LogAlarmStrategy
 
-  NationalRegistryMicroserviceTaskPolicy:
-    Type: AWS::IAM::Policy
+  NationalRegistryMicroserviceTaskManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
     Properties:
-      PolicyName: !Sub '${ProjectName}-NationalRegistryMicroserviceSecretsPolicy'
-      Roles:
-        - !GetAtt NationalRegistryMicroservice.Outputs.TaskRoleName
       PolicyDocument:
         Version: 2012-10-17
         Statement:
@@ -188,21 +425,305 @@ Resources:
             Action:
               - secretsmanager:GetSecretValue
             Resource:
-              - !Ref PDNDANPRIntegritySecretName
-              - !Ref PDNDANPRClientAssertionSecretName
-              - !Ref ANPRSSLSecretName
-              - !Ref PDNDCheckCfClientAssertionSecretName
-              - !Ref PDNDInadClientAssertionSecretName
+              - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}*'
           - Effect: Allow
             Action:
               - kms:Sign
             Resource:
-              - !Ref PDNDSessionTokenSigningKeyARN
-              - !Ref CheckCfPDNDSessionTokenSigningKeyARN
-              - !Ref InadPDNDSessionTokenSigningKeyARN
+              - !Sub 'arn:${AWS::Partition}:kms:${AWS::Region}:${AWS::AccountId}:key/*'
+          - Effect: Allow
+            Action:
+              - kms:Encrypt
+              - kms:Decrypt
+            Resource:
+              - !Ref PnBatchRequestEncryptKeyARN
           - Effect: Allow
             Action:
               - dynamodb:GetItem
+              - dynamodb:Query
+              - dynamodb:Scan
               - dynamodb:UpdateItem
+              - dynamodb:PutItem
             Resource:
               - !Ref CounterTableArn
+              - !Ref BatchRequestTableArn
+              - !Ref BatchPollingTableArn
+              - !Sub '${BatchRequestTableArn}/index/*'
+              - !Sub '${BatchPollingTableArn}/index/*'
+          - Effect: Allow
+            Action:
+              - sqs:SendMessage
+              - sqs:GetQueueUrl
+            Resource:
+              - !Ref NationalRegistryGatewayOutputsQueueARN
+          - Effect: Allow
+            Action:
+              - ssm:GetParameter
+              - ssm:GetParameters
+            Resource:
+              - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
+              - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SecretAndSSMPrefix}/*'
+
+  NationalRegistryApiGateway:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service.yaml"
+      Parameters:
+        MicroServiceUniqueName: !Sub '${ProjectName}-national-registries'
+        IntendedUsage: PNPG
+        DnsName: !Ref SelcpgApiDnsName
+        ProjectName: !Ref ProjectName
+        ServiceApiPath: 'national-registries-private'
+        NetworkLoadBalancerLink: !Ref NetworkLoadBalancerLink
+        ApplicationLoadBalancerDomain: !Ref ApplicationLoadBalancerDomain
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
+
+  NationalRegistryApiWaf:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
+      Parameters:
+        WAFName: !Sub '${ProjectName}-national-registries-pnpg'
+        IntendedUsage: PNPG
+        APIGatewayARNs: !GetAtt NationalRegistryApiGateway.Outputs.APIGatewayARN
+
+  CertificateRenewalManagedPolicy:
+    Type: AWS::IAM::ManagedPolicy
+    Properties:
+      ManagedPolicyName: !Sub ${ProjectName}-Certificate-Renewal-Managed-Policy
+      Roles:
+        - !Ref CertificateRenewalCodeBuildServiceRole
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
+          - Effect: Allow
+            Action: 
+              - sts:AssumeRole
+            Resource: 
+              - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+          - Effect: Allow
+            Action: 
+              - ssm:PutParameter
+              - ssm:GetParameter
+            Resource: 
+              - !Sub arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SecretAndSSMPrefix}*
+          - Effect: Allow
+            Action: 
+              - kms:ListAliases
+              - kms:UpdateAlias
+              - kms:DescribeKey
+              - kms:Sign
+              - kms:CreateKey
+              - kms:GetPublicKey
+              - kms:ScheduleKeyDeletion
+            Resource: 
+              - '*'   
+          - Effect: Allow
+            Action:
+              - secretsmanager:GetSecretValue
+              - secretsmanager:CreateSecret
+              - secretsmanager:UpdateSecret
+            Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}*      
+          - Effect: Allow
+            Action:
+              - route53:ListHostedZones
+              - route53:GetChange
+              - route53:ChangeResourceRecordSets
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - sqs:ChangeMessageVisibility
+              - sqs:DeleteMessage
+              - sqs:GetQueueAttributes
+              - sqs:GetQueueUrl
+              - sqs:ReceiveMessage
+              - sqs:SendMessage
+            Resource:
+              - !Ref PnNationalRegistriesCertificateDLQARN
+                  
+  CertificateRenewalCodeBuildServiceRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-cert-renewal-codebuild
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - "codebuild.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+          - Effect: Allow
+            Principal:
+              AWS:
+                - !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:root"
+            Condition:
+              ArnEquals:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+            Action:
+              - "sts:AssumeRole"              
+
+  InfocamereCertRenewalCodebuildProject:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Sub ${ProjectName}-Infocamere-Cert-Renewal
+      ServiceRole: !GetAtt CertificateRenewalCodeBuildServiceRole.Arn
+      ConcurrentBuildLimit: 1
+      TimeoutInMinutes: 10
+      Source: 
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo "### NO PRE_BUILD"
+            build:
+              commands:
+                - session=$(aws sts assume-role --role-arn ${ASSUME_ROLE} --role-session-name test)
+                - export AWS_ACCESS_KEY_ID=$(echo "${session}" | jq -r '.Credentials.AccessKeyId')
+                - export AWS_SECRET_ACCESS_KEY=$(echo "${session}" | jq -r '.Credentials.SecretAccessKey')
+                - export AWS_SESSION_TOKEN=$(echo "${session}" | jq -r '.Credentials.SessionToken')                    
+                - git clone https://github.com/pagopa/pn-national-registries.git
+                - cd pn-national-registries/scripts/generate_certificate_from_kms
+                - docker build -t certificate-manager .
+                - docker run -i --rm --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN certificate-manager:latest /bin/bash ./create_kms_and_generate_cert.sh --keyalias ${KEY_ALIAS} --fqdn ${FQDN} --parameter-name ${PARAM_NAME} --region ${REGION} --e-mail ${EMAIL}
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: "aws/codebuild/standard:7.0"
+        EnvironmentVariables:
+          - Name: ASSUME_ROLE
+            Type: PLAINTEXT
+            Value: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+          - Name: REGION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Region
+          - Name: EMAIL
+            Type: PLAINTEXT
+            Value: !Ref CertificateRenewalEmail
+          - Name: FQDN
+            Type: PLAINTEXT
+            Value: !Ref InfocamereFQDN
+          - Name: KEY_ALIAS
+            Type: PLAINTEXT
+            Value: !Sub ${InfoCamereSigningKeyAlias}-next
+          - Name: PARAM_NAME
+            Type: PLAINTEXT
+            Value: !Sub ${InfoCamereAuth}-next
+
+  MtlsCertRenewalCodebuildProject:
+    Type: 'AWS::CodeBuild::Project'
+    Properties:
+      Name: !Sub ${ProjectName}-Mtls-Cert-Renewal
+      ServiceRole: !GetAtt CertificateRenewalCodeBuildServiceRole.Arn
+      ConcurrentBuildLimit: 1
+      TimeoutInMinutes: 10
+      Source: 
+        Type: NO_SOURCE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            pre_build:
+              commands:
+                - echo "### NO PRE_BUILD"
+            build:
+              commands:
+                - session=$(aws sts assume-role --role-arn ${ASSUME_ROLE} --role-session-name test)
+                - export AWS_ACCESS_KEY_ID=$(echo "${session}" | jq -r '.Credentials.AccessKeyId')
+                - export AWS_SECRET_ACCESS_KEY=$(echo "${session}" | jq -r '.Credentials.SecretAccessKey')
+                - export AWS_SESSION_TOKEN=$(echo "${session}" | jq -r '.Credentials.SessionToken')                    
+                - git clone https://github.com/pagopa/pn-national-registries.git
+                - cd pn-national-registries/scripts/generate_certificate_from_kms
+                - docker build -t certificate-manager .
+                - docker run -i --rm --env AWS_ACCESS_KEY_ID --env AWS_SECRET_ACCESS_KEY --env AWS_SESSION_TOKEN certificate-manager:latest /bin/bash ./generate_no_kms.sh --fqdn ${FQDN} --secretid ${SECRET_ID} --parameter-name ${PARAM_NAME} --e-mail ${EMAIL} --region ${REGION}
+      Artifacts:
+        Type: NO_ARTIFACTS
+      Environment:
+        PrivilegedMode: true
+        ComputeType: BUILD_GENERAL1_SMALL
+        Type: LINUX_CONTAINER
+        Image: "aws/codebuild/standard:7.0"
+        EnvironmentVariables:
+          - Name: ASSUME_ROLE
+            Type: PLAINTEXT
+            Value: !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/pn-cert-renewal-codebuild
+          - Name: REGION
+            Type: PLAINTEXT
+            Value: !Ref AWS::Region
+          - Name: EMAIL
+            Type: PLAINTEXT
+            Value: !Ref CertificateRenewalEmail
+          - Name: FQDN
+            Type: PLAINTEXT
+            Value: !Ref AdeFQDN
+          - Name: SECRET_ID
+            Type: PLAINTEXT
+            Value: !Sub ${AdECheckCfSSLSecret}-next
+          - Name: PARAM_NAME
+            Type: PLAINTEXT
+            Value: !Sub ${AdECheckCfSSL}-next
+
+  CertificateRenewalCodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: events.amazonaws.com
+        Version: "2012-10-17"
+      Policies:
+        - PolicyName: runCodeBuild
+          PolicyDocument:
+            Statement:
+              - Sid: startProjectRun
+                Action:
+                  - "codebuild:*"
+                Effect: Allow
+                Resource: 
+                  - !GetAtt InfocamereCertRenewalCodebuildProject.Arn
+                  
+  InfocamereScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub "${ProjectName}-infocamere-cert-renewal-schedule-rule"
+      ScheduleExpression: "cron(11 0 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
+      State: "ENABLED"
+      RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+      Targets: 
+        - Id: "CertRenewalAlarm"
+          Arn: !Ref PnNationalRegistriesCertificateDLQARN
+        - Id: "CertRenewalRunner"
+          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+          Arn: 
+            Fn::GetAtt: 
+              - "InfocamereCertRenewalCodebuildProject"
+              - "Arn"
+      
+  MtlsScheduledRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub "${ProjectName}-mtls-cert-renewal-schedule-rule"
+      ScheduleExpression: "cron(11 0 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
+      State: "ENABLED"
+      RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+      Targets: 
+        - Id: "CertRenewalAlarm"
+          Arn: !Ref PnNationalRegistriesCertificateDLQARN
+        - Id: "CertRenewalRunner"
+          RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
+          Arn: 
+            Fn::GetAtt: 
+              - "InfocamereCertRenewalCodebuildProject"
+              - "Arn"

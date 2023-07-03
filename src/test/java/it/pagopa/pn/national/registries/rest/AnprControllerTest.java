@@ -1,9 +1,10 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPROKDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.rest.v1.dto.GetAddressANPRRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.service.AnprService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,13 +13,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AnprControllerTest {
@@ -30,24 +27,22 @@ class AnprControllerTest {
     AnprService anprService;
 
     @Mock
-    Scheduler scheduler;
+    ServerWebExchange serverWebExchange;
 
     @Mock
-    ServerWebExchange serverWebExchange;
+    ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
     void testGetAddressANPR() {
         GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto dto = new GetAddressANPRRequestBodyFilterDto();
-        dto.setTaxId("DDDFFF92G52H501H");
+        dto.setTaxId("PPPPLT80A01H501V");
         getAddressANPRRequestBodyDto.setFilter(dto);
 
         GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
         getAddressANPROKDto.setResidentialAddresses(new ArrayList<>());
 
-        when(anprService.getAddressANPR(any())).thenReturn(Mono.just(getAddressANPROKDto));
-
-       StepVerifier.create(anprController.addressANPR(getAddressANPRRequestBodyDto, serverWebExchange))
+       StepVerifier.create(anprController.addressANPR(Mono.just(getAddressANPRRequestBodyDto), serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(getAddressANPROKDto));
     }
 }

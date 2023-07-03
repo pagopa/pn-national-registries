@@ -1,12 +1,13 @@
 package it.pagopa.pn.national.registries.client.anpr;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
+import it.pagopa.pn.national.registries.model.JwtConfig;
+import it.pagopa.pn.national.registries.model.PdndSecretValue;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.model.JwtConfig;
-import it.pagopa.pn.national.registries.model.SecretValue;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.anpr.E002RequestDto;
 import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
@@ -28,8 +29,7 @@ import reactor.test.StepVerifier;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(SpringExtension.class)
 class AnprClientTest {
@@ -42,6 +42,9 @@ class AnprClientTest {
 
     @MockBean
     AgidJwtSignature agidJwtSignature;
+    
+    @MockBean
+    AgidJwtTrackingEvidence agidJwtTrackingEvidence;
 
     @MockBean
     AnprWebClient anprWebClient;
@@ -49,60 +52,32 @@ class AnprClientTest {
     @MockBean
     AnprSecretConfig anprSecretConfig;
 
+    @MockBean
+    PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
-    void checkExceptionTypeWhenNotWebClientResponseExceptionThenReturnFalse() {
-        AnprClient anprClient =
-                new AnprClient(
-                        accessTokenExpiringMap,
-                        new ObjectMapper(),
-                        agidJwtSignature,
-                        anprWebClient,
-                        "purposeId",
-                        anprSecretConfig);
-        assertFalse(anprClient.checkExceptionType(new Exception()));
+    void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap,agidJwtSignature, agidJwtTrackingEvidence,
+                anprSecretConfig, anprWebClient, pnNationalRegistriesSecretService);
+        assertFalse(anprClient.shouldRetry(new Exception()));
     }
 
     @Test
-    @DisplayName(
-            "Should return true when the exception is webclientresponseexception and the status code is 401")
-    void checkExceptionTypeWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        AnprClient anprClient =
-                new AnprClient(
-                        accessTokenExpiringMap,
-                        new ObjectMapper(),
-                        agidJwtSignature,
-                        anprWebClient,
-                        "purposeId",
-                        anprSecretConfig);
-        WebClientResponseException webClientResponseException =
-                new WebClientResponseException(
-                        "message",
-                        HttpStatus.UNAUTHORIZED.value(),
-                        "statusText",
-                        HttpHeaders.EMPTY,
-                        null,
-                        null);
-        assertTrue(anprClient.checkExceptionType(webClientResponseException));
+    @DisplayName("Should return true when the exception is webclientresponseexception and the status code is 401")
+    void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, agidJwtSignature, agidJwtTrackingEvidence,
+                 anprSecretConfig, anprWebClient, pnNationalRegistriesSecretService);
+        WebClientResponseException webClientResponseException = new WebClientResponseException("message",
+                HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
+        assertTrue(anprClient.shouldRetry(webClientResponseException));
     }
 
     @Test
     void callEService() {
         when(anprWebClient.init()).thenReturn(webClient);
-        AnprClient anprClient = new AnprClient(
-                accessTokenExpiringMap,new ObjectMapper(),agidJwtSignature, anprWebClient, "purposeId", anprSecretConfig);
-
-        SecretValue secretValue = new SecretValue();
-        secretValue.setClientId("testClient");
-        secretValue.setKeyId("testKeyId");
-        JwtConfig jwtConfig = new JwtConfig();
-        jwtConfig.setAudience("aud");
-        jwtConfig.setKid("kid");
-        jwtConfig.setIssuer("testiss");
-        jwtConfig.setSubject("subject");
-        jwtConfig.setPurposeId("purposeId");
-        secretValue.setJwtConfig(jwtConfig);
-        //when(anprSecretConfig.getAnprSecretValue()).thenReturn(secretValue);
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, agidJwtSignature, agidJwtTrackingEvidence,
+                 anprSecretConfig, anprWebClient, pnNationalRegistriesSecretService);
 
         E002RequestDto e002RequestDto = new E002RequestDto();
         SearchCriteriaE002Dto dto = new SearchCriteriaE002Dto();
@@ -113,7 +88,7 @@ class AnprClientTest {
         rispostaE002OKDto.setListaSoggetti(new SubjectsListDto());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
@@ -121,8 +96,8 @@ class AnprClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken(any(),any())).thenReturn(Mono.just(accessTokenCacheEntry));
-
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/anpr-service-e002")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
@@ -130,39 +105,27 @@ class AnprClientTest {
         when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(ResponseE002OKDto.class)).thenReturn(Mono.just(rispostaE002OKDto));
-
-        StepVerifier.create(anprClient.callEService(e002RequestDto)).expectNext(rispostaE002OKDto).verifyComplete();
-
+        PdndSecretValue pdndSecretValue = new PdndSecretValue();
+        pdndSecretValue.setJwtConfig(new JwtConfig());
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(pdndSecretValue);
+        StepVerifier.create(anprClient.callEService(e002RequestDto))
+                .expectNext(rispostaE002OKDto)
+                .verifyComplete();
     }
-
 
     @Test
     void callEService2() {
         when(anprWebClient.init()).thenReturn(webClient);
-        AnprClient anprClient = new AnprClient(
-                accessTokenExpiringMap,new ObjectMapper(),agidJwtSignature, anprWebClient, "purposeId", anprSecretConfig);
-
-        SecretValue secretValue = new SecretValue();
-        secretValue.setClientId("testClient");
-        secretValue.setKeyId("testKeyId");
-        JwtConfig jwtConfig = new JwtConfig();
-        jwtConfig.setAudience("aud");
-        jwtConfig.setKid("kid");
-        jwtConfig.setIssuer("testiss");
-        jwtConfig.setSubject("subject");
-        jwtConfig.setPurposeId("purposeId");
-        secretValue.setJwtConfig(jwtConfig);
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, agidJwtSignature, agidJwtTrackingEvidence,
+                 anprSecretConfig, anprWebClient, pnNationalRegistriesSecretService);
 
         E002RequestDto e002RequestDto = new E002RequestDto();
         SearchCriteriaE002Dto dto = new SearchCriteriaE002Dto();
         dto.setCodiceFiscale("DDDFFF52G52H501H");
         e002RequestDto.setCriteriRicerca(dto);
 
-        ResponseE002OKDto rispostaE002OKDto = new ResponseE002OKDto();
-        rispostaE002OKDto.setListaSoggetti(new SubjectsListDto());
-
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
@@ -170,51 +133,39 @@ class AnprClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken(any(),any())).thenReturn(Mono.just(accessTokenCacheEntry));
-
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/anpr-service-e002")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         WebClientResponseException exception = mock(WebClientResponseException.class);
         when(exception.getStatusCode()).thenReturn(HttpStatus.NOT_FOUND);
-        when(requestBodySpec.bodyValue(anyString())).thenThrow(exception);
+        when(exception.getHeaders()).thenReturn(new HttpHeaders());
+        when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(ResponseE002OKDto.class)).thenReturn(Mono.just(rispostaE002OKDto));
+        when(responseSpec.bodyToMono(ResponseE002OKDto.class)).thenReturn(Mono.error(exception));
+        PdndSecretValue pdndSecretValue = new PdndSecretValue();
+        pdndSecretValue.setJwtConfig(new JwtConfig());
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(pdndSecretValue);
 
-        StepVerifier.create(anprClient.callEService(e002RequestDto)).verifyError(PnNationalRegistriesException.class);
-
+        StepVerifier.create(anprClient.callEService(e002RequestDto))
+                .verifyError(PnNationalRegistriesException.class);
     }
-
 
     @Test
     void callEService3() {
         when(anprWebClient.init()).thenReturn(webClient);
-        AnprClient anprClient = new AnprClient(
-                accessTokenExpiringMap,new ObjectMapper(),agidJwtSignature, anprWebClient, "purposeId", anprSecretConfig);
-
-        SecretValue secretValue = new SecretValue();
-        secretValue.setClientId("testClient");
-        secretValue.setKeyId("testKeyId");
-        JwtConfig jwtConfig = new JwtConfig();
-        jwtConfig.setAudience("aud");
-        jwtConfig.setKid("kid");
-        jwtConfig.setIssuer("testiss");
-        jwtConfig.setSubject("subject");
-        jwtConfig.setPurposeId("purposeId");
-        secretValue.setJwtConfig(jwtConfig);
-        //when(anprSecretConfig.getAnprSecretValue()).thenReturn(secretValue);
+        AnprClient anprClient = new AnprClient(accessTokenExpiringMap, agidJwtSignature, agidJwtTrackingEvidence,
+                 anprSecretConfig, anprWebClient, pnNationalRegistriesSecretService);
 
         E002RequestDto e002RequestDto = new E002RequestDto();
         SearchCriteriaE002Dto dto = new SearchCriteriaE002Dto();
         dto.setCodiceFiscale("DDDFFF52G52H501H");
         e002RequestDto.setCriteriRicerca(dto);
 
-        ResponseE002OKDto rispostaE002OKDto = new ResponseE002OKDto();
-        rispostaE002OKDto.setListaSoggetti(new SubjectsListDto());
-
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setAccessToken("fafsff");
+        accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
@@ -222,19 +173,22 @@ class AnprClientTest {
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getToken(any(),any())).thenReturn(Mono.just(accessTokenCacheEntry));
-
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri("/anpr-service-e002")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         WebClientResponseException exception = mock(WebClientResponseException.class);
         when(exception.getStatusCode()).thenReturn(HttpStatus.UNAUTHORIZED);
-        when(requestBodySpec.bodyValue(anyString())).thenThrow(exception);
+        when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
-        when(responseSpec.bodyToMono(ResponseE002OKDto.class)).thenReturn(Mono.just(rispostaE002OKDto));
+        when(responseSpec.bodyToMono(ResponseE002OKDto.class)).thenReturn(Mono.error(exception));
+        PdndSecretValue pdndSecretValue = new PdndSecretValue();
+        pdndSecretValue.setJwtConfig(new JwtConfig());
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(pdndSecretValue);
 
-        StepVerifier.create(anprClient.callEService(e002RequestDto)).verifyError(WebClientResponseException.class);
-
+        StepVerifier.create(anprClient.callEService(e002RequestDto))
+                .verifyError(PnInternalException.class);
     }
 }

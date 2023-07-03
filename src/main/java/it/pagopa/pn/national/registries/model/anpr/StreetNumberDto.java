@@ -8,4 +8,5 @@ import lombok.Data;
 public class StreetNumberDto {
     private String numero;
     private String lettera;
+    private InternalStreetNumber civicoInterno;
 }

@@ -9,16 +9,21 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AccessTokenCacheEntry {
 
-    private String accessToken;
+    private String tokenValue;
     private TokenTypeDto tokenType;
-    private String purposeId;
+    private String tokenKey;
 
-    public AccessTokenCacheEntry(String purposeId) {
-        this.purposeId = purposeId;
+    public AccessTokenCacheEntry(String tokenKey) {
+        this.tokenKey = tokenKey;
     }
 
     public void setClientCredentials(ClientCredentialsResponseDto clientCredential) {
-        accessToken = clientCredential.getAccessToken();
+        tokenValue = clientCredential.getAccessToken();
         tokenType = clientCredential.getTokenType();
+    }
+
+    public void setClientCredentials(String tokenValue) {
+        this.tokenValue = tokenValue;
+        this.tokenType = TokenTypeDto.BEARER;
     }
 }

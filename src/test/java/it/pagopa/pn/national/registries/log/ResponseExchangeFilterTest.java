@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.log;
 
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,52 +31,53 @@ class ResponseExchangeFilterTest {
     @Test
     @DisplayName("Should log the response status code")
     void logResponseBodyShouldLogTheResponseStatusCode() {
-        ClientRequest request =
-                ClientRequest.create(HttpMethod.GET, URI.create("http://localhost:8080/test"))
-                        .build();
+        ClientRequest request = ClientRequest.create(HttpMethod.GET, URI.create("http://localhost:8080/test")).build();
         ClientResponse response = ClientResponse.create(HttpStatus.OK).build();
         long startTime = System.currentTimeMillis();
-        DataBuffer dataBuffer = mock(DataBuffer.class);
-        when(dataBuffer.toString(StandardCharsets.UTF_8)).thenReturn("test");
 
-        responseExchangeFilter.logResponseBody(startTime, dataBuffer, response, request);
-        Assertions.assertEquals(HttpStatus.OK,response.statusCode());
+        responseExchangeFilter.logResponseBody(startTime, "test", response, request);
+
+        Assertions.assertEquals(HttpStatus.OK, response.statusCode());
     }
 
     @Test
     @DisplayName("Should log the response body")
     void logResponseBodyShouldLogTheResponseBody() {
-        ClientRequest request =
-                ClientRequest.create(HttpMethod.GET, URI.create("http://localhost:8080/test"))
-                        .build();
+        ClientRequest request = ClientRequest.create(HttpMethod.GET, URI.create("http://localhost:8080/test")).build();
         ClientResponse response = ClientResponse.create(HttpStatus.OK).build();
         ExchangeFunction exchangeFunction = clientRequest -> Mono.just(response);
 
-        Mono<ClientResponse> clientResponseMono =
-                responseExchangeFilter.filter(request, exchangeFunction);
+        Mono<ClientResponse> clientResponseMono = responseExchangeFilter.filter(request, exchangeFunction);
 
         StepVerifier.create(clientResponseMono)
-                .expectNextMatches(
-                        clientResponse -> clientResponse.statusCode().equals(HttpStatus.OK))
+                .expectNextMatches(clientResponse -> clientResponse.statusCode().equals(HttpStatus.OK))
                 .verifyComplete();
+    }
+
+    @Test
+    void logResponseInCaseOfError() {
+        ClientRequest request = ClientRequest.create(HttpMethod.GET, URI.create("http://localhost:8080/test")).build();
+        ExchangeFunction exchangeFunction = clientRequest -> Mono.error(new PnNationalRegistriesException("", 400, "", null, null, null, null));
+
+        Mono<ClientResponse> clientResponseMono = responseExchangeFilter.filter(request, exchangeFunction);
+
+        StepVerifier.create(clientResponseMono)
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
     }
 
     @Test
     @DisplayName("Should log the request body")
     void logRequestBodyShouldLogTheRequestBody() {
-        ClientRequest clientRequest =
-                ClientRequest.create(HttpMethod.GET, URI.create("http://localhost:8080/test"))
-                        .build();
-        ExchangeFunction exchangeFunction =
-                clientRequest1 -> Mono.just(ClientResponse.create(HttpStatus.OK).build());
+        ClientRequest clientRequest = ClientRequest.create(HttpMethod.GET, URI.create("http://localhost:8080/test")).build();
+        ExchangeFunction exchangeFunction = cr -> Mono.just(ClientResponse.create(HttpStatus.OK).build());
 
         DataBuffer dataBuffer = mock(DataBuffer.class);
         when(dataBuffer.toString(StandardCharsets.UTF_8)).thenReturn("test");
         responseExchangeFilter.logRequestBody(dataBuffer, clientRequest);
 
         StepVerifier.create(responseExchangeFilter.filter(clientRequest, exchangeFunction))
-                .expectNextMatches(
-                        clientResponse -> clientResponse.statusCode().equals(HttpStatus.OK))
+                .expectNextMatches(clientResponse -> clientResponse.statusCode().equals(HttpStatus.OK))
                 .verifyComplete();
     }
 

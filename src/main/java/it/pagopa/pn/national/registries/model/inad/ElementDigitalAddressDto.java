@@ -7,8 +7,8 @@ import lombok.Data;
  */
 @Data
 public class ElementDigitalAddressDto {
-  private String digitalAddress;
-  private String practicedProfession;
-  private UsageInfo usageInfo;
+    private String digitalAddress;
+    private String practicedProfession;
+    private UsageInfo usageInfo;
 }
 

@@ -1,24 +1,27 @@
 package it.pagopa.pn.national.registries.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ser.impl.SimpleFilterProvider;
 import it.pagopa.pn.commons.conf.SharedAutoConfiguration;
-import lombok.Data;
-import lombok.ToString;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import it.pagopa.pn.national.registries.utils.JacksonCustomSpELSerializer;
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.lang.NonNull;
+
+import static it.pagopa.pn.national.registries.utils.JacksonCustomSpELSerializer.FILTER_NAME;
 
 @Configuration
-@ConfigurationProperties(prefix = "pn.national-registry")
-@Slf4j
-@Data
-@ToString
 @Import(SharedAutoConfiguration.class)
-public class PnNationalRegistriesConfig {
+public class PnNationalRegistriesConfig implements BeanPostProcessor {
 
-    public static final String PDND_M2M_TOKEN = "pdnd";
-
-    private String anprX509CertificateChain;
-    private String anprJWTHeaderDigestKeystoreAlias;
-
+    @Override
+    public Object postProcessAfterInitialization(@NonNull Object bean, @NonNull String beanName) throws BeansException {
+        if (bean instanceof ObjectMapper objectMapper) {
+            objectMapper.setFilterProvider(new SimpleFilterProvider()
+                    .addFilter(FILTER_NAME, new JacksonCustomSpELSerializer()));
+        }
+        return bean;
+    }
 }

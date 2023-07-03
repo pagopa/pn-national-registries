@@ -10,8 +10,8 @@ import software.amazon.awssdk.services.secretsmanager.model.GetSecretValueRespon
 
 import java.util.Optional;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_CODE_SECRET_MANAGER;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalregistriesExceptionCodes.ERROR_MESSAGE_SECRET_MANAGER;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_SECRET_MANAGER;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_SECRET_MANAGER;
 
 @Slf4j
 @Service
@@ -23,16 +23,20 @@ public class SecretManagerService {
         this.secretsManagerClient = secretsManagerClient;
     }
 
-    public Optional<GetSecretValueResponse> getSecretValue(String secretName) {
-        if (!StringUtils.hasText(secretName)) {
-            log.warn("missing secret name");
+    public Optional<GetSecretValueResponse> getSecretValue(String secretId) {
+        if (!StringUtils.hasText(secretId)) {
+            log.warn("missing secret name or ARN");
             return Optional.empty();
         }
-        GetSecretValueRequest secretValueRequest = GetSecretValueRequest.builder().secretId(secretName).build();
+        GetSecretValueRequest secretValueRequest = GetSecretValueRequest.builder().secretId(secretId).build();
         try {
-            return Optional.of(secretsManagerClient.getSecretValue(secretValueRequest));
+            long startTime = System.currentTimeMillis();
+            log.info("START - SecretsManager.getSecretValue Request: {}", secretValueRequest);
+            GetSecretValueResponse secretValueResponse = secretsManagerClient.getSecretValue(secretValueRequest);
+            log.info("END - SecretsManager.getSecretValue Response: {} Timelapse: {} ms", secretValueResponse, System.currentTimeMillis() - startTime);
+            return Optional.ofNullable(secretValueResponse);
         } catch (Exception e) {
-            throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER,e);
+            throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, e);
         }
     }
 

@@ -11,7 +11,7 @@ import java.util.List;
 @Data
 public class ResponseRequestDigitalAddressDto {
 
-  @JsonProperty("codice_fiscale")
+  @JsonProperty("codiceFiscale")
   private String taxId;
 
   @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
@@ -19,4 +19,3 @@ public class ResponseRequestDigitalAddressDto {
 
   private List<ElementDigitalAddressDto> digitalAddress = new ArrayList<>();
 }
-
