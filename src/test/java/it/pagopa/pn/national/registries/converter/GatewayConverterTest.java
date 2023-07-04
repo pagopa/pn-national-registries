@@ -169,7 +169,7 @@ class GatewayConverterTest {
     void testInadToSqsDto3() {
         GatewayConverter gatewayConverter = new GatewayConverter();
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
-        getDigitalAddressINADOKDto.setDigitalAddress(List.of(new DigitalAddressDto()));
+        getDigitalAddressINADOKDto.setDigitalAddress(new DigitalAddressDto());
         CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, getDigitalAddressINADOKDto);
         assertEquals("DIGITAL", codeSqsDto.getAddressType());
         assertNotNull(codeSqsDto.getDigitalAddress());

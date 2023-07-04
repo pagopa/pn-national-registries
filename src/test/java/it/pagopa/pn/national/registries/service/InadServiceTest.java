@@ -95,9 +95,9 @@ class InadServiceTest {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
         response.setTaxId(TAX_ID);
         response.setSince(now);
-        response.setDigitalAddress(List.of(digitalAddressDto1, digitalAddressDto2));
+        response.setDigitalAddress(digitalAddressDto1);
 
-        StepVerifier.create(inadService.callEService(req))
+        StepVerifier.create(inadService.callEService(req, "PF"))
                 .expectNext(response)
                 .verifyComplete();
     }

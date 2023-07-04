@@ -77,6 +77,7 @@ public class IniPecBatchSqsService {
     private Mono<Void> execBatchSendToSqs(List<BatchRequest> batchRequest, String reservationId) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return Flux.fromStream(batchRequest.stream())
+                .filter(item -> !BatchStatus.PEC_NOT_FOUND.getValue().equalsIgnoreCase(item.getSendStatus()))
                 .doOnNext(item -> {
                     item.setLastReserved(now);
                     item.setReservationId(reservationId);

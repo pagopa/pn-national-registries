@@ -38,8 +38,8 @@ public class InadController implements DigitalAddressInadApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
-        return extractDigitalAddressINADRequestBodyDto.flatMap(inadService::callEService)
+    public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
+        return extractDigitalAddressINADRequestBodyDto.flatMap(request -> inadService.callEService(request, recipientType))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

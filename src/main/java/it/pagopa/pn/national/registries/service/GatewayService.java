@@ -79,8 +79,8 @@ public class GatewayService extends GatewayConverter {
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddress(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         log.info("recipientType {} and domicileType {}", recipientType, addressRequestBodyDto.getFilter().getDomicileType());
         return switch (recipientType) {
-            case "PF" -> retrievePhysicalAddress(pnNationalRegistriesCxId, addressRequestBodyDto);
-            case "PG" -> retrieveDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto);
+            case "PF" -> retrieveAddressForPF(pnNationalRegistriesCxId, addressRequestBodyDto);
+            case "PG" -> retrieveAddressForPG(pnNationalRegistriesCxId, addressRequestBodyDto);
             default -> {
                 log.warn("recipientType {} is not valid", recipientType);
                 throw new PnNationalRegistriesException("recipientType not valid", HttpStatus.BAD_REQUEST.value(),
@@ -89,7 +89,7 @@ public class GatewayService extends GatewayConverter {
         };
     }
 
-    private Mono<AddressOKDto> retrievePhysicalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
+    private Mono<AddressOKDto> retrieveAddressForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
 
         if (AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.equals(addressRequestBodyDto.getFilter().getDomicileType())) {
@@ -100,7 +100,7 @@ public class GatewayService extends GatewayConverter {
                     .onErrorResume(e -> sqsService.push(errorAnprToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
-            return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
+            return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), "PF")
                     .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, inadResponse), pnNationalRegistriesCxId))
                     .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}",addressRequestBodyDto.getFilter().getCorrelationId(),MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId())))
                     .doOnError(e -> logEServiceError(e, "can not retrieve digital address from INAD: {}"))
@@ -109,7 +109,7 @@ public class GatewayService extends GatewayConverter {
         }
     }
 
-    private Mono<AddressOKDto> retrieveDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
+    private Mono<AddressOKDto> retrieveAddressForPG(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
 
         if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {

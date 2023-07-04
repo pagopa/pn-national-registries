@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
+import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
@@ -64,10 +65,7 @@ public class GatewayConverter {
     protected CodeSqsDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
         if (inadDto != null && inadDto.getDigitalAddress() != null) {
-            List<DigitalAddress> address = inadDto.getDigitalAddress().stream()
-                    .map(this::convertInadToDigitalAddress)
-                    .toList();
-            codeSqsDto.setDigitalAddress(address);
+            codeSqsDto.setDigitalAddress(List.of(convertInadToDigitalAddress(inadDto.getDigitalAddress())));
         } else {
             log.info("correlationId: {} - INAD - indirizzi non presenti", correlationId);
             codeSqsDto.setDigitalAddress(Collections.emptyList());
@@ -196,6 +194,17 @@ public class GatewayConverter {
 
         filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
         filterDto.setPracticalReference(addressRequestBodyDto.getFilter().getCorrelationId());
+
+        dto.setFilter(filterDto);
+        return dto;
+    }
+
+    protected GetDigitalAddressINADRequestBodyDto convertToGetDigitalAddressInadRequest(BatchRequest batchRequest) {
+        GetDigitalAddressINADRequestBodyDto dto = new GetDigitalAddressINADRequestBodyDto();
+        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
+
+        filterDto.setTaxId(batchRequest.getCf());
+        filterDto.setPracticalReference(batchRequest.getCorrelationId());
 
         dto.setFilter(filterDto);
         return dto;

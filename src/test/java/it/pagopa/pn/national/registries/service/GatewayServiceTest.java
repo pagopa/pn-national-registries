@@ -148,7 +148,7 @@ class GatewayServiceTest {
 
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
 
-        when(inadService.callEService(any()))
+        when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
         when(sqsService.push((CodeSqsDto) any(), any()))
@@ -167,7 +167,7 @@ class GatewayServiceTest {
     void testRetrieveDigitalOrPhysicalAddressInadError() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
-        when(inadService.callEService(any()))
+        when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
         when(sqsService.push((CodeSqsDto) any(), any()))
