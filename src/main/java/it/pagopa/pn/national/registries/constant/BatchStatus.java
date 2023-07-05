@@ -16,7 +16,7 @@ public enum BatchStatus {
     SENT("SENT"),
     NOT_SENT("NOT_SENT"),
 
-    PEC_NOT_FOUND("PEC_NOT_FOUND");
+    NOT_SENT_TRY_INAD("NOT_SENT_TRY_INAD");
     private final String value;
 
     BatchStatus(String value) {

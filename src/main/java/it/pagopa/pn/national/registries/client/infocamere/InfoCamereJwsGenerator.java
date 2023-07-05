@@ -36,6 +36,14 @@ public class InfoCamereJwsGenerator {
     private final SsmParameterConsumerActivation ssmParameterConsumerActivation;
     private static final Pattern myRegex = Pattern.compile("=+$");
     private static final Pattern certRegex = Pattern.compile("(?<=-----BEGIN CERTIFICATE-----)[\\s\\S]*?(?=-----END CERTIFICATE-----)");
+    private static final int SECONDS_TO_ADD_TO_EXPIRE = 360;
+    private static final String REGEX_NEW_LINE = "\\n";
+    private static final String REGEX_CARRIAGE_RETURN = "\\r";
+
+    private static final Pattern PATTERN_NEW_LINE = Pattern.compile(REGEX_NEW_LINE);
+    private static final Pattern PATTERN_CARRIAGE_RETURN = Pattern.compile(REGEX_CARRIAGE_RETURN);
+
+
 
     public InfoCamereJwsGenerator(KmsClient kmsClient,
                                   SsmParameterConsumerActivation ssmParameterConsumerActivation,
@@ -96,8 +104,8 @@ public class InfoCamereJwsGenerator {
         final Matcher matcher = certRegex.matcher(certString);
         while (matcher.find()) {
             x5c = matcher.group()
-                    .replaceAll(Pattern.compile("\\n").pattern(), "")
-                    .replaceAll(Pattern.compile("\\r").pattern(), "");
+                    .replaceAll(PATTERN_NEW_LINE.pattern(), "")
+                    .replaceAll(PATTERN_CARRIAGE_RETURN.pattern(), "");
         }
         map.put("x5c", List.of(x5c));
         map.put("use", "sig");
@@ -108,7 +116,7 @@ public class InfoCamereJwsGenerator {
     private Map<String, Object> createClaimMap(String scope) {
         Map<String, Object> map = new HashMap<>();
         long nowSeconds = System.currentTimeMillis() / 1000L;
-        long expireSeconds = nowSeconds + 360;
+        long expireSeconds = nowSeconds + SECONDS_TO_ADD_TO_EXPIRE;
 
         map.put(RegisteredClaims.AUDIENCE, aud);
         map.put(RegisteredClaims.EXPIRES_AT, expireSeconds);

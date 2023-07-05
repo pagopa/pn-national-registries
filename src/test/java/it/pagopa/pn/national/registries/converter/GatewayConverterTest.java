@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.utils.dynamodb.async.DynamoDbAsyncTableDecorator;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
@@ -8,6 +9,9 @@ import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.config.CachedSecretsManagerConsumer;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
+import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
+import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
@@ -23,7 +27,10 @@ import it.pagopa.pn.national.registries.service.*;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 
 import java.nio.charset.StandardCharsets;
@@ -32,6 +39,9 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
@@ -44,10 +54,20 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@TestPropertySource(properties = {
+        "pn.national.registries.inipec.ttl=0"
+})
+@ContextConfiguration(classes = GatewayConverter.class)
+@ExtendWith(SpringExtension.class)
 class GatewayConverterTest {
 
     private static final String C_ID = "correlationId";
     private static final String CF = "CF";
+
+    @Autowired
+    private GatewayConverter gatewayConverter;
+    @MockBean
+    private ObjectMapper objectMapper;
 
 
     /**
@@ -55,7 +75,6 @@ class GatewayConverterTest {
      */
     @Test
     void testMapToAddressesOKDto() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         AddressOKDto addressOKDto = gatewayConverter.mapToAddressesOKDto(C_ID);
         assertEquals(C_ID, addressOKDto.getCorrelationId());
     }
@@ -65,7 +84,6 @@ class GatewayConverterTest {
      */
     @Test
     void testAnprToSqsDto1() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         CodeSqsDto codeSqsDto = gatewayConverter.anprToSqsDto(C_ID, new GetAddressANPROKDto());
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
@@ -76,7 +94,6 @@ class GatewayConverterTest {
      */
     @Test
     void testAnprToSqsDto2() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         CodeSqsDto codeSqsDto = gatewayConverter.anprToSqsDto(C_ID, null);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
@@ -89,7 +106,6 @@ class GatewayConverterTest {
      */
     @Test
     void testAnprToSqsDto3() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
         getAddressANPROKDto.setResidentialAddresses(List.of(new ResidentialAddressDto()));
         CodeSqsDto codeSqsDto = gatewayConverter.anprToSqsDto(C_ID, getAddressANPROKDto);
@@ -104,7 +120,6 @@ class GatewayConverterTest {
      */
     @Test
     void testErrorAnprToSqsDto1() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "{ ... \"codiceErroreAnomalia\": \"ENX\", ...".getBytes(StandardCharsets.UTF_8),
@@ -122,7 +137,6 @@ class GatewayConverterTest {
     @Test
     @DisplayName("ANPR CF non trovato")
     void testErrorAnprToSqsDto2() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "{ ... \"codiceErroreAnomalia\": \"EN122\", ...".getBytes(StandardCharsets.UTF_8),
@@ -135,12 +149,11 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#inadToSqsDto(String, GetDigitalAddressINADOKDto)}
+     * Method under test: {@link GatewayConverter#inadToSqsDto(String, GetDigitalAddressINADOKDto, DigitalAddressRecipientType)}
      */
     @Test
     void testInadToSqsDto1() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
-        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, new GetDigitalAddressINADOKDto());
+        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, new GetDigitalAddressINADOKDto(), DigitalAddressRecipientType.PERSONA_FISICA);
         assertEquals("DIGITAL", codeSqsDto.getAddressType());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
@@ -149,12 +162,11 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#inadToSqsDto(String, GetDigitalAddressINADOKDto)}
+     * Method under test: {@link GatewayConverter#inadToSqsDto(String, GetDigitalAddressINADOKDto, DigitalAddressRecipientType)}
      */
     @Test
     void testInadToSqsDto2() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
-        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, null);
+        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, null, DigitalAddressRecipientType.PERSONA_GIURIDICA);
         assertEquals("DIGITAL", codeSqsDto.getAddressType());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
@@ -163,14 +175,13 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#inadToSqsDto(String, GetDigitalAddressINADOKDto)}
+     * Method under test: {@link GatewayConverter#inadToSqsDto(String, GetDigitalAddressINADOKDto, DigitalAddressRecipientType)}
      */
     @Test
     void testInadToSqsDto3() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
         getDigitalAddressINADOKDto.setDigitalAddress(new DigitalAddressDto());
-        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, getDigitalAddressINADOKDto);
+        CodeSqsDto codeSqsDto = gatewayConverter.inadToSqsDto(C_ID, getDigitalAddressINADOKDto, DigitalAddressRecipientType.PERSONA_GIURIDICA);
         assertEquals("DIGITAL", codeSqsDto.getAddressType());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertFalse(codeSqsDto.getDigitalAddress().isEmpty());
@@ -183,7 +194,6 @@ class GatewayConverterTest {
      */
     @Test
     void testErrorInadToSqsDto1() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "{ ... \"detail\": \"xxx\", ...".getBytes(StandardCharsets.UTF_8),
@@ -201,7 +211,6 @@ class GatewayConverterTest {
     @Test
     @DisplayName("INAD CF non trovato")
     void testErrorInadToSqsDto2() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "{ ... \"detail\": \"cf non trovato\", ...".getBytes(StandardCharsets.UTF_8),
@@ -219,7 +228,6 @@ class GatewayConverterTest {
      */
     @Test
     void testErrorIpaToSqsDto() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         CodeSqsDto actualErrorIpaToSqsDtoResult = gatewayConverter.errorIpaToSqsDto("42", new Throwable());
         assertEquals("DIGITAL", actualErrorIpaToSqsDtoResult.getAddressType());
         assertNull(actualErrorIpaToSqsDtoResult.getError());
@@ -231,7 +239,6 @@ class GatewayConverterTest {
      */
     @Test
     void testErrorIpaToSqsDto2() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
                 HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), null,
                 "{ ... \"detail\": \"xxx\", ...".getBytes(StandardCharsets.UTF_8),
@@ -247,7 +254,6 @@ class GatewayConverterTest {
      */
     @Test
     void testErrorIpaToSqsDto3() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         Throwable exception = new Throwable("message");
 
         CodeSqsDto codeSqsDto = gatewayConverter.errorIpaToSqsDto(C_ID, exception);
@@ -261,7 +267,6 @@ class GatewayConverterTest {
      */
     @Test
     void testRegImpToSqsDto1() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         CodeSqsDto codeSqsDto = gatewayConverter.regImpToSqsDto(C_ID, new GetAddressRegistroImpreseOKDto());
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
@@ -272,7 +277,6 @@ class GatewayConverterTest {
      */
     @Test
     void testRegImpToSqsDto2() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         CodeSqsDto codeSqsDto = gatewayConverter.regImpToSqsDto(C_ID, null);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
@@ -283,7 +287,6 @@ class GatewayConverterTest {
      */
     @Test
     void testRegImpToSqsDto3() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
         getAddressRegistroImpreseOKDto.setProfessionalAddress(new GetAddressRegistroImpreseOKProfessionalAddressDto());
         CodeSqsDto codeSqsDto = gatewayConverter.regImpToSqsDto(C_ID, getAddressRegistroImpreseOKDto);
@@ -296,7 +299,6 @@ class GatewayConverterTest {
      */
     @Test
     void testIpaToSqsDto() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         CodeSqsDto actualIpaToSqsDtoResult = gatewayConverter.ipaToSqsDto("42", new IPAPecDto());
         assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
         assertEquals("42", actualIpaToSqsDtoResult.getCorrelationId());
@@ -317,7 +319,6 @@ class GatewayConverterTest {
      */
     @Test
     void testIpaToSqsDto3() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
 
         IPAPecDto ipaResponse = new IPAPecDto();
         ipaResponse.domicilioDigitale("foo");
@@ -356,7 +357,7 @@ class GatewayConverterTest {
 
         InfoCamereClient infoCamereClient = mock(InfoCamereClient.class);
         InfoCamereService infoCamereService = new InfoCamereService(infoCamereClient,
-                new InfoCamereConverter(new ObjectMapper(), 2L), iniPecBatchRequestRepository, 2L, validateTaxIdUtils);
+                new InfoCamereConverter(2L), iniPecBatchRequestRepository, 2L, validateTaxIdUtils);
 
         InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils);
         PnNationalRegistriesSecretService pnNationalRegistriesSecretService = new PnNationalRegistriesSecretService(new CachedSecretsManagerConsumer(mock(SecretsManagerClient.class)));
@@ -381,7 +382,6 @@ class GatewayConverterTest {
      */
     @Test
     void testErrorRegImpToSqsDto1() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "OPS".getBytes(StandardCharsets.UTF_8),
@@ -398,7 +398,6 @@ class GatewayConverterTest {
      */
     @Test
     void testNewCodeSqsDto() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         CodeSqsDto codeSqsDto = gatewayConverter.newCodeSqsDto(C_ID);
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
@@ -408,7 +407,6 @@ class GatewayConverterTest {
      */
     @Test
     void testConvertAnprToPhysicalAddress() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         ResidentialAddressDto residentialAddressDto = new ResidentialAddressDto();
         residentialAddressDto.setAddress("address");
         residentialAddressDto.setZip("zip");
@@ -428,14 +426,26 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#convertInadToDigitalAddress(DigitalAddressDto)}
+     * Method under test: {@link GatewayConverter#convertInadToDigitalAddress(DigitalAddressDto, it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType)}
      */
     @Test
     void testConvertInadToDigitalAddress() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
         digitalAddressDto.setDigitalAddress("digitalAddress");
-        DigitalAddress digitalAddress = gatewayConverter.convertInadToDigitalAddress(digitalAddressDto);
+        DigitalAddress digitalAddress = gatewayConverter.convertInadToDigitalAddress(digitalAddressDto, DigitalAddressRecipientType.PERSONA_GIURIDICA);
+        assertEquals("digitalAddress", digitalAddress.getAddress());
+        assertEquals("PEC", digitalAddress.getType());
+        assertEquals("PERSONA_GIURIDICA", digitalAddress.getRecipient());
+    }
+
+    /**
+     * Method under test: {@link GatewayConverter#convertInadToDigitalAddress(DigitalAddressDto, it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType)}
+     */
+    @Test
+    void testConvertInadToDigitalAddress2() {
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("digitalAddress");
+        DigitalAddress digitalAddress = gatewayConverter.convertInadToDigitalAddress(digitalAddressDto, DigitalAddressRecipientType.PERSONA_FISICA);
         assertEquals("digitalAddress", digitalAddress.getAddress());
         assertEquals("PEC", digitalAddress.getType());
         assertEquals("PERSONA_FISICA", digitalAddress.getRecipient());
@@ -446,7 +456,6 @@ class GatewayConverterTest {
      */
     @Test
     void testConvertRegImpToPhysicalAddress() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         GetAddressRegistroImpreseOKProfessionalAddressDto registroImpreseDto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
         registroImpreseDto.setAddress("address");
         registroImpreseDto.setProvince("province");
@@ -465,7 +474,6 @@ class GatewayConverterTest {
      */
     @Test
     void testConvertToGetAddressAnprRequest() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         AddressRequestBodyDto requestBodyDto = newAddressRequestBodyDto();
         GetAddressANPRRequestBodyDto anprRequestBodyDto = gatewayConverter.convertToGetAddressAnprRequest(requestBodyDto);
         assertNotNull(anprRequestBodyDto.getFilter());
@@ -479,7 +487,6 @@ class GatewayConverterTest {
      */
     @Test
     void testConvertToGetDigitalAddressInadRequest() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         AddressRequestBodyDto requestBodyDto = newAddressRequestBodyDto();
         GetDigitalAddressINADRequestBodyDto inadRequestBodyDto = gatewayConverter.convertToGetDigitalAddressInadRequest(requestBodyDto);
         assertNotNull(inadRequestBodyDto.getFilter());
@@ -492,7 +499,6 @@ class GatewayConverterTest {
      */
     @Test
     void testConvertToGetAddressRegistroImpreseRequest() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         AddressRequestBodyDto requestBodyDto = newAddressRequestBodyDto();
         GetAddressRegistroImpreseRequestBodyDto regImpRequestBodyDto = gatewayConverter.convertToGetAddressRegistroImpreseRequest(requestBodyDto);
         assertNotNull(regImpRequestBodyDto.getFilter());
@@ -504,12 +510,28 @@ class GatewayConverterTest {
      */
     @Test
     void testConvertToGetDigitalAddressIniPecRequest() {
-        GatewayConverter gatewayConverter = new GatewayConverter();
         AddressRequestBodyDto requestBodyDto = newAddressRequestBodyDto();
         GetDigitalAddressIniPECRequestBodyDto iniPecRequestBodyDto = gatewayConverter.convertToGetDigitalAddressIniPecRequest(requestBodyDto);
         assertNotNull(iniPecRequestBodyDto.getFilter());
         assertEquals(CF, iniPecRequestBodyDto.getFilter().getTaxId());
         assertEquals(C_ID, iniPecRequestBodyDto.getFilter().getCorrelationId());
+    }
+
+    @Test
+    void testConvertToGetIpaPecRequest(){
+        AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
+        AddressRequestBodyFilterDto addressRequestBodyFilterDto = new AddressRequestBodyFilterDto();
+        addressRequestBodyFilterDto.setTaxId("taxId");
+        addressRequestBodyDto.setFilter(addressRequestBodyFilterDto);
+        assertNotNull(gatewayConverter.convertToGetIpaPecRequest(addressRequestBodyDto));
+    }
+
+    @Test
+    void testConvertToGetDigitalAddressInadRequest2(){
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId");
+        batchRequest.setCf("cf");
+        assertNotNull(gatewayConverter.convertToGetDigitalAddressInadRequest(batchRequest));
     }
 
     private AddressRequestBodyDto newAddressRequestBodyDto() {
@@ -521,5 +543,22 @@ class GatewayConverterTest {
         AddressRequestBodyDto requestBodyDto = new AddressRequestBodyDto();
         requestBodyDto.setFilter(filterDto);
         return requestBodyDto;
+    }
+
+
+    @Test
+    void testConvertCodeSqsDtoToString() throws JsonProcessingException {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        when(objectMapper.writeValueAsString(codeSqsDto))
+                .thenReturn("string");
+        assertEquals("string", gatewayConverter.convertCodeSqsDtoToString(codeSqsDto));
+    }
+
+    @Test
+    void testConvertCodeSqsDtoToStringError() throws JsonProcessingException {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        when(objectMapper.writeValueAsString(codeSqsDto))
+                .thenThrow(JsonProcessingException.class);
+        assertThrows(DigitalAddressException.class, () -> gatewayConverter.convertCodeSqsDtoToString(codeSqsDto));
     }
 }

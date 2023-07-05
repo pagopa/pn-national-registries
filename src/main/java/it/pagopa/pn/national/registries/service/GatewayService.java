@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressErrorDto;
@@ -81,12 +82,14 @@ public class GatewayService extends GatewayConverter {
         return switch (recipientType) {
             case "PF" -> retrieveAddressForPF(pnNationalRegistriesCxId, addressRequestBodyDto);
             case "PG" -> retrieveAddressForPG(pnNationalRegistriesCxId, addressRequestBodyDto);
-            default -> {
-                log.warn("recipientType {} is not valid", recipientType);
-                throw new PnNationalRegistriesException("recipientType not valid", HttpStatus.BAD_REQUEST.value(),
-                        HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
-            }
+            default -> neitherPFAndPG(recipientType);
         };
+    }
+
+    private Mono<AddressOKDto> neitherPFAndPG(String recipientType){
+        log.warn("recipientType {} is not valid", recipientType);
+        throw new PnNationalRegistriesException("recipientType not valid", HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
     }
 
     private Mono<AddressOKDto> retrieveAddressForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
@@ -101,7 +104,7 @@ public class GatewayService extends GatewayConverter {
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
             return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), "PF")
-                    .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, inadResponse), pnNationalRegistriesCxId))
+                    .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.PERSONA_FISICA), pnNationalRegistriesCxId))
                     .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}",addressRequestBodyDto.getFilter().getCorrelationId(),MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId())))
                     .doOnError(e -> logEServiceError(e, "can not retrieve digital address from INAD: {}"))
                     .onErrorResume(e -> sqsService.push(errorInadToSqsDto(correlationId, e), pnNationalRegistriesCxId))

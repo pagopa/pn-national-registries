@@ -32,10 +32,12 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class AgidJwtTrackingEvidence {
 
-    final Pattern pattern = Pattern.compile(".*Root=(.*);P.*");
+    static final Pattern pattern = Pattern.compile(".*Root=(.*);P.*");
     private final AnprSecretConfig anprSecretConfig;
     private final KmsClient kmsClient;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+    private static final int MAX_SIZE_NUMBER = 13;
+    private static final int MAX_BOUND_NUMBER = 10;
 
     public AgidJwtTrackingEvidence(AnprSecretConfig anprSecretConfig,
                                    KmsClient kmsClient,
@@ -103,10 +105,10 @@ public class AgidJwtTrackingEvidence {
 
     private String generateRandomDnonce() {
         Random random = new SecureRandom();
-        StringBuilder sb = new StringBuilder(13);
+        StringBuilder sb = new StringBuilder(MAX_SIZE_NUMBER);
 
-        for (int i = 0; i < 13; i++) {
-            int digit = random.nextInt(10);
+        for (int i = 0; i < MAX_SIZE_NUMBER; i++) {
+            int digit = random.nextInt(MAX_BOUND_NUMBER);
             sb.append(digit);
         }
 

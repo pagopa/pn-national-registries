@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.inad.InadClient;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.inad.ElementDigitalAddressDto;
 import it.pagopa.pn.national.registries.model.inad.MotivationTerminationDto;
@@ -98,7 +99,7 @@ class InadServiceTest {
         response.setDigitalAddress(digitalAddressDto1);
 
         StepVerifier.create(inadService.callEService(req, "PF"))
-                .expectNext(response)
-                .verifyComplete();
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
     }
 }

@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.exceptions.IniPecException;
+import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -71,25 +71,24 @@ public class IniPecBatchSqsService {
     public Mono<Void> batchSendToSqs(List<BatchRequest> batchRequest) {
         String reservationId = UUID.randomUUID().toString();
         return execBatchSendToSqs(batchRequest, reservationId)
-                .doOnSubscribe(s -> log.info("IniPEC - sending {} requests to SQS", batchRequest.size()));
+                .doOnSubscribe(s -> log.info("PG - DigitalAddress - sending {} requests to SQS", batchRequest.size()));
     }
 
     private Mono<Void> execBatchSendToSqs(List<BatchRequest> batchRequest, String reservationId) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return Flux.fromStream(batchRequest.stream())
-                .filter(item -> !BatchStatus.PEC_NOT_FOUND.getValue().equalsIgnoreCase(item.getSendStatus()))
                 .doOnNext(item -> {
                     item.setLastReserved(now);
                     item.setReservationId(reservationId);
                 })
                 .flatMap(item -> batchRequestRepository.setNewReservationIdToBatchRequest(item)
                         .doOnError(ConditionalCheckFailedException.class,
-                                e -> log.info("IniPEC - conditional check failed - skip correlationId: {}", item.getCorrelationId(), e))
+                                e -> log.info("PG - DigitalAddress - conditional check failed - skip correlationId: {}", item.getCorrelationId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .flatMap(item -> sqsService.push(item.getMessage(), item.getClientId())
                         .thenReturn(item)
-                        .doOnNext(r -> log.info("IniPEC - pushed message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf())))
-                        .doOnError(e -> log.warn("IniPEC - failed to push message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()), e))
+                        .doOnNext(r -> log.info("PG - DigitalAddress - pushed message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf())))
+                        .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()), e))
                         .onErrorResume(e -> Mono.empty()))
                 .doOnNext(item -> item.setSendStatus(BatchStatus.SENT.getValue()))
                 .flatMap(batchRequestRepository::update)
@@ -101,7 +100,7 @@ public class IniPecBatchSqsService {
                 .blockOptional()
                 .orElseThrow(() -> {
                     log.warn("IniPEC - can not get batch request - DynamoDB Mono<Page> is null");
-                    return new IniPecException("IniPEC - can not get batch request");
+                    return new DigitalAddressException("IniPEC - can not get batch request");
                 });
     }
 }

@@ -1,14 +1,18 @@
 package it.pagopa.pn.national.registries.converter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
@@ -27,6 +31,10 @@ public class GatewayConverter {
     private static final Pattern INAD_CF_NOT_FOUND = Pattern.compile("(\"detail\")\\s*:\\s*\"(CF non trovato)\"",
             Pattern.CASE_INSENSITIVE);
     private static final String DATE_PATTERN = "yyyy-MM-dd";
+    private static final String CF_NOT_FOUND = "CF non trovato";
+
+    @Autowired
+    private ObjectMapper mapper;
 
     protected AddressOKDto mapToAddressesOKDto(String correlationId) {
         AddressOKDto dto = new AddressOKDto();
@@ -62,10 +70,10 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto) {
+    protected CodeSqsDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto, DigitalAddressRecipientType digitalAddressRecipientType) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
         if (inadDto != null && inadDto.getDigitalAddress() != null) {
-            codeSqsDto.setDigitalAddress(List.of(convertInadToDigitalAddress(inadDto.getDigitalAddress())));
+            codeSqsDto.setDigitalAddress(List.of(convertInadToDigitalAddress(inadDto.getDigitalAddress(), digitalAddressRecipientType)));
         } else {
             log.info("correlationId: {} - INAD - indirizzi non presenti", correlationId);
             codeSqsDto.setDigitalAddress(Collections.emptyList());
@@ -79,8 +87,9 @@ public class GatewayConverter {
         // per INAD CF non trovato corrisponde a HTTP Status 404 e nel body deve essere contenuta la stringa "CF non trovato"
         if (throwable instanceof PnNationalRegistriesException exception
                 && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                && StringUtils.hasText(exception.getResponseBodyAsString())
-                && INAD_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find()) {
+                && ((StringUtils.hasText(exception.getResponseBodyAsString())
+                && INAD_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find())
+        || CF_NOT_FOUND.equalsIgnoreCase(exception.getMessage()))) {
             log.info("correlationId: {} - INAD - CF non trovato", correlationId);
             codeSqsDto.setDigitalAddress(Collections.emptyList());
         } else {
@@ -161,8 +170,8 @@ public class GatewayConverter {
         return physicalAddress;
     }
 
-    protected DigitalAddress convertInadToDigitalAddress(DigitalAddressDto digitalAddressDto) {
-        return new DigitalAddress(DigitalAddressType.PEC.getValue(), digitalAddressDto.getDigitalAddress(), DigitalAddressRecipientType.PERSONA_FISICA.getValue());
+    protected DigitalAddress convertInadToDigitalAddress(DigitalAddressDto digitalAddressDto, DigitalAddressRecipientType digitalAddressRecipientType) {
+        return new DigitalAddress(DigitalAddressType.PEC.getValue(), digitalAddressDto.getDigitalAddress(), digitalAddressRecipientType.getValue());
     }
 
     protected PhysicalAddress convertRegImpToPhysicalAddress(GetAddressRegistroImpreseOKProfessionalAddressDto addressDto) {
@@ -237,6 +246,14 @@ public class GatewayConverter {
         filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
         dto.setFilter(filterDto);
         return dto;
+    }
+
+    public String convertCodeSqsDtoToString(CodeSqsDto codeSqsDto) {
+        try {
+            return mapper.writeValueAsString(codeSqsDto);
+        } catch (JsonProcessingException e) {
+            throw new DigitalAddressException("can not convert SQS DTO to String", e);
+        }
     }
 
 }

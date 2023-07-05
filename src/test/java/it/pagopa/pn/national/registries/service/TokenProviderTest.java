@@ -107,4 +107,12 @@ class TokenProviderTest {
         StepVerifier.create(tokenProvider.getTokenPdnd(new PdndSecretValue())).expectNext(clientCredentialsResponseDto)
                 .verifyComplete();
     }
+
+    @Test
+    void getTokenInfoCamere(){
+        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
+                "test", "client_credentials");
+        when(infoCamereTokenClient.getToken(anyString())).thenReturn(Mono.just("scope"));
+        StepVerifier.create(tokenProvider.getTokenInfoCamere("scope")).expectNext("scope").verifyComplete();
+    }
 }

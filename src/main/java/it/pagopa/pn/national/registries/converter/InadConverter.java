@@ -11,20 +11,21 @@ import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddress
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.List;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INAD;
 
 
 @Slf4j
 @Component
 public class InadConverter {
 
-    private static final String INAD_CF_NOT_FOUND = "\"detail\":\"CF non trovato\"";
+    private static final String INAD_CF_NOT_FOUND = "CF non trovato";
+    private static final int PIVA_LENGTH = 11;
+    private static final int CF_LENGTH = 16;
 
 
     private InadConverter() {
@@ -53,19 +54,19 @@ public class InadConverter {
         return response;
     }
 
-    private static void mapToPgAddress (List<DigitalAddressDto> digitalAddressDtoList, String taxId,GetDigitalAddressINADOKDto response){
-        if (digitalAddressDtoList.size() == 1 && digitalAddressDtoList.get(0).getPracticedProfession().isEmpty()
-                && taxId.length() == 11) {
+    private static void mapToPgAddress (List<DigitalAddressDto> digitalAddressDtoList, String taxId, GetDigitalAddressINADOKDto response){
+        if (taxId.length() == PIVA_LENGTH &&
+                digitalAddressDtoList.size() == 1 && !StringUtils.hasText(digitalAddressDtoList.get(0).getPracticedProfession())) {
             response.setDigitalAddress(digitalAddressDtoList.get(0));
-        } else {
+        }else{
             digitalAddressDtoList.stream()
-                    .filter(item -> item.getPracticedProfession() != null)
+                    .filter(item -> StringUtils.hasText(item.getPracticedProfession()))
                     .findFirst()
                     .ifPresentOrElse(
                             response::setDigitalAddress,
                             () -> {
-                                throw new PnNationalRegistriesException(ERROR_MESSAGE_INAD, HttpStatus.NOT_FOUND.value(),
-                                        HttpStatus.NOT_FOUND.getReasonPhrase(),null,INAD_CF_NOT_FOUND.getBytes(StandardCharsets.UTF_8), Charset.defaultCharset(), InadResponseKO.class);
+                                throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
+                                        HttpStatus.NOT_FOUND.getReasonPhrase(),null,null, Charset.defaultCharset(), InadResponseKO.class);
                             }
                     );
         }
@@ -73,13 +74,13 @@ public class InadConverter {
     private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response)
     {
         digitalAddressDtoList.stream()
-                .filter(item -> item.getPracticedProfession() == null)
+                .filter(item -> !StringUtils.hasText(item.getPracticedProfession()) && response.getTaxId().length() == CF_LENGTH)
                 .findFirst()
                 .ifPresentOrElse(
                         response::setDigitalAddress,
                         () -> {
-                            throw new PnNationalRegistriesException(ERROR_MESSAGE_INAD, HttpStatus.NOT_FOUND.value(),
-                                    HttpStatus.NOT_FOUND.getReasonPhrase(),null,INAD_CF_NOT_FOUND.getBytes(StandardCharsets.UTF_8) , Charset.defaultCharset(), InadResponseKO.class);
+                            throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
+                                    HttpStatus.NOT_FOUND.getReasonPhrase(),null, null, Charset.defaultCharset(), InadResponseKO.class);
                         }
                 );
     }

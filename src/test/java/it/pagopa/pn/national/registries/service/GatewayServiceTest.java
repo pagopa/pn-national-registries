@@ -1,17 +1,9 @@
 package it.pagopa.pn.national.registries.service;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
-
-import java.util.Map;
-
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import org.joda.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +18,12 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
+
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 
 @TestPropertySource(properties = {
         "pn.national.registries.val.cx.id.enabled=true"
@@ -47,6 +45,9 @@ class GatewayServiceTest {
 
     @Autowired
     private GatewayService gatewayService;
+
+    @MockBean
+    private ObjectMapper objectMapper;
 
     private static final String CF = "CF";
     private static final String C_ID = "correlationId";
@@ -235,6 +236,26 @@ class GatewayServiceTest {
                 .thenReturn(Mono.just(ipaPecOKDto));
 
         when(sqsService.push((CodeSqsDto) any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId(C_ID);
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Test retrieve from IniPEC")
+    void testRetrieveDigitalOrPhysicalAddressIniPEC2() {
+        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+
+        IPAPecDto ipaPecOKDto = new IPAPecDto();
+
+        when(ipaService.getIpaPec(any()))
+                .thenReturn(Mono.just(ipaPecOKDto));
+
+        when(infoCamereService.getIniPecDigitalAddress(any(),any())).thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
+
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 

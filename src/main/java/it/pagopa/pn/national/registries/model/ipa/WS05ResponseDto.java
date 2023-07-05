@@ -16,4 +16,5 @@ public class WS05ResponseDto {
 
     @JsonProperty("data")
     private DataWS05Dto data;
+
 }
