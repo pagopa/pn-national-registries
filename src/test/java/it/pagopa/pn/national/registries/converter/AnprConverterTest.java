@@ -100,6 +100,9 @@ class AnprConverterTest {
         StreetNumberDto streetNumberDto = new StreetNumberDto();
         streetNumberDto.setNumero("70");
         streetNumberDto.setLettera("A");
+        InternalStreetNumber internalStreetNumber = new InternalStreetNumber();
+        internalStreetNumber.setScala("42");
+        streetNumberDto.setCivicoInterno(internalStreetNumber);
         addressDto.setNumeroCivico(streetNumberDto);
 
         ToponymDto toponymDto = new ToponymDto();

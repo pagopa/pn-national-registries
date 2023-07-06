@@ -5,13 +5,15 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.TokenTypeDto;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
+import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
-import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
+import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.BeforeAll;
@@ -73,6 +75,31 @@ class InfoCamereClientTest {
     }
 
     @Test
+    void testGetLegalInstitutions() {
+        when(infoCamereWebClient.init()).thenReturn(webClient);
+        InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, accessTokenExpiringMap, mapper);
+
+        CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
+        checkTaxIdRequestBodyFilterDto.setTaxId("taxId");
+
+        InfoCamereLegalInstituionsResponse infoCamereLegalInstituionsResponse = new InfoCamereLegalInstituionsResponse();
+
+
+        AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
+        accessTokenCacheEntry.setClientCredentials("jws");
+        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
+
+        when(webClient.get()).thenReturn(requestHeadersUriSpec);
+        when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
+
+        when(responseSpec.bodyToMono(InfoCamereLegalInstituionsResponse.class)).thenReturn(Mono.just(infoCamereLegalInstituionsResponse));
+        StepVerifier.create(infoCamereClient.getLegalInstitutions(checkTaxIdRequestBodyFilterDto)).expectNext(infoCamereLegalInstituionsResponse).verifyComplete();
+    }
+
+
+    @Test
     void testCallEServiceRequestId() {
         when(infoCamereWebClient.init()).thenReturn(webClient);
         InfoCamereClient infoCamereClient = new InfoCamereClient(infoCamereWebClient, clientId, accessTokenExpiringMap, mapper);
@@ -129,7 +156,7 @@ class InfoCamereClientTest {
             throw new RuntimeException(e);
         }
 
-    //    callGetTokenTest();
+        //    callGetTokenTest();
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
@@ -163,7 +190,7 @@ class InfoCamereClientTest {
         clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
         clientCredentialsResponseDto.setExpiresIn(10);
 
-   //     callGetTokenTest();
+        //     callGetTokenTest();
 
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);

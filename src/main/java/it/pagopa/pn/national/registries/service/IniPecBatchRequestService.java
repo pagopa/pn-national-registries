@@ -2,9 +2,10 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.exceptions.IniPecException;
+import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
@@ -25,13 +26,14 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 
 @Service
 @Slf4j
-public class IniPecBatchRequestService {
+public class IniPecBatchRequestService extends GatewayConverter {
 
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository batchRequestRepository;
@@ -102,7 +104,7 @@ public class IniPecBatchRequestService {
                 .blockOptional()
                 .orElseThrow(() -> {
                     log.warn("IniPEC - can not get batch request - DynamoDB Mono<Page> is null");
-                    return new IniPecException("IniPEC - can not get batch request");
+                    return new DigitalAddressException("IniPEC - can not get batch request");
                 });
     }
 
@@ -165,7 +167,7 @@ public class IniPecBatchRequestService {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return Flux.fromStream(requests.stream())
                 .doOnNext(r -> {
-                    int nextRetry = r.getRetry() != null ? r.getRetry() + 1 : 1;
+                    int nextRetry = (r.getRetry() != null) ? (r.getRetry() + 1) : 1;
                     r.setRetry(nextRetry);
                     if (nextRetry >= maxRetry) {
                         String error;
@@ -175,7 +177,7 @@ public class IniPecBatchRequestService {
                             error = ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
                         }
                         CodeSqsDto sqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(r, error);
-                        r.setMessage(infoCamereConverter.convertCodeSqsDtoToString(sqsDto));
+                        r.setMessage(convertCodeSqsDtoToString(sqsDto));
                         r.setStatus(BatchStatus.ERROR.getValue());
                         r.setSendStatus(BatchStatus.NOT_SENT.getValue());
                         r.setLastReserved(now);

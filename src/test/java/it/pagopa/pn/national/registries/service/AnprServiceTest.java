@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.service;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.converter.AnprConverter;
 import it.pagopa.pn.national.registries.entity.CounterModel;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyFilterDto;
@@ -24,6 +25,7 @@ import reactor.test.StepVerifier;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
@@ -82,5 +84,16 @@ class AnprServiceTest {
 
         StepVerifier.create(anprService.getAddressANPR(request)).expectNext(getAddressANPROKDto).expectComplete().verify();
     }
+
+
+    @Test
+    void testGetAddressANPR3() {
+        GetAddressANPRRequestBodyDto request = new GetAddressANPRRequestBodyDto();
+        GetAddressANPRRequestBodyFilterDto cf = new GetAddressANPRRequestBodyFilterDto();
+        cf.setTaxId("DDDFFF80A01H501F");
+        request.setFilter(cf);
+        assertThrows(PnNationalRegistriesException.class, () -> anprService.getAddressANPR(request));
+    }
+
 }
 

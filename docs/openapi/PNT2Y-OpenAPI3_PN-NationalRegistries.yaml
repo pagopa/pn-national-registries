@@ -308,13 +308,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressANPRError'
-  /national-registries-private/inad/digital-address:
+  /national-registries-private/{recipient-type}/inad/digital-address:
     post:
       tags:
         - digitalAddressINAD
       summary: 'Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l''attività professionale esercitata.'
       description: 'Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l''attività professionale esercitata.'
       operationId: digitalAddressINAD
+      parameters:
+        - $ref: '#/components/parameters/pathRecipientType'
       requestBody:
         description: Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l'attività professionale esercitata.
         content:
@@ -683,9 +685,7 @@ components:
           type: string
           format: date-time
         digitalAddress:
-          type: array
-          items:
-            $ref: '#/components/schemas/DigitalAddress'
+          $ref: '#/components/schemas/DigitalAddress'
     DigitalAddress:
       type: object
       properties:

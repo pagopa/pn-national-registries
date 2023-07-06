@@ -17,6 +17,10 @@ class InadWebClientTest {
     @Test
     void testInit() {
         InadWebClientConfig inadWebClientConfig = new InadWebClientConfig();
+        inadWebClientConfig.setTcpMaxPoolSize(1);
+        inadWebClientConfig.setTcpMaxQueuedConnections(1);
+        inadWebClientConfig.setTcpPoolIdleTimeout(1);
+        inadWebClientConfig.setTcpPendingAcquiredTimeout(1);
         InadWebClient inadWebClient = new InadWebClient(true, "test.it", inadWebClientConfig);
         Assertions.assertThrows(NullPointerException.class, inadWebClient::init);
     }

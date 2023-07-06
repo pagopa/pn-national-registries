@@ -16,6 +16,10 @@ class AgenziaEntrateWebClientSOAPTest {
     @Test
     void testInit() {
         AdeLegalWebClientConfig adeLegalWebClientConfig = new AdeLegalWebClientConfig();
+        adeLegalWebClientConfig.setTcpMaxPoolSize(1);
+        adeLegalWebClientConfig.setTcpMaxQueuedConnections(1);
+        adeLegalWebClientConfig.setTcpPoolIdleTimeout(1);
+        adeLegalWebClientConfig.setTcpPendingAcquiredTimeout(1);
         AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = new AgenziaEntrateWebClientSOAP(true, "test.it", adeLegalWebClientConfig);
         Assertions.assertThrows(NullPointerException.class, agenziaEntrateWebClientSOAP::init);
     }

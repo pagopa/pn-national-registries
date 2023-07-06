@@ -17,4 +17,5 @@ public class WS23ResponseDto {
 
     @JsonProperty("data")
     private List<DataWS23Dto> data;
+
 }

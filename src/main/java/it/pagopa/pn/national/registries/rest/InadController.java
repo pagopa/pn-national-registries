@@ -25,7 +25,7 @@ public class InadController implements DigitalAddressInadApi {
     }
 
     /**
-     * POST /national-registries-private/inad/digital-address : Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata.
+     * POST /national-registries-private/{recipient-type}/inad/digital-address : Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata.
      * Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata.
      *
      * @param extractDigitalAddressINADRequestBodyDto Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata. (required)
@@ -38,8 +38,8 @@ public class InadController implements DigitalAddressInadApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
-        return extractDigitalAddressINADRequestBodyDto.flatMap(inadService::callEService)
+    public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
+        return extractDigitalAddressINADRequestBodyDto.flatMap(request -> inadService.callEService(request, recipientType))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

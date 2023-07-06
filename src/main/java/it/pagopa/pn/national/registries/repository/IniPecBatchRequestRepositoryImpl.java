@@ -126,9 +126,10 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":sendStatus", AttributeValue.builder().s(BatchStatus.NOT_SENT.getValue()).build());
+        expressionValues.put(":sendStatus2", AttributeValue.builder().s(BatchStatus.NOT_SENT_TRY_INAD.getValue()).build());
         expressionValues.put(":zero", AttributeValue.builder().n("0").build());
 
-        String expression = "(attribute_not_exists(#reservationId) OR size(#reservationId) = :zero) AND #sendStatus = :sendStatus";
+        String expression = "(attribute_not_exists(#reservationId) OR size(#reservationId) = :zero) AND (#sendStatus = :sendStatus OR #sendStatus = :sendStatus2)";
         UpdateItemEnhancedRequest<BatchRequest> updateItemEnhancedRequest = UpdateItemEnhancedRequest.builder(BatchRequest.class)
                 .item(batchRequest)
                 .conditionExpression(expressionBuilder(expression, expressionValues, expressionNames))

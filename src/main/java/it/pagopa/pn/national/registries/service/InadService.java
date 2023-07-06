@@ -13,7 +13,7 @@ import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NA
 
 @Service
 @Slf4j
-public class InadService {
+public class InadService{
 
     private final InadClient inadClient;
 
@@ -24,9 +24,9 @@ public class InadService {
         this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
-    public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request) {
+    public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request, String recipientType) {
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INAD_ADDRESS, false);
         return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference())
-                .map(InadConverter::mapToResponseOk);
+                .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, request.getFilter().getTaxId()));
     }
 }
