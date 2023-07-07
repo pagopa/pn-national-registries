@@ -192,7 +192,9 @@ Resources:
         - AttributeName: "eservice"
           KeyType: "HASH"
       BillingMode: "PAY_PER_REQUEST"
-
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true   
+        
   BatchRequestTable:
     Type: AWS::DynamoDB::Table
     UpdateReplacePolicy: Retain
@@ -244,6 +246,8 @@ Resources:
         KMSMasterKeyId: !Ref PnBatchRequestEncryptKey
         SSEEnabled: true
         SSEType: KMS
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true           
 
   BatchPollingTable:
     Type: AWS::DynamoDB::Table
@@ -270,6 +274,8 @@ Resources:
         AttributeName: ttl
         Enabled: true
       BillingMode: "PAY_PER_REQUEST"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true         
 
   PnNationalRegistriesLogGroup:
     Type: AWS::CloudFormation::Stack

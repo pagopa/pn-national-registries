@@ -150,5 +150,4 @@ class CheckCfClientTest {
                 HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
         assertTrue(checkCfClient.shouldRetry(webClientResponseException));
     }
-
 }

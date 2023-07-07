@@ -37,6 +37,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_IPA;
 
@@ -50,6 +51,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static final String LOG_EX = "Error -> statusCode: {}, message: {}, uri: {}";
+    private static final int STATUS_OVER_500 = 500;
 
     public PnWebExceptionHandler(ExceptionHelper exceptionHelper) {
         this.exceptionHelper = exceptionHelper;
@@ -80,7 +82,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
                 problem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
             }
 
-            if (problem.getStatus() >= 500) {
+            if (problem.getStatus() >= STATUS_OVER_500) {
                 log.error(LOG_EX, problem.getStatus(), MaskDataUtils.maskInformation(throwable.getMessage()), serverWebExchange.getRequest().getURI());
             } else {
                 log.warn(LOG_EX, problem.getStatus(), MaskDataUtils.maskInformation(throwable.getMessage()), serverWebExchange.getRequest().getURI());
@@ -148,7 +150,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         if (responseKO.getErrorsList() != null) {
             responseErrors = responseKO.getErrorsList().stream()
                     .map(e -> mapToAnprResponseKO(clientOperationId, e))
-                    .toList();
+                    .collect(Collectors.toList());
         }
         return responseErrors;
     }

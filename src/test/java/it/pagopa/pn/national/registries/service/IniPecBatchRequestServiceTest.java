@@ -5,12 +5,13 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.verifyNoInteractions;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.exceptions.IniPecException;
+import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
@@ -54,6 +55,8 @@ class IniPecBatchRequestServiceTest {
     private InfoCamereConverter infoCamereConverter;
     @MockBean
     private IniPecBatchSqsService iniPecBatchSqsService;
+    @MockBean
+    private ObjectMapper objectMapper;
 
     @Test
     void testBatchPecRequest() {
@@ -103,7 +106,7 @@ class IniPecBatchRequestServiceTest {
     void testBatchPecRequestDynamoFailure() {
         when(batchRequestRepository.getBatchRequestByNotBatchId(anyMap(), anyInt()))
                 .thenReturn(Mono.empty());
-        assertThrows(IniPecException.class, () -> iniPecBatchRequestService.batchPecRequest());
+        assertThrows(DigitalAddressException.class, () -> iniPecBatchRequestService.batchPecRequest());
     }
 
     @Test
@@ -209,8 +212,6 @@ class IniPecBatchRequestServiceTest {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         when(infoCamereConverter.convertIniPecRequestToSqsDto(same(batchRequest), anyString()))
                 .thenReturn(codeSqsDto);
-        when(infoCamereConverter.convertCodeSqsDtoToString(same(codeSqsDto)))
-                .thenReturn("string");
 
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
@@ -219,8 +220,6 @@ class IniPecBatchRequestServiceTest {
         verifyNoInteractions(batchPollingRepository);
         assertEquals(3, batchRequest.getRetry());
         assertEquals(BatchStatus.ERROR.getValue(), batchRequest.getStatus());
-        assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
-        assertEquals("string", batchRequest.getMessage());
         verify(iniPecBatchSqsService).batchSendToSqs(List.of(batchRequest));
     }
 

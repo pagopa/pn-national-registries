@@ -8,12 +8,12 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
+import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
-import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
-import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
+import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.BeforeAll;
@@ -156,7 +156,7 @@ class InfoCamereClientTest {
             throw new RuntimeException(e);
         }
 
-    //    callGetTokenTest();
+        //    callGetTokenTest();
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(requestBodyUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestBodySpec);
@@ -190,7 +190,7 @@ class InfoCamereClientTest {
         clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
         clientCredentialsResponseDto.setExpiresIn(10);
 
-   //     callGetTokenTest();
+        //     callGetTokenTest();
 
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
         when(requestHeadersUriSpec.uri((Function<UriBuilder, URI>) any())).thenReturn(requestHeadersSpec);

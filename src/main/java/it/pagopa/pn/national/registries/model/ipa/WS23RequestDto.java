@@ -15,4 +15,5 @@ public class WS23RequestDto {
 
     @JsonProperty("AUTH_ID")
     private String authId;
+
 }

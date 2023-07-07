@@ -1,9 +1,14 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.model.inad.ElementDigitalAddressDto;
 import it.pagopa.pn.national.registries.model.inad.MotivationTerminationDto;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
+import it.pagopa.pn.national.registries.model.inad.UsageInfo;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,90 +18,55 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import it.pagopa.pn.national.registries.model.inad.UsageInfo;
-import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.atLeast;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class InadConverterTest {
 
     /**
-     * Method under test: {@link InadConverter#mapToResponseOk(ResponseRequestDigitalAddressDto)}
+     * Method under test: {@link InadConverter#mapToResponseOk(ResponseRequestDigitalAddressDto, String, String)}
      */
     @Test
     void testMapToResponseOk() {
         ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
-        responseRequestDigitalAddressDto.setTaxId("Codice Fiscale");
+        responseRequestDigitalAddressDto.setTaxId("MNZVMH95B09L084U");
         List<ElementDigitalAddressDto> list = new ArrayList<>();
         ElementDigitalAddressDto dto = new ElementDigitalAddressDto();
         dto.setDigitalAddress("digitalAddress");
-        dto.setPracticedProfession("practicedProfession");
         list.add(dto);
         responseRequestDigitalAddressDto.setDigitalAddress(list);
         LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
         Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
         responseRequestDigitalAddressDto.setSince(fromResult);
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto);
-        assertEquals("Codice Fiscale", actualMapToResponseOkResult.getTaxId());
+        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, "PF", "taxId");
+        assertEquals("MNZVMH95B09L084U", actualMapToResponseOkResult.getTaxId());
     }
 
     /**
-     * Method under test: {@link InadConverter#mapToResponseOk(ResponseRequestDigitalAddressDto)}
+     * Method under test: {@link InadConverter#mapToResponseOk(ResponseRequestDigitalAddressDto, String, String)}
      */
     @Test
     void testMapToResponseOk2() {
-        assertNull(InadConverter.mapToResponseOk(null).getDigitalAddress());
+        assertNull(InadConverter.mapToResponseOk(null, "PF", "TaxId").getDigitalAddress());
     }
 
     @Test
     void testMapToResponseOk3() {
         ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
-        responseRequestDigitalAddressDto.setTaxId("Codice Fiscale");
+        responseRequestDigitalAddressDto.setTaxId("MNZVMH95B09L084U");
         List<ElementDigitalAddressDto> list = new ArrayList<>();
         ElementDigitalAddressDto dto = new ElementDigitalAddressDto();
         UsageInfo usageInfo = new UsageInfo();
         usageInfo.setMotivation(MotivationTerminationDto.UFFICIO);
-        usageInfo.setDateEndValidity(new Date());
         dto.setUsageInfo(usageInfo);
         dto.setDigitalAddress("digitalAddress");
-        dto.setPracticedProfession("practicedProfession");
         list.add(dto);
         responseRequestDigitalAddressDto.setDigitalAddress(list);
         LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
         Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
         responseRequestDigitalAddressDto.setSince(fromResult);
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto);
-        assertEquals("Codice Fiscale", actualMapToResponseOkResult.getTaxId());
-    }
-
-    @Test
-    void testMapToResponseOk4() {
-        ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
-        responseRequestDigitalAddressDto.setTaxId("Codice Fiscale");
-        List<ElementDigitalAddressDto> list = new ArrayList<>();
-        ElementDigitalAddressDto dto = new ElementDigitalAddressDto();
-        UsageInfo usageInfo = new UsageInfo();
-        usageInfo.setMotivation(MotivationTerminationDto.VOLONTARIA);
-        usageInfo.setDateEndValidity(new Date());
-        dto.setUsageInfo(usageInfo);
-        dto.setDigitalAddress("digitalAddress");
-        dto.setPracticedProfession("practicedProfession");
-        list.add(dto);
-        responseRequestDigitalAddressDto.setDigitalAddress(list);
-        LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
-        Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
-        responseRequestDigitalAddressDto.setSince(fromResult);
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto);
-        assertEquals("Codice Fiscale", actualMapToResponseOkResult.getTaxId());
+        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, "PF", "TaxId");
+        assertEquals("MNZVMH95B09L084U", actualMapToResponseOkResult.getTaxId());
     }
 
     @Test
@@ -121,6 +91,7 @@ class InadConverterTest {
         usageInfo3.setMotivation(MotivationTerminationDto.UFFICIO);
         ElementDigitalAddressDto elementDigitalAddressDto3 = new ElementDigitalAddressDto();
         elementDigitalAddressDto3.setDigitalAddress("da3");
+        elementDigitalAddressDto3.setPracticedProfession("practicedProfession");
         elementDigitalAddressDto3.setUsageInfo(usageInfo3);
 
         ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
@@ -129,31 +100,31 @@ class InadConverterTest {
         List<ElementDigitalAddressDto> lista = List.of(elementDigitalAddressDto1, elementDigitalAddressDto2, elementDigitalAddressDto3);
         responseRequestDigitalAddressDto.setDigitalAddress(lista);
 
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, "PG", "TaxIs");
         assertNotNull(result);
         assertNotNull(result.getDigitalAddress());
-        assertEquals(2, result.getDigitalAddress().size());
-        assertFalse(result.getDigitalAddress().stream().anyMatch(d -> d.getDigitalAddress().equals("da1")));
+        assertFalse(result.getDigitalAddress().getDigitalAddress().equalsIgnoreCase("da1"));
     }
 
     /**
-     * Method under test: {@link InadConverter#mapToResponseOk(ResponseRequestDigitalAddressDto)}
+     * Method under test: {@link InadConverter#mapToResponseOk(ResponseRequestDigitalAddressDto, String, String)}
      */
     @Test
     void testMapToResponseOk6() {
         ResponseRequestDigitalAddressDto elementDigitalAddressDto = new ResponseRequestDigitalAddressDto();
-        elementDigitalAddressDto.setDigitalAddress(new ArrayList<>());
         Date since = Date.from(LocalDate.of(1970, 1, 1).atStartOfDay().atZone(ZoneOffset.UTC).toInstant());
         elementDigitalAddressDto.setSince(since);
-        elementDigitalAddressDto.setTaxId("42");
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(elementDigitalAddressDto);
-        assertTrue(actualMapToResponseOkResult.getDigitalAddress().isEmpty());
-        assertEquals("42", actualMapToResponseOkResult.getTaxId());
+        elementDigitalAddressDto.setTaxId("MNZVMH95B09L084U");
+        ElementDigitalAddressDto address = new ElementDigitalAddressDto();
+        address.setDigitalAddress("digital Address");
+        elementDigitalAddressDto.setDigitalAddress(List.of(address));
+        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(elementDigitalAddressDto, "PF", "TaxId");
+        assertEquals("MNZVMH95B09L084U", actualMapToResponseOkResult.getTaxId());
         assertSame(since, actualMapToResponseOkResult.getSince());
     }
 
     /**
-     * Method under test: {@link InadConverter#mapToResponseOk(ResponseRequestDigitalAddressDto)}
+     * Method under test: {@link InadConverter#mapToResponseOk(ResponseRequestDigitalAddressDto, String, String)}
      */
     @Test
     void testMapToResponseOk7() {
@@ -162,27 +133,20 @@ class InadConverterTest {
         Date fromResult = Date.from(LocalDate.of(1970, 1, 1).atStartOfDay().atZone(ZoneOffset.UTC).toInstant());
         when(elementDigitalAddressDto.getSince()).thenReturn(fromResult);
         when(elementDigitalAddressDto.getDigitalAddress()).thenReturn(new ArrayList<>());
-        doNothing().when(elementDigitalAddressDto).setDigitalAddress(Mockito.<List<ElementDigitalAddressDto>>any());
-        doNothing().when(elementDigitalAddressDto).setSince(Mockito.<Date>any());
-        doNothing().when(elementDigitalAddressDto).setTaxId(Mockito.<String>any());
+        doNothing().when(elementDigitalAddressDto).setDigitalAddress(Mockito.any());
+        doNothing().when(elementDigitalAddressDto).setSince(Mockito.any());
+        doNothing().when(elementDigitalAddressDto).setTaxId(Mockito.any());
         elementDigitalAddressDto.setDigitalAddress(new ArrayList<>());
         elementDigitalAddressDto
                 .setSince(Date.from(LocalDate.of(1970, 1, 1).atStartOfDay().atZone(ZoneOffset.UTC).toInstant()));
         elementDigitalAddressDto.setTaxId("42");
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(elementDigitalAddressDto);
-        assertTrue(actualMapToResponseOkResult.getDigitalAddress().isEmpty());
-        assertEquals("42", actualMapToResponseOkResult.getTaxId());
-        assertSame(fromResult, actualMapToResponseOkResult.getSince());
-        verify(elementDigitalAddressDto).getTaxId();
-        verify(elementDigitalAddressDto).getSince();
-        verify(elementDigitalAddressDto, atLeast(1)).getDigitalAddress();
-        verify(elementDigitalAddressDto).setDigitalAddress(Mockito.<List<ElementDigitalAddressDto>>any());
-        verify(elementDigitalAddressDto).setSince(Mockito.<Date>any());
-        verify(elementDigitalAddressDto).setTaxId(Mockito.<String>any());
+
+        Assertions.assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(elementDigitalAddressDto, "PF", "TaxId"),
+                "Errore durante la chiamata al servizio EstrazioniPuntualiApi");
     }
 
     /**
-     * Method under test: {@link InadConverter#mapToResponseOk(ResponseRequestDigitalAddressDto)}
+     * Method under test: {@link InadConverter#mapToResponseOk(ResponseRequestDigitalAddressDto, String, String)}
      */
     @Test
     void testMapToResponseOk8() {
@@ -195,7 +159,6 @@ class InadConverterTest {
 
         UsageInfo usageInfo = new UsageInfo();
         usageInfo.setMotivation(null);
-        usageInfo.setDateEndValidity(new Date());
         dto.setUsageInfo(usageInfo);
 
         list.add(dto);
@@ -204,7 +167,77 @@ class InadConverterTest {
         LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
         Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
         responseRequestDigitalAddressDto.setSince(fromResult);
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto);
+        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, "PG", "TaxId");
         assertEquals("Codice Fiscale", actualMapToResponseOkResult.getTaxId());
+    }
+
+    @Test
+    void testMapToResponseOk9() {
+        ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
+        responseRequestDigitalAddressDto.setTaxId("Codice Fiscale");
+        List<ElementDigitalAddressDto> list = new ArrayList<>();
+        ElementDigitalAddressDto dto = new ElementDigitalAddressDto();
+        dto.setDigitalAddress("digitalAddress");
+        list.add(dto);
+        responseRequestDigitalAddressDto.setDigitalAddress(list);
+        LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
+        Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
+        responseRequestDigitalAddressDto.setSince(fromResult);
+        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, "PP", "taxId"));
+    }
+
+    @Test
+    void testMapToResponseOk10() {
+        ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
+        responseRequestDigitalAddressDto.setDigitalAddress(null);
+        assertNotNull(InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, "PG", "TaxId"));
+    }
+
+    @Test
+    void testMapToResponseOk11() {
+        ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
+        responseRequestDigitalAddressDto.setTaxId("Codice Fiscale");
+        List<ElementDigitalAddressDto> list = new ArrayList<>();
+        ElementDigitalAddressDto dto = new ElementDigitalAddressDto();
+        dto.setDigitalAddress("digitalAddress");
+        dto.setPracticedProfession("");
+
+        UsageInfo usageInfo = new UsageInfo();
+        usageInfo.setMotivation(null);
+        dto.setUsageInfo(usageInfo);
+
+        list.add(dto);
+
+        responseRequestDigitalAddressDto.setDigitalAddress(list);
+        LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
+        Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
+        responseRequestDigitalAddressDto.setSince(fromResult);
+        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, "PG", "00123456789");
+        assertEquals("Codice Fiscale", actualMapToResponseOkResult.getTaxId());
+    }
+
+    @Test
+    void testMapToResponseOk12() {
+        ResponseRequestDigitalAddressDto responseRequestDigitalAddressDto = new ResponseRequestDigitalAddressDto();
+        responseRequestDigitalAddressDto.setTaxId("Codice Fiscale");
+        List<ElementDigitalAddressDto> list = new ArrayList<>();
+        ElementDigitalAddressDto dto = new ElementDigitalAddressDto();
+        dto.setDigitalAddress("digitalAddress");
+        ElementDigitalAddressDto dto2 = new ElementDigitalAddressDto();
+        dto2.setDigitalAddress("digitalAddress");
+
+        UsageInfo usageInfo = new UsageInfo();
+        usageInfo.setMotivation(null);
+        dto.setUsageInfo(usageInfo);
+        dto2.setUsageInfo(usageInfo);
+
+        list.add(dto);
+        list.add(dto2);
+
+        responseRequestDigitalAddressDto.setDigitalAddress(list);
+        LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
+        Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
+        responseRequestDigitalAddressDto.setSince(fromResult);
+        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, "PG", "TaxId"));
     }
 }

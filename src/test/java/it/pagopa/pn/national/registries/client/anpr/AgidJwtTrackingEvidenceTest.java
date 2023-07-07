@@ -9,18 +9,16 @@ import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretServic
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
-import org.slf4j.MDC;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.services.kms.KmsClient;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
@@ -62,4 +60,3 @@ class AgidJwtTrackingEvidenceTest {
     }
 
 }
-

@@ -81,4 +81,3 @@ class CachedSecretsManagerConsumerTest {
         verify(secretsManagerClient).getSecretValue(Mockito.<GetSecretValueRequest>any());
     }
 }
-

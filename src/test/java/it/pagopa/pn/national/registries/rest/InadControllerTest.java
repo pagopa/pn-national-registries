@@ -43,7 +43,7 @@ class InadControllerTest {
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
         getDigitalAddressINADOKDto.setTaxId("DDDFGF52F52H501S");
         getDigitalAddressINADOKDto.setSince(new Date());
-        StepVerifier.create(inadController.digitalAddressINAD(Mono.just(extractDigitalAddressINADRequestBodyDto), serverWebExchange))
+        StepVerifier.create(inadController.digitalAddressINAD("PF", Mono.just(extractDigitalAddressINADRequestBodyDto), serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(getDigitalAddressINADOKDto));
     }
 }

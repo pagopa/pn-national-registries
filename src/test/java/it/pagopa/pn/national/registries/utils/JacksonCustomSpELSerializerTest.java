@@ -46,11 +46,49 @@ class JacksonCustomSpELSerializerTest {
         }
     }
 
+    @Test
+    void testThrowSerializeAsField2() {
+        ObjectMapper mapper = new ObjectMapper()
+                .setFilterProvider(new SimpleFilterProvider()
+                        .addFilter(FILTER_NAME, new JacksonCustomSpELSerializer()));
+        try {
+            mapper.writeValueAsString(new TestWrongSpElPojo2());
+        } catch (JsonProcessingException e) {
+            assertEquals(SpelEvaluationException.class, e.getCause().getClass());
+        }
+    }
+
+    @Test
+    void testThrowSerializeAsField3() {
+        ObjectMapper mapper = new ObjectMapper()
+                .setFilterProvider(new SimpleFilterProvider()
+                        .addFilter(FILTER_NAME, new JacksonCustomSpELSerializer()));
+        try {
+            mapper.writeValueAsString(new TestWrongSpElPojo3());
+        } catch (JsonProcessingException e) {
+            assertEquals(SpelEvaluationException.class, e.getCause().getClass());
+        }
+    }
+
     @Data
     @JsonFilter(FILTER_NAME)
     private static class TestWrongSpElPojo {
         @JsonFilterSpEL("#?")
         private String field;
+    }
+
+    @Data
+    @JsonFilter(FILTER_NAME)
+    private static class TestWrongSpElPojo2 {
+        @JsonFilterSpEL("#?")
+        private Boolean field;
+    }
+
+    @Data
+    @JsonFilter(FILTER_NAME)
+    private static class TestWrongSpElPojo3 {
+        @JsonFilterSpEL("#?")
+        private Boolean field = true;
     }
 
 }

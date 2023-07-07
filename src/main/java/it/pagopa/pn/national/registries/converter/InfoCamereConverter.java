@@ -1,14 +1,11 @@
 package it.pagopa.pn.national.registries.converter;
 
 import com.amazonaws.util.StringUtils;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
@@ -30,16 +27,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class InfoCamereConverter {
-
-    private final ObjectMapper mapper;
     private final long iniPecTtl;
     
-    public InfoCamereConverter(ObjectMapper mapper,
-                               @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
-        this.mapper = mapper;
+    public InfoCamereConverter(@Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
         this.iniPecTtl = iniPecTtl;
     }
 
@@ -91,20 +85,11 @@ public class InfoCamereConverter {
         return codeSqsDto;
     }
 
-    public String convertCodeSqsDtoToString(CodeSqsDto codeSqsDto) {
-        try {
-            return mapper.writeValueAsString(codeSqsDto);
-        } catch (JsonProcessingException e) {
-            throw new IniPecException("can not convert SQS DTO to String", e);
-        }
-    }
-
     public boolean checkIfResponseIsInfoCamereError(InfoCamereCommonError response) {
-        return (response.getCode() != null && !"".equals(response.getCode())
-                || response.getDescription() != null && !"".equals(response.getDescription())
-                || response.getTimestamp() != null && !"".equals(response.getTimestamp())
-                || response.getAppName() != null && !"".equals(response.getAppName())
-        );
+        return ((response.getCode() != null && !"".equals(response.getCode()))
+                || (response.getDescription() != null && !"".equals(response.getDescription()))
+                || (response.getTimestamp() != null && !"".equals(response.getTimestamp()))
+                || (response.getAppName() != null && !"".equals(response.getAppName())));
     }
 
     public GetAddressRegistroImpreseOKDto mapToResponseOkByResponse(AddressRegistroImprese response) {

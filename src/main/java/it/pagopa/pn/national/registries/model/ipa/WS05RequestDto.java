@@ -15,4 +15,5 @@ public class WS05RequestDto {
 
     @JsonProperty("AUTH_ID")
     private String authId;
+
 }

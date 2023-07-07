@@ -34,8 +34,8 @@ public class IpaService {
     private final Predicate<Throwable> isResponseDataEmpty = throwable ->
             throwable instanceof PnNationalRegistriesException exception
                     && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                    && (Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase("Service WS23 responded with 0 items - IPA PEC not found")
-                    || Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase("Service WS05 responded with 0 items - IPA PEC not found"));
+                    && ("Service WS23 responded with 0 items - IPA PEC not found".equalsIgnoreCase(Objects.requireNonNull(exception.getMessage()))
+                    || "Service WS05 responded with 0 items - IPA PEC not found".equalsIgnoreCase(Objects.requireNonNull(exception.getMessage())));
 
 
     public IpaService(IpaConverter ipaConverter,
