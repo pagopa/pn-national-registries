@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.utils;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.model.SSLData;
+import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.opensaml.core.xml.Namespace;
 import org.opensaml.core.xml.XMLObject;
@@ -19,20 +21,33 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.utils.XMLWriterConstant.SOAP_ENV_NAMESPACE;
 
 @Component
 @Slf4j
 public class SAMLAssertionWriter {
 
+    static final Pattern pattern = Pattern.compile(".*Root=(.*);P.*");
     private final OpenSAMLUtils openSAMLUtils;
     private final X509CertificateUtils x509CertificateUtils;
+    private final String clientId;
+    private final String environmentType;
+    private final String issuerName;
 
     public SAMLAssertionWriter(OpenSAMLUtils openSAMLUtils,
-                               X509CertificateUtils x509CertificateUtils) {
+                               X509CertificateUtils x509CertificateUtils,
+                               @Value("${pn.national.registries.ade.legal.name.id}") String clientId,
+                               @Value("${pn.national.registries.environment.type}") String environmentType,
+                               @Value("${pn.national.registries.issuer}") String issuerName) {
         this.openSAMLUtils = openSAMLUtils;
         this.x509CertificateUtils = x509CertificateUtils;
+        this.clientId = clientId;
+        this.environmentType = environmentType;
+        this.issuerName = issuerName;
     }
 
     public Assertion buildDefaultAssertion() {
@@ -53,9 +68,15 @@ public class SAMLAssertionWriter {
     }
 
     private AttributeStatement getAttributeStatements() {
+        String traceId = "unknown";
+        String allTraceId  = MDCUtils.retrieveMDCContextMap().get(MDC_TRACE_ID_KEY);
+        final Matcher matcher = pattern.matcher(allTraceId);
+        if(matcher.find()) {
+            traceId = matcher.group(1);
+        }
         AttributeStatement attrStatement = (AttributeStatement) openSAMLUtils.buildSAMLObject(AttributeStatement.DEFAULT_ELEMENT_NAME, null);
-        attrStatement.getAttributes().add(getAttribute("User", "User")); //TODO: value
-        attrStatement.getAttributes().add(getAttribute("IP-User", "IP-User")); //TODO: value
+        attrStatement.getAttributes().add(getAttribute("User", traceId));
+        attrStatement.getAttributes().add(getAttribute("IP-User", environmentType));
         return attrStatement;
     }
 
@@ -82,7 +103,7 @@ public class SAMLAssertionWriter {
 
         AuthnStatement authnStatement = (AuthnStatement) openSAMLUtils.buildSAMLObject(AuthnStatement.DEFAULT_ELEMENT_NAME, null);
         authnStatement.setAuthnInstant(Instant.now());
-        authnStatement.setSessionNotOnOrAfter(Instant.now().plus(10, ChronoUnit.MINUTES));
+        authnStatement.setSessionNotOnOrAfter(Instant.now().plus(10, ChronoUnit.HOURS));
         authnStatement.setAuthnContext(authContext);
 
         return authnStatement;
@@ -91,7 +112,7 @@ public class SAMLAssertionWriter {
     private Conditions getConditions() {
         Conditions conditions = (Conditions) openSAMLUtils.buildSAMLObject(Conditions.DEFAULT_ELEMENT_NAME, null);
         conditions.setNotBefore(Instant.now());
-        conditions.setNotOnOrAfter(Instant.now().plus(10, ChronoUnit.MINUTES));
+        conditions.setNotOnOrAfter(Instant.now().plus(10, ChronoUnit.HOURS));
         return conditions;
     }
 
@@ -100,7 +121,7 @@ public class SAMLAssertionWriter {
 
         NameID nameID = (NameID) openSAMLUtils.buildSAMLObject(NameID.DEFAULT_ELEMENT_NAME, null);
         nameID.setFormat(NameIDType.UNSPECIFIED);
-        nameID.setValue("80078750587/4AA"); //TODO: var d'ambiente
+        nameID.setValue(clientId);
         subject.setNameID(nameID);
 
         SubjectConfirmation subjectConfirmation = (SubjectConfirmation) openSAMLUtils.buildSAMLObject(SubjectConfirmation.DEFAULT_ELEMENT_NAME, null);
@@ -109,7 +130,7 @@ public class SAMLAssertionWriter {
 
         SubjectConfirmationData csubjectConfirmationData = (SubjectConfirmationData) openSAMLUtils.buildSAMLObject(SubjectConfirmationData.DEFAULT_ELEMENT_NAME, null);
         csubjectConfirmationData.setNotBefore(Instant.now());
-        csubjectConfirmationData.setNotOnOrAfter(Instant.now().plus(10, ChronoUnit.MINUTES));
+        csubjectConfirmationData.setNotOnOrAfter(Instant.now().plus(10, ChronoUnit.HOURS));
 
         subjectConfirmation.setSubjectConfirmationData(csubjectConfirmationData);
 
@@ -137,7 +158,7 @@ public class SAMLAssertionWriter {
     }
     private Issuer getIssuer() {
         Issuer issuer = (Issuer) openSAMLUtils.buildSAMLObject(Issuer.DEFAULT_ELEMENT_NAME, null);
-        issuer.setValue("PagoPA"); //TODO: value
+        issuer.setValue(environmentType + issuerName);
         return issuer;
     }
 

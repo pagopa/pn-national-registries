@@ -18,7 +18,9 @@ public class AdeLegalSecretConfig {
     private final String trustData;
 
     public AdeLegalSecretConfig(
-            @Value("${pn.national.registries.ade.auth}") String authChannelData, SsmParameterConsumerActivation ssmParameterConsumerActivation, PnNationalRegistriesSecretService pnNationalRegistriesSecretService,
+            @Value("${pn.national.registries.ade.auth}") String authChannelData,
+            SsmParameterConsumerActivation ssmParameterConsumerActivation,
+            PnNationalRegistriesSecretService pnNationalRegistriesSecretService,
             @Value("${pn.national.registries.ade.legal.trust.secret}") String trustData) {
         this.authChannelData = authChannelData;
         this.ssmParameterConsumerActivation = ssmParameterConsumerActivation;

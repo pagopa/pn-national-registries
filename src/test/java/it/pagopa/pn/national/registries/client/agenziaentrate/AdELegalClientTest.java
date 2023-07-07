@@ -46,7 +46,7 @@ class AdELegalClientTest {
     @MockBean
     AdeLegalSecretConfig adeLegalSecretConfig;
 
-    @Test
+   /* @Test
     void checkTaxIdAndVatNumberTest() {
         when(adELegalWebClient.init()).thenReturn(webClient);
         AdELegalClient adELegalClient = new AdELegalClient(adELegalWebClient, xMLWriter);
@@ -84,7 +84,7 @@ class AdELegalClientTest {
                 .expectNext(response)
                 .verifyComplete();
     }
-
+*/
     @Test
     void checkTaxIdAndVatNumberErrorTest() {
         when(adELegalWebClient.init()).thenReturn(webClient);

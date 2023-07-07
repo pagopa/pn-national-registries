@@ -21,8 +21,7 @@ import javax.xml.namespace.QName;
 import java.util.Objects;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
-import static it.pagopa.pn.national.registries.utils.XMLWriterConstant.SOAP_ENV_NAMESPACE;
-import static it.pagopa.pn.national.registries.utils.XMLWriterConstant.XML_SCHEMA_NAMESPACE;
+import static it.pagopa.pn.national.registries.utils.XMLWriterConstant.*;
 
 @Component
 @Slf4j
@@ -44,9 +43,9 @@ public class XMLWriter {
             Security security = (Security) openSAMLUtils.buildSAMLObject(Security.ELEMENT_NAME, null);
             security.getUnknownXMLObjects().add(assertion);
 
-            Envelope envelope = (Envelope) openSAMLUtils.buildSAMLObject(Envelope.DEFAULT_ELEMENT_NAME, getSoapEnvelopeQName("Envelope"));
-            envelope.getNamespaceManager().registerNamespaceDeclaration(new Namespace("http://test.it.finanze.sogei", "anag"));
-            Header header = (Header) openSAMLUtils.buildSAMLObject(Header.DEFAULT_ELEMENT_NAME, getSoapEnvelopeQName("Header"));
+            Envelope envelope = (Envelope) openSAMLUtils.buildSAMLObject(Envelope.DEFAULT_ELEMENT_NAME, getSoapEnvelopeQName(ENVELOPE));
+            envelope.getNamespaceManager().registerNamespaceDeclaration(new Namespace(VERIFICA_RAPPRESENTANTE_NAMESPACE, ANAG));
+            Header header = (Header) openSAMLUtils.buildSAMLObject(Header.DEFAULT_ELEMENT_NAME, getSoapEnvelopeQName(HEADER));
             header.getUnknownXMLObjects().add(security);
             envelope.setHeader(header);
             envelope.setBody(createBody(cfRappresentante, cfEnte));
@@ -66,14 +65,14 @@ public class XMLWriter {
     }
 
     private Body createBody(String cfRappresentante, String cfEnte) {
-        Body body = (Body) openSAMLUtils.buildSAMLObject(Body.DEFAULT_ELEMENT_NAME, getSoapEnvelopeQName("Body"));
+        Body body = (Body) openSAMLUtils.buildSAMLObject(Body.DEFAULT_ELEMENT_NAME, getSoapEnvelopeQName(BODY));
 
-        XSAny checkValidityRappresentanteXmlSchema = (XSAny) openSAMLUtils.buildSAMLObject(XSAny.TYPE_NAME, getXMLSchemaQName("checkValidityRappresentante"));
+        XSAny checkValidityRappresentanteXmlSchema = (XSAny) openSAMLUtils.buildSAMLObject(XSAny.TYPE_NAME, getXMLSchemaQName(CHECK_VALIDITY_RAPPRESENTANTE));
 
-        XSAny cfRappresentanteXmlSchema = (XSAny) openSAMLUtils.buildSAMLObject(XSAny.TYPE_NAME, getXMLSchemaQName("cfRappresentante"));
+        XSAny cfRappresentanteXmlSchema = (XSAny) openSAMLUtils.buildSAMLObject(XSAny.TYPE_NAME, getXMLSchemaQName(CF_RAPPRESENTANTE));
         cfRappresentanteXmlSchema.setTextContent(cfRappresentante);
 
-        XSAny cfEnteXmlSchema = (XSAny) openSAMLUtils.buildSAMLObject(XSAny.TYPE_NAME, getXMLSchemaQName("cfEnte"));
+        XSAny cfEnteXmlSchema = (XSAny) openSAMLUtils.buildSAMLObject(XSAny.TYPE_NAME, getXMLSchemaQName(CF_ENTE));
         cfEnteXmlSchema.setTextContent(cfEnte);
 
         checkValidityRappresentanteXmlSchema.getUnknownXMLObjects().add(cfRappresentanteXmlSchema);
@@ -85,10 +84,10 @@ public class XMLWriter {
     }
 
     private QName getSoapEnvelopeQName(String localPart) {
-        return new QName(SOAP_ENV_NAMESPACE, localPart, "soapenv");
+        return new QName(SOAP_ENV_NAMESPACE, localPart, SOAP_ENV);
     }
 
     private QName getXMLSchemaQName(String localPart) {
-        return new QName(XML_SCHEMA_NAMESPACE, localPart, "anag");
+        return new QName(VERIFICA_RAPPRESENTANTE_NAMESPACE, localPart, ANAG);
     }
 }

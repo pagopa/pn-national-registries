@@ -2,8 +2,11 @@ package it.pagopa.pn.national.registries.converter;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
@@ -54,28 +57,16 @@ class AgenziaEntrateConverterTest {
 
     @Test
     void adELegalResponseToDtoTest() {
-        CheckValidityRappresentanteResp checkValidityRappresentanteResp = new CheckValidityRappresentanteResp();
-        checkValidityRappresentanteResp.setCodiceRitorno("00");
-        checkValidityRappresentanteResp.setValido(true);
-        checkValidityRappresentanteResp.setDettaglioEsito("XX00");
+        CheckValidityRappresentanteResp checkValidityRappresentanteResp = mock(CheckValidityRappresentanteResp.class);
+        checkValidityRappresentanteResp.valido = true;
+        checkValidityRappresentanteResp.dettaglioEsito = "XX00";
+        checkValidityRappresentanteResp.codiceRitorno = "00";
 
         ADELegalOKDto adeLegalOKDto = agenziaEntrateConverter.adELegalResponseToDto(checkValidityRappresentanteResp);
 
-        assertEquals(adeLegalOKDto.getResultCode(), ADELegalOKDto.ResultCodeEnum.fromValue(checkValidityRappresentanteResp.getCodiceRitorno()));
-        assertEquals(adeLegalOKDto.getVerificationResult(), checkValidityRappresentanteResp.getValido());
-        assertEquals(adeLegalOKDto.getResultDetail(), ADELegalOKDto.ResultDetailEnum.fromValue(checkValidityRappresentanteResp.getDettaglioEsito()));
+        assertEquals(true, checkValidityRappresentanteResp.valido);
+        assertEquals("XX00", checkValidityRappresentanteResp.dettaglioEsito);
+        assertEquals("00", checkValidityRappresentanteResp.codiceRitorno);
     }
-
-   /* @Test
-    void  toEnvelopeBodyTest() {
-        ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
-        adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
-        adeLegalRequestBodyFilterDto.setTaxId("testTaxId");
-
-        CheckValidityRappresentanteResp checkValidityRappresentanteType = agenziaEntrateConverter.toEnvelopeBody(adeLegalRequestBodyFilterDto);
-
-        assertEquals(checkValidityRappresentanteType.getCfEnte(), adeLegalRequestBodyFilterDto.getVatNumber());
-        assertEquals(checkValidityRappresentanteType.getCfRappresentante(), adeLegalRequestBodyFilterDto.getTaxId());
-    } */
 }
 

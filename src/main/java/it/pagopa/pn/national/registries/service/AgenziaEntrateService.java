@@ -16,6 +16,8 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 import java.io.StringReader;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
 
@@ -65,12 +67,21 @@ public class AgenziaEntrateService {
     public CheckValidityRappresentanteResp unmarshaller(String response) throws JAXBException {
 
         JAXBContext jaxbContext = JAXBContext.newInstance(CheckValidityRappresentanteResp.class);
-        String responseBody = response.substring(response.indexOf("<checkValidityRappresentanteResp>"), response.indexOf("</checkValidityRappresentanteResp>")
-                + "</checkValidityRappresentanteResp>".length());
+        String responseBody = extractResponseBody(response);
 
         Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 
         return (CheckValidityRappresentanteResp) jaxbUnmarshaller.unmarshal(new StringReader(responseBody));
+    }
+
+    private String extractResponseBody(String xmlResponse) {
+        Pattern responsePattern = Pattern.compile(".*Body\\>(.*)<\\/soapenv:Body>");
+        String checkValidityElement = "";
+        Matcher matcher = responsePattern.matcher(xmlResponse);
+        while (matcher.find()) {
+            checkValidityElement = matcher.group(1);
+        }
+        return checkValidityElement;
     }
 
     public Mono<ADELegalOKDto> checkTaxIdAndVatNumber(ADELegalRequestBodyDto request) {

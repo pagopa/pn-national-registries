@@ -59,7 +59,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
         this.maxRetry = maxRetry;
     }
 
-   // @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
+    @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
     public void batchPecRequest() {
         log.trace("IniPEC - batchPecRequest start");
         Page<BatchRequest> page;
@@ -79,7 +79,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
         log.trace("IniPEC - batchPecRequest end");
     }
 
-    //@Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.request.recovery.delay}")
+    @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.request.recovery.delay}")
     public void recoveryBatchRequest() {
         log.trace("IniPEC - recoveryBatchRequest start");
         batchRequestRepository.getBatchRequestToRecovery()
