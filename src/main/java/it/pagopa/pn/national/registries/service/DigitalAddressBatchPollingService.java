@@ -227,7 +227,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private void callInadEservice(BatchRequest request) {
         inadService.callEService(convertToGetDigitalAddressInadRequest(request), "PG")
-                .doOnNext(inadResponse -> request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(request.getCorrelationId(), inadResponse, DigitalAddressRecipientType.PERSONA_GIURIDICA))))
+                .doOnNext(inadResponse -> request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(request.getCorrelationId(), inadResponse, DigitalAddressRecipientType.IMPRESA))))
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}", request.getCorrelationId(), MaskDataUtils.maskString(request.getCf())))
                 .onErrorResume(e -> {
                     logEServiceError(e);
