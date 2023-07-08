@@ -81,4 +81,9 @@ public class BatchRequest {
             @DynamoDbAttribute(COL_MESSAGE)
     }))
     private String message;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_ESERVICE)
+    }))
+    private String eservice;
 }
