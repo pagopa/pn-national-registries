@@ -78,7 +78,7 @@ Vale la stessa procedura descritta per ANPR (eccezion fatta per l'_integrity_):
 * Variabili da valorizzare in _microservice-xxx-cfg.json_:
     * __AdECheckCfPurposeId__ con purposeId ottenuto da PDND
     * __PDNDAdECheckCfSecret__ con nome del secret per PDND
-    * __AdECheckCfSSLSecret__ con nome del secret per mTLS
+    * __AdESSLSecret__ con nome del secret per mTLS
 
 Necessaria la comunicazione con AdE per fornire loro chiave pubblica e certificato per mTLS.
 

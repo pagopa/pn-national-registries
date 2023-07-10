@@ -1,17 +1,26 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import it.pagopa.pn.national.registries.client.CommonWebClient;
+import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalWebClientConfig;
 import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;
-import org.junit.jupiter.api.Assertions;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration(classes = {AgenziaEntrateWebClientSOAP.class, CommonWebClient.class, ResponseExchangeFilter.class})
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@ContextConfiguration(classes = {AdELegalWebClient.class, CommonWebClient.class, ResponseExchangeFilter.class})
 @ExtendWith(MockitoExtension.class)
-class AgenziaEntrateWebClientSOAPTest {
+class AdELegalWebClientTest {
+
+    @Mock
+    PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+    @Mock
+    AdeLegalSecretConfig adeLegalSecretConfig;
 
     @Test
     void testInit() {
@@ -20,8 +29,8 @@ class AgenziaEntrateWebClientSOAPTest {
         adeLegalWebClientConfig.setTcpMaxQueuedConnections(1);
         adeLegalWebClientConfig.setTcpPoolIdleTimeout(1);
         adeLegalWebClientConfig.setTcpPendingAcquiredTimeout(1);
-        AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP = new AgenziaEntrateWebClientSOAP(true, "test.it", adeLegalWebClientConfig);
-        Assertions.assertThrows(NullPointerException.class, agenziaEntrateWebClientSOAP::init);
+        AdELegalWebClient adELegalWebClient = new AdELegalWebClient(true, "test.it", adeLegalWebClientConfig,adeLegalSecretConfig,pnNationalRegistriesSecretService);
+        assertThrows(NullPointerException.class, adELegalWebClient::init);
     }
 
 }

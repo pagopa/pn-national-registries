@@ -74,6 +74,7 @@ class CheckCfClientTest {
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
+        WebClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(WebClient.RequestHeadersUriSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
         when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
@@ -82,8 +83,10 @@ class CheckCfClientTest {
         when(requestBodyUriSpec.uri("/verifica")).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
+        when(requestHeadersSpec.headers(any())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);
         when(responseSpec.bodyToMono(TaxIdVerification.class)).thenReturn(Mono.just(taxIdVerification));
+
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
         when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(value);
