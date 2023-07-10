@@ -30,6 +30,10 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
 
     public static final String ERROR_CODE_INFOCAMERE_TOKEN_DURATION = "PN_NATIONAL_REGISTRIES_INFOCAMERE_TOKEN_DURATION";
 
+    public static final String ERROR_CODE_ADE_LEGAL_OPENSAML_INIT = "PN_NATIONAL_REGISTRIES_ADE_LEGAL_OPENSAML_INIT";
+    public static final String ERROR_CODE_ADE_LEGAL_LOAD_CERT = "PN_NATIONAL_REGISTRIES_ADE_LEGAL_LOAD_CERT";
+    public static final String ERROR_CODE_ADE_LEGAL_LOAD_KEY = "PN_NATIONAL_REGISTRIES_ADE_LEGAL_LOAD_KEY";
+    public static final String ERROR_CODE_ADE_LEGAL_CREATE_SOAP = "PN_NATIONAL_REGISTRIES_ADE_LEGAL_CREATE_SOAP";
 
     // messaggi di errore di national registries
 
@@ -61,5 +65,9 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED = "Errore di autorizzazione su InfoCamere";
     public static final String ERROR_MESSAGE_ADE_UNAUTHORIZED = "Errore di autorizzazione su AdE";
     public static final String ERROR_MESSAGE_INFOCAMERE_TOKEN_DURATION = "Errore, il token è scaduto";
+    public static final String ERROR_MESSAGE_ADE_LEGAL_OPENSAML_INIT = "Errore durante l'inizializzazione di OpenSAML";
+    public static final String ERROR_MESSAGE_ADE_LEGAL_LOAD_CERT = "Errore durante il caricamento del certificato";
+    public static final String ERROR_MESSAGE_ADE_LEGAL_LOAD_KEY = "Errore durante il caricamento della private key";
+    public static final String ERROR_MESSAGE_ADE_LEGAL_CREATE_SOAP = "Errore durante la creazione dell'envelope SOAP";
 
 }
