@@ -122,7 +122,7 @@ class IpaClientTest {
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri("ws/WS05AMMServices/api/WS05_AMM")).thenReturn(requestBodySpec);
+        when(requestBodyUriSpec.uri("/ws/WS05AMMServices/api/WS05_AMM")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.MULTIPART_FORM_DATA)).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         when(requestBodySpec.body(any())).thenReturn(requestHeadersSpec);
@@ -179,7 +179,7 @@ class IpaClientTest {
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
         when(webClient.post()).thenReturn(requestBodyUriSpec);
-        when(requestBodyUriSpec.uri("ws/WS05AMMServices/api/WS05_AMM")).thenReturn(requestBodySpec);
+        when(requestBodyUriSpec.uri("/ws/WS05AMMServices/api/WS05_AMM")).thenReturn(requestBodySpec);
         when(requestBodySpec.contentType(MediaType.MULTIPART_FORM_DATA)).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         when(requestBodySpec.body(any())).thenReturn(requestHeadersSpec);

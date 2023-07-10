@@ -14,9 +14,7 @@ public enum BatchStatus {
     WORKED("WORKED"),
     ERROR("ERROR"),
     SENT("SENT"),
-    NOT_SENT("NOT_SENT"),
-
-    NOT_SENT_TRY_INAD("NOT_SENT_TRY_INAD");
+    NOT_SENT("NOT_SENT");
     private final String value;
 
     BatchStatus(String value) {

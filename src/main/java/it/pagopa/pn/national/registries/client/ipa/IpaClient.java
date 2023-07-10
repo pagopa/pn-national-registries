@@ -51,7 +51,7 @@ public class IpaClient {
     public Mono<WS05ResponseDto> callEServiceWS05(String codAmm, String authId) {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_WS05_PEC);
         return webClient.post()
-                .uri("ws/WS05AMMServices/api/WS05_AMM")
+                .uri("/ws/WS05AMMServices/api/WS05_AMM")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA))
                 .body(BodyInserters.fromFormData(createRequestWS05(codAmm, authId)))
                 .retrieve()

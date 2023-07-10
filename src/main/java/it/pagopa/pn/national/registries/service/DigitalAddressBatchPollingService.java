@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
@@ -208,14 +209,16 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(request -> {
                     CodeSqsDto sqsDto = sqsDtoProvider.apply(request);
                     if (CollectionUtils.isEmpty(sqsDto.getDigitalAddress()) && !StringUtils.hasText(sqsDto.getError())) {
-                        request.setSendStatus(BatchStatus.NOT_SENT_TRY_INAD.getValue());
+                        //if IniPec doesn't retrieve pec try to call INAD
                         callInadEservice(request);
+                        request.setEservice(EService.INAD.name());
                     } else {
                         request.setMessage(convertCodeSqsDtoToString(sqsDto));
-                        request.setStatus(status.getValue());
-                        request.setSendStatus(BatchStatus.NOT_SENT.getValue());
-                        request.setLastReserved(now);
+                        request.setEservice(EService.INIPEC.name());
                     }
+                    request.setStatus(status.getValue());
+                    request.setSendStatus(BatchStatus.NOT_SENT.getValue());
+                    request.setLastReserved(now);
                 })
                 .flatMap(batchRequestRepository::update)
                 .doOnNext(r -> log.debug("IniPEC - correlationId {} - set status in {}", r.getCorrelationId(), r.getStatus()))

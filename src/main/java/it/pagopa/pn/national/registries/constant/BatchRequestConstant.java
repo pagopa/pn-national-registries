@@ -20,6 +20,8 @@ public final class BatchRequestConstant {
     public static final String COL_SEND_STATUS = "sendStatus";
     public static final String COL_MESSAGE = "message";
 
+    public static final String COL_ESERVICE = "eservice";
+
     public static final String GSI_BL = "batchId-lastReserved-index";
     public static final String GSI_S = "status-index";
     public static final String GSI_SSL = "sendStatus-lastReserved-index";
