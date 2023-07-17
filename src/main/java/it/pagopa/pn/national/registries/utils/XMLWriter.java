@@ -60,7 +60,6 @@ public class XMLWriter {
         } catch (MarshallingException | SignatureException e) {
             throw new PnInternalException(ERROR_MESSAGE_ADE_LEGAL_CREATE_SOAP, ERROR_CODE_ADE_LEGAL_CREATE_SOAP, e);
         }
-        log.debug("xmlSoapRequest: {}", xmlSoapRequest);
         return xmlSoapRequest;
     }
 
