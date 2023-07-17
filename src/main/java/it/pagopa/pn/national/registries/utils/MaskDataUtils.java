@@ -18,6 +18,8 @@ public class MaskDataUtils {
             "\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
     private static final Pattern ACCESS_TOKEN = Pattern.compile("(\"access_token\")\\s*:\\s*\"(.*?)\"");
     private static final Pattern ELENCO_CF_NOT_JSON = Pattern.compile("(CF)\\s*=\\s*(.*)");
+    private static final Pattern CF_RAPPRESENTANTE = Pattern.compile(".*(<anag:cfRappresentante>)(.*)(</anag:cfRappresentante>).*");
+    private static final Pattern CF_ENTE = Pattern.compile(".*(<anag:cfEnte>)(.*)(</anag:cfEnte>).*");
 
     private static final int STRING_LENGTH_UNDER_FOUR = 4;
     private static final int REMOVE_LAST_THREE_CHARACTERS = 3;
@@ -39,6 +41,8 @@ public class MaskDataUtils {
         dataBuffered = maskMatcher(IDENTITY, dataBuffered);
         dataBuffered = maskMatcher(ACCESS_TOKEN, dataBuffered);
         dataBuffered = maskMatcher(ELENCO_CF_NOT_JSON,dataBuffered);
+        dataBuffered = maskMatcher(CF_RAPPRESENTANTE,dataBuffered);
+        dataBuffered = maskMatcher(CF_ENTE,dataBuffered);
 
         return dataBuffered;
     }
