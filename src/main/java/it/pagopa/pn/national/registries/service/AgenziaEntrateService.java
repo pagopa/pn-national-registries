@@ -88,6 +88,8 @@ public class AgenziaEntrateService {
         log.logChecking(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL);
 
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL, false);
+        validateTaxIdUtils.validateTaxId(request.getFilter().getVatNumber(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL, false);
+
         return adELegalClient.checkTaxIdAndVatNumberAdE(request.getFilter())
                 .map(response -> {
                     try {

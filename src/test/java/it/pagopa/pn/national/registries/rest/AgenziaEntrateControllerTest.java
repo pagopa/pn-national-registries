@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.model.agenziaentrate.ResultDetailEnum;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
@@ -56,7 +57,7 @@ class AgenziaEntrateControllerTest {
         ADELegalOKDto adeLegalOKDto = new ADELegalOKDto();
         adeLegalOKDto.setResultCode(ADELegalOKDto.ResultCodeEnum.fromValue("00"));
         adeLegalOKDto.setVerificationResult(true);
-        adeLegalOKDto.setResultDetail(ADELegalOKDto.ResultDetailEnum.fromValue("XX00"));
+        adeLegalOKDto.setResultDetail(ResultDetailEnum.fromValue("XX00"));
         StepVerifier.create(agenziaEntrateController.adeLegal(Mono.just(adeLegalRequestBodyDto), serverWebExchange))
                 .expectNext(ResponseEntity.ok().body(adeLegalOKDto));
     }

@@ -1037,30 +1037,6 @@ components:
           type: boolean
         resultDetail:
           type: string
-          enum: [XX00, XX01, XX02, XX0A, XX03, XX04, XXXX]
-          description: >
-            Values:
-            
-            
-            _'XX00'_: richiesta corretta
-            
-            
-            _'XX01'_: codice fiscale Ente e/o Rappresentante errato
-            
-            
-            _'XX02'_: codice fiscale Ente non di soggetto diverso da persona fisica
-            
-            
-            _'XX0A'_: errore nell’elaborazione
-            
-            
-            _'XX03'_: timeout interno all'elaborazione
-            
-            
-            _'XX04'_: errore di autenticazione
-            
-            
-            _'XXXX'_: errore non codificato
         resultCode:
           type: string
           example: '00'
