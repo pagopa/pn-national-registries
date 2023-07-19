@@ -21,8 +21,8 @@ public enum ResultDetailEnum {
 
     XXXX("XXXX", "errore non codificato");
 
-    private String code;
-    private String value;
+    private final String code;
+    private final String value;
 
     ResultDetailEnum(String code, String value) {
         this.value = value;
@@ -40,12 +40,22 @@ public enum ResultDetailEnum {
     }
 
     @JsonCreator
-    public static String fromValue(String value) {
+    public static String getCode(String code) {
         for (ResultDetailEnum b : ResultDetailEnum.values()) {
-            if (b.code.equals(value)) {
+            if (b.code.equals(code)) {
+                return b.code;
+            }
+        }
+        return ResultDetailEnum.XXXX.code;
+    }
+
+    @JsonCreator
+    public static String getValueFromCode(String code) {
+        for (ResultDetailEnum b : ResultDetailEnum.values()) {
+            if (b.code.equals(code)) {
                 return b.value;
             }
         }
-        return value;
+        return code;
     }
 }
