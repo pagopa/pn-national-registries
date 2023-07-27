@@ -36,6 +36,8 @@ import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
@@ -54,7 +56,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final int maxRetry;
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
-    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress";
+    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress.";
+    private static final Pattern PEC_REQUEST_IN_PROGRESS_PATTERN = Pattern.compile(".*(List PEC in progress).*");
 
     public DigitalAddressBatchPollingService(InfoCamereConverter infoCamereConverter,
                                              IniPecBatchRequestRepository batchRequestRepository,
@@ -169,7 +172,16 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final Predicate<Throwable> isPollingResponseNotReady = throwable ->
             throwable instanceof PnNationalRegistriesException exception
                     && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                    && Objects.requireNonNull(exception.getMessage()).equalsIgnoreCase(PEC_REQUEST_IN_PROGRESS_MESSAGE);
+                    && checkPecRequestInProgressPattern(exception.getMessage());
+
+    private boolean checkPecRequestInProgressPattern(String message) {
+        if(message == null) {
+            return false;
+        }
+
+        Matcher matcher = PEC_REQUEST_IN_PROGRESS_PATTERN.matcher(message);
+        return matcher.find();
+    }
 
     private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
         polling.setStatus(BatchStatus.WORKED.getValue());

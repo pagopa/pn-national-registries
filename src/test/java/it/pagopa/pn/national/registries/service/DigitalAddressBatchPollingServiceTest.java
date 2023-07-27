@@ -208,6 +208,62 @@ class DigitalAddressBatchPollingServiceTest {
     }
 
     @Test
+    void testBatchPecPolling3() {
+        /*
+        Questo test simula il flusso con un polling che riceve una risposta di Elaborazione in corso da parte di infocamere
+         */
+        BatchPolling batchPolling = new BatchPolling();
+        batchPolling.setBatchId("batchId");
+        batchPolling.setPollingId("pollingId");
+
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId");
+        batchRequest.setBatchId("batchId");
+
+        BatchPolling pollingInFailure = new BatchPolling();
+
+        Page<BatchPolling> page = Page.create(List.of(pollingInFailure, batchPolling));
+
+        when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
+                .thenReturn(Mono.just(page));
+        when(batchPollingRepository.setNewReservationIdToBatchPolling(same(pollingInFailure)))
+                .thenReturn(Mono.just(pollingInFailure));
+        when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPolling)))
+                .thenReturn(Mono.just(batchPolling));
+
+        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        iniPecPollingResponse.setCode("WSPA_ERR_05");
+        iniPecPollingResponse.setDescription("List PEC in progress");
+        iniPecPollingResponse.setTimestamp("2023-10-06T10:00:00.000Z");
+        iniPecPollingResponse.setAppName("wspa-pedf");
+
+        when(infoCamereClient.callEServiceRequestPec(any()))
+                .thenReturn(Mono.just(iniPecPollingResponse));
+
+        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
+
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
+                .thenReturn(Mono.just(List.of(batchRequest)));
+
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
+                .thenReturn(codeSqsDto);
+
+        when(iniPecBatchSqsService.batchSendToSqs(anyList()))
+                .thenReturn(Mono.empty().then());
+
+        when(batchPollingRepository.update(same(batchPolling)))
+                .thenReturn(Mono.just(batchPolling));
+        when(batchPollingRepository.update(same(pollingInFailure)))
+                .thenReturn(Mono.just(pollingInFailure));
+        when(batchRequestRepository.update(same(batchRequest)))
+                .thenReturn(Mono.just(batchRequest));
+
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+
+    }
+
+    @Test
     @DisplayName("Test failure of getBatchPolling with no reservationId and status not worked")
     void testBatchPecPollingDynamoFailure() {
         when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
