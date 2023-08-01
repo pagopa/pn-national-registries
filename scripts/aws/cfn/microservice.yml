@@ -725,7 +725,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-infocamere-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(11 0 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
+      ScheduleExpression: "cron(0 10 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
@@ -742,7 +742,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-mtls-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(11 0 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
+      ScheduleExpression: "cron(30 10 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
