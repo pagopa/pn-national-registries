@@ -349,6 +349,9 @@ Parameters:
   PnNationalRegistriesCertificateDLQARN:
     Type: String
 
+  PnNationalRegistriesCertificateDLQURL:  
+    Type: String
+
   EnvironmentType:
     Type: String
     Description: environment name
@@ -703,6 +706,20 @@ Resources:
                 Effect: Allow
                 Resource: 
                   - !GetAtt InfocamereCertRenewalCodebuildProject.Arn
+        - PolicyName: sqsPut
+          PolicyDocument:
+            Statement:
+              - Sid: putInDLQ
+                Action:
+                  - sqs:ChangeMessageVisibility
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                  - sqs:ReceiveMessage
+                  - sqs:SendMessage
+                Effect: Allow
+                Resource:
+                  - !Ref PnNationalRegistriesCertificateDLQARN                  
                   
   InfocamereScheduledRule:
     Type: AWS::Events::Rule
@@ -737,3 +754,20 @@ Resources:
             Fn::GetAtt: 
               - "InfocamereCertRenewalCodebuildProject"
               - "Arn"
+
+  NationalRegistriesCertDLQQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref "PnNationalRegistriesCertificateDLQURL"
+      PolicyDocument:
+        Statement:
+          - Sid: "SendEventsToDLQ"
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "events.amazonaws.com"
+            Action: 
+              - "SQS:SendMessage"
+            Resource:
+              - !Ref "PnNationalRegistriesCertificateDLQARN"
