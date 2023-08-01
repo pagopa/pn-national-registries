@@ -612,6 +612,7 @@ Resources:
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:
+        PrivilegedMode: true
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
         Image: "aws/codebuild/standard:7.0"
