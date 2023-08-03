@@ -4,13 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.mockito.Mockito.when;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.exceptions.IniPecException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereInstitution;
@@ -116,22 +113,6 @@ class InfoCamereConverterTest {
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
-    }
-
-    @Test
-    void testConvertCodeSqsDtoToString() throws JsonProcessingException {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        when(objectMapper.writeValueAsString(codeSqsDto))
-                .thenReturn("string");
-        assertEquals("string", infoCamereConverter.convertCodeSqsDtoToString(codeSqsDto));
-    }
-
-    @Test
-    void testConvertCodeSqsDtoToStringError() throws JsonProcessingException {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        when(objectMapper.writeValueAsString(codeSqsDto))
-                .thenThrow(JsonProcessingException.class);
-        assertThrows(IniPecException.class, () -> infoCamereConverter.convertCodeSqsDtoToString(codeSqsDto));
     }
 
     /**
@@ -255,5 +236,18 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", actualResult.getLegalTaxId());
         assertEquals(1, actualResult.getBusinessList().size());
+    }
+
+    @Test
+    void mapToResponseOkByResponse2() {
+        InfoCamereLegalInstituionsResponse response = new InfoCamereLegalInstituionsResponse();
+        response.setLegalTaxId("taxId");
+        response.setDateTimeExtraction("2020-03-01");
+
+        InfoCamereLegalInstitutionsOKDto actualResult = infoCamereConverter
+                .mapToResponseOkByResponse(response);
+
+        assertEquals("taxId", actualResult.getLegalTaxId());
+        assertEquals(0, actualResult.getBusinessList().size());
     }
 }

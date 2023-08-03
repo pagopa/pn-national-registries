@@ -1,10 +1,11 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalErrorDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.utils.XMLWriter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -15,46 +16,32 @@ import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_AGENZIA_ENTRATE_LEGAL;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADE_UNAUTHORIZED;
 
+@Slf4j
 @Component
-@lombok.CustomLog
 public class AdELegalClient {
 
-    private final WebClient webClient;
+    private final AdELegalWebClient adELegalWebClient;
+    private final XMLWriter xmlWriter;
 
-    protected AdELegalClient(AgenziaEntrateWebClientSOAP agenziaEntrateWebClientSOAP) {
-        webClient = agenziaEntrateWebClientSOAP.init();
-    }
-
-    public Mono<Object> getToken() {
-        return Mono.just(new Object());
+    protected AdELegalClient(AdELegalWebClient adELegalWebClient,
+                             XMLWriter xmlWriter) {
+        this.adELegalWebClient = adELegalWebClient;
+        this.xmlWriter = xmlWriter;
     }
 
     public Mono<String> checkTaxIdAndVatNumberAdE(ADELegalRequestBodyFilterDto request) {
-        return getToken()
-                .flatMap(token -> callCheck(request));
+        return callCheck(request);
     }
 
     private Mono<String> callCheck(ADELegalRequestBodyFilterDto request) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_AGENZIA_ENTRATE_LEGAL);
+        WebClient webClient = adELegalWebClient.init();
         return webClient.post()
-                .uri("/legalerappresentateAdE/check")
+                .uri("/SPCBooleanoRappWS/VerificaRappresentanteEnteService")
                 .contentType(MediaType.TEXT_XML)
-                .bodyValue("<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>" +
-                        "<soapenv:Envelope " +
-                        "xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" " +
-                        "xmlns:anag=\"http://anagrafica.verifica.rappresentante.ente\">" +
-                        "<soapenv:Header/>" +
-                        "<soapenv:Body>" +
-                        "<checkValidityRappresentante xmlns=\"http://anagrafica.verifica.rappresentante.ente\">" +
-                        "<cfRappresentante>" + request.getTaxId() + "</cfRappresentante>" +
-                        "<cfEnte>" + request.getVatNumber() + "</cfEnte>" +
-                        "</checkValidityRappresentante>" +
-                        "</soapenv:Body>" +
-                        "</soapenv:Envelope>")
+                .bodyValue(xmlWriter.getEnvelope(request.getTaxId(), request.getVatNumber()))
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {

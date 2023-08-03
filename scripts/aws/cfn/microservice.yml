@@ -127,15 +127,23 @@ Parameters:
     Description: 'InfoCamere Client ID'
 
   # Parametro obbligatorio (Nome del parametro)
-  AdECheckCfSSL:
+  AdESSL:
     Type: String
-    Description: 'CheckCF MTLS parameterName'
+    Description: 'AdE cert parameterName'
+
+  AdELegalTrustSecret:
+    Type: String
+    Description: 'SSL trusted cert AdE SecretName'
+
+  AdELegalNameId:
+    Type: String
+    Description: 'AdE Legal NameID'
 
   AdECheckCfTrustSecret:
     Type: String
     Description: 'SSL trusted cert CheckCF SecretName'
 
-  AdECheckCfSSLSecret: 
+  AdESSLSecret:
     Type: String
 
   AnprTrustSecret:
@@ -341,6 +349,9 @@ Parameters:
   PnNationalRegistriesCertificateDLQARN:
     Type: String
 
+  PnNationalRegistriesCertificateDLQURL:  
+    Type: String
+
   EnvironmentType:
     Type: String
     Description: environment name
@@ -374,9 +385,10 @@ Resources:
         ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
         ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
         ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
+        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_ADE_AUTH=${AdESSL}'
         ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_BASE_URL=${AdELegalBaseURL}'
-        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
-        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_AUTH=${AdECheckCfSSL}'
+        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_NAME_ID=${AdELegalNameId}'
+        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
         ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PURPOSE_ID=${AdECheckCfPurposeId}'
         ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PDND_CLIENT_SECRET=${PDNDAdECheckCfSecret}'
         ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
@@ -400,8 +412,9 @@ Resources:
         ContainerEnvEntry32: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
         ContainerEnvEntry33: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
         ContainerEnvEntry34: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_TRUST_SECRET=${AdECheckCfTrustSecret}'
-        ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
-        ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
+        ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_TRUST_SECRET=${AdELegalTrustSecret}'
+        ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
+        ContainerEnvEntry37: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -499,6 +512,7 @@ Resources:
         Statement:
           - Effect: Allow
             Action:
+              - logs:CreateLogGroup
               - logs:CreateLogStream
               - logs:PutLogEvents
             Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:*
@@ -598,6 +612,7 @@ Resources:
       Artifacts:
         Type: NO_ARTIFACTS
       Environment:
+        PrivilegedMode: true
         ComputeType: BUILD_GENERAL1_SMALL
         Type: LINUX_CONTAINER
         Image: "aws/codebuild/standard:7.0"
@@ -668,10 +683,10 @@ Resources:
             Value: !Ref AdeFQDN
           - Name: SECRET_ID
             Type: PLAINTEXT
-            Value: !Sub ${AdECheckCfSSLSecret}-next
+            Value: !Sub ${AdESSLSecret}-next
           - Name: PARAM_NAME
             Type: PLAINTEXT
-            Value: !Sub ${AdECheckCfSSL}-next
+            Value: !Sub ${AdESSL}-next
 
   CertificateRenewalCodeBuildRole:
     Type: AWS::IAM::Role
@@ -693,12 +708,26 @@ Resources:
                 Effect: Allow
                 Resource: 
                   - !GetAtt InfocamereCertRenewalCodebuildProject.Arn
+        - PolicyName: sqsPut
+          PolicyDocument:
+            Statement:
+              - Sid: putInDLQ
+                Action:
+                  - sqs:ChangeMessageVisibility
+                  - sqs:DeleteMessage
+                  - sqs:GetQueueAttributes
+                  - sqs:GetQueueUrl
+                  - sqs:ReceiveMessage
+                  - sqs:SendMessage
+                Effect: Allow
+                Resource:
+                  - !Ref PnNationalRegistriesCertificateDLQARN                  
                   
   InfocamereScheduledRule:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-infocamere-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(11 0 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
+      ScheduleExpression: "cron(0 10 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
@@ -715,7 +744,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-mtls-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(11 0 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
+      ScheduleExpression: "cron(30 10 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
@@ -727,3 +756,20 @@ Resources:
             Fn::GetAtt: 
               - "InfocamereCertRenewalCodebuildProject"
               - "Arn"
+
+  NationalRegistriesCertDLQQueuePolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      Queues:
+        - !Ref "PnNationalRegistriesCertificateDLQURL"
+      PolicyDocument:
+        Statement:
+          - Sid: "SendEventsToDLQ"
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "events.amazonaws.com"
+            Action: 
+              - "SQS:SendMessage"
+            Resource:
+              - !Ref "PnNationalRegistriesCertificateDLQARN"

@@ -4,6 +4,8 @@ import lombok.Data;
 
 @Data
 public class IpaResponseKO {
+
     private String code;
     private String detail;
+
 }

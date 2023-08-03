@@ -5,7 +5,9 @@ import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
 import org.junit.jupiter.api.Test;
+import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kms.model.SignRequest;
+import software.amazon.awssdk.services.kms.model.SignResponse;
 
 import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
@@ -57,6 +59,14 @@ class ClientUtilsTest {
         TokenHeader header = new TokenHeader(jwtCfg);
         ClientUtils.createJwtContent(header, new TokenPayload(new JwtConfig() , ""));
         verify(jwtCfg).getKid();
+    }
+
+    @Test
+    void testCreateSignature(){
+        byte[] byteArray = {0x01, 0x02, 0x03, 0x04};
+        SdkBytes sdkBytes = SdkBytes.fromByteArray(byteArray);
+        SignResponse signResponse = SignResponse.builder().signature(sdkBytes).keyId("keyId").build();
+        assertNotNull(ClientUtils.createSignature(signResponse));
     }
 
 }

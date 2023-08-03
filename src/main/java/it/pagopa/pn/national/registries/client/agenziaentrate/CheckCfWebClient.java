@@ -37,7 +37,7 @@ public class CheckCfWebClient extends CommonWebClient {
 
     public CheckCfWebClient(@Value("${pn.national.registries.webclient.ssl-cert-ver}") Boolean sslCertVer,
                             @Value("${pn.national.registries.ade-check-cf.base-path}") String basePath,
-                            @Value("${pn.national.registries.ssm.ade-check-cf.auth-channel}") String authChannelData,
+                            @Value("${pn.national.registries.ade.auth}") String authChannelData,
                             CheckCfWebClientConfig webClientConfig,
                             SsmParameterConsumerActivation ssmParameterConsumerActivation,
                             CheckCfSecretConfig checkCfSecretConfig,

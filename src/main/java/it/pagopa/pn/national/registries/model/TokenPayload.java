@@ -15,10 +15,12 @@ public class TokenPayload {
     long exp;
     String purposeId;
     private JwtDigest digest;
+    private static final long SECONDS_TO_ADD_TO_EXPIRE = 5000L;
+
 
     public TokenPayload(JwtConfig jwtCfg, String auditDigest) {
         long nowSeconds = System.currentTimeMillis() / 1000L;
-        long expireSeconds = nowSeconds + 5000L;
+        long expireSeconds = nowSeconds + SECONDS_TO_ADD_TO_EXPIRE;
 
         iss = jwtCfg.getIssuer();
         sub = jwtCfg.getSubject();

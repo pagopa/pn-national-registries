@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressErrorDto;
@@ -79,17 +80,19 @@ public class GatewayService extends GatewayConverter {
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddress(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         log.info("recipientType {} and domicileType {}", recipientType, addressRequestBodyDto.getFilter().getDomicileType());
         return switch (recipientType) {
-            case "PF" -> retrievePhysicalAddress(pnNationalRegistriesCxId, addressRequestBodyDto);
-            case "PG" -> retrieveDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto);
-            default -> {
-                log.warn("recipientType {} is not valid", recipientType);
-                throw new PnNationalRegistriesException("recipientType not valid", HttpStatus.BAD_REQUEST.value(),
-                        HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
-            }
+            case "PF" -> retrieveAddressForPF(pnNationalRegistriesCxId, addressRequestBodyDto);
+            case "PG" -> retrieveAddressForPG(pnNationalRegistriesCxId, addressRequestBodyDto);
+            default -> neitherPFAndPG(recipientType);
         };
     }
 
-    private Mono<AddressOKDto> retrievePhysicalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
+    private Mono<AddressOKDto> neitherPFAndPG(String recipientType){
+        log.warn("recipientType {} is not valid", recipientType);
+        throw new PnNationalRegistriesException("recipientType not valid", HttpStatus.BAD_REQUEST.value(),
+                HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
+    }
+
+    private Mono<AddressOKDto> retrieveAddressForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
 
         if (AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.equals(addressRequestBodyDto.getFilter().getDomicileType())) {
@@ -100,8 +103,8 @@ public class GatewayService extends GatewayConverter {
                     .onErrorResume(e -> sqsService.push(errorAnprToSqsDto(correlationId, e), pnNationalRegistriesCxId))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
-            return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto))
-                    .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, inadResponse), pnNationalRegistriesCxId))
+            return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), "PF")
+                    .flatMap(inadResponse -> sqsService.push(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.PERSONA_FISICA), pnNationalRegistriesCxId))
                     .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}",addressRequestBodyDto.getFilter().getCorrelationId(),MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId())))
                     .doOnError(e -> logEServiceError(e, "can not retrieve digital address from INAD: {}"))
                     .onErrorResume(e -> sqsService.push(errorInadToSqsDto(correlationId, e), pnNationalRegistriesCxId))
@@ -109,7 +112,7 @@ public class GatewayService extends GatewayConverter {
         }
     }
 
-    private Mono<AddressOKDto> retrieveDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
+    private Mono<AddressOKDto> retrieveAddressForPG(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
 
         if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {

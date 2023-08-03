@@ -6,7 +6,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.when;
 
 class ValidateTaxIdUtilsTest {
     private ValidateTaxIdUtils validateTaxIdUtils;
@@ -24,6 +26,12 @@ class ValidateTaxIdUtilsTest {
     @Test
     void testValidateTaxId() {
         assertThrows(PnNationalRegistriesException.class, () -> validateTaxIdUtils.validateTaxId("42","", false));
+    }
+
+    @Test
+    void testValidateTaxId2(){
+        when(validateUtils.validate("42", false)).thenReturn(true);
+        assertDoesNotThrow(() -> validateTaxIdUtils.validateTaxId("42","42",false));
     }
 }
 

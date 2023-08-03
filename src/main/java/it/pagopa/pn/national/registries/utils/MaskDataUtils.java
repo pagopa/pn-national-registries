@@ -5,9 +5,7 @@ import java.util.regex.Pattern;
 
 public class MaskDataUtils {
 
-    private MaskDataUtils(){}
-
-    private static final Pattern URI_CF_PATH = Pattern.compile("(/extract/|/legaleRappresentante/|/sede/)(.*?)(\\?)");
+    private static final Pattern CF_URI_PATH = Pattern.compile("(/extract/|/legaleRappresentante/|/sede/)(.*?)(\\?)");
     private static final Pattern ELENCO_CF = Pattern.compile("(\"elencoCf\")\\s*:\\s*\\[\"(.*?)\"");
     private static final Pattern TAX_ID = Pattern.compile("(\"taxId\"|\"legalTaxId\"|\"businessTaxId\"|\"cfPersona\"|\"cfImpresa\"|\"codice_fiscale\")\\s*:\\s*\"(.*?)\"");
     private static final Pattern ADDRESS_1 = Pattern.compile("(\"description\"|\"at\"|\"address\"|\"zip\"|\"municipality\"|" +
@@ -19,16 +17,22 @@ public class MaskDataUtils {
     private static final Pattern IDENTITY = Pattern.compile("(\"pecProfessionista\"|\"cf\"|\"codFiscale\"|\"codiceFiscale\"|" +
             "\"cognome\"|\"nome\"|\"sesso\"|\"dataNascita\")\\s*:\\s*\"(.*?)\"");
     private static final Pattern ACCESS_TOKEN = Pattern.compile("(\"access_token\")\\s*:\\s*\"(.*?)\"");
-
     private static final Pattern ELENCO_CF_NOT_JSON = Pattern.compile("(CF)\\s*=\\s*(.*)");
+    private static final Pattern CF_RAPPRESENTANTE = Pattern.compile(".*(<anag:cfRappresentante>)(.*)(</anag:cfRappresentante>).*");
+    private static final Pattern CF_ENTE = Pattern.compile(".*(<anag:cfEnte>)(.*)(</anag:cfEnte>).*");
 
+    private static final int STRING_LENGTH_UNDER_FOUR = 4;
+    private static final int REMOVE_LAST_THREE_CHARACTERS = 3;
+    private static final int NUMBER_GROUP_TO_BE_MATCHED = 2;
+
+    private MaskDataUtils(){}
 
     public static String maskInformation(String dataBuffered) {
         if (dataBuffered == null) {
             return null;
         }
 
-        dataBuffered = maskMatcher(URI_CF_PATH, dataBuffered);
+        dataBuffered = maskMatcher(CF_URI_PATH, dataBuffered);
         dataBuffered = maskMatcher(ELENCO_CF, dataBuffered);
         dataBuffered = maskMatcher(TAX_ID, dataBuffered);
         dataBuffered = maskMatcher(ADDRESS_1, dataBuffered);
@@ -37,6 +41,8 @@ public class MaskDataUtils {
         dataBuffered = maskMatcher(IDENTITY, dataBuffered);
         dataBuffered = maskMatcher(ACCESS_TOKEN, dataBuffered);
         dataBuffered = maskMatcher(ELENCO_CF_NOT_JSON,dataBuffered);
+        dataBuffered = maskMatcher(CF_RAPPRESENTANTE,dataBuffered);
+        dataBuffered = maskMatcher(CF_ENTE,dataBuffered);
 
         return dataBuffered;
     }
@@ -44,7 +50,7 @@ public class MaskDataUtils {
     private static String maskMatcher(Pattern pattern, String dataBuffered) {
         Matcher matcher = pattern.matcher(dataBuffered);
         while(matcher.find()){
-            String toBeMasked = matcher.group(2);
+            String toBeMasked = matcher.group(NUMBER_GROUP_TO_BE_MATCHED);
             String valueMasked = mask(toBeMasked);
             if(!toBeMasked.isBlank()){
                 dataBuffered = dataBuffered.replace(toBeMasked, valueMasked);
@@ -54,13 +60,15 @@ public class MaskDataUtils {
     }
 
     private static String mask(String unmasked) {
-        if(unmasked.contains(","))
+        if(unmasked.contains(",")){
             return maskAddress(unmasked);
-        else if(unmasked.contains("@"))
+        }
+        else if(unmasked.contains("@")) {
             return maskEmailAddress(unmasked);
-        else
+        }
+        else {
             return maskString(unmasked);
-
+        }
     }
 
     private static String maskAddress(String strAddress) {
@@ -80,17 +88,19 @@ public class MaskDataUtils {
 
     public static String maskString(String strText) {
         int start = 1;
-        int end = strText.length()-3;
+        int end = strText.length()-REMOVE_LAST_THREE_CHARACTERS;
         String maskChar = String.valueOf('*');
 
-        if(strText.equals(""))
+        if("".equals(strText)){
             return "";
-        if(strText.length() < 4){
+        }
+        if(strText.length() < STRING_LENGTH_UNDER_FOUR){
             end = strText.length();
         }
         int maskLength = end - start;
-        if(maskLength == 0)
+        if(maskLength == 0){
             return maskChar;
+        }
         String sbMaskString = maskChar.repeat(Math.max(0, maskLength));
         return strText.substring(0, start)
                 + sbMaskString
