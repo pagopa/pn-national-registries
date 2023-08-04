@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Component
 public class InfoCamereConverter {
@@ -104,7 +103,6 @@ public class InfoCamereConverter {
         GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
         getAddressRegistroImpreseOKDto.setTaxId(request.getFilter().getTaxId());
         getAddressRegistroImpreseOKDto.setDateTimeExtraction(new Date());
-        getAddressRegistroImpreseOKDto.setProfessionalAddress(new GetAddressRegistroImpreseOKProfessionalAddressDto());
         return getAddressRegistroImpreseOKDto;
     }
 
