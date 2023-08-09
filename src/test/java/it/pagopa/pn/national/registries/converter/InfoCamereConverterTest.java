@@ -149,7 +149,9 @@ class InfoCamereConverterTest {
         GetAddressRegistroImpreseOKDto response = infoCamereConverter.mapToResponseOkByRequest(getAddressRegistroImpreseRequestBodyDto);
 
         assertEquals("taxId", response.getTaxId());
-        assertNotNull(response.getProfessionalAddress());
+        assertNull(response.getProfessionalAddress());
+        assertNotNull(response.getTaxId());
+        assertNotNull(response.getDateTimeExtraction());
     }
 
     /**
