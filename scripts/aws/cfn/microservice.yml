@@ -355,6 +355,23 @@ Parameters:
   EnvironmentType:
     Type: String
     Description: environment name
+
+  NationalRegistryGatewayInputsQueueName:
+    Type: String
+    Description: 'Name for NationalRegistryGatewayInputs'
+
+  NationalRegistryGatewayInputsQueueARN:
+    Type: String
+    Description: 'ARN for NationalRegistryGatewayInputs'
+
+  NationalRegistryGatewayInputsDLQName:
+    Type: String
+    Description: 'Queue name for NationalRegistryGatewayInputsDLQ'
+
+  NationalRegistryGatewayInputsDLQARN:
+    Type: String
+    Description: 'DLQ ARN for NationalRegistryGatewayInputs'
+
 Resources:
 
   # PN-National-Registry microservice
@@ -415,6 +432,9 @@ Resources:
         ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_TRUST_SECRET=${AdELegalTrustSecret}'
         ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
         ContainerEnvEntry37: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
+        ContainerEnvEntry38: !Sub 'PN_NATIONAL_REGISTRY_TOPICS_GATEWAYEVENTS=${NationalRegistryGatewayInputsQueueName}'
+        ContainerEnvEntry39: !Sub 'PN_NATIONAL_REGISTRY_INPUT_QUEUE_NAME=${NationalRegistryGatewayInputsQueueName}'
+        ContainerEnvEntry40: !Sub 'PN_NATIONAL_REGISTRY_INPUT_DLQ_QUEUE_NAME=${NationalRegistryGatewayInputsDlqQueueName}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -467,8 +487,14 @@ Resources:
             Action:
               - sqs:SendMessage
               - sqs:GetQueueUrl
+              - sqs:ChangeMessageVisibility
+              - sqs:DeleteMessage
+              - sqs:GetQueueUrl
+              - sqs:ReceiveMessage
             Resource:
               - !Ref NationalRegistryGatewayOutputsQueueARN
+              - !Ref NationalRegistryGatewayInputsQueueARN
+              - !Ref NationalRegistryGatewayInputsDLQARN
           - Effect: Allow
             Action:
               - ssm:GetParameter

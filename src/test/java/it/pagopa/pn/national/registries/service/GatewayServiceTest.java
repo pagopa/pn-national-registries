@@ -4,7 +4,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import org.joda.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -53,6 +55,22 @@ class GatewayServiceTest {
     private static final String C_ID = "correlationId";
 
     @Test
+    void handleMessage(){
+        PnAddressGatewayEvent.Payload payload = PnAddressGatewayEvent.Payload.builder()
+                .correlationId("correlationId")
+                .taxId("taxid")
+                .pnNationalRegistriesCxId("cxId")
+                .recipientType("PF")
+                .domicileType("DIGITAL")
+                .build();
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId("correlationId");
+        when(inadService.callEService(any(), any())).thenReturn(Mono.just(new GetDigitalAddressINADOKDto()));
+        when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        StepVerifier.create(gatewayService.handleMessage(payload)).expectNext(addressOKDto).verifyComplete();
+    }
+
+    @Test
     @DisplayName("Test recipientType not valid")
     void testCheckFlag() {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
@@ -89,7 +107,7 @@ class GatewayServiceTest {
         when(anprService.getAddressANPR(any()))
                 .thenReturn(Mono.just(getAddressANPROKDto));
 
-        when(sqsService.push((CodeSqsDto) any(), any()))
+        when(sqsService.pushToOutputQueue((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -112,7 +130,7 @@ class GatewayServiceTest {
         when(anprService.getAddressANPR(any()))
                 .thenReturn(Mono.just(getAddressANPROKDto));
 
-        when(sqsService.push((CodeSqsDto) any(), any()))
+        when(sqsService.pushToOutputQueue((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -131,15 +149,14 @@ class GatewayServiceTest {
         when(anprService.getAddressANPR(any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        when(sqsService.push((CodeSqsDto) any(), any()))
+        when(sqsService.pushToInputDlqQueue((InternalCodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
-                .expectNext(addressOKDto)
-                .verifyComplete();
+                .expectError(RuntimeException.class);
     }
 
     @Test
@@ -152,7 +169,7 @@ class GatewayServiceTest {
         when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
-        when(sqsService.push((CodeSqsDto) any(), any()))
+        when(sqsService.pushToOutputQueue((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -171,15 +188,14 @@ class GatewayServiceTest {
         when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        when(sqsService.push((CodeSqsDto) any(), any()))
+        when(sqsService.pushToInputDlqQueue((InternalCodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
-                .expectNext(addressOKDto)
-                .verifyComplete();
+                .expectError(RuntimeException.class);
     }
 
     @Test
@@ -192,7 +208,7 @@ class GatewayServiceTest {
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
                 .thenReturn(Mono.just(getAddressRegistroImpreseOKDto));
 
-        when(sqsService.push((CodeSqsDto) any(), any()))
+        when(sqsService.pushToOutputQueue((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -210,15 +226,14 @@ class GatewayServiceTest {
 
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
                 .thenReturn(Mono.error(new RuntimeException()));
-        when(sqsService.push((CodeSqsDto) any(), any()))
+        when(sqsService.pushToInputDlqQueue((InternalCodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
-                .expectNext(addressOKDto)
-                .verifyComplete();
+                .expectError(RuntimeException.class);
     }
 
     @Test
@@ -235,7 +250,7 @@ class GatewayServiceTest {
         when(ipaService.getIpaPec(any()))
                 .thenReturn(Mono.just(ipaPecOKDto));
 
-        when(sqsService.push((CodeSqsDto) any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(sqsService.pushToOutputQueue((CodeSqsDto) any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
@@ -254,7 +269,7 @@ class GatewayServiceTest {
         when(ipaService.getIpaPec(any()))
                 .thenReturn(Mono.just(ipaPecOKDto));
 
-        when(infoCamereService.getIniPecDigitalAddress(any(),any())).thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
+        when(infoCamereService.getIniPecDigitalAddress(any(),any(), any())).thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
@@ -276,7 +291,7 @@ class GatewayServiceTest {
 
         when(ipaService.getIpaPec(any()))
                 .thenReturn(Mono.just(ipaPecOKDto));
-        when(sqsService.push((CodeSqsDto) any(), any()))
+        when(sqsService.pushToOutputQueue((CodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -294,7 +309,7 @@ class GatewayServiceTest {
         PnNationalRegistriesException exception = new PnNationalRegistriesException("", 400, "", null, null, null, null);
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
                 .thenReturn(Mono.error(exception));
-        when(sqsService.push((CodeSqsDto) any(), any()))
+        when(sqsService.pushToInputDlqQueue((InternalCodeSqsDto) any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();

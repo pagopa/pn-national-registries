@@ -301,6 +301,22 @@ Resources:
         HasDLQ:  "false"
         QueueHasAlarm:  "true"
 
+  # Coda per interna per memorizzare richieste al gateway
+  # NB: usati i valori di default per: DelaySeconds, DeadLetterQueueName, MessageRetentionPeriod, MaxReceiveCount, DeadLetterMessageRetentionPeriod,
+  PnNationalRegistryGatewayInputsQueue:
+    Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
+      Parameters:
+        QueueName: !Sub '${ProjectName}-national_registry_gateway_inputs'
+        HasDLQ: "true"
+        AlarmSNSTopicName: !Ref AlarmSNSTopicName
+        VisibilityTimeout: 1800
+        MaxReceiveCount: 10
+        DelaySeconds: 1
+
 #Necessario a causa di bug script deploy
 Outputs:
   PnBatchRequestEncryptKeyARN:
@@ -350,3 +366,15 @@ Outputs:
     Value: !GetAtt PnNationalRegistriesCertificateDLQ.Outputs.QueueARN
   PnNationalRegistriesCertificateDLQAlarmARN:
     Value: !GetAtt PnNationalRegistriesCertificateDLQ.Outputs.SqsDLQAlarmArn
+
+  # PnNationalRegistryGatewayInputs Queue
+  NationalRegistryGatewayInputsQueueName:
+    Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.QueueName
+  NationalRegistryGatewayInputsQueueARN:
+    Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.QueueARN
+  NationalRegistryGatewayInputsDLQName:
+    Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueName
+  PnNationalRegistryGatewayInputsDLQURL:
+    Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueURL
+  NationalRegistryGatewayInputsDLQARN:
+    Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueARN

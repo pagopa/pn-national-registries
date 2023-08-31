@@ -10,12 +10,15 @@ import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImp
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.Date;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
 
@@ -41,11 +44,11 @@ public class InfoCamereService {
         this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
-    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto) {
+    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto, Date referenceRequestDate) {
         String cf = dto.getFilter().getTaxId();
         String correlationId = dto.getFilter().getCorrelationId();
         validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_INIPEC_PEC, false);
-        return createBatchRequestByCf(pnNationalRegistriesCxId, dto)
+        return createBatchRequestByCf(pnNationalRegistriesCxId, dto, MDC.get("AWS_messageId"), referenceRequestDate)
                 .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(cf), correlationId))
                 .doOnError(throwable -> log.info("Failed to create Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(cf), correlationId))
                 .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
@@ -79,11 +82,15 @@ public class InfoCamereService {
         }
     }
 
-    public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto) {
+    public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto, String messageId, Date referenceRequestDate) {
         BatchRequest batchRequest = createNewStartBatchRequest();
         batchRequest.setCorrelationId(dto.getFilter().getCorrelationId());
         batchRequest.setCf(dto.getFilter().getTaxId());
         batchRequest.setClientId(pnNationalRegistriesCxId);
+        batchRequest.setAwsMessageId(messageId);
+        if (referenceRequestDate != null) {
+            batchRequest.setReferenceRequestDate(referenceRequestDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+        }
         return iniPecBatchRequestRepository.create(batchRequest);
     }
 

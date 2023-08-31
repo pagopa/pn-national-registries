@@ -13,6 +13,7 @@ public enum BatchStatus {
     WORKING("WORKING"),
     WORKED("WORKED"),
     ERROR("ERROR"),
+    SENT_TO_DLQ ("SENT_TO_DLQ"),
     SENT("SENT"),
     NOT_SENT("NOT_SENT");
     private final String value;

@@ -67,7 +67,7 @@ class InfoCamereServiceTest {
         when(infoCamereConverter.convertToGetAddressIniPecOKDto(any()))
                 .thenReturn(getDigitalAddressIniPECOKDto);
 
-        StepVerifier.create(infoCamereService.getIniPecDigitalAddress("clientId", requestBodyDto))
+        StepVerifier.create(infoCamereService.getIniPecDigitalAddress("clientId", requestBodyDto, null))
                 .expectNext(getDigitalAddressIniPECOKDto)
                 .verifyComplete();
     }
