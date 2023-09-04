@@ -91,8 +91,8 @@ public class IniPecBatchSqsService {
                                 e -> log.info("PG - DigitalAddress - conditional check failed - skip correlationId: {}", item.getCorrelationId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .flatMap(item -> {
-                    CodeSqsDto codeSqsDto = sqsService.toObject(item.getMessage(), CodeSqsDto.class);
                     if (!BatchStatus.ERROR.getValue().equalsIgnoreCase(item.getStatus())) {
+                        CodeSqsDto codeSqsDto = sqsService.toObject(item.getMessage(), CodeSqsDto.class);
                         return sqsService.pushToOutputQueue(codeSqsDto, item.getClientId())
                                 .thenReturn(item)
                                 .doOnNext(r -> {
