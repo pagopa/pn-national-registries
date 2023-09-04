@@ -247,37 +247,10 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}", request.getCorrelationId(), MaskDataUtils.maskString(request.getCf())))
                 .onErrorResume(e -> {
                     logEServiceError(e);
-                    CodeSqsDto codeSqsDto = errorInadToSqsDto(request.getCorrelationId(), e);
-                    if(e instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST) {
-                        request.setStatus(BatchStatus.ERROR.getValue());
-                        request.setMessage(convertCodeSqsDtoToString(codeSqsDto));
-                    }else {
-                        incrementAndCheckRetryInad(request, e);
-                    }
+                    request.setStatus(BatchStatus.ERROR.getValue());
                     return Mono.empty();
                 }).block();
     }
-
-    private Mono<Void> incrementAndCheckRetryInad(BatchRequest request, Throwable throwable) {
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        int nextRetry = request.getRetry() != null ? request.getRetry() + 1 : 1;
-        request.setRetry(nextRetry);
-        if (nextRetry >= maxRetry || throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST) {
-            request.setStatus(BatchStatus.ERROR.getValue());
-            request.setSendStatus(BatchStatus.ERROR.getValue());
-            request.setLastReserved(now);
-            log.debug("IniPEC - batchId {} - request {} status in {} (retry: {})", request.getBatchId(), request.getCorrelationId(), request.getStatus(), request.getRetry());
-        }
-        return batchRequestRepository.update(request)
-                .doOnNext(r -> log.debug("IniPEC - batchId {} - retry incremented for correlationId: {}", request.getBatchId(), r.getCorrelationId()))
-                .doOnError(e -> log.warn("IniPEC - batchId {} - failed to increment retry", request.getBatchId(), e))
-                .filter(r -> BatchStatus.ERROR.getValue().equals(r.getStatus()))
-                .flatMap(l -> {
-                    log.debug("IniPEC - there is at least one request in ERROR - call batch to send to SQS");
-                    return iniPecBatchSqsService.sendToDlqQueue(request);
-                });
-    }
-
     private Function<BatchRequest, CodeSqsDto> getSqsOk(IniPecPollingResponse response) {
         return request -> infoCamereConverter.convertResponsePecToCodeSqsDto(request, response);
     }
