@@ -273,6 +273,10 @@ Parameters:
     Type: Number
     Default: 2
 
+  HealthCheckPath:
+    Type: String
+    Default: '/actuator/health'
+
   # Instance parameters
   # 256 (.25 vCPU) - Available memory values: 0.5GB, 1GB, 2GB
   # 512 (.5 vCPU) - Available memory values: 1GB, 2GB, 3GB, 4GB
@@ -392,7 +396,7 @@ Resources:
         MaxTasksNumber: !Ref MaxTasksNumber
         AutoscalingDataPointN: !Ref AutoscalingDataPointN
         AutoscalingDataPointM: !Ref AutoscalingDataPointM
-        HealthCheckPath: /actuator/health
+        HealthCheckPath: !Ref HealthCheckPath
         AutoscalingStrategy: REST-API
         MicroServiceUniqueName: !Sub '${ProjectName}-national-registries'
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
@@ -435,6 +439,7 @@ Resources:
         ContainerEnvEntry38: !Sub 'PN_NATIONAL_REGISTRY_TOPICS_GATEWAYEVENTS=${NationalRegistryGatewayInputsQueueName}'
         ContainerEnvEntry39: !Sub 'PN_NATIONAL_REGISTRY_INPUT_QUEUE_NAME=${NationalRegistryGatewayInputsQueueName}'
         ContainerEnvEntry40: !Sub 'PN_NATIONAL_REGISTRY_INPUT_DLQ_QUEUE_NAME=${NationalRegistryGatewayInputsDlqQueueName}'
+        ContainerEnvEntry41: !Sub 'PN_NATIONAL_REGISTRY_HEALTH_CHECK_PATH=${HealthCheckPath}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
