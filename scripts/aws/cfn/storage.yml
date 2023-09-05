@@ -311,7 +311,6 @@ Resources:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
       Parameters:
         QueueName: !Sub '${ProjectName}-national_registry_gateway_inputs'
-        HasDLQ: "true"
         AlarmSNSTopicName: !Ref AlarmSNSTopicName
         VisibilityTimeout: 1800
         MaxReceiveCount: 10
