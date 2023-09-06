@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 import java.nio.file.Paths;
 import java.util.function.Function;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -23,6 +24,7 @@ import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.mock.http.server.reactive.MockServerHttpResponse;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.WebFilterChain;
@@ -33,11 +35,16 @@ import org.springframework.web.server.session.WebSessionManager;
 import reactor.core.publisher.Mono;
 
 @ExtendWith(MockitoExtension.class)
+@TestPropertySource(properties = "pn.national.registries.health-check-path=/health-check")
 class RequestResponseLoggingFilterTest {
 
     @InjectMocks
     private RequestResponseLoggingFilter requestResponseLoggingFilter;
 
+    @BeforeEach
+    void setUp() {
+        requestResponseLoggingFilter = new RequestResponseLoggingFilter("health-check-path");
+    }
     /**
      * Method under test: {@link RequestResponseLoggingFilter#filter(ServerWebExchange, WebFilterChain)}
      */
