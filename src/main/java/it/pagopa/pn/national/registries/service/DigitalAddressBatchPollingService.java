@@ -55,9 +55,9 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private final int maxRetry;
     private final int inProgressMaxRetry;
+    private final String batchRequestPkSeparator;
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
-    private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress.";
     private static final Pattern PEC_REQUEST_IN_PROGRESS_PATTERN = Pattern.compile(".*(List PEC in progress).*");
 
     public DigitalAddressBatchPollingService(InfoCamereConverter infoCamereConverter,
@@ -67,7 +67,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                                              IniPecBatchSqsService iniPecBatchSqsService,
                                              InadService inadService,
                                              @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
-                                             @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry) {
+                                             @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry,
+                                             @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator) {
         this.infoCamereConverter = infoCamereConverter;
         this.batchRequestRepository = batchRequestRepository;
         this.batchPollingRepository = batchPollingRepository;
@@ -76,6 +77,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         this.inadService = inadService;
         this.maxRetry = maxRetry;
         this.inProgressMaxRetry = inProgressMaxRetry;
+        this.batchRequestPkSeparator = batchRequestPkSeparator;
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
@@ -247,7 +249,10 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private void callInadEservice(BatchRequest request) {
         inadService.callEService(convertToGetDigitalAddressInadRequest(request), "PG")
-                .doOnNext(inadResponse -> request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(request.getCorrelationId(), inadResponse, DigitalAddressRecipientType.IMPRESA))))
+                .doOnNext(inadResponse -> {
+                    String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
+                    request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.IMPRESA)));
+                })
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}", request.getCorrelationId(), MaskDataUtils.maskString(request.getCf())))
                 .onErrorResume(e -> {
                     logEServiceError(e);

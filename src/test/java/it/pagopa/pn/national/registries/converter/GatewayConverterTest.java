@@ -357,7 +357,7 @@ class GatewayConverterTest {
 
         InfoCamereClient infoCamereClient = mock(InfoCamereClient.class);
         InfoCamereService infoCamereService = new InfoCamereService(infoCamereClient,
-                new InfoCamereConverter(2L), iniPecBatchRequestRepository, 2L, validateTaxIdUtils);
+                new InfoCamereConverter(2L, "~"), iniPecBatchRequestRepository, 2L, "~", validateTaxIdUtils);
 
         InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils);
         PnNationalRegistriesSecretService pnNationalRegistriesSecretService = new PnNationalRegistriesSecretService(new CachedSecretsManagerConsumer(mock(SecretsManagerClient.class)));

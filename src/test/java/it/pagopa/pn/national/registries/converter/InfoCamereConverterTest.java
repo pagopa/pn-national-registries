@@ -32,7 +32,8 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.CollectionUtils;
 
 @TestPropertySource(properties = {
-        "pn.national.registries.inipec.ttl=0"
+        "pn.national.registries.inipec.ttl=0",
+        "pn.national.registries.inipec.batchrequest.pk.separator=~"
 })
 @ContextConfiguration(classes = InfoCamereConverter.class)
 @ExtendWith(SpringExtension.class)

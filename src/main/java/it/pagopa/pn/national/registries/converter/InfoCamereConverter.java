@@ -31,9 +31,12 @@ import java.util.List;
 @Component
 public class InfoCamereConverter {
     private final long iniPecTtl;
+    private final String batchRequestPkSeparator;
     
-    public InfoCamereConverter(@Value("${pn.national.registries.inipec.ttl}") long iniPecTtl) {
+    public InfoCamereConverter(@Value("${pn.national.registries.inipec.ttl}") long iniPecTtl,
+                               @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator) {
         this.iniPecTtl = iniPecTtl;
+        this.batchRequestPkSeparator = batchRequestPkSeparator;
     }
 
     public GetDigitalAddressIniPECOKDto convertToGetAddressIniPecOKDto(BatchRequest requestCorrelation) {
@@ -63,7 +66,7 @@ public class InfoCamereConverter {
 
     public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId());
+        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0]);
         List<Pec> pecs = iniPecPollingResponse.getElencoPec();
         pecs.stream()
                 .filter(p -> p.getCf().equalsIgnoreCase(batchRequest.getCf()))
@@ -76,7 +79,7 @@ public class InfoCamereConverter {
 
     public CodeSqsDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(request.getCorrelationId());
+        codeSqsDto.setCorrelationId(request.getCorrelationId().split(batchRequestPkSeparator)[0]);
         if (error != null) {
             codeSqsDto.setError(error);
         } else {

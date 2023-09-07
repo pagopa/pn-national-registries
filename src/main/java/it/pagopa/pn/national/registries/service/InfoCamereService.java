@@ -28,17 +28,20 @@ public class InfoCamereService {
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
     private final long iniPecTtl;
     private final ValidateTaxIdUtils validateTaxIdUtils;
+    private final String batchRequestPkSeparator;
 
     public InfoCamereService(InfoCamereClient infoCamereClient,
                              InfoCamereConverter infoCamereConverter,
                              IniPecBatchRequestRepository iniPecBatchRequestRepository,
                              @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl,
+                             @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator,
                              ValidateTaxIdUtils validateTaxIdUtils) {
         this.infoCamereClient = infoCamereClient;
         this.infoCamereConverter = infoCamereConverter;
         this.iniPecBatchRequestRepository = iniPecBatchRequestRepository;
         this.iniPecTtl = iniPecTtl;
         this.validateTaxIdUtils = validateTaxIdUtils;
+        this.batchRequestPkSeparator = batchRequestPkSeparator;
     }
 
     public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto) {
@@ -81,7 +84,7 @@ public class InfoCamereService {
 
     public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto) {
         BatchRequest batchRequest = createNewStartBatchRequest();
-        batchRequest.setCorrelationId(dto.getFilter().getCorrelationId());
+        batchRequest.setCorrelationId(dto.getFilter().getCorrelationId() + batchRequestPkSeparator + batchRequest.getCreatedAt());
         batchRequest.setCf(dto.getFilter().getTaxId());
         batchRequest.setClientId(pnNationalRegistriesCxId);
         return iniPecBatchRequestRepository.create(batchRequest);
