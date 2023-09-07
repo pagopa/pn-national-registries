@@ -14,6 +14,7 @@ import org.opensaml.security.credential.CredentialSupport;
 import org.opensaml.xmlsec.signature.*;
 import org.opensaml.xmlsec.signature.support.SignatureConstants;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import javax.security.auth.x500.X500Principal;
 import java.nio.charset.StandardCharsets;
@@ -31,7 +32,9 @@ import static it.pagopa.pn.national.registries.utils.XMLWriterConstant.SOAP_ENV_
 @Slf4j
 public class SAMLAssertionWriter {
 
-    static final Pattern pattern = Pattern.compile(".*Root=(.*);P.*");
+    static final Pattern patternRoot = Pattern.compile(".*Root=(.*);P.*");
+    static final Pattern patternTraceId = Pattern.compile("traceId:(.*)");
+
     private final OpenSAMLUtils openSAMLUtils;
     private final X509CertificateUtils x509CertificateUtils;
     private final String clientId;
@@ -70,9 +73,15 @@ public class SAMLAssertionWriter {
     private AttributeStatement getAttributeStatements() {
         String traceId = "unknown";
         String allTraceId  = MDCUtils.retrieveMDCContextMap().get(MDC_TRACE_ID_KEY);
-        final Matcher matcher = pattern.matcher(allTraceId);
-        if(matcher.find()) {
-            traceId = matcher.group(1);
+        if (StringUtils.hasText(allTraceId)) {
+            final Matcher matcherRoot = patternRoot.matcher(allTraceId);
+            final Matcher matcherTraceId = patternTraceId.matcher(allTraceId);
+            if (matcherRoot.find()) {
+                traceId = matcherRoot.group(1);
+            }
+            else if (matcherTraceId.find()) {
+                traceId = matcherTraceId.group(1);
+            }
         }
         AttributeStatement attrStatement = (AttributeStatement) openSAMLUtils.buildSAMLObject(AttributeStatement.DEFAULT_ELEMENT_NAME, null);
         attrStatement.getAttributes().add(getAttribute("User", traceId));

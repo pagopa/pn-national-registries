@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -17,9 +18,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import reactor.util.context.Context;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.nio.charset.Charset;
+import java.util.Map;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_CX_ID_FLAG;
 
@@ -33,6 +36,7 @@ public class GatewayService extends GatewayConverter {
     private final IpaService ipaService;
     private final SqsService sqsService;
     private final boolean pnNationalRegistriesCxIdFlag;
+    private static final String CORRELATION_ID = "correlationId";
 
     public GatewayService(AnprService anprService,
                           InadService inadService,
@@ -50,7 +54,7 @@ public class GatewayService extends GatewayConverter {
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto request) {
         checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
         String correlationId = request.getFilter().getCorrelationId();
-        MDC.put("correlationId", correlationId);
+        MDC.put(CORRELATION_ID, correlationId);
         sqsService.pushToInputQueue(InternalCodeSqsDto.builder()
                 .taxId(request.getFilter().getTaxId())
                 .correlationId(request.getFilter().getCorrelationId())
@@ -65,7 +69,30 @@ public class GatewayService extends GatewayConverter {
 
     public Mono<AddressOKDto> handleMessage(PnAddressGatewayEvent.Payload payload) {
         AddressRequestBodyDto addressRequestBodyDto = toAddressRequestBodyDto(payload);
-        return retrieveDigitalOrPhysicalAddress(payload.getRecipientType(), payload.getPnNationalRegistriesCxId(), addressRequestBodyDto);
+        return retrieveDigitalOrPhysicalAddress(payload.getRecipientType(), payload.getPnNationalRegistriesCxId(), addressRequestBodyDto)
+                .contextWrite(ctx -> enrichFluxContext(ctx, MDCUtils.retrieveMDCContextMap()));
+    }
+
+    private Context enrichFluxContext(Context ctx, Map<String, String> mdcCtx) {
+        if (mdcCtx != null) {
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_TRACE_ID_KEY, mdcCtx.get(MDCUtils.MDC_TRACE_ID_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_JTI_KEY, mdcCtx.get(MDCUtils.MDC_JTI_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_PN_UID_KEY, mdcCtx.get(MDCUtils.MDC_PN_UID_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_CX_ID_KEY, mdcCtx.get(MDCUtils.MDC_CX_ID_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_PN_CX_TYPE_KEY, mdcCtx.get(MDCUtils.MDC_PN_CX_TYPE_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_PN_CX_GROUPS_KEY, mdcCtx.get(MDCUtils.MDC_PN_CX_GROUPS_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_PN_CX_ROLE_KEY, mdcCtx.get(MDCUtils.MDC_PN_CX_ROLE_KEY));
+            ctx = addToFluxContext(ctx, MDCUtils.MDC_PN_CTX_MESSAGE_ID, mdcCtx.get(MDCUtils.MDC_PN_CTX_MESSAGE_ID));
+            ctx = addToFluxContext(ctx, CORRELATION_ID, mdcCtx.get(CORRELATION_ID));
+        }
+        return ctx;
+    }
+
+    private Context addToFluxContext(Context ctx, String key, String value) {
+        if (value != null) {
+            ctx = ctx.put(key, value);
+        }
+        return ctx;
     }
 
     private AddressRequestBodyDto toAddressRequestBodyDto(PnAddressGatewayEvent.Payload payload) {

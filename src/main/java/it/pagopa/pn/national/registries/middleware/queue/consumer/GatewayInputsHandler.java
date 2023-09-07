@@ -23,7 +23,6 @@ public class GatewayInputsHandler {
         return message -> {
             log.logStartingProcess(HANDLER_PROCESS);
             log.debug(HANDLER_PROCESS + "- message: {}", message);
-            MDC.put("AWS_messageId", String.valueOf(message.getHeaders().get("aws_messageId")));
             MDC.put("correlationId", message.getPayload().getCorrelationId());
             gatewayService.handleMessage(message.getPayload())
                     .doOnNext(addressOKDto -> log.logEndingProcess(HANDLER_PROCESS))
