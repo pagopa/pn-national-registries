@@ -185,7 +185,7 @@ class IniPecBatchRequestServiceTest {
         verifyNoInteractions(batchPollingRepository);
         verifyNoInteractions(iniPecBatchSqsService);
         assertEquals(1, batchRequest.getRetry());
-        assertEquals(BatchStatus.WORKING.getValue(), batchRequest.getStatus());
+        assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), batchRequest.getStatus());
         assertNull(batchRequest.getSendStatus());
     }
 

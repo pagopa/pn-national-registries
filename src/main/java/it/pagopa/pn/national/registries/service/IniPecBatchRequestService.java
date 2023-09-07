@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -26,7 +27,6 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
@@ -112,7 +112,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return Flux.fromStream(items.stream())
                 .doOnNext(item -> {
-                    item.setStatus(BatchStatus.WORKING.getValue());
+                    item.setStatus(BatchStatus.TAKEN_CHARGE.getValue());
                     item.setBatchId(batchId);
                     item.setLastReserved(now);
                 })
@@ -158,9 +158,23 @@ public class IniPecBatchRequestService extends GatewayConverter {
         String pollingId = response.getIdentificativoRichiesta();
         log.info("IniPEC - batchId {} - creating BatchPolling with pollingId: {}", batchId, pollingId);
         return batchPollingRepository.create(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId))
-                .doOnNext(polling -> log.debug("IniPEC - batchId {} - created BatchPolling with pollingId: {}", batchId, pollingId))
-                .doOnError(e -> log.warn("IniPEC - batchId {} - failed to create BatchPolling with pollingId: {}", batchId, pollingId, e))
-                .then();
+                .flatMap(polling -> {
+                    log.debug("IniPEC - batchId {} - created BatchPolling with pollingId: {}", batchId, pollingId);
+                    return setBatchRequestStatusToWorking(batchId);
+                })
+                .doOnError(e -> log.warn("IniPEC - batchId {} - failed to create BatchPolling with pollingId: {}", batchId, pollingId, e));
+    }
+
+    private Mono<Void> setBatchRequestStatusToWorking(String batchId) {
+            return batchRequestRepository.getBatchRequestByBatchIdAndStatus(batchId, BatchStatus.TAKEN_CHARGE)
+                    .doOnNext(requests -> log.debug("IniPEC - batchId {} - updating {} requests in status {}", batchId, requests.size(), BatchStatus.WORKING))
+                    .flatMapIterable(requests -> requests)
+                    .doOnNext(request -> request.setStatus(BatchStatus.WORKING.getValue()))
+                    .flatMap(batchRequestRepository::update)
+                    .doOnNext(r -> log.debug("IniPEC - correlationId {} - set status in {}", r.getCorrelationId(), r.getStatus()))
+                    .doOnError(e -> log.warn("IniPEC - batchId {} - failed to set request in status {}", batchId, BatchStatus.WORKING, e))
+                    .collectList()
+                    .then();
     }
 
     private Mono<Void> incrementAndCheckRetry(List<BatchRequest> requests, Throwable throwable, String batchId) {
@@ -179,7 +193,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                         CodeSqsDto sqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(r, error);
                         r.setMessage(convertCodeSqsDtoToString(sqsDto));
                         r.setStatus(BatchStatus.ERROR.getValue());
-                        r.setSendStatus(BatchStatus.NOT_SENT.getValue());
+                        r.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
                         r.setLastReserved(now);
                         log.debug("IniPEC - batchId {} - request {} status in {} (retry: {})", batchId, r.getCorrelationId(), r.getStatus(), r.getRetry());
                     }

@@ -34,13 +34,15 @@ class IniPecBatchPollingRepositoryImplTest {
     private DynamoDbAsyncTable<Object> dynamoDbAsyncTable;
 
     private static final int RETRY = 3;
+
+    private static final int RETRY_IN_PROGRESS = 24;
     private static final int AFTER = 60;
 
     @Test
     void testUpdate() {
         when(dynamoDbEnhancedAsyncClient.table(any(), any()))
                 .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
+        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
 
@@ -56,7 +58,7 @@ class IniPecBatchPollingRepositoryImplTest {
     void testCreate() {
         when(dynamoDbEnhancedAsyncClient.table(any(), any()))
                 .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
+        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
         CompletableFuture<Void> completableFuture = new CompletableFuture<>();
@@ -73,7 +75,7 @@ class IniPecBatchPollingRepositoryImplTest {
     void testGetBatchPollingWithoutReservationIdAndStatusNotWorked() {
         when(dynamoDbEnhancedAsyncClient.table(any(), any()))
                 .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository iniPecBatchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
+        IniPecBatchPollingRepository iniPecBatchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         Map<String, AttributeValue> lastKey = new HashMap<>();
         lastKey.put("chiave", AttributeValue.builder().s("valore").build());
@@ -93,7 +95,7 @@ class IniPecBatchPollingRepositoryImplTest {
     void testSetNewReservationIdToBatchPolling() {
         when(dynamoDbEnhancedAsyncClient.table(any(), any()))
                 .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
+        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
 
@@ -109,7 +111,7 @@ class IniPecBatchPollingRepositoryImplTest {
     void testResetBatchRequestForRecovery1() {
         when(dynamoDbEnhancedAsyncClient.table(any(), any()))
                 .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
+        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setLastReserved(LocalDateTime.now());
@@ -126,7 +128,7 @@ class IniPecBatchPollingRepositoryImplTest {
     void testResetBatchRequestForRecovery2() {
         when(dynamoDbEnhancedAsyncClient.table(any(), any()))
                 .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
+        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
 
@@ -142,7 +144,7 @@ class IniPecBatchPollingRepositoryImplTest {
     void testGetBatchPollingToRecover() {
         when(dynamoDbEnhancedAsyncClient.table(any(), any()))
                 .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
+        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
 

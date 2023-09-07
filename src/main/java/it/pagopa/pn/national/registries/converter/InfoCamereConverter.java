@@ -55,6 +55,7 @@ public class InfoCamereConverter {
         batchPolling.setPollingId(pollingId);
         batchPolling.setStatus(BatchStatus.NOT_WORKED.getValue());
         batchPolling.setRetry(0);
+        batchPolling.setInProgressRetry(0);
         batchPolling.setCreatedAt(now);
         batchPolling.setTtl(now.plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
         return batchPolling;

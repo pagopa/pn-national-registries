@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
@@ -35,7 +36,6 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 import java.util.function.Function;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -54,6 +54,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final InadService inadService;
 
     private final int maxRetry;
+    private final int inProgressMaxRetry;
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
     private static final String PEC_REQUEST_IN_PROGRESS_MESSAGE = "List PEC in progress.";
@@ -65,7 +66,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                                              InfoCamereClient infoCamereClient,
                                              IniPecBatchSqsService iniPecBatchSqsService,
                                              InadService inadService,
-                                             @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry) {
+                                             @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
+                                             @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry) {
         this.infoCamereConverter = infoCamereConverter;
         this.batchRequestRepository = batchRequestRepository;
         this.batchPollingRepository = batchPollingRepository;
@@ -73,6 +75,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         this.iniPecBatchSqsService = iniPecBatchSqsService;
         this.inadService = inadService;
         this.maxRetry = maxRetry;
+        this.inProgressMaxRetry = inProgressMaxRetry;
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
@@ -162,17 +165,14 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                         log.info("IniPEC - batchId {} - pollingId {} - response pec size: {}", batchId, pollingId, response.getElencoPec().size());
                     }
                 })
-                .onErrorResume(isPollingResponseNotReady, e -> {
-                    log.info("IniPEC - batchId {} - pollingId {} - " + PEC_REQUEST_IN_PROGRESS_MESSAGE, batchId, pollingId);
-                    return Mono.empty();
-                })
                 .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e));
     }
 
-    private final Predicate<Throwable> isPollingResponseNotReady = throwable ->
-            throwable instanceof PnNationalRegistriesException exception
-                    && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                    && checkPecRequestInProgressPattern(exception.getMessage());
+    private boolean isPollingResponseNotReady(Throwable throwable) {
+        return throwable instanceof PnNationalRegistriesException exception
+                && exception.getStatusCode() == HttpStatus.NOT_FOUND
+                && checkPecRequestInProgressPattern(exception.getMessage());
+    }
 
     private boolean checkPecRequestInProgressPattern(String message) {
         if(message == null) {
@@ -193,8 +193,13 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private Mono<Void> incrementAndCheckRetry(BatchPolling polling, Throwable throwable) {
         int nextRetry = polling.getRetry() != null ? polling.getRetry() + 1 : 1;
-        polling.setRetry(nextRetry);
-        if (nextRetry >= maxRetry) {
+        int inProgressNextRetry = polling.getInProgressRetry() != null ? polling.getInProgressRetry() + 1 : 1;
+        if(isPollingResponseNotReady(throwable)){
+            polling.setInProgressRetry(inProgressNextRetry);
+        }else{
+            polling.setRetry(nextRetry);
+        }
+        if (nextRetry >= maxRetry || inProgressNextRetry >= inProgressMaxRetry) {
             polling.setStatus(BatchStatus.ERROR.getValue());
             log.debug("IniPEC - batchId {} - polling {} status in {} (retry: {})", polling.getBatchId(), polling.getPollingId(), polling.getStatus(), polling.getRetry());
         }
@@ -229,7 +234,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                         request.setEservice(EService.INIPEC.name());
                     }
                     request.setStatus(status.getValue());
-                    request.setSendStatus(BatchStatus.NOT_SENT.getValue());
+                    request.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
                     request.setLastReserved(now);
                 })
                 .flatMap(batchRequestRepository::update)

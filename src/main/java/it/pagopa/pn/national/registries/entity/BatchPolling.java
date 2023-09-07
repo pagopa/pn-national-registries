@@ -31,6 +31,11 @@ public class BatchPolling {
     private Integer retry;
 
     @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_RETRY_IN_PROGRESS)
+    }))
+    private Integer inProgressRetry;
+
+    @Getter(onMethod = @__({
             @DynamoDbAttribute(COL_TTL)
     }))
     private Long ttl;

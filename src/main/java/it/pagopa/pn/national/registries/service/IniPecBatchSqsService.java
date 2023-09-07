@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
@@ -90,7 +90,7 @@ public class IniPecBatchSqsService {
                         .doOnNext(r -> log.info("PG - DigitalAddress - pushed message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf())))
                         .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()), e))
                         .onErrorResume(e -> Mono.empty()))
-                .doOnNext(item -> item.setSendStatus(BatchStatus.SENT.getValue()))
+                .doOnNext(item -> item.setSendStatus(BatchSendStatus.SENT.getValue()))
                 .flatMap(batchRequestRepository::update)
                 .then();
     }

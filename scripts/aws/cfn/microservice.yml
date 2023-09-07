@@ -240,6 +240,11 @@ Parameters:
     Description: 'IniPEC batch polling max retry'
     Default: 3
 
+  PnNationalRegistriesInipecBatchPollingInProgressMaxRetry:
+    Type: Number
+    Description: 'IniPEC batch polling in progress max retry'
+    Default: 0
+
   PnNationalRegistriesInipecBatchSqsRecoveryDelay:
     Type: Number
     Description: 'IniPEC batch SQS recovery delay'
@@ -415,6 +420,7 @@ Resources:
         ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_TRUST_SECRET=${AdELegalTrustSecret}'
         ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
         ContainerEnvEntry37: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
+        ContainerEnvEntry38: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_INPROGRESS_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'

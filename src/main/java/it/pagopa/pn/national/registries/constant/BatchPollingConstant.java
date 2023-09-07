@@ -10,6 +10,8 @@ public final class BatchPollingConstant {
 
     public static final String COL_POLLING_ID = "pollingId";
     public static final String COL_RETRY = "retry";
+
+    public static final String COL_RETRY_IN_PROGRESS = "inProgressRetry";
     public static final String COL_TTL = "ttl";
     public static final String COL_STATUS = "status";
     public static final String COL_RESERVATION_ID = "reservationId";

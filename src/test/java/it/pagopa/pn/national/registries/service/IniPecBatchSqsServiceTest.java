@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import org.junit.jupiter.api.Test;
@@ -89,17 +89,17 @@ class IniPecBatchSqsServiceTest {
 
         StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(batchRequest)))
                 .verifyComplete();
-        assertEquals(BatchStatus.SENT.getValue(), batchRequest.getSendStatus());
+        assertEquals(BatchSendStatus.SENT.getValue(), batchRequest.getSendStatus());
     }
 
     @Test
     void testBatchSendToSqsKo() {
         BatchRequest batchRequest1 = new BatchRequest();
-        batchRequest1.setSendStatus(BatchStatus.NOT_SENT.getValue());
+        batchRequest1.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
         BatchRequest batchRequest2 = new BatchRequest();
-        batchRequest2.setSendStatus(BatchStatus.NOT_SENT.getValue());
+        batchRequest2.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
         BatchRequest batchRequest3 = new BatchRequest();
-        batchRequest3.setSendStatus(BatchStatus.NOT_SENT.getValue());
+        batchRequest3.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
         batchRequest3.setMessage("message");
         batchRequest3.setClientId("clientId");
         batchRequest3.setCf("cf");
@@ -118,9 +118,9 @@ class IniPecBatchSqsServiceTest {
         StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(batchRequest1, batchRequest2, batchRequest3)))
                 .verifyComplete();
 
-        assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest1.getSendStatus());
-        assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest2.getSendStatus());
-        assertEquals(BatchStatus.SENT.getValue(), batchRequest3.getSendStatus());
+        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest1.getSendStatus());
+        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest2.getSendStatus());
+        assertEquals(BatchSendStatus.SENT.getValue(), batchRequest3.getSendStatus());
         verify(batchRequestRepository).update(same(batchRequest3));
         verify(sqsService).push("message", "clientId");
     }
