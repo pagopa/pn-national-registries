@@ -12,7 +12,7 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
@@ -59,6 +59,9 @@ class DigitalAddressBatchPollingServiceTest {
 
     @MockBean
     private ObjectMapper objectMapper;
+
+    @MockBean
+    private IniPecBatchRequestService iniPecBatchRequestService;
 
     @Test
     void testBatchPecPolling() {

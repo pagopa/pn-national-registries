@@ -10,7 +10,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
-import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
@@ -85,10 +85,10 @@ public class InfoCamereConverter {
     }
 
     public boolean checkIfResponseIsInfoCamereError(InfoCamereCommonError response) {
-        return ((response.getCode() != null && !"".equals(response.getCode()))
-                || (response.getDescription() != null && !"".equals(response.getDescription()))
-                || (response.getTimestamp() != null && !"".equals(response.getTimestamp()))
-                || (response.getAppName() != null && !"".equals(response.getAppName())));
+        return org.springframework.util.StringUtils.hasText(response.getCode())
+                || org.springframework.util.StringUtils.hasText(response.getDescription())
+                || org.springframework.util.StringUtils.hasText(response.getTimestamp())
+                || org.springframework.util.StringUtils.hasText(response.getAppName());
     }
 
     public GetAddressRegistroImpreseOKDto mapToResponseOkByResponse(AddressRegistroImprese response) {

@@ -17,6 +17,7 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
+import java.time.LocalDateTime;
 import java.util.Collections;
 import java.util.List;
 
@@ -84,7 +85,7 @@ class IniPecBatchSqsServiceTest {
         when(batchRequestRepository.update(same(batchRequest)))
                 .thenReturn(Mono.just(batchRequest));
 
-        when(sqsService.push("message", "clientId"))
+        when(sqsService.pushToOutputQueue(any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(batchRequest)))
@@ -111,7 +112,7 @@ class IniPecBatchSqsServiceTest {
         when(batchRequestRepository.update(any()))
                 .thenReturn(Mono.just(new BatchRequest()));
 
-        when(sqsService.push((String) any(), any()))
+        when(sqsService.pushToOutputQueue(any(), any()))
                 .thenReturn(Mono.error(SqsException.builder().build()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
@@ -122,6 +123,26 @@ class IniPecBatchSqsServiceTest {
         assertEquals(BatchStatus.NOT_SENT.getValue(), batchRequest2.getSendStatus());
         assertEquals(BatchStatus.SENT.getValue(), batchRequest3.getSendStatus());
         verify(batchRequestRepository).update(same(batchRequest3));
-        verify(sqsService).push("message", "clientId");
+    }
+
+    @Test
+    void redriveToDLQqueue() {
+        BatchRequest request = new BatchRequest();
+        request.setCorrelationId("correlationId");
+        request.setReferenceRequestDate(LocalDateTime.now());
+        when(sqsService.pushToInputDlqQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        StepVerifier.create(iniPecBatchSqsService.sendListToDlqQueue(List.of(request)))
+                .verifyComplete();
+    }
+
+    @Test
+    void redriveToqueue() {
+        BatchRequest request = new BatchRequest();
+        request.setCorrelationId("correlationId");
+        request.setReferenceRequestDate(LocalDateTime.now());
+        request.setStatus(BatchStatus.ERROR.getValue());
+        when(sqsService.pushToInputDlqQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        StepVerifier.create(iniPecBatchSqsService.sendListToDlqQueue(List.of(request)))
+                .verifyComplete();
     }
 }

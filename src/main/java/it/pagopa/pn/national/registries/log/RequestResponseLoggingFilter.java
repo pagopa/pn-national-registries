@@ -4,6 +4,7 @@ import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.jetbrains.annotations.NotNull;
 import org.reactivestreams.Publisher;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
@@ -25,9 +26,21 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class RequestResponseLoggingFilter implements WebFilter {
 
+    private final String healthCheckPath;
+
+    public RequestResponseLoggingFilter(@Value("${pn.national.registries.health-check-path}") String healthCheckPath) {
+        this.healthCheckPath = healthCheckPath;
+    }
+
     @Override
     public @NotNull Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         ServerHttpRequest httpRequest = exchange.getRequest();
+
+        if (healthCheckPath.equalsIgnoreCase(httpRequest.getURI().getPath())) {
+            log.trace("request to health-check actuator");
+            return chain.filter(exchange);
+        }
+
         final String httpUrl = httpRequest.getURI().toString();
         Long startTime = System.currentTimeMillis();
 

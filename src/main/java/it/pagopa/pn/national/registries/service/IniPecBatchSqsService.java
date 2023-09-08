@@ -3,6 +3,8 @@ package it.pagopa.pn.national.registries.service;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -16,6 +18,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.List;
@@ -32,6 +35,8 @@ public class IniPecBatchSqsService {
     private final SqsService sqsService;
 
     private static final int MAX_BATCH_REQUEST_SIZE = 100;
+    private static final String RECIPIENT_TYPE = "PG";
+    private static final String DOMICILE_TYPE = "DIGITAL";
 
     public IniPecBatchSqsService(IniPecBatchRequestRepository batchRequestRepository,
                                  SqsService sqsService) {
@@ -85,12 +90,33 @@ public class IniPecBatchSqsService {
                         .doOnError(ConditionalCheckFailedException.class,
                                 e -> log.info("PG - DigitalAddress - conditional check failed - skip correlationId: {}", item.getCorrelationId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
-                .flatMap(item -> sqsService.push(item.getMessage(), item.getClientId())
-                        .thenReturn(item)
-                        .doOnNext(r -> log.info("PG - DigitalAddress - pushed message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf())))
-                        .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()), e))
-                        .onErrorResume(e -> Mono.empty()))
-                .doOnNext(item -> item.setSendStatus(BatchStatus.SENT.getValue()))
+                .flatMap(item -> {
+                    if (!BatchStatus.ERROR.getValue().equalsIgnoreCase(item.getStatus())) {
+                        CodeSqsDto codeSqsDto = sqsService.toObject(item.getMessage(), CodeSqsDto.class);
+                        return sqsService.pushToOutputQueue(codeSqsDto, item.getClientId())
+                                .thenReturn(item)
+                                .doOnNext(r -> {
+                                    log.info("PG - DigitalAddress - pushed message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()));
+                                    item.setSendStatus(BatchStatus.SENT.getValue());
+                                })
+                                .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()), e))
+                                .onErrorResume(e -> Mono.empty());
+                    } else {
+                        return sqsService.pushToInputDlqQueue(InternalCodeSqsDto.builder()
+                                        .taxId(item.getCf())
+                                        .correlationId(item.getCorrelationId())
+                                        .referenceRequestDate(java.util.Date.from(item.getReferenceRequestDate().atZone(ZoneId.systemDefault()).toInstant()))
+                                        .pnNationalRegistriesCxId(item.getClientId())
+                                        .domicileType(DOMICILE_TYPE)
+                                        .recipientType(RECIPIENT_TYPE)
+                                        .build(), item.getClientId())
+                                .thenReturn(item)
+                                .doOnNext(r -> {
+                                    log.info("PG - DigitalAddress - redrive to input queue message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()));
+                                    item.setSendStatus(BatchStatus.SENT_TO_DLQ.getValue());
+                                });
+                    }
+                })
                 .flatMap(batchRequestRepository::update)
                 .then();
     }
@@ -102,5 +128,30 @@ public class IniPecBatchSqsService {
                     log.warn("IniPEC - can not get batch request - DynamoDB Mono<Page> is null");
                     return new DigitalAddressException("IniPEC - can not get batch request");
                 });
+    }
+
+    public Mono<Void> sendListToDlqQueue(List<BatchRequest> batchRequests) {
+        return Flux.fromIterable(batchRequests)
+                .map(this::sendToDlqQueue)
+                .then();
+    }
+
+    public Mono<Void> sendToDlqQueue(BatchRequest batchRequest) {
+        InternalCodeSqsDto internalCodeSqsDto = toInternalCodeSqsDto(batchRequest);
+        if(batchRequest.getReferenceRequestDate() != null){
+            internalCodeSqsDto.setReferenceRequestDate(java.util.Date.from(batchRequest.getReferenceRequestDate().atZone(ZoneId.systemDefault()).toInstant()));
+        }
+        return sqsService.pushToInputDlqQueue(internalCodeSqsDto, batchRequest.getClientId())
+                .then();
+    }
+
+    private InternalCodeSqsDto toInternalCodeSqsDto(BatchRequest batchRequest) {
+        return InternalCodeSqsDto.builder()
+                .taxId(batchRequest.getCf())
+                .recipientType(RECIPIENT_TYPE)
+                .domicileType(DOMICILE_TYPE)
+                .pnNationalRegistriesCxId(batchRequest.getClientId())
+                .correlationId(batchRequest.getCorrelationId())
+                .build();
     }
 }

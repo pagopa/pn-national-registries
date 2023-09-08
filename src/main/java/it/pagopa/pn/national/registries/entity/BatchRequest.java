@@ -86,4 +86,14 @@ public class BatchRequest {
             @DynamoDbAttribute(COL_ESERVICE)
     }))
     private String eservice;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_REQUEST_DATE)
+    }))
+    private LocalDateTime referenceRequestDate;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_AWS_MESSAGE_ID)
+    }))
+    private String awsMessageId;
 }

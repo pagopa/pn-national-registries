@@ -11,7 +11,7 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
-import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
@@ -162,11 +162,12 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                         log.info("IniPEC - batchId {} - pollingId {} - response pec size: {}", batchId, pollingId, response.getElencoPec().size());
                     }
                 })
+                .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e))
                 .onErrorResume(isPollingResponseNotReady, e -> {
                     log.info("IniPEC - batchId {} - pollingId {} - " + PEC_REQUEST_IN_PROGRESS_MESSAGE, batchId, pollingId);
                     return Mono.empty();
-                })
-                .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e));
+                });
+
     }
 
     private final Predicate<Throwable> isPollingResponseNotReady = throwable ->
@@ -194,7 +195,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private Mono<Void> incrementAndCheckRetry(BatchPolling polling, Throwable throwable) {
         int nextRetry = polling.getRetry() != null ? polling.getRetry() + 1 : 1;
         polling.setRetry(nextRetry);
-        if (nextRetry >= maxRetry) {
+        if (nextRetry >= maxRetry || (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST))  {
             polling.setStatus(BatchStatus.ERROR.getValue());
             log.debug("IniPEC - batchId {} - polling {} status in {} (retry: {})", polling.getBatchId(), polling.getPollingId(), polling.getStatus(), polling.getRetry());
         }
@@ -227,8 +228,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     } else {
                         request.setMessage(convertCodeSqsDtoToString(sqsDto));
                         request.setEservice(EService.INIPEC.name());
+                        request.setStatus(status.getValue());
                     }
-                    request.setStatus(status.getValue());
                     request.setSendStatus(BatchStatus.NOT_SENT.getValue());
                     request.setLastReserved(now);
                 })
@@ -246,11 +247,10 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}", request.getCorrelationId(), MaskDataUtils.maskString(request.getCf())))
                 .onErrorResume(e -> {
                     logEServiceError(e);
-                    request.setMessage(convertCodeSqsDtoToString(errorInadToSqsDto(request.getCorrelationId(), e)));
+                    request.setStatus(BatchStatus.ERROR.getValue());
                     return Mono.empty();
                 }).block();
     }
-
     private Function<BatchRequest, CodeSqsDto> getSqsOk(IniPecPollingResponse response) {
         return request -> infoCamereConverter.convertResponsePecToCodeSqsDto(request, response);
     }

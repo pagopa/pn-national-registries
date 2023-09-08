@@ -1,7 +1,10 @@
-package it.pagopa.pn.national.registries.model.inipec;
+package it.pagopa.pn.national.registries.model;
 
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
+import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import it.pagopa.pn.national.registries.utils.JsonFilterSpEL;
 import lombok.Data;
 import lombok.ToString;
@@ -12,6 +15,7 @@ import static it.pagopa.pn.national.registries.utils.JacksonCustomSpELSerializer
 
 @Data
 @JsonFilter(FILTER_NAME)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class CodeSqsDto {
 
     private String correlationId;

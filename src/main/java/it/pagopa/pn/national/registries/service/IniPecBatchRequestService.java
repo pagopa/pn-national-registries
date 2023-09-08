@@ -7,13 +7,14 @@ import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -26,10 +27,8 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 
 @Service
 @Slf4j
@@ -112,6 +111,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return Flux.fromStream(items.stream())
                 .doOnNext(item -> {
+                    MDC.put("AWS_messageId", item.getAwsMessageId());
                     item.setStatus(BatchStatus.WORKING.getValue());
                     item.setBatchId(batchId);
                     item.setLastReserved(now);
@@ -169,17 +169,8 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .doOnNext(r -> {
                     int nextRetry = (r.getRetry() != null) ? (r.getRetry() + 1) : 1;
                     r.setRetry(nextRetry);
-                    if (nextRetry >= maxRetry) {
-                        String error;
-                        if (throwable instanceof PnNationalRegistriesException exception) {
-                            error = exception.getMessage();
-                        } else {
-                            error = ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
-                        }
-                        CodeSqsDto sqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(r, error);
-                        r.setMessage(convertCodeSqsDtoToString(sqsDto));
+                    if (nextRetry >= maxRetry || (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
                         r.setStatus(BatchStatus.ERROR.getValue());
-                        r.setSendStatus(BatchStatus.NOT_SENT.getValue());
                         r.setLastReserved(now);
                         log.debug("IniPEC - batchId {} - request {} status in {} (retry: {})", batchId, r.getCorrelationId(), r.getStatus(), r.getRetry());
                     }
@@ -192,7 +183,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .filter(l -> !l.isEmpty())
                 .flatMap(l -> {
                     log.debug("IniPEC - there is at least one request in ERROR - call batch to send to SQS");
-                    return iniPecBatchSqsService.batchSendToSqs(l);
+                    return iniPecBatchSqsService.sendListToDlqQueue(l);
                 });
     }
 }

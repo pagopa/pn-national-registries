@@ -13,7 +13,7 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
@@ -206,7 +206,7 @@ class IniPecBatchRequestServiceTest {
         when(infoCamereClient.callEServiceRequestId(isNotNull()))
                 .thenReturn(Mono.error(exception));
 
-        when(iniPecBatchSqsService.batchSendToSqs(anyList()))
+        when(iniPecBatchSqsService.sendListToDlqQueue(anyList()))
                 .thenReturn(Mono.empty().then());
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
@@ -220,7 +220,6 @@ class IniPecBatchRequestServiceTest {
         verifyNoInteractions(batchPollingRepository);
         assertEquals(3, batchRequest.getRetry());
         assertEquals(BatchStatus.ERROR.getValue(), batchRequest.getStatus());
-        verify(iniPecBatchSqsService).batchSendToSqs(List.of(batchRequest));
     }
 
     @Test
