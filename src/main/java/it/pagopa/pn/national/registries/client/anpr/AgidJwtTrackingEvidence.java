@@ -12,6 +12,7 @@ import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.SignRequest;
 import software.amazon.awssdk.services.kms.model.SignResponse;
@@ -32,7 +33,8 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class AgidJwtTrackingEvidence {
 
-    static final Pattern pattern = Pattern.compile(".*Root=(.*);P.*");
+    static final Pattern patternRoot = Pattern.compile(".*Root=(.*);P.*");
+    static final Pattern patternTraceId = Pattern.compile("traceId:(.*)");
     private final AnprSecretConfig anprSecretConfig;
     private final KmsClient kmsClient;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
@@ -83,10 +85,8 @@ public class AgidJwtTrackingEvidence {
 
     private Map<String, Object> createClaimMap(TokenPayload tp, String eserviceAudience) {
         String traceId = "unknown";
-        String allTraceId  = MDCUtils.retrieveMDCContextMap().get(MDC_TRACE_ID_KEY);
-        final Matcher matcher = pattern.matcher(allTraceId);
-        if(matcher.find()) {
-            traceId = matcher.group(1);
+        if (MDCUtils.retrieveMDCContextMap() != null) {
+            traceId = retrieveTraceId(traceId);
         }
         Map<String, Object> map = new HashMap<>();
         map.put(RegisteredClaims.AUDIENCE, eserviceAudience);
@@ -101,6 +101,20 @@ public class AgidJwtTrackingEvidence {
         map.put(RegisteredClaims.JWT_ID, tp.getJti());
 
         return map;
+    }
+
+    private String retrieveTraceId(String traceId) {
+        String tmpTraceId = MDCUtils.retrieveMDCContextMap().get(MDC_TRACE_ID_KEY);
+        if (StringUtils.hasText(tmpTraceId)) {
+            final Matcher matcherRoot = patternRoot.matcher(tmpTraceId);
+            final Matcher matcherTraceId = patternTraceId.matcher(tmpTraceId);
+            if (matcherRoot.find()) {
+                traceId = matcherRoot.group(1);
+            } else if (matcherTraceId.find()) {
+                traceId = matcherTraceId.group(1);
+            }
+        }
+        return traceId;
     }
 
     private String generateRandomDnonce() {

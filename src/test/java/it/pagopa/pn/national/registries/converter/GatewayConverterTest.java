@@ -18,7 +18,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDt
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
-import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
@@ -122,13 +122,22 @@ class GatewayConverterTest {
     void testErrorAnprToSqsDto1() {
         PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
-                "{ ... \"codiceErroreAnomalia\": \"ENX\", ...".getBytes(StandardCharsets.UTF_8),
+                "{ ... \"codiceErroreAnomalia\": \"EN122\", ...".getBytes(StandardCharsets.UTF_8),
                 StandardCharsets.UTF_8, AnprResponseKO.class);
         CodeSqsDto codeSqsDto = gatewayConverter.errorAnprToSqsDto(C_ID, exception);
         assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals("message", codeSqsDto.getError());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
         assertNull(codeSqsDto.getPhysicalAddress());
+    }
+
+    @Test
+    void testErrorAnprToSqsDto1bis() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
+                HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
+                "{ ... \"codiceErroreAnomalia\": \"ENX\", ...".getBytes(StandardCharsets.UTF_8),
+                StandardCharsets.UTF_8, AnprResponseKO.class);
+        CodeSqsDto codeSqsDto = gatewayConverter.errorAnprToSqsDto(C_ID, exception);
+        assertNull(codeSqsDto);
     }
 
     /**
@@ -189,20 +198,14 @@ class GatewayConverterTest {
         assertNull(codeSqsDto.getError());
     }
 
-    /**
-     * Method under test: {@link GatewayConverter#errorInadToSqsDto(String, Throwable)}
-     */
     @Test
-    void testErrorInadToSqsDto1() {
+    void testErrorInadToSqsDto1Bis() {
         PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
                 HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
                 "{ ... \"detail\": \"xxx\", ...".getBytes(StandardCharsets.UTF_8),
                 StandardCharsets.UTF_8, InadResponseKO.class);
         CodeSqsDto codeSqsDto = gatewayConverter.errorInadToSqsDto(C_ID, exception);
-        assertEquals("DIGITAL", codeSqsDto.getAddressType());
-        assertEquals("message", codeSqsDto.getError());
-        assertNull(codeSqsDto.getDigitalAddress());
-        assertEquals(C_ID, codeSqsDto.getCorrelationId());
+        assertNull(codeSqsDto);
     }
 
     /**
@@ -221,45 +224,6 @@ class GatewayConverterTest {
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
-    }
-
-    /**
-     * Method under test: {@link GatewayConverter#errorIpaToSqsDto(String, Throwable)}
-     */
-    @Test
-    void testErrorIpaToSqsDto() {
-        CodeSqsDto actualErrorIpaToSqsDtoResult = gatewayConverter.errorIpaToSqsDto("42", new Throwable());
-        assertEquals("DIGITAL", actualErrorIpaToSqsDtoResult.getAddressType());
-        assertNull(actualErrorIpaToSqsDtoResult.getError());
-        assertEquals("42", actualErrorIpaToSqsDtoResult.getCorrelationId());
-    }
-
-    /**
-     * Method under test: {@link GatewayConverter#errorIpaToSqsDto(String, Throwable)}
-     */
-    @Test
-    void testErrorIpaToSqsDto2() {
-        PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
-                HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(), null,
-                "{ ... \"detail\": \"xxx\", ...".getBytes(StandardCharsets.UTF_8),
-                StandardCharsets.UTF_8, IPAPecErrorDto.class);
-
-        CodeSqsDto codeSqsDto = gatewayConverter.errorIpaToSqsDto(C_ID, exception);
-
-        assertEquals("DIGITAL", codeSqsDto.getAddressType());
-    }
-
-    /**
-     * Method under test: {@link GatewayConverter#errorIpaToSqsDto(String, Throwable)}
-     */
-    @Test
-    void testErrorIpaToSqsDto3() {
-        Throwable exception = new Throwable("message");
-
-        CodeSqsDto codeSqsDto = gatewayConverter.errorIpaToSqsDto(C_ID, exception);
-
-        assertEquals("DIGITAL", codeSqsDto.getAddressType());
-        assertEquals("message", codeSqsDto.getError());
     }
 
     /**
@@ -366,7 +330,7 @@ class GatewayConverterTest {
 
         SqsClient sqsClient = mock(SqsClient.class);
         GatewayService gatewayService = new GatewayService(anprService, inadService, infoCamereService, ipaService,
-                new SqsService("correlationId: {} - IPA - WS23 - domicili digitali non presenti", sqsClient,
+                new SqsService("outputQueue", "inputQueue", "inputDlqQueue", sqsClient,
                         new ObjectMapper()),
                 true);
         CodeSqsDto actualIpaToSqsDtoResult = gatewayService.ipaToSqsDto("42", new IPAPecDto());

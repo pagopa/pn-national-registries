@@ -57,7 +57,7 @@ public class AnprService {
 
     private Mono<E002RequestDto> createRequest(GetAddressANPRRequestBodyDto request) {
         return counterRepository.getCounter("anpr")
-                .flatMap(s -> Mono.just(constructE002RequestDto(request, s.getCounter())));
+                .map(s -> constructE002RequestDto(request, s.getCounter()));
     }
 
     private E002RequestDto constructE002RequestDto(GetAddressANPRRequestBodyDto request, Long s) {

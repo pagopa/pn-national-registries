@@ -8,7 +8,7 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import lombok.extern.slf4j.Slf4j;
@@ -55,7 +55,7 @@ public class GatewayConverter {
     }
 
     protected CodeSqsDto errorAnprToSqsDto(String correlationId, Throwable throwable) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
+        CodeSqsDto codeSqsDto = null;
         // per ANPR CF non trovato corrisponde a HTTP Status 404 e nel body codiceErroreAnomalia = "EN122"
         if (throwable instanceof PnNationalRegistriesException exception
                 && exception.getStatusCode() == HttpStatus.NOT_FOUND
@@ -63,10 +63,9 @@ public class GatewayConverter {
                 && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find()) {
             log.info("correlationId: {} - ANPR - CF non trovato", correlationId);
             // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo
-        } else {
-            codeSqsDto.setError(throwable.getMessage());
+            codeSqsDto = newCodeSqsDto(correlationId);
+            codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
         }
-        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
         return codeSqsDto;
     }
 
@@ -83,7 +82,7 @@ public class GatewayConverter {
     }
 
     protected CodeSqsDto errorInadToSqsDto(String correlationId, Throwable throwable) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
+        CodeSqsDto codeSqsDto = null;
         // per INAD CF non trovato corrisponde a HTTP Status 404 e nel body deve essere contenuta la stringa "CF non trovato"
         if (throwable instanceof PnNationalRegistriesException exception
                 && exception.getStatusCode() == HttpStatus.NOT_FOUND
@@ -91,25 +90,10 @@ public class GatewayConverter {
                 && INAD_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find())
         || CF_NOT_FOUND.equalsIgnoreCase(exception.getMessage()))) {
             log.info("correlationId: {} - INAD - CF non trovato", correlationId);
+            codeSqsDto = newCodeSqsDto(correlationId);
             codeSqsDto.setDigitalAddress(Collections.emptyList());
-        } else {
-            codeSqsDto.setError(throwable.getMessage());
+            codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         }
-        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
-        return codeSqsDto;
-    }
-
-    protected CodeSqsDto errorIpaToSqsDto(String correlationId, Throwable throwable) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
-        if (throwable instanceof PnNationalRegistriesException exception
-                && exception.getStatusCode() == HttpStatus.BAD_REQUEST
-                && StringUtils.hasText(exception.getResponseBodyAsString())) {
-            log.info("correlationId: {} - IPA - " + throwable.getMessage(), correlationId);
-            codeSqsDto.setDigitalAddress(Collections.emptyList());
-        } else {
-            codeSqsDto.setError(throwable.getMessage());
-        }
-        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
     }
 

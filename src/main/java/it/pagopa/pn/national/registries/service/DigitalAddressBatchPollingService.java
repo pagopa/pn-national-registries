@@ -12,7 +12,7 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
-import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
@@ -201,7 +201,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         }else{
             polling.setRetry(nextRetry);
         }
-        if (nextRetry >= maxRetry || inProgressNextRetry >= inProgressMaxRetry) {
+        if (nextRetry >= maxRetry || inProgressNextRetry >= inProgressMaxRetry ||
+                (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST) {
             polling.setStatus(BatchStatus.ERROR.getValue());
             log.debug("IniPEC - batchId {} - polling {} status in {} (retry: {})", polling.getBatchId(), polling.getPollingId(), polling.getStatus(), polling.getRetry());
         }
@@ -234,8 +235,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     } else {
                         request.setMessage(convertCodeSqsDtoToString(sqsDto));
                         request.setEservice(EService.INIPEC.name());
+                        request.setStatus(status.getValue());
                     }
-                    request.setStatus(status.getValue());
                     request.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
                     request.setLastReserved(now);
                 })
@@ -256,11 +257,10 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}", request.getCorrelationId(), MaskDataUtils.maskString(request.getCf())))
                 .onErrorResume(e -> {
                     logEServiceError(e);
-                    request.setMessage(convertCodeSqsDtoToString(errorInadToSqsDto(request.getCorrelationId(), e)));
+                    request.setStatus(BatchStatus.ERROR.getValue());
                     return Mono.empty();
                 }).block();
     }
-
     private Function<BatchRequest, CodeSqsDto> getSqsOk(IniPecPollingResponse response) {
         return request -> infoCamereConverter.convertResponsePecToCodeSqsDto(request, response);
     }

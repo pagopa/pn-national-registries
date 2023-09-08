@@ -13,7 +13,7 @@ import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereInstitution;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
-import it.pagopa.pn.national.registries.model.inipec.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 
