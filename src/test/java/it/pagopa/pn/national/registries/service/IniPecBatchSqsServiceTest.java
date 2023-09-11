@@ -140,7 +140,7 @@ class IniPecBatchSqsServiceTest {
         BatchRequest request = new BatchRequest();
         request.setCorrelationId("correlationId");
         request.setReferenceRequestDate(LocalDateTime.now());
-        request.setStatus(BatchStatus.ERROR.getValue());
+        request.setStatus(BatchSendStatus.ERROR.getValue());
         when(sqsService.pushToInputDlqQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         StepVerifier.create(iniPecBatchSqsService.sendListToDlqQueue(List.of(request)))
                 .verifyComplete();

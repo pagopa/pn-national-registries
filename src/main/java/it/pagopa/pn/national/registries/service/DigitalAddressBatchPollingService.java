@@ -202,7 +202,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
             polling.setRetry(nextRetry);
         }
         if (nextRetry >= maxRetry || inProgressNextRetry >= inProgressMaxRetry ||
-                (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST) {
+                (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
             polling.setStatus(BatchStatus.ERROR.getValue());
             log.debug("IniPEC - batchId {} - polling {} status in {} (retry: {})", polling.getBatchId(), polling.getPollingId(), polling.getStatus(), polling.getRetry());
         }

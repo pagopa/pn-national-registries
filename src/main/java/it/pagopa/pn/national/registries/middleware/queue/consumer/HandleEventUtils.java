@@ -18,7 +18,7 @@ public class HandleEventUtils {
     public static void handleException(MessageHeaders headers, Throwable t) {
         if (headers != null) {
             StandardEventHeader standardEventHeader = mapStandardEventHeader(headers);
-            log.error("Generic exception for iun={} ex={}", standardEventHeader.getIun(), t);
+            log.error("Generic exception for iun={} ex={}", standardEventHeader.getIun(), t.getCause());
         } else {
             log.error("Generic exception ex ", t);
         }
