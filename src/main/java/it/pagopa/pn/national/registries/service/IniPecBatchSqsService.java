@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -38,11 +39,15 @@ public class IniPecBatchSqsService {
     private static final int MAX_BATCH_REQUEST_SIZE = 100;
     private static final String RECIPIENT_TYPE = "PG";
     private static final String DOMICILE_TYPE = "DIGITAL";
+    private final String batchRequestPkSeparator;
+
 
     public IniPecBatchSqsService(IniPecBatchRequestRepository batchRequestRepository,
-                                 SqsService sqsService) {
+                                 SqsService sqsService,
+                                 @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator) {
         this.batchRequestRepository = batchRequestRepository;
         this.sqsService = sqsService;
+        this.batchRequestPkSeparator = batchRequestPkSeparator;
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.sqs.recovery.delay}")
@@ -105,7 +110,7 @@ public class IniPecBatchSqsService {
                     } else {
                         return sqsService.pushToInputDlqQueue(InternalCodeSqsDto.builder()
                                         .taxId(item.getCf())
-                                        .correlationId(item.getCorrelationId())
+                                        .correlationId(item.getCorrelationId().split(batchRequestPkSeparator)[0])
                                         .referenceRequestDate(java.util.Date.from(item.getReferenceRequestDate().atZone(ZoneId.systemDefault()).toInstant()))
                                         .pnNationalRegistriesCxId(item.getClientId())
                                         .domicileType(DOMICILE_TYPE)
@@ -152,7 +157,7 @@ public class IniPecBatchSqsService {
                 .recipientType(RECIPIENT_TYPE)
                 .domicileType(DOMICILE_TYPE)
                 .pnNationalRegistriesCxId(batchRequest.getClientId())
-                .correlationId(batchRequest.getCorrelationId())
+                .correlationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0])
                 .build();
     }
 }
