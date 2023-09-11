@@ -27,8 +27,10 @@ import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.*;
 
 @TestPropertySource(properties = {
-        "pn.national-registries.inipec.batch.sqs.recovery.delay=30000"
-})
+        "pn.national-registries.inipec.batch.sqs.recovery.delay=30000",
+        "pn.national.registries.inipec.batchrequest.pk.separator=~"
+
+        })
 @ContextConfiguration(classes = IniPecBatchSqsService.class)
 @ExtendWith(SpringExtension.class)
 class IniPecBatchSqsServiceTest {
