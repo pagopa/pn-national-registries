@@ -667,10 +667,10 @@ Resources:
             Type: PLAINTEXT
             Value: !Sub ${InfoCamereAuth}-next
 
-  MtlsCertRenewalCodebuildProject:
+  AdeCertRenewalCodebuildProject:
     Type: 'AWS::CodeBuild::Project'
     Properties:
-      Name: !Sub ${ProjectName}-Mtls-Cert-Renewal
+      Name: !Sub ${ProjectName}-Ade-Cert-Renewal
       ServiceRole: !GetAtt CertificateRenewalCodeBuildServiceRole.Arn
       ConcurrentBuildLimit: 1
       TimeoutInMinutes: 10
@@ -771,10 +771,10 @@ Resources:
               - "InfocamereCertRenewalCodebuildProject"
               - "Arn"
       
-  MtlsScheduledRule:
+  AdeScheduledRule:
     Type: AWS::Events::Rule
     Properties:
-      Description: !Sub "${ProjectName}-mtls-cert-renewal-schedule-rule"
+      Description: !Sub "${ProjectName}-Ade-cert-renewal-schedule-rule"
       ScheduleExpression: "cron(30 10 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
@@ -785,7 +785,7 @@ Resources:
           RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
           Arn: 
             Fn::GetAtt: 
-              - "InfocamereCertRenewalCodebuildProject"
+              - "AdeCertRenewalCodebuildProject"
               - "Arn"
 
   NationalRegistriesCertDLQQueuePolicy:
