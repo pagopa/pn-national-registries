@@ -28,12 +28,16 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
     private final int maxRetry;
     private final int retryAfter;
 
+    private final int inProgressMaxRetry;
+
     public IniPecBatchPollingRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                                             @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
-                                            @Value("${pn.national-registries.inipec.batch.polling.recovery.after}") int retryAfter) {
+                                            @Value("${pn.national-registries.inipec.batch.polling.recovery.after}") int retryAfter,
+                                            @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry) {
         this.table = dynamoDbEnhancedAsyncClient.table("pn-batchPolling", TableSchema.fromClass(BatchPolling.class));
         this.maxRetry = maxRetry;
         this.retryAfter = retryAfter;
+        this.inProgressMaxRetry = inProgressMaxRetry;
     }
 
     @Override
@@ -117,15 +121,17 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
     public Mono<List<BatchPolling>> getBatchPollingToRecover() {
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put("#retry", COL_RETRY);
+        expressionNames.put("#retryInProgress", COL_RETRY_IN_PROGRESS);
         expressionNames.put("#lastReserved", COL_LAST_RESERVED);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(maxRetry)).build());
+        expressionValues.put(":retryInProgress", AttributeValue.builder().n(Integer.toString(inProgressMaxRetry)).build());
         expressionValues.put(":lastReserved", AttributeValue.builder()
                 .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(retryAfter).toString())
                 .build());
 
-        String expression = "#retry < :retry AND (:lastReserved > #lastReserved OR attribute_not_exists(#lastReserved))";
+        String expression = "#retry < :retry AND #retryInProgress < :retryInProgress AND (:lastReserved > #lastReserved OR attribute_not_exists(#lastReserved))";
 
         QueryConditional queryConditional = QueryConditional.keyEqualTo(keyBuilder(BatchStatus.WORKING.getValue()));
 

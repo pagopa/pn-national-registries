@@ -240,6 +240,11 @@ Parameters:
     Description: 'IniPEC batch polling max retry'
     Default: 3
 
+  PnNationalRegistriesInipecBatchPollingInProgressMaxRetry:
+    Type: Number
+    Description: 'IniPEC batch polling in progress max retry'
+    Default: 24
+
   PnNationalRegistriesInipecBatchSqsRecoveryDelay:
     Type: Number
     Description: 'IniPEC batch SQS recovery delay'
@@ -440,6 +445,7 @@ Resources:
         ContainerEnvEntry39: !Sub 'PN_NATIONAL_REGISTRY_INPUT_QUEUE_NAME=${NationalRegistryGatewayInputsQueueName}'
         ContainerEnvEntry40: !Sub 'PN_NATIONAL_REGISTRY_INPUT_DLQ_QUEUE_NAME=${NationalRegistryGatewayInputsDLQName}'
         ContainerEnvEntry41: !Sub 'PN_NATIONAL_REGISTRY_HEALTH_CHECK_PATH=${HealthCheckPath}'
+        ContainerEnvEntry42: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_INPROGRESS_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'

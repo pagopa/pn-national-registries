@@ -3,20 +3,15 @@ package it.pagopa.pn.national.registries.constant;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-/**
- * Stati dei batch d'IniPEC.
- */
-public enum BatchStatus {
+public enum BatchSendStatus {
 
-    NO_BATCH_ID("NO_BATCH_ID"),
-    NOT_WORKED("NOT_WORKED"),
-    TAKEN_CHARGE("TAKEN_CHARGE"),
-    WORKING("WORKING"),
-    WORKED("WORKED"),
+    SENT("SENT"),
+    NOT_SENT("NOT_SENT"),
+    SENT_TO_DLQ("SENT_TO_DLQ"),
     ERROR("ERROR");
     private final String value;
 
-    BatchStatus(String value) {
+    BatchSendStatus(String value) {
         this.value = value;
     }
 
@@ -31,8 +26,8 @@ public enum BatchStatus {
     }
 
     @JsonCreator
-    public static BatchStatus fromValue(String value) {
-        for (BatchStatus b : BatchStatus.values()) {
+    public static BatchSendStatus fromValue(String value) {
+        for (BatchSendStatus b : BatchSendStatus.values()) {
             if (b.value.equals(value)) {
                 return b;
             }
@@ -40,4 +35,3 @@ public enum BatchStatus {
         throw new IllegalArgumentException("Unexpected value '" + value + "'");
     }
 }
-

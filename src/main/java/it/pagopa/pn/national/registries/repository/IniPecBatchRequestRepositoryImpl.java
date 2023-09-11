@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import org.springframework.beans.factory.annotation.Value;
@@ -125,7 +126,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         expressionNames.put("#sendStatus", COL_SEND_STATUS);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":sendStatus", AttributeValue.builder().s(BatchStatus.NOT_SENT.getValue()).build());
+        expressionValues.put(":sendStatus", AttributeValue.builder().s(BatchSendStatus.NOT_SENT.getValue()).build());
         expressionValues.put(":zero", AttributeValue.builder().n("0").build());
 
         String expression = "(attribute_not_exists(#reservationId) OR size(#reservationId) = :zero) AND #sendStatus = :sendStatus";
@@ -171,7 +172,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
         String expression = "#retry < :retry AND (:lastReserved > #lastReserved OR attribute_not_exists(#lastReserved))";
 
-        QueryConditional queryConditional = QueryConditional.keyEqualTo(keyBuilder(BatchStatus.WORKING.getValue()));
+        QueryConditional queryConditional = QueryConditional.keyEqualTo(keyBuilder(BatchStatus.TAKEN_CHARGE.getValue()));
 
         QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)
@@ -185,7 +186,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     @Override
     public Mono<Page<BatchRequest>> getBatchRequestToSend(Map<String, AttributeValue> lastKey, int limit) {
         Key key = Key.builder()
-                .partitionValue(BatchStatus.NOT_SENT.getValue())
+                .partitionValue(BatchSendStatus.NOT_SENT.getValue())
                 .sortValue(AttributeValue.builder()
                         .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(retryAfter).toString())
                         .build())

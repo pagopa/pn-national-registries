@@ -34,6 +34,7 @@
     "PnNationalRegistriesInipecBatchPollingRecoveryDelay": "30000",
     "PnNationalRegistriesInipecBatchPollingRecoveryAfter": "3600",
     "PnNationalRegistriesInipecBatchPollingMaxRetry": "3",
+    "PnNationalRegistriesInipecBatchPollingInProgressMaxRetry" : "24",
     "PnNationalRegistriesInipecBatchSqsRecoveryDelay": "30000",
     "MinTasksNumber": "2",
     "MaxTasksNumber": "4",

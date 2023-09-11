@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
@@ -97,7 +98,7 @@ public class IniPecBatchSqsService {
                                 .thenReturn(item)
                                 .doOnNext(r -> {
                                     log.info("PG - DigitalAddress - pushed message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()));
-                                    item.setSendStatus(BatchStatus.SENT.getValue());
+                                    item.setSendStatus(BatchSendStatus.SENT.getValue());
                                 })
                                 .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()), e))
                                 .onErrorResume(e -> Mono.empty());
@@ -113,7 +114,7 @@ public class IniPecBatchSqsService {
                                 .thenReturn(item)
                                 .doOnNext(r -> {
                                     log.info("PG - DigitalAddress - redrive to input queue message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()));
-                                    item.setSendStatus(BatchStatus.SENT_TO_DLQ.getValue());
+                                    item.setSendStatus(BatchSendStatus.SENT_TO_DLQ.getValue());
                                 });
                     }
                 })
