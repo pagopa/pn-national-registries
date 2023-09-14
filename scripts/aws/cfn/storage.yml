@@ -312,7 +312,7 @@ Resources:
       Parameters:
         QueueName: !Sub '${ProjectName}-national_registry_gateway_inputs'
         AlarmSNSTopicName: !Ref AlarmSNSTopicName
-        VisibilityTimeout: 1800
+        VisibilityTimeout: 300
         MaxReceiveCount: 10
         DelaySeconds: 1
 
