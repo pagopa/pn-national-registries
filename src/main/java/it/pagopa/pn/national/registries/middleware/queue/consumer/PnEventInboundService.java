@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.middleware.queue.consumer;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.cloud.function.context.MessageRoutingCallback;
@@ -47,7 +48,7 @@ public class PnEventInboundService {
     }
 
     private String handleMessage(Message<?> message) {
-        log.debug("Message received from customRouter {}", message);
+        log.debug("Message received from customRouter {}", MaskDataUtils.maskInformation(message.toString()));
         String eventType = (String) message.getHeaders().get("eventType");
         log.info("Message received from customRouter with eventType = {}", eventType );
 
@@ -62,7 +63,7 @@ public class PnEventInboundService {
             }
         }
         else {
-            log.error("eventType not present, cannot start scheduled action headers={} payload={}", message.getHeaders(), message.getPayload());
+            log.error("eventType not present, cannot start scheduled action headers={} payload={}", MaskDataUtils.maskInformation(message.getHeaders().toString()), MaskDataUtils.maskInformation(message.getPayload().toString()));
             throw new PnInternalException("eventType not present, cannot start scheduled action", "");
         }
     }

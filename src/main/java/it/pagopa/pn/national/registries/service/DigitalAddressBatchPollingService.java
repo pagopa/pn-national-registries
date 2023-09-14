@@ -253,6 +253,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(inadResponse -> {
                     String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
                     request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.IMPRESA)));
+                    request.setStatus(BatchStatus.WORKED.getValue());
                 })
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}", request.getCorrelationId(), MaskDataUtils.maskString(request.getCf())))
                 .onErrorResume(e -> {
