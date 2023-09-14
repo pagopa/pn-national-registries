@@ -121,7 +121,7 @@ public class IniPecBatchSqsService {
                                         sendMessageResponse))
                                 .thenReturn(item)
                                 .doOnNext(r -> {
-                                    log.info("PG - DigitalAddress - redrive to input queue message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()));
+                                    log.info("PG - DigitalAddress - send to dlq queue message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()));
                                     item.setSendStatus(BatchSendStatus.SENT_TO_DLQ.getValue());
                                 });
                     }
