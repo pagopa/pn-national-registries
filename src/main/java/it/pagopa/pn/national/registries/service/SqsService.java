@@ -63,7 +63,7 @@ public class SqsService {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
         log.debug(INSERTING_MSG_WITH_DATA, msg, inputDlqQueueName);
         log.info(INSERTING_MSG_WITHOUT_DATA, inputDlqQueueName);
-        return push(toJson(msg), pnNationalRegistriesCxId, inputDlqQueueName, "NR_GATEWAY_DLQ");
+        return push(toJson(msg), pnNationalRegistriesCxId, inputDlqQueueName, "NR_GATEWAY_INPUT");
     }
 
     public Mono<SendMessageResponse> push(String msg, String pnNationalRegistriesCxId, String queueName, String eventType) {
