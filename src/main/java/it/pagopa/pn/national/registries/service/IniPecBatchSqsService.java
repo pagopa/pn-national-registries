@@ -116,6 +116,9 @@ public class IniPecBatchSqsService {
                                         .domicileType(DOMICILE_TYPE)
                                         .recipientType(RECIPIENT_TYPE)
                                         .build(), item.getClientId())
+                                .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
+                                        item.getCorrelationId().split(batchRequestPkSeparator)[0],
+                                        sendMessageResponse))
                                 .thenReturn(item)
                                 .doOnNext(r -> {
                                     log.info("PG - DigitalAddress - redrive to input queue message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()));
