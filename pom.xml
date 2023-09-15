@@ -11,7 +11,7 @@
     </parent>
     <groupId>it.pagopa.pn.national.registries</groupId>
     <artifactId>pn-national-registries</artifactId>
-    <version>2.0.2-RC.1</version>
+    <version>2.0.2</version>
     <name>pn-national-registries</name>
 
     <properties>
