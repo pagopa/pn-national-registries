@@ -258,7 +258,13 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}", request.getCorrelationId(), MaskDataUtils.maskString(request.getCf())))
                 .onErrorResume(e -> {
                     logEServiceError(e);
-                    request.setStatus(BatchStatus.ERROR.getValue());
+                    CodeSqsDto codeSqsDto = errorInadToSqsDto(request.getCorrelationId(), e);
+                    if(codeSqsDto != null) {
+                        request.setMessage(convertCodeSqsDtoToString(codeSqsDto));
+                        request.setStatus(BatchStatus.WORKED.getValue());
+                    }else{
+                        request.setStatus(BatchStatus.ERROR.getValue());
+                    }
                     return Mono.empty();
                 }).block();
     }
