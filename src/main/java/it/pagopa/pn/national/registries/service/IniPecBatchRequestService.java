@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
-import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -42,14 +41,14 @@ public class IniPecBatchRequestService extends GatewayConverter {
     private final IniPecBatchSqsService iniPecBatchSqsService;
 
     private final int maxRetry;
-
-    private static final int MAX_BATCH_REQUEST_SIZE = 100;
+    private final int maxBatchRequestSize;
 
     public IniPecBatchRequestService(InfoCamereConverter infoCamereConverter,
                                      IniPecBatchRequestRepository batchRequestRepository,
                                      IniPecBatchPollingRepository batchPollingRepository,
                                      InfoCamereClient infoCamereClient,
                                      IniPecBatchSqsService iniPecBatchSqsService,
+                                     @Value("${pn.national-registries.inipec.max.batch.request.size}") int maxBatchRequestsize,
                                      @Value("${pn.national-registries.inipec.batch.request.max-retry}") int maxRetry) {
         this.infoCamereConverter = infoCamereConverter;
         this.batchRequestRepository = batchRequestRepository;
@@ -57,6 +56,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
         this.infoCamereClient = infoCamereClient;
         this.iniPecBatchSqsService = iniPecBatchSqsService;
         this.maxRetry = maxRetry;
+        this.maxBatchRequestSize = maxBatchRequestsize;
     }
 
     @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
@@ -100,7 +100,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     private Page<BatchRequest> getBatchRequest(Map<String, AttributeValue> lastEvaluatedKey) {
-        return batchRequestRepository.getBatchRequestByNotBatchId(lastEvaluatedKey, MAX_BATCH_REQUEST_SIZE)
+        return batchRequestRepository.getBatchRequestByNotBatchId(lastEvaluatedKey, maxBatchRequestSize)
                 .blockOptional()
                 .orElseThrow(() -> {
                     log.warn("IniPEC - can not get batch request - DynamoDB Mono<Page> is null");
