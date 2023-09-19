@@ -249,16 +249,16 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private void callInadEservice(BatchRequest request) {
+        String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
         inadService.callEService(convertToGetDigitalAddressInadRequest(request), "PG")
                 .doOnNext(inadResponse -> {
-                    String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
                     request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.IMPRESA)));
                     request.setStatus(BatchStatus.WORKED.getValue());
                 })
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}", request.getCorrelationId(), MaskDataUtils.maskString(request.getCf())))
                 .onErrorResume(e -> {
                     logEServiceError(e);
-                    CodeSqsDto codeSqsDto = errorInadToSqsDto(request.getCorrelationId(), e);
+                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
                     if(codeSqsDto != null) {
                         request.setMessage(convertCodeSqsDtoToString(codeSqsDto));
                         request.setStatus(BatchStatus.WORKED.getValue());
