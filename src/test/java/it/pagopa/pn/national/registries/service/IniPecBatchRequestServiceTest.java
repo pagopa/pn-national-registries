@@ -36,7 +36,8 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.batch.request.delay=30000",
         "pn.national-registries.inipec.batch.request.recovery.delay=30000",
-        "pn.national-registries.inipec.batch.request.max-retry=3"
+        "pn.national-registries.inipec.batch.request.max-retry=3",
+        "pn.national-registries.inipec.max.batch.request.size=1"
 })
 @ContextConfiguration(classes = IniPecBatchRequestService.class)
 @ExtendWith(SpringExtension.class)
