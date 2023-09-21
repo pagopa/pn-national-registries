@@ -27,6 +27,10 @@ public class InfoCamereTokenClient {
     private final String clientId;
 
     private static final String CLIENT_ID = "client_id";
+    private static final String TRAKING_ID = "X-Tracking-trackingId";
+    private static final String GLOBAL_ID = "X-Global-Transaction-ID";
+
+
 
     protected InfoCamereTokenClient(InfoCamereWebClient infoCamereGetTokenWebClient,
                                     @Value("${pn.national.registries.infocamere.client-id}") String clientId,
@@ -52,6 +56,8 @@ public class InfoCamereTokenClient {
                         throw new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, throwable);
                     }
                     if (throwable instanceof WebClientResponseException e) {
+                        log.info(GLOBAL_ID + ": {}", e.getHeaders().getFirst(GLOBAL_ID));
+                        log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
@@ -62,6 +68,8 @@ public class InfoCamereTokenClient {
 
     private boolean isUnauthorized(Throwable throwable) {
         if (throwable instanceof WebClientResponseException exception) {
+            log.info(GLOBAL_ID + ": {}", exception.getHeaders().getFirst(GLOBAL_ID));
+            log.info(TRAKING_ID + ": {}", exception.getHeaders().getFirst(TRAKING_ID));
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;
