@@ -164,7 +164,7 @@ public class InfoCamereClient {
     }
 
     public Mono<InfoCamereLegalInstituionsResponse> callGetLegalInstitutions(String taxId, String token) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS);
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/listaLegaleRappresentante/{cfPersona}")
@@ -178,6 +178,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(InfoCamereLegalInstituionsResponse.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
