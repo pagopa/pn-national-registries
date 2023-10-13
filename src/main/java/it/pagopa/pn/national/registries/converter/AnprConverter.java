@@ -5,6 +5,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.Resident
 import it.pagopa.pn.national.registries.model.anpr.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -88,7 +89,13 @@ public class AnprConverter {
     }
 
     private String createForeignAddressString(ForeignToponymDto toponimo) {
-        return toponimo.getDenominazione() + "," + toponimo.getNumeroCivico();
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(toponimo.getDenominazione());
+        if(StringUtils.hasText(toponimo.getNumeroCivico())){
+            stringBuilder.append(" ");
+            stringBuilder.append(toponimo.getNumeroCivico());
+        }
+        return stringBuilder.toString();
     }
 
     private String createAddressString(AddressDto indirizzo) {
