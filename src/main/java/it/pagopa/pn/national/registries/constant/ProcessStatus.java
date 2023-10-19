@@ -30,6 +30,7 @@ public final class ProcessStatus {
     public static final String PROCESS_NAME_INFO_CAMERE_LEGAL_INSTITUTIONS = "[INFO CAMERE] legal institutions";
     public static final String PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS = "[INFO CAMERE] legal institutions";
     public static final String PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS = "[INFO CAMERE] checking taxId";
+    public static final String PROCESS_SERVICE_INFO_CAMERE_GET_TOKEN = "[INFO CAMERE] getting token";
 
     public static final String PROCESS_NAME_INAD_ADDRESS = "[INAD] pec";
     public static final String PROCESS_SERVICE_INAD_ADDRESS = "[INAD] retrieving pec";

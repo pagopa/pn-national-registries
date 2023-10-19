@@ -57,7 +57,7 @@ public class InadClient {
     }
 
     private Mono<ResponseRequestDigitalAddressDto> callExtract(String taxId, String practicalReference, AccessTokenCacheEntry tokenEntry) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_INAD_ADDRESS);
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INAD, PROCESS_SERVICE_INAD_ADDRESS);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .queryParam("practicalReference", practicalReference)
@@ -70,6 +70,7 @@ public class InadClient {
                 .retrieve()
                 .bodyToMono(ResponseRequestDigitalAddressDto.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),

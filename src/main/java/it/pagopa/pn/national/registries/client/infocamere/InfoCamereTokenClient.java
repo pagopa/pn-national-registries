@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.client.infocamere;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import lombok.extern.slf4j.Slf4j;
@@ -15,10 +16,12 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.Charset;
 import java.util.Optional;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_INFO_CAMERE_GET_TOKEN;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED;
 
-@Slf4j
+@lombok.CustomLog
 @Component
 public class InfoCamereTokenClient {
 
@@ -38,6 +41,7 @@ public class InfoCamereTokenClient {
 
     public Mono<String> getToken(String scope) {
         String jws = infoCamereJwsGenerator.createAuthRest(scope);
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_GET_TOKEN);
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/authentication")
@@ -48,6 +52,7 @@ public class InfoCamereTokenClient {
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (isUnauthorized(throwable)) {
                         throw new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, throwable);
                     }
