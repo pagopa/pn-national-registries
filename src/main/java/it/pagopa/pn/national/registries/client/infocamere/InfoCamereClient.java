@@ -68,7 +68,7 @@ public class InfoCamereClient {
     }
 
     private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Retrieving correlationId [INFOCAMERE]");
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, "Retrieving correlationId [INFOCAMERE]");
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/richiestaElencoPec")
@@ -84,6 +84,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(IniPecBatchResponse.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info(GLOBAL_ID +": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
@@ -104,7 +105,7 @@ public class InfoCamereClient {
     }
 
     private Mono<IniPecPollingResponse> callGetElencoPec(String correlationId, String token) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, "Getting elencoPec InfoCamere for correlationId");
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, "Getting elencoPec InfoCamere for correlationId");
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/getElencoPec/{identificativoRichiesta}")
@@ -119,6 +120,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(IniPecPollingResponse.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info(GLOBAL_ID + ": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
@@ -139,7 +141,7 @@ public class InfoCamereClient {
     }
 
     private Mono<AddressRegistroImprese> callGetLegalAddress(String taxId, String token) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_REGISTRO_IMPRESE_ADDRESS);
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_REGISTRO_IMPRESE_ADDRESS);
         return webClient.post()
                 .uri(uriBuilder -> uriBuilder
                         .path("/sede/{cf}")
@@ -153,6 +155,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(AddressRegistroImprese.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info(GLOBAL_ID + ": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
@@ -173,7 +176,7 @@ public class InfoCamereClient {
     }
 
     public Mono<InfoCamereLegalInstituionsResponse> callGetLegalInstitutions(String taxId, String token) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS);
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/listaLegaleRappresentante/{cfPersona}")
@@ -187,6 +190,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(InfoCamereLegalInstituionsResponse.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info(GLOBAL_ID + ": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
@@ -207,7 +211,7 @@ public class InfoCamereClient {
     }
 
     private Mono<InfoCamereVerification> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_INFO_CAMERE_LEGAL);
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL);
         return webClient.get()
                 .uri(uriBuilder -> uriBuilder
                         .path("/legaleRappresentante/{cfPersona}")
@@ -218,6 +222,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(InfoCamereVerification.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info(GLOBAL_ID + ": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));

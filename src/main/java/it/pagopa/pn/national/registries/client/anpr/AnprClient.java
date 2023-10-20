@@ -72,7 +72,7 @@ public class AnprClient {
     }
 
     private Mono<ResponseE002OKDto> callAnpr(E002RequestDto requestDto, AccessTokenCacheEntry tokenEntry, String agidTrackingEvidence) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_ANPR_ADDRESS);
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.ANPR, PROCESS_SERVICE_ANPR_ADDRESS);
         String s = convertToJson(requestDto);
         String digest = createDigestFromPayload(s);
         log.debug("digest: {}", digest);
@@ -93,6 +93,7 @@ public class AnprClient {
                 .retrieve()
                 .bodyToMono(ResponseE002OKDto.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info("GovWay-Transaction-ID: {}", e.getHeaders().getFirst("GovWay-Transaction-ID"));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),

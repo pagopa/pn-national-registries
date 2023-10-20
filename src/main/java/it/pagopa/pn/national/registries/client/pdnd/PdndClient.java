@@ -38,7 +38,7 @@ public class PdndClient {
         map.put("client_assertion_type", Collections.singletonList(clientAssertionType));
         map.put("grant_type", Collections.singletonList(grantType));
 
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_PDND_TOKEN);
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.PDND, PROCESS_SERVICE_PDND_TOKEN);
         return webClient.post()
                 .uri("/token.oauth2")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_FORM_URLENCODED))
@@ -46,6 +46,7 @@ public class PdndClient {
                 .retrieve()
                 .bodyToMono(ClientCredentialsResponseDto.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
                     if (isUnauthorized(throwable)) {
                         throw new PnInternalException(ERROR_MESSSAGE_PDND_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, throwable);
                     }

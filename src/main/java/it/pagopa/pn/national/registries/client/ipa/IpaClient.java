@@ -30,14 +30,17 @@ public class IpaClient {
     }
 
     public Mono<WS23ResponseDto> callEServiceWS23(String taxId, String authId) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_WS23_PEC);
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.IPA, PROCESS_SERVICE_WS23_PEC);
         return webClient.post()
                 .uri("/ws/WS23DOMDIGCFServices/api/WS23_DOM_DIG_CF")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA))
                 .body(BodyInserters.fromFormData(createRequestWS23(taxId, authId)))
                 .retrieve()
                 .bodyToMono(WS23ResponseDto.class)
-                .doOnError(this::checkIPAException);
+                .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
+                    checkIPAException(throwable);
+                });
     }
 
 
@@ -56,7 +59,10 @@ public class IpaClient {
                 .body(BodyInserters.fromFormData(createRequestWS05(codAmm, authId)))
                 .retrieve()
                 .bodyToMono(WS05ResponseDto.class)
-                .doOnError(this::checkIPAException);
+                .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
+                    checkIPAException(throwable);
+                });
     }
 
     private MultiValueMap<String, String> createRequestWS05(String codAmm, String authId) {

@@ -58,7 +58,7 @@ public class CheckCfClient {
     }
 
     private Mono<TaxIdVerification> callVerifica(Request richiesta, AccessTokenCacheEntry tokenEntry) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_AGENZIA_ENTRATE_CHECK_TAX_ID);
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.ADE, PROCESS_SERVICE_AGENZIA_ENTRATE_CHECK_TAX_ID);
         String s = convertToJson(richiesta);
         WebClient webClient = checkCfWebClient.init();
         return webClient.post()
@@ -72,6 +72,7 @@ public class CheckCfClient {
                 .retrieve()
                 .bodyToMono(TaxIdVerification.class)
                 .doOnError(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ADE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
