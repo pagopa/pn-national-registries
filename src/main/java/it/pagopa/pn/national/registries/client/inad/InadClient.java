@@ -10,6 +10,7 @@ import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -70,7 +71,7 @@ public class InadClient {
                 .retrieve()
                 .bodyToMono(ResponseRequestDigitalAddressDto.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
