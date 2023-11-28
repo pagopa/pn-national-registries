@@ -13,7 +13,6 @@ import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdResponseKO;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -73,7 +72,7 @@ public class CheckCfClient {
                 .retrieve()
                 .bodyToMono(TaxIdVerification.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ADE, MaskDataUtils.maskInformation(throwable.getMessage()));
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ADE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
