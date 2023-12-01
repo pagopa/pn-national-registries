@@ -44,7 +44,6 @@ public class InfoCamereClient {
     private static final String CLIENT_ID = "client_id";
     private static final String SCOPE = "scope";
 
-    private static final String GLOBAL_ID = "X-Global-Transaction-ID";
     private static final String TRAKING_ID = "X-Tracking-trackingId";
 
     protected InfoCamereClient(InfoCamereWebClient infoCamereWebClient,
@@ -86,7 +85,6 @@ public class InfoCamereClient {
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
-                        log.info(GLOBAL_ID +": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
@@ -122,7 +120,6 @@ public class InfoCamereClient {
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
-                        log.info(GLOBAL_ID + ": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
@@ -157,7 +154,6 @@ public class InfoCamereClient {
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
-                        log.info(GLOBAL_ID + ": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
@@ -192,7 +188,6 @@ public class InfoCamereClient {
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
-                        log.info(GLOBAL_ID + ": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
@@ -224,7 +219,6 @@ public class InfoCamereClient {
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
-                        log.info(GLOBAL_ID + ": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),

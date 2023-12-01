@@ -4,7 +4,6 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,7 +16,6 @@ import java.nio.charset.Charset;
 import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_INFO_CAMERE_GET_TOKEN;
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED;
 
@@ -31,7 +29,6 @@ public class InfoCamereTokenClient {
 
     private static final String CLIENT_ID = "client_id";
     private static final String TRAKING_ID = "X-Tracking-trackingId";
-    private static final String GLOBAL_ID = "X-Global-Transaction-ID";
 
 
 
@@ -61,7 +58,6 @@ public class InfoCamereTokenClient {
                         throw new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, throwable);
                     }
                     if (throwable instanceof WebClientResponseException e) {
-                        log.info(GLOBAL_ID + ": {}", e.getHeaders().getFirst(GLOBAL_ID));
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
@@ -73,7 +69,6 @@ public class InfoCamereTokenClient {
 
     private boolean isUnauthorized(Throwable throwable) {
         if (throwable instanceof WebClientResponseException exception) {
-            log.info(GLOBAL_ID + ": {}", exception.getHeaders().getFirst(GLOBAL_ID));
             log.info(TRAKING_ID + ": {}", exception.getHeaders().getFirst(TRAKING_ID));
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
