@@ -39,14 +39,12 @@ public abstract class CommonWebClient extends CommonBaseClient {
                 })
                 .build();
 
-        return super.enrichBuilder(WebClient.builder()
+        return super.initWebClient(WebClient.builder()
                 .baseUrl(baseUrl)
                 .exchangeStrategies(strategies)
                 .codecs(c -> c.defaultCodecs().enableLoggingRequestDetails(true))
                 .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(responseExchangeFilter))
-                .clientConnector(new ReactorClientHttpConnector(httpClient)))
-                .clientConnector(new ReactorClientHttpConnector(httpClient))
-                .build();
+                .clientConnector(new ReactorClientHttpConnector(httpClient)));
     }
 
     protected final SslContext getSslContext(SslContextBuilder sslContextBuilder, String trust) throws SSLException {
