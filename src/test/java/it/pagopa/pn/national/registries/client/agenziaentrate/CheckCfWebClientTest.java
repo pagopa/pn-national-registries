@@ -61,7 +61,7 @@ class CheckCfWebClientTest {
         sslData.setSecretid("secretId");
         sslData.setCert("cert");
 
-        CheckCfWebClient checkCfWebclient = new CheckCfWebClient(true, "", "", webClientConfig, ssmParameterConsumerActivation, checkCfSecretConfig, pnNationalRegistriesSecretService);
+        CheckCfWebClient checkCfWebclient = new CheckCfWebClient("", "", ssmParameterConsumerActivation, checkCfSecretConfig, pnNationalRegistriesSecretService);
         when(ssmParameterConsumerActivation.getParameterValue(any(), any())).thenReturn(Optional.of(sslData));
         when(pnNationalRegistriesSecretService.getSecret(any())).thenReturn("privateKey");
         assertThrows(IllegalArgumentException.class, checkCfWebclient::init, "Input stream not contain valid certificates.");
@@ -79,7 +79,7 @@ class CheckCfWebClientTest {
         sslData.setSecretid("secretId");
         sslData.setCert("cert");
 
-        CheckCfWebClient checkCfWebclient = new CheckCfWebClient(true, "", "", webClientConfig, ssmParameterConsumerActivation, checkCfSecretConfig, pnNationalRegistriesSecretService);
+        CheckCfWebClient checkCfWebclient = new CheckCfWebClient( "", "", ssmParameterConsumerActivation, checkCfSecretConfig, pnNationalRegistriesSecretService);
         when(ssmParameterConsumerActivation.getParameterValue(any(), any())).thenReturn(Optional.of(sslData));
         when(pnNationalRegistriesSecretService.getSecret(any())).thenReturn("privateKey");
         TrustData trustData = new TrustData();
@@ -103,7 +103,7 @@ class CheckCfWebClientTest {
         GetSecretValueResponse secretsManagerResponse = GetSecretValueResponse.builder()
                 .secretString("secretString").build();
 
-        CheckCfWebClient checkCfWebclient = new CheckCfWebClient(true, "", "", webClientConfig, ssmParameterConsumerActivation, checkCfSecretConfig, pnNationalRegistriesSecretService);
+        CheckCfWebClient checkCfWebclient = new CheckCfWebClient( "", "", ssmParameterConsumerActivation, checkCfSecretConfig, pnNationalRegistriesSecretService);
         when(ssmParameterConsumerActivation.getParameterValue(any(), any())).thenReturn(Optional.empty());
         assertThrows(PnInternalException.class, checkCfWebclient::init, "Errore durante la chiamata al servizio VerificaCodiceFiscale");
     }

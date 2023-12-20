@@ -28,7 +28,7 @@ public class PdndClient {
     private final WebClient webClient;
 
     protected PdndClient(PdndWebClient pdndWebClient) {
-        webClient = pdndWebClient.initWebClient();
+        webClient = pdndWebClient.init();
     }
 
     public Mono<ClientCredentialsResponseDto> createToken(String clientAssertion, String clientAssertionType, String grantType, String clientId) {
