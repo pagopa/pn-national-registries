@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.client.pdnd;
 
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
+import it.pagopa.pn.national.registries.client.CustomFormMessageWriter;
 import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -21,6 +22,7 @@ public class PdndWebClient extends CommonBaseClient {
 
     public WebClient init() {
         return super.enrichBuilder(WebClient.builder().baseUrl(basePath))
+                .codecs(c -> c.customCodecs().register(new CustomFormMessageWriter()))
                 .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(responseExchangeFilter))
                 .build();
     }
