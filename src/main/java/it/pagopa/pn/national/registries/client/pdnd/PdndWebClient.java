@@ -1,49 +1,29 @@
 package it.pagopa.pn.national.registries.client.pdnd;
 
-import it.pagopa.pn.national.registries.client.CommonWebClient;
+import it.pagopa.pn.commons.pnclients.CommonBaseClient;
+import it.pagopa.pn.national.registries.client.CustomFormMessageWriter;
+import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
-import reactor.netty.http.client.HttpClient;
-import reactor.netty.resources.ConnectionProvider;
-
-import java.time.Duration;
 
 @Slf4j
 @Component
-public class PdndWebClient extends CommonWebClient {
-
-    private final Integer tcpMaxPoolSize;
-    private final Integer tcpMaxQueuedConnections;
-    private final Integer tcpPendingAcquireTimeout;
-    private final Integer tcpPoolIdleTimeout;
+public class PdndWebClient extends CommonBaseClient {
     private final String basePath;
+    private final ResponseExchangeFilter responseExchangeFilter;
 
-    public PdndWebClient(@Value("${pn.national.registries.webclient.pdnd.tcp-max-poolsize}") Integer tcpMaxPoolSize,
-                         @Value("${pn.national.registries.webclient.pdnd.tcp-max-queued-connections}") Integer tcpMaxQueuedConnections,
-                         @Value("${pn.national.registries.webclient.pdnd.tcp-pending-acquired-timeout}") Integer tcpPendingAcquireTimeout,
-                         @Value("${pn.national.registries.webclient.pdnd.tcp-pool-idle-timeout}") Integer tcpPoolIdleTimeout,
-                         @Value("${pn.national.registries.webclient.ssl-cert-ver}") Boolean sslCertVer,
-                         @Value("${pn.national.registries.pdnd.base-path}") String basePath) {
-        super(sslCertVer);
-        this.tcpMaxPoolSize = tcpMaxPoolSize;
-        this.tcpPendingAcquireTimeout = tcpPendingAcquireTimeout;
-        this.tcpMaxQueuedConnections = tcpMaxQueuedConnections;
-        this.tcpPoolIdleTimeout = tcpPoolIdleTimeout;
+    public PdndWebClient(
+            @Value("${pn.national.registries.pdnd.base-path}") String basePath, ResponseExchangeFilter responseExchangeFilter) {
         this.basePath = basePath;
+        this.responseExchangeFilter = responseExchangeFilter;
     }
 
-    protected WebClient initWebClient() {
-        ConnectionProvider connectionProvider = ConnectionProvider.builder("fixed")
-                .maxConnections(tcpMaxPoolSize)
-                .pendingAcquireMaxCount(tcpMaxQueuedConnections)
-                .pendingAcquireTimeout(Duration.ofMillis(tcpPendingAcquireTimeout))
-                .maxIdleTime(Duration.ofMillis(tcpPoolIdleTimeout))
+    public WebClient init() {
+        return super.enrichBuilder(WebClient.builder().baseUrl(basePath))
+                .codecs(c -> c.customCodecs().register(new CustomFormMessageWriter()))
+                .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(responseExchangeFilter))
                 .build();
-
-        HttpClient httpClient = HttpClient.create(connectionProvider);
-
-        return super.initWebClient(httpClient, basePath);
     }
 }
