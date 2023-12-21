@@ -27,6 +27,7 @@ public abstract class SecureWebClient extends CommonBaseClient {
 
     protected final WebClient initWebClient(String baseUrl) {
         return super.enrichBuilder(WebClient.builder().baseUrl(baseUrl))
+                .codecs(c -> c.customCodecs().register(new CustomFormMessageWriter()))
                 .filters(exchangeFilterFunctions -> exchangeFilterFunctions.add(responseExchangeFilter))
                 .build();
     }
