@@ -1,28 +1,27 @@
 package it.pagopa.pn.national.registries.client.inad;
 
-import it.pagopa.pn.national.registries.client.CommonWebClient;
+import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfWebClient;
 import it.pagopa.pn.national.registries.config.inad.InadWebClientConfig;
 import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration(classes = {CheckCfWebClient.class, CommonWebClient.class, ResponseExchangeFilter.class})
+@ContextConfiguration(classes = {CheckCfWebClient.class, CommonBaseClient.class, ResponseExchangeFilter.class})
 @ExtendWith(MockitoExtension.class)
 class InadWebClientTest {
 
+    @Mock
+    ResponseExchangeFilter responseExchangeFilter;
+
     @Test
     void testInit() {
-        InadWebClientConfig inadWebClientConfig = new InadWebClientConfig();
-        inadWebClientConfig.setTcpMaxPoolSize(1);
-        inadWebClientConfig.setTcpMaxQueuedConnections(1);
-        inadWebClientConfig.setTcpPoolIdleTimeout(1);
-        inadWebClientConfig.setTcpPendingAcquiredTimeout(1);
-        InadWebClient inadWebClient = new InadWebClient(true, "test.it", inadWebClientConfig);
-        Assertions.assertThrows(NullPointerException.class, inadWebClient::init);
+        InadWebClient inadWebClient = new InadWebClient("test.it", responseExchangeFilter);
+        Assertions.assertDoesNotThrow(inadWebClient::init);
     }
 
 }
