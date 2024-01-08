@@ -46,7 +46,7 @@ public class PdndClient {
                 .retrieve()
                 .bodyToMono(ClientCredentialsResponseDto.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.PDND, throwable.getMessage());
                     if (isUnauthorized(throwable)) {
                         throw new PnInternalException(ERROR_MESSSAGE_PDND_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, throwable);
                     }

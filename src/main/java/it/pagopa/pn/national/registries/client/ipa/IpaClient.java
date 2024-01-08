@@ -38,7 +38,7 @@ public class IpaClient {
                 .retrieve()
                 .bodyToMono(WS23ResponseDto.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.IPA, throwable.getMessage());
                     checkIPAException(throwable);
                 });
     }
@@ -52,7 +52,7 @@ public class IpaClient {
     }
 
     public Mono<WS05ResponseDto> callEServiceWS05(String codAmm, String authId) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_WS05_PEC);
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.IPA, PROCESS_SERVICE_WS05_PEC);
         return webClient.post()
                 .uri("/ws/WS05AMMServices/api/WS05_AMM")
                 .headers(httpHeaders -> httpHeaders.setContentType(MediaType.MULTIPART_FORM_DATA))
@@ -60,7 +60,7 @@ public class IpaClient {
                 .retrieve()
                 .bodyToMono(WS05ResponseDto.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.IPA, throwable.getMessage());
                     checkIPAException(throwable);
                 });
     }
