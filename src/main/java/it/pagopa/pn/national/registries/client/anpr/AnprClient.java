@@ -14,6 +14,7 @@ import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.anpr.E002RequestDto;
 import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -93,7 +94,7 @@ public class AnprClient {
                 .retrieve()
                 .bodyToMono(ResponseE002OKDto.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info("GovWay-Transaction-ID: {}", e.getHeaders().getFirst("GovWay-Transaction-ID"));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
