@@ -20,9 +20,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(SpringExtension.class)
 class AgidJwtSignatureTest {
 
-    @Autowired
-    private AgidJwtSignature agidJwtSignature;
-
     @MockBean
     AnprSecretConfig anprSecretConfig;
 
@@ -47,7 +44,7 @@ class AgidJwtSignatureTest {
         pdndSecretValue.setAuditDigest("audit");
         pdndSecretValue.setEserviceAudience("sservice");
 
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(),any())).thenReturn(pdndSecretValue);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(pdndSecretValue);
 
         AgidJwtSignature agidJwtSignature = new AgidJwtSignature(anprSecretConfig, kmsClient, pnNationalRegistriesSecretService);
         String digest = "digest";

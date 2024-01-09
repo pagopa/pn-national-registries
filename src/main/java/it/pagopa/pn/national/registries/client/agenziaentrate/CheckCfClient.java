@@ -48,8 +48,8 @@ public class CheckCfClient {
     }
 
     public Mono<TaxIdVerification> callEService(Request richiesta) {
-        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(checkCfSecretConfig.getPurposeId(), checkCfSecretConfig.getPdndSecret());
-        return accessTokenExpiringMap.getPDNDToken(checkCfSecretConfig.getPurposeId(), pdndSecretValue, false)
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(checkCfSecretConfig.getPdndSecret());
+        return accessTokenExpiringMap.getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, false)
                 .flatMap(tokenEntry -> callVerifica(richiesta, tokenEntry))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->

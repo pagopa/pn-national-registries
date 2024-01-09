@@ -61,9 +61,9 @@ public class AnprClient {
     public Mono<ResponseE002OKDto> callEService(E002RequestDto requestDto) {
         String agidTrackingEvidence = agidJwtTrackingEvidence.createAgidJwt();
         String auditAudience = createDigestFromAuditJws(agidTrackingEvidence);
-        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPurposeId(), anprSecretConfig.getPdndSecretName());
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPdndSecretName());
         pdndSecretValue.setAuditDigest(auditAudience);
-        return accessTokenExpiringMap.getPDNDToken(anprSecretConfig.getPurposeId(), pdndSecretValue, true)
+        return accessTokenExpiringMap.getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, true)
                 .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry, agidTrackingEvidence))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
