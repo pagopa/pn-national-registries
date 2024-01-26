@@ -5,6 +5,7 @@ import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
 import it.pagopa.pn.national.registries.model.pdnd.PdndResponseKO;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -46,7 +47,7 @@ public class PdndClient {
                 .retrieve()
                 .bodyToMono(ClientCredentialsResponseDto.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.PDND, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (isUnauthorized(throwable)) {
                         throw new PnInternalException(ERROR_MESSSAGE_PDND_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, throwable);
                     }

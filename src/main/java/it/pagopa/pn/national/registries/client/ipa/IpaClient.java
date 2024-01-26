@@ -5,6 +5,7 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.ipa.WS05ResponseDto;
 import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -38,7 +39,7 @@ public class IpaClient {
                 .retrieve()
                 .bodyToMono(WS23ResponseDto.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.IPA, MaskDataUtils.maskInformation(throwable.getMessage()));
                     checkIPAException(throwable);
                 });
     }
@@ -60,7 +61,7 @@ public class IpaClient {
                 .retrieve()
                 .bodyToMono(WS05ResponseDto.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, MaskDataUtils.maskInformation(throwable.getMessage()));
                     checkIPAException(throwable);
                 });
     }
