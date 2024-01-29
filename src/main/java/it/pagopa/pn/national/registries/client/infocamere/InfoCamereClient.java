@@ -45,6 +45,8 @@ public class InfoCamereClient {
     private static final String CLIENT_ID = "client_id";
     private static final String SCOPE = "scope";
 
+    private static final String TRAKING_ID = "X-Tracking-trackingId";
+
     protected InfoCamereClient(InfoCamereWebClient infoCamereWebClient,
                                @Value("${pn.national.registries.infocamere.client-id}") String clientId,
                                AccessTokenExpiringMap accessTokenExpiringMap,
@@ -84,6 +86,7 @@ public class InfoCamereClient {
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
@@ -118,6 +121,7 @@ public class InfoCamereClient {
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
@@ -151,6 +155,7 @@ public class InfoCamereClient {
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
@@ -184,6 +189,7 @@ public class InfoCamereClient {
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
@@ -214,6 +220,7 @@ public class InfoCamereClient {
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
+                        log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
