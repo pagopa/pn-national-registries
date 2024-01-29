@@ -107,7 +107,7 @@ class AnprClientTest {
         when(responseSpec.bodyToMono(ResponseE002OKDto.class)).thenReturn(Mono.just(rispostaE002OKDto));
         PdndSecretValue pdndSecretValue = new PdndSecretValue();
         pdndSecretValue.setJwtConfig(new JwtConfig());
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(pdndSecretValue);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(pdndSecretValue);
         StepVerifier.create(anprClient.callEService(e002RequestDto))
                 .expectNext(rispostaE002OKDto)
                 .verifyComplete();
@@ -147,7 +147,7 @@ class AnprClientTest {
         when(responseSpec.bodyToMono(ResponseE002OKDto.class)).thenReturn(Mono.error(exception));
         PdndSecretValue pdndSecretValue = new PdndSecretValue();
         pdndSecretValue.setJwtConfig(new JwtConfig());
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(pdndSecretValue);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(pdndSecretValue);
 
         StepVerifier.create(anprClient.callEService(e002RequestDto))
                 .verifyError(PnNationalRegistriesException.class);
@@ -186,7 +186,7 @@ class AnprClientTest {
         when(responseSpec.bodyToMono(ResponseE002OKDto.class)).thenReturn(Mono.error(exception));
         PdndSecretValue pdndSecretValue = new PdndSecretValue();
         pdndSecretValue.setJwtConfig(new JwtConfig());
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(pdndSecretValue);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(pdndSecretValue);
 
         StepVerifier.create(anprClient.callEService(e002RequestDto))
                 .verifyError(PnInternalException.class);

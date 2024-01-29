@@ -10,14 +10,9 @@ import org.springframework.stereotype.Component;
 @Getter
 public class InadSecretConfig{
 
-   private final String purposeId;
    private final String pdndSecret;
 
-    public InadSecretConfig(
-            @Value("${pn.national.registries.pdnd.inad.purpose-id}") String purposeId,
-                            @Value("${pn.national.registries.pdnd.inad.secret}") String pdndSecret) {
-
+    public InadSecretConfig(@Value("${pn.national.registries.pdnd.inad.secret}") String pdndSecret) {
         this.pdndSecret = pdndSecret;
-        this.purposeId = purposeId;
     }
 }

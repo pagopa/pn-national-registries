@@ -25,13 +25,13 @@ public class PnNationalRegistriesSecretService {
         this.cachedSecretsManagerConsumer = cachedSecretsManagerConsumer;
     }
 
-    public PdndSecretValue getPdndSecretValue(String purposeId, String secretId) {
+    public PdndSecretValue getPdndSecretValue(String secretId) {
         Optional<GetSecretValueResponse> opt = cachedSecretsManagerConsumer.getSecretValue(secretId);
         if (opt.isPresent()) {
-            log.info("founded secret for purposeId: {} and secretId: {}", purposeId, secretId);
+            log.info("founded secret for secretId: {}", secretId);
             return convertToSecretValueObject(opt.get().secretString(), PdndSecretValue.class);
         } else {
-            log.warn("secret value for purposeId: {} and secretId: {} not found", purposeId, secretId);
+            log.warn("secret value for secretId: {} not found", secretId);
             throw new PnInternalException(ERROR_MESSAGE_SECRET_MANAGER, ERROR_CODE_SECRET_MANAGER, new Throwable());
         }
     }

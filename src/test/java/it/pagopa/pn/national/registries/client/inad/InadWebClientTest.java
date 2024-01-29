@@ -2,7 +2,6 @@ package it.pagopa.pn.national.registries.client.inad;
 
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfWebClient;
-import it.pagopa.pn.national.registries.config.inad.InadWebClientConfig;
 import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
