@@ -11,14 +11,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 @ExtendWith(MockitoExtension.class)
 class CheckCfSecretConfigTest {
 
-    @Mock
-    SecretManagerService secretManagerService;
-
     @Test
     void getCheckCfSecretConfigTest() {
-        CheckCfSecretConfig checkCfSecretConfig = new CheckCfSecretConfig("test1","test2", "trustedCert");
+        CheckCfSecretConfig checkCfSecretConfig = new CheckCfSecretConfig("test2", "trustedCert");
         Assertions.assertNotNull(checkCfSecretConfig.getPdndSecret());
-        Assertions.assertNotNull(checkCfSecretConfig.getPurposeId());
         Assertions.assertNotNull(checkCfSecretConfig.getTrustData());
     }
 

@@ -7,9 +7,8 @@ class InadSecretConfigTest {
 
     @Test
     void getInadSecretConfigTest() {
-        InadSecretConfig inadSecretConfig = new InadSecretConfig("test1", "test2");
+        InadSecretConfig inadSecretConfig = new InadSecretConfig("test2");
         Assertions.assertNotNull(inadSecretConfig.getPdndSecret());
-        Assertions.assertNotNull(inadSecretConfig.getPurposeId());
     }
 
 }

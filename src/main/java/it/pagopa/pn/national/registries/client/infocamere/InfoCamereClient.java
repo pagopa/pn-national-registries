@@ -16,6 +16,7 @@ import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -83,7 +84,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(IniPecBatchResponse.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
@@ -118,7 +119,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(IniPecPollingResponse.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
@@ -152,7 +153,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(AddressRegistroImprese.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
@@ -186,7 +187,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(InfoCamereLegalInstituionsResponse.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
@@ -217,7 +218,7 @@ public class InfoCamereClient {
                 .retrieve()
                 .bodyToMono(InfoCamereVerification.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),

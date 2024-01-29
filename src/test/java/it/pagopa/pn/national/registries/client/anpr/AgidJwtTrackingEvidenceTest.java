@@ -48,7 +48,7 @@ class AgidJwtTrackingEvidenceTest {
         pdndSecretValue.setAuditDigest("audit");
         pdndSecretValue.setEserviceAudience("sservice");
 
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(),any())).thenReturn(pdndSecretValue);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(pdndSecretValue);
 
         AgidJwtTrackingEvidence agidJwtTrackingEvidence = new AgidJwtTrackingEvidence(anprSecretConfig, kmsClient, pnNationalRegistriesSecretService);
 
@@ -76,7 +76,7 @@ class AgidJwtTrackingEvidenceTest {
 
         Map<String, String> mdcMap = Map.of("trace_id", "Root=testtesttest;P");
 
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(),any())).thenReturn(pdndSecretValue);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(pdndSecretValue);
 
         try (MockedStatic<MDCUtils> utilities = Mockito.mockStatic(MDCUtils.class)) {
             utilities.when(MDCUtils::retrieveMDCContextMap).thenReturn(mdcMap);
@@ -109,7 +109,7 @@ class AgidJwtTrackingEvidenceTest {
 
         Map<String, String> mdcMap = Map.of("trace_id", "traceId:testtesttest");
 
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(),any())).thenReturn(pdndSecretValue);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(pdndSecretValue);
 
         try (MockedStatic<MDCUtils> utilities = Mockito.mockStatic(MDCUtils.class)) {
             utilities.when(MDCUtils::retrieveMDCContextMap).thenReturn(mdcMap);

@@ -31,7 +31,7 @@ class PdndClientTest {
 
     @Test
     void testCallCreateToken() {
-        when(pdndWebClient.initWebClient()).thenReturn(webClient);
+        when(pdndWebClient.init()).thenReturn(webClient);
         PdndClient pdndClient = new PdndClient(pdndWebClient);
 
         ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
@@ -58,7 +58,7 @@ class PdndClientTest {
 
     @Test
     void testCallCreateTokenDoOnError() {
-        when(pdndWebClient.initWebClient()).thenReturn(webClient);
+        when(pdndWebClient.init()).thenReturn(webClient);
         PdndClient pdndClient = new PdndClient(pdndWebClient);
 
         HttpHeaders headers = mock(HttpHeaders.class);
