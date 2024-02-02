@@ -7,7 +7,7 @@ class AnprSecretConfigTest {
 
     @Test
     void getAnprSecretConfigTest() {
-        AnprSecretConfig anprSecretConfig = new AnprSecretConfig("trustSecret", "purposeId", "pdndSecretName", "env");
+        AnprSecretConfig anprSecretConfig = new AnprSecretConfig("trustSecret", "pdndSecretName", "env");
         Assertions.assertNotNull(anprSecretConfig.getTrustSecret());
     }
 }

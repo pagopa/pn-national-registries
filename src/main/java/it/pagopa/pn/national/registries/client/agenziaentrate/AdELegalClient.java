@@ -5,6 +5,7 @@ import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalErrorDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import it.pagopa.pn.national.registries.utils.XMLWriter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -16,7 +17,6 @@ import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_AGENZIA_ENTRATE_CHECK_TAX_ID;
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_AGENZIA_ENTRATE_LEGAL;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADE_UNAUTHORIZED;
@@ -48,7 +48,7 @@ public class AdELegalClient {
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ADE, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ADE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),

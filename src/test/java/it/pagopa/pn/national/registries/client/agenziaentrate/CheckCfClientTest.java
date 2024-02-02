@@ -89,7 +89,7 @@ class CheckCfClientTest {
 
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(value);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
         StepVerifier.create(checkCfClient.callEService(richiesta))
                 .expectNext(taxIdVerification)
                 .verifyComplete();
@@ -129,7 +129,7 @@ class CheckCfClientTest {
         when(responseSpec.bodyToMono(TaxIdVerification.class)).thenReturn(Mono.error(webClientResponseException));
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(value);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
         StepVerifier.create(checkCfClient.callEService(richiesta))
                 .expectError(WebClientResponseException.class)
                 .verify();

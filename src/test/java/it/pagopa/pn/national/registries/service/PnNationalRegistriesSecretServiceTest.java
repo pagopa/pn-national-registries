@@ -38,7 +38,7 @@ class PnNationalRegistriesSecretServiceTest {
     void getPdndSecretValue(){
         GetSecretValueResponse getSecretValueResponse = GetSecretValueResponse.builder().secretString("secret").build();
         when(cachedSecretsManagerConsumer.getSecretValue(anyString())).thenReturn(Optional.of(getSecretValueResponse));
-        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getPdndSecretValue("42", "secretId"));
+        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getPdndSecretValue("secretId"));
     }
 
     @Test
@@ -63,13 +63,13 @@ class PnNationalRegistriesSecretServiceTest {
     }
 
     /**
-     * Method under test: {@link PnNationalRegistriesSecretService#getPdndSecretValue(String, String)}
+     * Method under test: {@link PnNationalRegistriesSecretService#getPdndSecretValue(String)}
      */
     @Test
     void testGetPdndSecretValue5() throws AwsServiceException, SdkClientException {
         when(secretsManagerClient.getSecretValue(Mockito.<GetSecretValueRequest>any()))
                 .thenThrow(new PnInternalException("An error occurred"));
-        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getPdndSecretValue("42", ""));
+        assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getPdndSecretValue(""));
     }
 
 

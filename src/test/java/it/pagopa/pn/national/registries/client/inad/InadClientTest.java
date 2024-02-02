@@ -76,7 +76,7 @@ class InadClientTest {
         when(responseSpec.bodyToMono(ResponseRequestDigitalAddressDto.class)).thenReturn(Mono.just(response));
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(value);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
         StepVerifier.create(inadClient.callEService("cf","test"))
                 .expectNext()
                 .verifyError();
@@ -94,7 +94,7 @@ class InadClientTest {
         when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.error(webClientResponseException));
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
-        when(pnNationalRegistriesSecretService.getPdndSecretValue(any(), any())).thenReturn(value);
+        when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
         StepVerifier.create(inadClient.callEService("cf", "test"))
                 .verifyError(WebClientResponseException.class);
     }

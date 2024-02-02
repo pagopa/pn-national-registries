@@ -94,10 +94,6 @@ Parameters:
     Type: String
     Description: 'ANPR Base URL'
 
-  ANPRPurposeId:
-    Type: String
-    Description: 'ANPR Base Purpose ID'
-
   AdELegalBaseURL:
     Type: String
     Description: 'Agenzia Entrate Legale Rappresentante Base URL'
@@ -106,17 +102,9 @@ Parameters:
     Type: String
     Description: 'Agenzia Entrate Check CF Base URL'
 
-  AdECheckCfPurposeId:
-    Type: String
-    Description: 'Agenzia Entrate Purpose ID'
-
   INADBaseURL:
     Type: String
     Description: 'INAD Base URL'
-
-  INADPurposeId:
-    Type: String
-    Description: 'INAD Purpose ID'
 
   InfoCamereBaseURL:
     Type: String
@@ -414,44 +402,41 @@ Resources:
         ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
         ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_BASE_URL=${PDNDBaseURL}'
         ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
-        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PURPOSE_ID=${ANPRPurposeId}'
-        ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
-        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_ADE_AUTH=${AdESSL}'
-        ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_BASE_URL=${AdELegalBaseURL}'
-        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_NAME_ID=${AdELegalNameId}'
-        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
-        ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PURPOSE_ID=${AdECheckCfPurposeId}'
-        ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PDND_CLIENT_SECRET=${PDNDAdECheckCfSecret}'
-        ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
-        ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_INAD_PURPOSE_ID=${INADPurposeId}'
-        ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_INAD_PDND_CLIENT_SECRET=${PDNDInadSecret}'
-        ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
-        ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
-        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH=${InfoCamereAuth}'
-        ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
-        ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
-        ContainerEnvEntry22: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
-        ContainerEnvEntry23: !Sub 'PN_NATIONAL_REGISTRY_IPA_SECRET=${IPASecret}'
-        ContainerEnvEntry24: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
-        ContainerEnvEntry25: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_DELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
-        ContainerEnvEntry26: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
-        ContainerEnvEntry27: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
-        ContainerEnvEntry28: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_MAX_RETRY=${PnNationalRegistriesInipecBatchRequestMaxRetry}'
-        ContainerEnvEntry29: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_DELAY=${PnNationalRegistriesInipecBatchPollingDelay}'
-        ContainerEnvEntry30: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchPollingRecoveryDelay}'
-        ContainerEnvEntry31: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchPollingRecoveryAfter}'
-        ContainerEnvEntry32: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
-        ContainerEnvEntry33: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
-        ContainerEnvEntry34: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_TRUST_SECRET=${AdECheckCfTrustSecret}'
-        ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_TRUST_SECRET=${AdELegalTrustSecret}'
-        ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
-        ContainerEnvEntry37: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
-        ContainerEnvEntry38: !Sub 'PN_NATIONAL_REGISTRY_TOPICS_GATEWAYEVENTS=${NationalRegistryGatewayInputsQueueName}'
-        ContainerEnvEntry39: !Sub 'PN_NATIONAL_REGISTRY_INPUT_QUEUE_NAME=${NationalRegistryGatewayInputsQueueName}'
-        ContainerEnvEntry40: !Sub 'PN_NATIONAL_REGISTRY_INPUT_DLQ_QUEUE_NAME=${NationalRegistryGatewayInputsDLQName}'
-        ContainerEnvEntry41: !Sub 'PN_NATIONAL_REGISTRY_HEALTH_CHECK_PATH=${HealthCheckPath}'
-        ContainerEnvEntry42: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_INPROGRESS_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
-        ContainerEnvEntry43: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_BATCH_REQUEST_SIZE=${PnNationalRegistriesInipecMaxBatchRequestSize}'
+        ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
+        ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_ADE_AUTH=${AdESSL}'
+        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_BASE_URL=${AdELegalBaseURL}'
+        ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_NAME_ID=${AdELegalNameId}'
+        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
+        ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PDND_CLIENT_SECRET=${PDNDAdECheckCfSecret}'
+        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
+        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_INAD_PDND_CLIENT_SECRET=${PDNDInadSecret}'
+        ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
+        ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
+        ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH=${InfoCamereAuth}'
+        ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
+        ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
+        ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
+        ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_IPA_SECRET=${IPASecret}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
+        ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_DELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
+        ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
+        ContainerEnvEntry22: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
+        ContainerEnvEntry23: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_MAX_RETRY=${PnNationalRegistriesInipecBatchRequestMaxRetry}'
+        ContainerEnvEntry24: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_DELAY=${PnNationalRegistriesInipecBatchPollingDelay}'
+        ContainerEnvEntry25: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchPollingRecoveryDelay}'
+        ContainerEnvEntry26: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchPollingRecoveryAfter}'
+        ContainerEnvEntry27: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
+        ContainerEnvEntry28: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
+        ContainerEnvEntry29: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_TRUST_SECRET=${AdECheckCfTrustSecret}'
+        ContainerEnvEntry30: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_TRUST_SECRET=${AdELegalTrustSecret}'
+        ContainerEnvEntry31: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
+        ContainerEnvEntry32: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
+        ContainerEnvEntry33: !Sub 'PN_NATIONAL_REGISTRY_TOPICS_GATEWAYEVENTS=${NationalRegistryGatewayInputsQueueName}'
+        ContainerEnvEntry34: !Sub 'PN_NATIONAL_REGISTRY_INPUT_QUEUE_NAME=${NationalRegistryGatewayInputsQueueName}'
+        ContainerEnvEntry45: !Sub 'PN_NATIONAL_REGISTRY_INPUT_DLQ_QUEUE_NAME=${NationalRegistryGatewayInputsDLQName}'
+        ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_HEALTH_CHECK_PATH=${HealthCheckPath}'
+        ContainerEnvEntry37: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_INPROGRESS_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
+        ContainerEnvEntry38: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_BATCH_REQUEST_SIZE=${PnNationalRegistriesInipecMaxBatchRequestSize}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -751,7 +736,6 @@ Resources:
                 Effect: Allow
                 Resource: 
                   - !GetAtt InfocamereCertRenewalCodebuildProject.Arn
-                  - !GetAtt AdeCertRenewalCodebuildProject.Arn
         - PolicyName: sqsPut
           PolicyDocument:
             Statement:
@@ -771,7 +755,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-infocamere-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(0 10 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 10:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
+      ScheduleExpression: "cron(0 10 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
@@ -788,7 +772,7 @@ Resources:
     Type: AWS::Events::Rule
     Properties:
       Description: !Sub "${ProjectName}-Ade-cert-renewal-schedule-rule"
-      ScheduleExpression: "cron(30 10 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 10:30 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
+      ScheduleExpression: "cron(30 10 ? SEP,NOV,JAN,MAR,MAY,JUL 4#1 *)" # the first WED of the month at 11:00 am, in one of these months: SEP,NOV,JAN,MAR,MAY,JUL
       State: "ENABLED"
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
