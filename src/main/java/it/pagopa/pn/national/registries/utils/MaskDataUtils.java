@@ -1,5 +1,7 @@
 package it.pagopa.pn.national.registries.utils;
 
+import org.springframework.util.StringUtils;
+
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -77,7 +79,10 @@ public class MaskDataUtils {
         for (String part : parts) {
             masked.append(maskString(part)).append(",");
         }
-        return masked.substring(0,masked.length()-1);
+        if(StringUtils.hasText(masked)) {
+            return masked.substring(0, masked.length() - 1);
+        }
+        return masked.toString();
     }
 
     private static String maskEmailAddress(String strEmail) {
