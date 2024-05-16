@@ -1,22 +1,28 @@
 package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.UsageInfoDto;
-import it.pagopa.pn.national.registries.model.inad.ElementDigitalAddressDto;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
-import it.pagopa.pn.national.registries.model.inad.MotivationTerminationDto;
-import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.nio.charset.Charset;
+import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
+import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.UsageInfoDto.MotivationEnum.UFFICIO;
+import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.UsageInfoDto.MotivationEnum.VOLONTARIA;
 
 
 @Slf4j
@@ -31,34 +37,35 @@ public class InadConverter {
     private InadConverter() {
     }
 
-    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddressDto elementDigitalAddressDto, String recipientType, String taxId) {
+    private static Date toDate(OffsetDateTime from) {
+        return Optional.ofNullable(from).map(fromDate -> new Date(fromDate.toInstant().toEpochMilli())).orElse(null);
+    }
+
+    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, String recipientType, String taxId) {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
-        if (elementDigitalAddressDto != null) {
-            response.setSince(elementDigitalAddressDto.getSince());
-            response.setTaxId(elementDigitalAddressDto.getTaxId());
-            if (elementDigitalAddressDto.getDigitalAddress() != null) {
-                List<DigitalAddressDto> digitalAddressDtoList = elementDigitalAddressDto.getDigitalAddress().stream()
-                        .filter(InadConverter::isValid)
-                        .map(InadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
-                        .toList();
-                switch (recipientType) {
-                    case "PF" -> mapToPfAddress(digitalAddressDtoList, response);
-                    case "PG" -> mapToPgAddress(digitalAddressDtoList, taxId, response);
-                    default -> throw new PnNationalRegistriesException("Invalid recipientType",HttpStatus.BAD_REQUEST.value(),
-                            HttpStatus.BAD_REQUEST.getReasonPhrase(),null,null , Charset.defaultCharset(), InadResponseKO.class);
-                }
-            } else {
-                log.info("inad digital addresses is null");
+        if (elementDigitalAddress != null) {
+            response.setSince(toDate(elementDigitalAddress.getSince()));
+            response.setTaxId(elementDigitalAddress.getCodiceFiscale());
+            List<DigitalAddressDto> digitalAddressDtoList = elementDigitalAddress.getDigitalAddress().stream()
+                    .filter(InadConverter::isValid)
+                    .map(InadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
+                    .toList();
+            switch (recipientType) {
+                case "PF" -> mapToPfAddress(digitalAddressDtoList, response);
+                case "PG" -> mapToPgAddress(digitalAddressDtoList, taxId, response);
+                default ->
+                        throw new PnNationalRegistriesException("Invalid recipientType", HttpStatus.BAD_REQUEST.value(),
+                                HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class);
             }
         }
         return response;
     }
 
-    private static void mapToPgAddress (List<DigitalAddressDto> digitalAddressDtoList, String taxId, GetDigitalAddressINADOKDto response){
+    private static void mapToPgAddress(List<DigitalAddressDto> digitalAddressDtoList, String taxId, GetDigitalAddressINADOKDto response) {
         if (taxId.length() == PIVA_LENGTH &&
                 digitalAddressDtoList.size() == 1 && !StringUtils.hasText(digitalAddressDtoList.get(0).getPracticedProfession())) {
             response.setDigitalAddress(digitalAddressDtoList.get(0));
-        }else{
+        } else {
             digitalAddressDtoList.stream()
                     .filter(item -> StringUtils.hasText(item.getPracticedProfession()))
                     .findFirst()
@@ -66,13 +73,13 @@ public class InadConverter {
                             response::setDigitalAddress,
                             () -> {
                                 throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
-                                        HttpStatus.NOT_FOUND.getReasonPhrase(),null,null, Charset.defaultCharset(), InadResponseKO.class);
+                                        HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class);
                             }
                     );
         }
     }
-    private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response)
-    {
+
+    private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response) {
         digitalAddressDtoList.stream()
                 .filter(item -> !StringUtils.hasText(item.getPracticedProfession()) && response.getTaxId().length() == CF_LENGTH)
                 .findFirst()
@@ -80,11 +87,12 @@ public class InadConverter {
                         response::setDigitalAddress,
                         () -> {
                             throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
-                                    HttpStatus.NOT_FOUND.getReasonPhrase(),null, null, Charset.defaultCharset(), InadResponseKO.class);
+                                    HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class);
                         }
                 );
     }
-    private static DigitalAddressDto convertToGetDigitalAddressINADOKDigitalAddressInnerDto(ElementDigitalAddressDto item) {
+
+    private static DigitalAddressDto convertToGetDigitalAddressINADOKDigitalAddressInnerDto(ElementDigitalAddress item) {
         DigitalAddressDto digitalAddress = new DigitalAddressDto();
 
         digitalAddress.setDigitalAddress(item.getDigitalAddress());
@@ -94,34 +102,31 @@ public class InadConverter {
         return digitalAddress;
     }
 
-    private static UsageInfoDto convertUsageInfo(ElementDigitalAddressDto item) {
+    private static UsageInfoDto convertUsageInfo(ElementDigitalAddress item) {
         UsageInfoDto usageInfoDto = new UsageInfoDto();
-        if (item != null && item.getUsageInfo() != null) {
+        if (item != null) {
             usageInfoDto.setMotivation(convertMotivation(item.getUsageInfo().getMotivation()));
-            usageInfoDto.setDateEndValidity(item.getUsageInfo().getDateEndValidity());
+            usageInfoDto.setDateEndValidity(toDate(item.getUsageInfo().getDateEndValidity()));
         }
         return usageInfoDto;
     }
 
-    private static UsageInfoDto.MotivationEnum convertMotivation(MotivationTerminationDto motivation) {
+    private static UsageInfoDto.MotivationEnum convertMotivation(MotivationTermination motivation) {
         if (motivation == null) {
             return null;
         }
         return switch (motivation) {
-            case UFFICIO -> UsageInfoDto.MotivationEnum.UFFICIO;
-            case VOLONTARIA -> UsageInfoDto.MotivationEnum.VOLONTARIA;
+            case UFFICIO -> UFFICIO;
+            case VOLONTARIA -> VOLONTARIA;
         };
     }
 
-    private static boolean isValid(ElementDigitalAddressDto dto) {
-        Date now = new Date();
-        if(dto.getUsageInfo() == null
-                || dto.getUsageInfo().getDateEndValidity() == null
-                || dto.getUsageInfo().getDateEndValidity().equals(now)
-                || dto.getUsageInfo().getDateEndValidity().after(now)){
+    private static boolean isValid(ElementDigitalAddress dto) {
+        OffsetDateTime now = OffsetDateTime.now();
+        OffsetDateTime toCheck = dto.getUsageInfo().getDateEndValidity();
+        if (toCheck.equals(now) || toCheck.isAfter(now)) {
             return true;
-        }
-        else{
+        } else {
             log.info("inad digital address: {} is not valid", dto.getDigitalAddress());
             return false;
         }

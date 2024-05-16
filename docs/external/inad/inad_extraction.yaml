@@ -16,7 +16,7 @@ info:
     url: https://creativecommons.org/licenses/by-nc-sa/4.0/
   version: 1.0.0-SNAPSHOT
 servers:
-  - url: https://domiciliodigitaleapi.oscl.infocamere.it/rest/inad/v1/domiciliodigitale
+  - url: https://api.inad.gov.it/rest/inad/v1/domiciliodigitale
     description: Generated server url
 tags:
   - name: API ESTRAZIONI MULTIPLE
