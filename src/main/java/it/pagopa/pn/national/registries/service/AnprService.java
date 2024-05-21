@@ -4,15 +4,12 @@ import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.converter.AnprConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RichiestaE002;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoCriteriRicercaE002;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoDatiRichiestaE002;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
-import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
+import it.pagopa.pn.national.registries.model.anpr.*;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -55,27 +52,27 @@ public class AnprService {
                 .doOnNext(batchRequest -> log.info("Created ANPR request for taxId: {}", MaskDataUtils.maskString(cf)))
                 .flatMap(anprClient::callEService)
                 .doOnNext(batchRequest -> log.info("Got ResponseE002OKDto fox taxId: {}", MaskDataUtils.maskString(cf)))
-                .map(rispostaE002OK -> anprConverter.convertToGetAddressANPROK(rispostaE002OK, cf));
+                .map(rispostaE002OKDto -> anprConverter.convertToGetAddressANPROKDto(rispostaE002OKDto, cf));
     }
 
-    private Mono<RichiestaE002> createRequest(GetAddressANPRRequestBodyDto request) {
+    private Mono<E002RequestDto> createRequest(GetAddressANPRRequestBodyDto request) {
         return counterRepository.getCounter("anpr")
                 .map(s -> constructE002RequestDto(request, s.getCounter()));
     }
 
-    private RichiestaE002 constructE002RequestDto(GetAddressANPRRequestBodyDto request, Long s) {
-        RichiestaE002 richiesta = new RichiestaE002();
+    private E002RequestDto constructE002RequestDto(GetAddressANPRRequestBodyDto request, Long s) {
+        E002RequestDto richiesta = new E002RequestDto();
         richiesta.setIdOperazioneClient(s.toString());
-        TipoCriteriRicercaE002 criteriRicercaE002 = new TipoCriteriRicercaE002();
-        criteriRicercaE002.setCodiceFiscale(request.getFilter().getTaxId());
-        richiesta.setCriteriRicerca(criteriRicercaE002);
+        SearchCriteriaE002Dto criteriRicercaE002Dto = new SearchCriteriaE002Dto();
+        criteriRicercaE002Dto.setCodiceFiscale(request.getFilter().getTaxId());
+        richiesta.setCriteriRicerca(criteriRicercaE002Dto);
 
-        TipoDatiRichiestaE002 datiRichiestaE002 = new TipoDatiRichiestaE002();
-        datiRichiestaE002.setDataRiferimentoRichiesta(request.getFilter().getReferenceRequestDate());
-        datiRichiestaE002.setMotivoRichiesta(request.getFilter().getRequestReason());
-        datiRichiestaE002.setCasoUso("C001");
+        RequestDateE002Dto dto = new RequestDateE002Dto();
+        dto.setDataRiferimentoRichiesta(request.getFilter().getReferenceRequestDate());
+        dto.setMotivoRichiesta(request.getFilter().getRequestReason());
+        dto.setCasoUso("C001");
 
-        richiesta.setDatiRichiesta(datiRichiestaE002);
+        richiesta.setDatiRichiesta(dto);
         return richiesta;
     }
 }

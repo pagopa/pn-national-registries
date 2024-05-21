@@ -1,8 +1,8 @@
 package it.pagopa.pn.national.registries.converter;
 
-
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
+import it.pagopa.pn.national.registries.model.anpr.*;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -20,14 +20,14 @@ public class AnprConverter {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public GetAddressANPROKDto convertToGetAddressANPROK(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RispostaE002OK rispostaE002OK, String cf) {
+    public GetAddressANPROKDto convertToGetAddressANPROKDto(ResponseE002OKDto responseE002OKDto, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
-        if (rispostaE002OK != null) {
-            response.setClientOperationId(rispostaE002OK.getIdOperazioneANPR());
+        if (responseE002OKDto != null) {
+            response.setClientOperationId(responseE002OKDto.getIdOperazioneANPR());
         }
-        if (rispostaE002OK != null && rispostaE002OK.getListaSoggetti() != null
-                && rispostaE002OK.getListaSoggetti().getDatiSoggetto() != null) {
-            response.setResidentialAddresses(rispostaE002OK.getListaSoggetti().getDatiSoggetto().stream()
+        if (responseE002OKDto != null && responseE002OKDto.getListaSoggetti() != null
+                && responseE002OKDto.getListaSoggetti().getDatiSoggetto() != null) {
+            response.setResidentialAddresses(responseE002OKDto.getListaSoggetti().getDatiSoggetto().stream()
                     .filter(soggetto -> soggetto.getResidenza() != null
                             && soggetto.getGeneralita() != null
                             && soggetto.getGeneralita().getCodiceFiscale() != null
@@ -42,24 +42,24 @@ public class AnprConverter {
         return response;
     }
 
-    private ResidentialAddressDto convertResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoResidenza tipoResidenza) {
+    private ResidentialAddressDto convertResidence(ResidenceDto dto) {
         ResidentialAddressDto innerDto = new ResidentialAddressDto();
-        innerDto.setAt(tipoResidenza.getPresso());
-        innerDto.setDescription(tipoResidenza.getTipoIndirizzo());
-        if (tipoResidenza.getIndirizzo() != null) {
-            mapToResidence(tipoResidenza.getIndirizzo(), innerDto);
-            if (tipoResidenza.getLocalitaEstera() != null && tipoResidenza.getLocalitaEstera().getIndirizzoEstero() != null
-                    && tipoResidenza.getLocalitaEstera().getIndirizzoEstero().getLocalita() != null) {
-                innerDto.setForeignState(tipoResidenza.getLocalitaEstera().getIndirizzoEstero().getLocalita().getDescrizioneStato());
+        innerDto.setAt(dto.getPresso());
+        innerDto.setDescription(dto.getTipoIndirizzo());
+        if (dto.getIndirizzo() != null) {
+            mapToResidence(dto.getIndirizzo(), innerDto);
+            if (dto.getLocalitaEstera() != null && dto.getLocalitaEstera().getIndirizzoEstero() != null
+                    && dto.getLocalitaEstera().getIndirizzoEstero().getLocalita() != null) {
+                innerDto.setForeignState(dto.getLocalitaEstera().getIndirizzoEstero().getLocalita().getDescrizioneStato());
             }
 
-        } else if (tipoResidenza.getLocalitaEstera() != null) {
-            mapToForeignResidence(tipoResidenza.getLocalitaEstera(), innerDto);
+        } else if (dto.getLocalitaEstera() != null) {
+            mapToForeignResidence(dto.getLocalitaEstera(), innerDto);
         }
         return innerDto;
     }
 
-    private void mapToResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo, ResidentialAddressDto innerDto) {
+    private void mapToResidence(AddressDto indirizzo, ResidentialAddressDto innerDto) {
         if(indirizzo.getNumeroCivico()!=null && indirizzo.getNumeroCivico().getCivicoInterno()!=null){
             innerDto.setAddressDetail(indirizzo.getNumeroCivico().getCivicoInterno().getScala());
         }
@@ -73,7 +73,7 @@ public class AnprConverter {
         }
     }
 
-    private void mapToForeignResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoLocalitaEstera1 localitaEstera, ResidentialAddressDto innerDto) {
+    private void mapToForeignResidence(ForeignLocation1Dto localitaEstera, ResidentialAddressDto innerDto) {
         if (localitaEstera.getIndirizzoEstero() != null) {
             innerDto.setZip(localitaEstera.getIndirizzoEstero().getCap());
             if (localitaEstera.getIndirizzoEstero().getToponimo() != null) {
@@ -88,7 +88,7 @@ public class AnprConverter {
         }
     }
 
-    private String createForeignAddressString(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoToponimoEstero toponimo) {
+    private String createForeignAddressString(ForeignToponymDto toponimo) {
         StringBuilder stringBuilder = new StringBuilder();
         stringBuilder.append(toponimo.getDenominazione());
         if(StringUtils.hasText(toponimo.getNumeroCivico())){
@@ -98,7 +98,7 @@ public class AnprConverter {
         return stringBuilder.toString();
     }
 
-    private String createAddressString(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo) {
+    private String createAddressString(AddressDto indirizzo) {
         if (indirizzo.getToponimo() != null && indirizzo.getNumeroCivico() != null) {
             return indirizzo.getToponimo().getSpecie() + " " + indirizzo.getToponimo().getDenominazioneToponimo() + " "
                     + Optional.ofNullable(indirizzo.getNumeroCivico().getNumero()).orElse("") + Optional.ofNullable(indirizzo.getNumeroCivico().getLettera()).orElse("");
