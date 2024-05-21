@@ -24,15 +24,15 @@ public class SecureWebClientUtils {
         return sslContextBuilder.trustManager(getTrustCertInputStream(trust)).build();
     }
 
-    protected final InputStream getTrustCertInputStream(String clientKeyPem) {
+    public final InputStream getTrustCertInputStream(String clientKeyPem) {
         return new ByteArrayInputStream(Base64.getDecoder().decode(clientKeyPem));
     }
 
-    protected final InputStream getKeyInputStream(String clientKeyPem) {
+    public final InputStream getKeyInputStream(String clientKeyPem) {
         return new ByteArrayInputStream(clientKeyPem.getBytes(StandardCharsets.UTF_8));
     }
 
-    protected final InputStream getCertInputStream(String stringCert) {
+    public final InputStream getCertInputStream(String stringCert) {
         return new ByteArrayInputStream(Base64.getDecoder().decode(stringCert));
     }
 
