@@ -34,10 +34,10 @@ public class IpaClient {
     }
 
     public Mono<WS05ResponseDto> callEServiceWS05(String codAmm, String authId) {
-        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, PROCESS_SERVICE_WS05_PEC);
+        log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.IPA, PROCESS_SERVICE_WS05_PEC);
         return ipaApi.callEServiceWS05(codAmm, authId)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.PN_NATIONAL_REGISTRIES, MaskDataUtils.maskInformation(throwable.getMessage()));
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.IPA, MaskDataUtils.maskInformation(throwable.getMessage()));
                     checkIPAException(throwable);
                 });
     }
