@@ -117,7 +117,7 @@ class InfoCamereServiceTest {
         addressRegistroImpreseResponse.setCode("err-sede");
         addressRegistroImpreseResponse.setDescription("description");
         addressRegistroImpreseResponse.setAppName("appName");
-        addressRegistroImpreseResponse.setTimestamp(OffsetDateTime.now());
+        addressRegistroImpreseResponse.setTimestamp(OffsetDateTime.now().toString());
 
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
         when(infoCamereConverter.checkIfResponseIsInfoCamereError((AddressRegistroImprese)any())).thenReturn(true);
@@ -160,7 +160,7 @@ class InfoCamereServiceTest {
         response.setCode("err-lrpunt");
         response.setDescription("description");
         response.setAppName("appName");
-        response.setTimestamp(OffsetDateTime.now());
+        response.setTimestamp(OffsetDateTime.now().toString());
 
         InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
         InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();

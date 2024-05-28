@@ -239,7 +239,7 @@ class DigitalAddressBatchPollingServiceTest {
         IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
         iniPecPollingResponse.setCode("WSPA_ERR_05");
         iniPecPollingResponse.setDescription("List PEC in progress");
-        iniPecPollingResponse.setTimestamp(OffsetDateTime.now());
+        iniPecPollingResponse.setTimestamp(OffsetDateTime.now().toString());
         iniPecPollingResponse.setAppName("wspa-pedf");
 
         when(infoCamereClient.callEServiceRequestPec(any()))

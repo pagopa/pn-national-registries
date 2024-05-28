@@ -117,7 +117,7 @@ public class InfoCamereConverter {
     public InfoCamereLegalInstitutionsOKDto mapToResponseOkByResponse(InfoCamereLegalInstituionsResponse response) {
         InfoCamereLegalInstitutionsOKDto infoCamereLegalInstitutions = new InfoCamereLegalInstitutionsOKDto();
         infoCamereLegalInstitutions.setLegalTaxId(response.getCfPersona());
-        infoCamereLegalInstitutions.setDateTimeExtraction(Objects.toString(response.getDataOraEstrazione()));
+        infoCamereLegalInstitutions.setDateTimeExtraction(response.getDataOraEstrazione());
         infoCamereLegalInstitutions.setBusinessList(convertToBusiness(response));
         infoCamereLegalInstitutions.setDescription(response.getDescription());
         infoCamereLegalInstitutions.setCode(response.getCode());

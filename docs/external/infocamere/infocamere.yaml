@@ -75,6 +75,11 @@ paths:
           schema:
             type: string
           description: Client ID for authentication
+        - name: scope
+          in: header
+          required: true
+          schema:
+            type: string
       requestBody:
         required: true
         content:
@@ -141,6 +146,11 @@ paths:
           schema:
             type: string
           description: Client ID for authentication
+        - name: scope
+          in: header
+          required: true
+          schema:
+            type: string
       security:
         - bearerAuth: [ ]
       responses:
@@ -197,6 +207,11 @@ paths:
           schema:
             type: string
           description: Client ID for authentication
+        - name: scope
+          in: header
+          required: true
+          schema:
+            type: string
       security:
         - bearerAuth: [ ]
       responses:
@@ -253,6 +268,11 @@ paths:
           schema:
             type: string
           description: Client ID for authentication
+        - name: scope
+          in: header
+          required: true
+          schema:
+            type: string
       security:
         - bearerAuth: [ ]
       responses:
@@ -315,6 +335,11 @@ paths:
           schema:
             type: string
           description: VAT number of the company
+        - name: scope
+          in: header
+          required: true
+          schema:
+            type: string
       security:
         - bearerAuth: [ ]
       responses:
@@ -360,7 +385,6 @@ components:
         dataOraRichiesta:
           type: string
           description: The date and time of the request
-          format: date-time
         identificativoRichiesta:
           type: string
           description: The identifier of the request
@@ -377,7 +401,6 @@ components:
         dataOraDownload:
           type: string
           description: The date and time of the download
-          format: date-time
         identificativoRichiesta:
           type: string
           description: The identifier of the request
@@ -394,7 +417,6 @@ components:
           type: string
         timestamp:
           type: string
-          format: date-time
       required:
         - dataOraDownload
         - identificativoRichiesta
@@ -450,7 +472,6 @@ components:
         dataOraEstrazione:
           type: string
           description: The date and time of the extraction
-          format: date-time
         cf:
           type: string
           description: Tax ID (Codice Fiscale)
@@ -464,7 +485,6 @@ components:
           type: string
         timestamp:
           type: string
-          format: date-time
       required:
         - dataOraEstrazione
         - cf
@@ -525,7 +545,6 @@ components:
         dataOraEstrazione:
           type: string
           description: The date and time of the extraction
-          format: date-time
         cfPersona:
           type: string
           description: Legal tax ID (Codice Fiscale) of the person
@@ -542,7 +561,6 @@ components:
           type: string
         timestamp:
           type: string
-          format: date-time
       required:
         - dataOraEstrazione
         - cfPersona
@@ -578,7 +596,6 @@ components:
         dataOraEstrazione:
           type: string
           description: The date and time of the extraction
-          format: date-time
         cfPersona:
           type: string
           description: Tax ID (Codice Fiscale) of the person
@@ -596,7 +613,6 @@ components:
           type: string
         timestamp:
           type: string
-          format: date-time
       required:
         - dataOraEstrazione
         - cfPersona
@@ -607,3 +623,12 @@ components:
         cfPersona: "ABCDEF1234567890"
         cfImpresa: "12345678901"
         esitoVerifica: "Success"
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

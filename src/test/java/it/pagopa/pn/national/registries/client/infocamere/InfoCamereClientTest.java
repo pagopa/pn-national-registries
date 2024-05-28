@@ -102,7 +102,7 @@ class InfoCamereClientTest {
         accessTokenCacheEntry.setClientCredentials("jws");
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
-        when(legalRepresentativeApi.getLegalRepresentativeListByTaxId(any(), any()))
+        when(legalRepresentativeApi.getLegalRepresentativeListByTaxId(any(), any(), any()))
                 .thenReturn(Mono.just(infoCamereLegalInstituionsResponse));
 
 
@@ -131,7 +131,7 @@ class InfoCamereClientTest {
 
         IniPecBatchResponse iniPecBatchResponse = new IniPecBatchResponse();
         iniPecBatchResponse.setIdentificativoRichiesta("correlationId");
-        iniPecBatchResponse.setDataOraRichiesta(OffsetDateTime.now());
+        iniPecBatchResponse.setDataOraRichiesta(OffsetDateTime.now().toString());
 
         String requestJson = "requestJson";
         try {
@@ -144,7 +144,7 @@ class InfoCamereClientTest {
         accessTokenCacheEntry.setClientCredentials("jws");
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
-        when(pecApi.callRichiestaElencoPec(any(), any())).thenReturn(Mono.just(iniPecBatchResponse));
+        when(pecApi.callRichiestaElencoPec(any(), any(), any())).thenReturn(Mono.just(iniPecBatchResponse));
 
         StepVerifier.create(infoCamereClient.callEServiceRequestId(request)).expectNext(iniPecBatchResponse).verifyComplete();
     }
@@ -171,7 +171,7 @@ class InfoCamereClientTest {
         }
 
         WebClientResponseException ex = buildException();
-        when(pecApi.callRichiestaElencoPec(any(), any()))
+        when(pecApi.callRichiestaElencoPec(any(), any(), any()))
                 .thenReturn(Mono.error(ex));
 
         StepVerifier.create(infoCamereClient.callEServiceRequestId(request))
@@ -198,7 +198,7 @@ class InfoCamereClientTest {
 
         //     callGetTokenTest();
 
-        when(pecApi.callGetElencoPec(any(), any())).thenReturn(Mono.just(response ));
+        when(pecApi.callGetElencoPec(any(), any(), any())).thenReturn(Mono.just(response ));
         StepVerifier.create(infoCamereClient.callEServiceRequestPec(request)).expectNext(response).verifyComplete();
     }
 
@@ -218,7 +218,7 @@ class InfoCamereClientTest {
         clientCredentialsResponseDto.setExpiresIn(10);
 
         WebClientResponseException ex = buildException();
-        when(pecApi.callGetElencoPec(any(), any())).thenReturn(Mono.error(ex));
+        when(pecApi.callGetElencoPec(any(), any(), any())).thenReturn(Mono.error(ex));
 
         StepVerifier.create(infoCamereClient.callEServiceRequestPec(request))
                 .expectError(PnNationalRegistriesException.class)
@@ -239,7 +239,7 @@ class InfoCamereClientTest {
         accessTokenCacheEntry.setClientCredentials(jws);
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
-        when(sedeApi.getAddressByTaxId(anyString(), any())).thenReturn(Mono.just(response));
+        when(sedeApi.getAddressByTaxId(anyString(), any(), any())).thenReturn(Mono.just(response));
 
         StepVerifier.create(infoCamereClient.getLegalAddress(request))
                 .expectNext(response)
@@ -257,7 +257,7 @@ class InfoCamereClientTest {
 
         WebClientResponseException ex = buildException();
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
-        when(sedeApi.getAddressByTaxId(anyString(), any())).thenReturn(Mono.error(ex));
+        when(sedeApi.getAddressByTaxId(anyString(), any(), any())).thenReturn(Mono.error(ex));
 
         StepVerifier.create(infoCamereClient.getLegalAddress(request))
                 .expectError(PnNationalRegistriesException.class)
@@ -295,7 +295,7 @@ class InfoCamereClientTest {
 
         when(accessTokenExpiringMap.getInfoCamereToken(any()))
                 .thenReturn(Mono.just(accessTokenCacheEntry));
-        when(legalRepresentationApi.checkTaxIdForLegalRepresentation(anyString(), anyString(), any()))
+        when(legalRepresentationApi.checkTaxIdForLegalRepresentation(anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(response));
 
         StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(filterDto))
@@ -316,7 +316,7 @@ class InfoCamereClientTest {
 
         WebClientResponseException ex = buildException();
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
-        when(legalRepresentationApi.checkTaxIdForLegalRepresentation(anyString(), anyString(), any()))
+        when(legalRepresentationApi.checkTaxIdForLegalRepresentation(anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.error(ex));
 
         StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(filterDto))
@@ -330,7 +330,7 @@ class InfoCamereClientTest {
         WebClientResponseException ex = buildExceptionUnauthorized();
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
-        when(pecApi.callRichiestaElencoPec(any(), any())).thenReturn(Mono.error(ex));
+        when(pecApi.callRichiestaElencoPec(any(), any(), any())).thenReturn(Mono.error(ex));
 
         StepVerifier.create(infoCamereClient.callEServiceRequestId(any()))
                 .expectError(PnInternalException.class)
@@ -343,7 +343,7 @@ class InfoCamereClientTest {
         WebClientResponseException ex = buildExceptionUnauthorized();
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
-        when(pecApi.callGetElencoPec(any(), any())).thenReturn(Mono.error(ex));
+        when(pecApi.callGetElencoPec(any(), any(), any())).thenReturn(Mono.error(ex));
 
         StepVerifier.create(infoCamereClient.callEServiceRequestPec(any()))
                 .expectError(PnInternalException.class)
@@ -356,7 +356,7 @@ class InfoCamereClientTest {
         WebClientResponseException ex = buildExceptionUnauthorized();
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
-        when(sedeApi.getAddressByTaxId(any(), any())).thenReturn(Mono.error(ex));
+        when(sedeApi.getAddressByTaxId(any(), any(), any())).thenReturn(Mono.error(ex));
 
         StepVerifier.create(infoCamereClient.getLegalAddress(any()))
                 .expectError(PnInternalException.class)
@@ -371,7 +371,7 @@ class InfoCamereClientTest {
         checkTaxIdRequestBodyFilterDto.setTaxId("taxId");
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
-        when(legalRepresentativeApi.getLegalRepresentativeListByTaxId(any(), any())).thenReturn(Mono.error(ex));
+        when(legalRepresentativeApi.getLegalRepresentativeListByTaxId(any(), any(), any())).thenReturn(Mono.error(ex));
 
         StepVerifier.create(infoCamereClient.getLegalInstitutions(checkTaxIdRequestBodyFilterDto))
                 .expectError(PnInternalException.class)
@@ -387,7 +387,7 @@ class InfoCamereClientTest {
         filterDto.setTaxId("taxId");
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
-        when(legalRepresentationApi.checkTaxIdForLegalRepresentation(any(), any(), any())).thenReturn(Mono.error(ex));
+        when(legalRepresentationApi.checkTaxIdForLegalRepresentation(any(), any(), any(), any())).thenReturn(Mono.error(ex));
 
         StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(filterDto))
                 .expectError(PnInternalException.class)

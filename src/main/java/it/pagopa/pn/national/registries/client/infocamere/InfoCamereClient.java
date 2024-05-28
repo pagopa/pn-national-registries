@@ -80,8 +80,7 @@ public class InfoCamereClient {
 
         var apiClient = pecApi.getApiClient();
         apiClient.setBearerToken(token);
-        apiClient.addDefaultHeader(SCOPE, InipecScopeEnum.PEC.value());
-        return pecApi.callRichiestaElencoPec(body, clientId)
+        return pecApi.callRichiestaElencoPec(InipecScopeEnum.PEC.value(), body, clientId)
                 .doOnError(handleErrorCall());
     }
 
@@ -99,8 +98,7 @@ public class InfoCamereClient {
 
         ApiClient apiClient = pecApi.getApiClient();
         apiClient.setBearerToken(token);
-        apiClient.addDefaultHeader(SCOPE, InipecScopeEnum.PEC.value());
-        return pecApi.callGetElencoPec(correlationId, clientId)
+        return pecApi.callGetElencoPec(correlationId, InipecScopeEnum.PEC.value(), clientId)
                 .doOnError(handleErrorCall());
     }
 
@@ -116,10 +114,9 @@ public class InfoCamereClient {
     private Mono<AddressRegistroImprese> callGetLegalAddress(String taxId, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_REGISTRO_IMPRESE_ADDRESS);
 
-        ApiClient apiClient = pecApi.getApiClient();
+        ApiClient apiClient = sedeApi.getApiClient();
         apiClient.setBearerToken(token);
-        apiClient.addDefaultHeader(SCOPE, InipecScopeEnum.PEC.value());
-        return sedeApi.getAddressByTaxId(taxId, clientId)
+        return sedeApi.getAddressByTaxId(taxId, InipecScopeEnum.SEDE.value(), clientId)
                 .doOnError(handleErrorCall());
     }
 
@@ -135,10 +132,9 @@ public class InfoCamereClient {
     public Mono<InfoCamereLegalInstituionsResponse> callGetLegalInstitutions(String taxId, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS);
 
-        ApiClient apiClient = pecApi.getApiClient();
+        ApiClient apiClient = legalRepresentativeApi.getApiClient();
         apiClient.setBearerToken(token);
-        apiClient.addDefaultHeader(SCOPE, InipecScopeEnum.PEC.value());
-        return legalRepresentativeApi.getLegalRepresentativeListByTaxId(taxId, clientId)
+        return legalRepresentativeApi.getLegalRepresentativeListByTaxId(taxId, InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
                 .doOnError(handleErrorCall());
     }
 
@@ -154,8 +150,8 @@ public class InfoCamereClient {
     private Mono<InfoCamereVerification> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL);
 
-        pecApi.getApiClient().setBearerToken(token);
-        return legalRepresentationApi.checkTaxIdForLegalRepresentation(filterDto.getVatNumber(), filterDto.getTaxId(), clientId)
+        legalRepresentationApi.getApiClient().setBearerToken(token);
+        return legalRepresentationApi.checkTaxIdForLegalRepresentation(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
                 .doOnError(handleErrorCall());
     }
 

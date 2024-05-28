@@ -204,7 +204,7 @@ class InfoCamereConverterTest {
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
-        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now());
+        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
         addressRegistroImpreseResponse.setCf("taxId");
 
         GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
@@ -236,7 +236,7 @@ class InfoCamereConverterTest {
         businessDto.setCfImpresa("businessTaxId");
         businessDto.setDenominazione("businessName");
         response.setElencoImpreseRappresentate(List.of(businessDto));
-        response.setDataOraEstrazione(OffsetDateTime.now());
+        response.setDataOraEstrazione(OffsetDateTime.now().toString());
 
         InfoCamereLegalInstitutionsOKDto actualResult = infoCamereConverter
                 .mapToResponseOkByResponse(response);
@@ -249,7 +249,7 @@ class InfoCamereConverterTest {
     void mapToResponseOkByResponse2() {
         InfoCamereLegalInstituionsResponse response = new InfoCamereLegalInstituionsResponse();
         response.setCfPersona("taxId");
-        response.setDataOraEstrazione(OffsetDateTime.now());
+        response.setDataOraEstrazione(OffsetDateTime.now().toString());
 
         InfoCamereLegalInstitutionsOKDto actualResult = infoCamereConverter
                 .mapToResponseOkByResponse(response);
