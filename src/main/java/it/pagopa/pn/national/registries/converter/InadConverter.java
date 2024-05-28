@@ -46,6 +46,7 @@ public class InadConverter {
         if (elementDigitalAddress != null) {
             response.setSince(toDate(elementDigitalAddress.getSince()));
             response.setTaxId(elementDigitalAddress.getCodiceFiscale());
+            if (elementDigitalAddress.getDigitalAddress() != null) {
             List<DigitalAddressDto> digitalAddressDtoList = elementDigitalAddress.getDigitalAddress().stream()
                     .filter(InadConverter::isValid)
                     .map(InadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
@@ -56,6 +57,9 @@ public class InadConverter {
                 default ->
                         throw new PnNationalRegistriesException("Invalid recipientType", HttpStatus.BAD_REQUEST.value(),
                                 HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class);
+                }
+            } else {
+                log.info("inad digital addresses is null");
             }
         }
         return response;
@@ -104,7 +108,7 @@ public class InadConverter {
 
     private static UsageInfoDto convertUsageInfo(ElementDigitalAddress item) {
         UsageInfoDto usageInfoDto = new UsageInfoDto();
-        if (item != null) {
+        if (item != null && item.getUsageInfo() != null) {
             usageInfoDto.setMotivation(convertMotivation(item.getUsageInfo().getMotivation()));
             usageInfoDto.setDateEndValidity(toDate(item.getUsageInfo().getDateEndValidity()));
         }
