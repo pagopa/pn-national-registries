@@ -51,6 +51,8 @@ paths:
       operationId: e002
       security:
         - bearerAuth: []
+          Agid-JWT-Signature: []
+          Agid-JWT-TrackingEvidence: []
       requestBody:
         required: true
         description: Richiesta da consultare
