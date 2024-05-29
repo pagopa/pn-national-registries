@@ -7,7 +7,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.M
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.UsageInfo;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.inad.MotivationTerminationDto;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -18,7 +17,6 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Date;
@@ -46,10 +44,10 @@ class InadServiceTest {
     @Test
     void callEService() {
         String practicalReference = "00001";
-        OffsetDateTime now = OffsetDateTime.now();
+        Date now = new Date();
 
         UsageInfo usageInfo1 = new UsageInfo();
-        usageInfo1.setDateEndValidity(OffsetDateTime.ofInstant(LocalDate.EPOCH.atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC));
+        usageInfo1.setDateEndValidity(Date.from(LocalDate.EPOCH.atStartOfDay(ZoneOffset.UTC).toInstant()));
         usageInfo1.setMotivation(MotivationTermination.UFFICIO);
         ElementDigitalAddress elementDigitalAddressDto1 = new ElementDigitalAddress();
         elementDigitalAddressDto1.setDigitalAddress(DIGITAL_ADDRESS_1);
@@ -57,13 +55,13 @@ class InadServiceTest {
 
         UsageInfo usageInfo2 = new UsageInfo();
         usageInfo2.setMotivation(MotivationTermination.UFFICIO);
-        usageInfo2.setDateEndValidity(OffsetDateTime.ofInstant(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC));
+        usageInfo2.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         ElementDigitalAddress elementDigitalAddressDto2 = new ElementDigitalAddress();
         elementDigitalAddressDto2.setDigitalAddress(DIGITAL_ADDRESS_2);
         elementDigitalAddressDto2.setUsageInfo(usageInfo2);
 
         UsageInfo usageInfo3 = new UsageInfo();
-        usageInfo3.setDateEndValidity(OffsetDateTime.ofInstant(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant(), ZoneOffset.UTC));
+        usageInfo3.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         usageInfo3.setMotivation(MotivationTermination.UFFICIO);
         ElementDigitalAddress elementDigitalAddressDto3 = new ElementDigitalAddress();
         elementDigitalAddressDto3.setDigitalAddress(DIGITAL_ADDRESS_3);
@@ -93,7 +91,7 @@ class InadServiceTest {
         digitalAddressDto1.setUsageInfo(usageInfoDto1);
 
         UsageInfoDto usageInfoDto2 = new UsageInfoDto();
-        usageInfoDto2.setDateEndValidity(Date.from(usageInfo3.getDateEndValidity().toInstant()));
+        usageInfoDto2.setDateEndValidity(usageInfo3.getDateEndValidity());
         usageInfoDto2.setMotivation(UsageInfoDto.MotivationEnum.UFFICIO);
         DigitalAddressDto digitalAddressDto2 = new DigitalAddressDto();
         digitalAddressDto2.setDigitalAddress(DIGITAL_ADDRESS_3);
@@ -101,7 +99,7 @@ class InadServiceTest {
 
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
         response.setTaxId(TAX_ID);
-        response.setSince(Date.from(now.toInstant()));
+        response.setSince(now);
         response.setDigitalAddress(digitalAddressDto1);
 
         StepVerifier.create(inadService.callEService(req, "PF"))

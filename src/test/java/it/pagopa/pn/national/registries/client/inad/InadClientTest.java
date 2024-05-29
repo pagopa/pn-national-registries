@@ -24,7 +24,7 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.nio.charset.Charset;
-import java.time.OffsetDateTime;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -54,7 +54,7 @@ class InadClientTest {
 
         ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
         response.setCodiceFiscale("cf");
-        response.setSince(OffsetDateTime.now());
+        response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setTokenValue("fafsff");
@@ -94,7 +94,7 @@ class InadClientTest {
 
         ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
         response.setCodiceFiscale("cf");
-        response.setSince(OffsetDateTime.now());
+        response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setTokenValue("fafsff");
@@ -121,7 +121,7 @@ class InadClientTest {
 
         ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
         response.setCodiceFiscale("cf");
-        response.setSince(OffsetDateTime.now());
+        response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setTokenValue("fafsff");

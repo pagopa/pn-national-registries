@@ -293,7 +293,14 @@
                             <configOptions>
                                 <swaggerAnnotations>false</swaggerAnnotations>
                                 <openApiNullable>false</openApiNullable>
+                                <dateLibrary>custom</dateLibrary>
                             </configOptions>
+                            <typeMappings>
+                                <typeMapping>DateTime=Date</typeMapping>
+                            </typeMappings>
+                            <importMappings>
+                                <importMapping>Date=java.util.Date</importMapping>
+                            </importMappings>
                             <modelPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto</modelPackage>
                             <apiPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api</apiPackage>
                         </configuration>

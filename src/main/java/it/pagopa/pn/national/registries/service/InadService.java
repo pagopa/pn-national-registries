@@ -27,6 +27,6 @@ public class InadService{
     public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request, String recipientType) {
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INAD_ADDRESS, false);
         return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference())
-                .map(responseRequestDigitalAddress -> InadConverter.mapToResponseOk(responseRequestDigitalAddress, recipientType, request.getFilter().getTaxId()));
+                .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, request.getFilter().getTaxId()));
     }
 }
