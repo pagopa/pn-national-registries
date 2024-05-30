@@ -14,8 +14,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
-import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -191,13 +189,6 @@ class InfoCamereClientTest {
         IniPecPollingResponse response = new IniPecPollingResponse();
         response.setIdentificativoRichiesta("correlationId");
 
-        ClientCredentialsResponseDto ClientCredentialsResponseDto = new ClientCredentialsResponseDto();
-        ClientCredentialsResponseDto.setAccessToken("token");
-        ClientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
-        ClientCredentialsResponseDto.setExpiresIn(10);
-
-        //     callGetTokenTest();
-
         when(pecApi.callGetElencoPec(any(), any(), any())).thenReturn(Mono.just(response ));
         StepVerifier.create(infoCamereClient.callEServiceRequestPec(request)).expectNext(response).verifyComplete();
     }
@@ -211,11 +202,6 @@ class InfoCamereClientTest {
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
         String request = "correlationId";
-
-        ClientCredentialsResponseDto ClientCredentialsResponseDto = new ClientCredentialsResponseDto();
-        ClientCredentialsResponseDto.setAccessToken("accessToken");
-        ClientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
-        ClientCredentialsResponseDto.setExpiresIn(10);
 
         WebClientResponseException ex = buildException();
         when(pecApi.callGetElencoPec(any(), any(), any())).thenReturn(Mono.error(ex));
