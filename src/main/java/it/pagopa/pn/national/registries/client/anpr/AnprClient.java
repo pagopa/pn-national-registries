@@ -7,18 +7,17 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.api.E002ServiceApi;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RichiestaE002;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RispostaE002OK;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
-import it.pagopa.pn.national.registries.model.anpr.E002RequestDto;
-import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
@@ -38,8 +37,8 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 public class AnprClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
-    private final AnprWebClient anprWebClient;
     private final AgidJwtSignature agidJwtSignature;
+    private final E002ServiceApi e002ServiceApi;
     private final AgidJwtTrackingEvidence agidJwtTrackingEvidence;
     private final AnprSecretConfig anprSecretConfig;
 
@@ -47,19 +46,19 @@ public class AnprClient {
 
     protected AnprClient(AccessTokenExpiringMap accessTokenExpiringMap,
                          AgidJwtSignature agidJwtSignature,
+                         E002ServiceApi e002ServiceApi,
                          AgidJwtTrackingEvidence agidJwtTrackingEvidence,
                          AnprSecretConfig anprSecretConfig,
-                         AnprWebClient anprWebClient,
                          PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
         this.accessTokenExpiringMap = accessTokenExpiringMap;
         this.agidJwtSignature = agidJwtSignature;
+        this.e002ServiceApi = e002ServiceApi;
         this.agidJwtTrackingEvidence = agidJwtTrackingEvidence;
         this.anprSecretConfig = anprSecretConfig;
         this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
-        this.anprWebClient = anprWebClient;
     }
 
-    public Mono<ResponseE002OKDto> callEService(E002RequestDto requestDto) {
+    public Mono<RispostaE002OK> callEService(RichiestaE002 requestDto) {
         String agidTrackingEvidence = agidJwtTrackingEvidence.createAgidJwt();
         String auditAudience = createDigestFromAuditJws(agidTrackingEvidence);
         PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPdndSecretName());
@@ -72,27 +71,18 @@ public class AnprClient {
                 );
     }
 
-    private Mono<ResponseE002OKDto> callAnpr(E002RequestDto requestDto, AccessTokenCacheEntry tokenEntry, String agidTrackingEvidence) {
+    private Mono<RispostaE002OK> callAnpr(RichiestaE002 request, AccessTokenCacheEntry tokenEntry, String agidTrackingEvidence) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.ANPR, PROCESS_SERVICE_ANPR_ADDRESS);
-        String s = convertToJson(requestDto);
+        String s = convertToJson(request);
         String digest = createDigestFromPayload(s);
         log.debug("digest: {}", digest);
-        WebClient webClient = anprWebClient.init();
-        return webClient.post()
-                .uri("/anpr-service-e002")
-                .contentType(MediaType.APPLICATION_JSON)
-                .headers(httpHeaders -> {
-                    httpHeaders.setContentType(MediaType.APPLICATION_JSON);
-                    httpHeaders.setBearerAuth(tokenEntry.getTokenValue());
-                    httpHeaders.add("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
-                    httpHeaders.add("Agid-JWT-TrackingEvidence", agidTrackingEvidence);
-                    httpHeaders.add("Content-Encoding", "UTF-8");
-                    httpHeaders.add("Digest", digest);
-                    httpHeaders.add("bearerAuth", tokenEntry.getTokenValue());
-                })
-                .bodyValue(s)
-                .retrieve()
-                .bodyToMono(ResponseE002OKDto.class)
+        e002ServiceApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
+        e002ServiceApi.getApiClient().addDefaultHeader("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
+        e002ServiceApi.getApiClient().addDefaultHeader("Agid-JWT-TrackingEvidence", agidTrackingEvidence);
+        e002ServiceApi.getApiClient().addDefaultHeader("Content-Encoding", "UTF-8");
+        e002ServiceApi.getApiClient().addDefaultHeader("Digest", digest);
+        e002ServiceApi.getApiClient().addDefaultHeader("bearerAuth", tokenEntry.getTokenValue());
+        return e002ServiceApi.e002(request)
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
@@ -104,7 +94,7 @@ public class AnprClient {
                 });
     }
 
-    private String convertToJson(E002RequestDto requestDto) {
+    private String convertToJson(RichiestaE002 requestDto) {
         try {
             ObjectMapper mapper = new ObjectMapper();
             mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);

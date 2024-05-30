@@ -1,0 +1,194 @@
+openapi: 3.0.0
+info:
+  title: IPA Client API
+  description: API client for interacting with IPA services.
+  version: 1.0.0
+servers:
+  - url: /ws
+paths:
+  /ws/WS23DOMDIGCFServices/api/WS23_DOM_DIG_CF:
+    post:
+      summary: Call E-Service WS23
+      operationId: callEServiceWS23
+      tags:
+        - IPA
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WS23RequestDto'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WS23ResponseDto'
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+  /ws/WS05AMMServices/api/WS05_AMM:
+    post:
+      summary: Call E-Service WS05
+      operationId: callEServiceWS05
+      tags:
+        - IPA
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WS05RequestDto'
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WS05ResponseDto'
+        '400':
+          description: Bad request
+        '500':
+          description: Server error
+
+components:
+  schemas:
+    WS23RequestDto:
+      required:
+        - CF
+        - AUTH_ID
+      type: object
+      properties:
+        CF:
+          type: string
+          description: Tax ID
+        AUTH_ID:
+          type: string
+          description: Authorization ID
+    WS23ResponseDto:
+      type: object
+      properties:
+        result:
+          $ref: '#/components/schemas/ResultDto'
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/DataWS23Dto'
+    WS05RequestDto:
+      required:
+        - COD_AMM
+        - AUTH_ID
+      type: object
+      properties:
+        COD_AMM:
+          type: string
+          description: Code of Amm
+        AUTH_ID:
+          type: string
+          description: Authorization ID
+    WS05ResponseDto:
+      type: object
+      properties:
+        result:
+          $ref: '#/components/schemas/ResultDto'
+        data:
+          $ref: '#/components/schemas/DataWS05Dto'
+    ResultDto:
+      type: object
+      properties:
+        cod_err:
+          type: integer
+          description: Error code
+        desc_err:
+          type: string
+          description: Error description
+        num_items:
+          type: integer
+          description: Number of items
+    DataWS23Dto:
+      type: object
+      properties:
+        domicilio_digitale:
+          type: string
+          description: Digital domicile
+        tipo:
+          type: string
+          description: Type
+        cod_amm:
+          type: string
+          description: Code of the entity
+        des_amm:
+          type: string
+          description: Name of the entity
+    DataWS05Dto:
+      type: object
+      properties:
+        cod_amm:
+          type: string
+          description: Code of Amm
+        acronimo:
+          type: string
+          description: Acronym
+        des_amm:
+          type: string
+          description: Description of Amm
+        regione:
+          type: string
+          description: Region
+        provincia:
+          type: string
+          description: Province
+        comune:
+          type: string
+          description: Municipality
+        cap:
+          type: string
+          description: Postal code
+        indirizzo:
+          type: string
+          description: Address
+        titolo_resp:
+          type: string
+          description: Title of the responsible
+        nome_resp:
+          type: string
+          description: Name of the responsible
+        cogn_resp:
+          type: string
+          description: Surname of the responsible
+        sito_istituzionale:
+          type: string
+          description: Institutional site
+        liv_accessibilita:
+          type: string
+          description: Accessibility level
+        mail1:
+          type: string
+          description: Primary email
+        mail2:
+          type: string
+          description: Secondary email
+        mail3:
+          type: string
+          description: Tertiary email
+        mail4:
+          type: string
+          description: Quaternary email
+        mail5:
+          type: string
+          description: Quinary email
+        tipologia:
+          type: string
+          description: Typology
+        categoria:
+          type: string
+          description: Category
+        data_accreditamento:
+          type: string
+          description: Accreditation date
+        cf:
+          type: string
+          description: Fiscal code

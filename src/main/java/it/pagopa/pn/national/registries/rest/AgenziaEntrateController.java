@@ -28,22 +28,6 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
     }
 
     /**
-     * POST /national-registries-private/agenzia-entrate/tax-id : Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
-     * Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
-     *
-     * @param checkTaxIdRequestBodyDto Effettua la ricerca di un codice fiscale (required)
-     * @return OK (status code 200)
-     *         or Bad request (status code 400)
-     *         or Internal server error (status code 500)
-     */
-    @Override
-    public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        return checkTaxIdRequestBodyDto.flatMap(agenziaEntrateService::callEService)
-                .map(t -> ResponseEntity.ok().body(t))
-                .publishOn(scheduler);
-    }
-
-    /**
      * POST /national-registries-private/agenzia-entrate/legal : Il servizio consente la verifica di corrispondenza fra il codice fiscale del rappresentante legale di un soggetto giuridico e il soggetto giuridico stesso.
      * Il servizio consente la verifica di corrispondenza fra il codice fiscale del rappresentante legale di un soggetto giuridico e il soggetto giuridico stesso.
      *

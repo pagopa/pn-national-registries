@@ -3,18 +3,16 @@ package it.pagopa.pn.national.registries.client.infocamere;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.AuthenticationApi;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.Charset;
-import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_INFO_CAMERE_GET_TOKEN;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
@@ -24,35 +22,27 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class InfoCamereTokenClient {
 
-    private final WebClient webClient;
     private final InfoCamereJwsGenerator infoCamereJwsGenerator;
     private final String clientId;
 
-    private static final String CLIENT_ID = "client_id";
+    private final AuthenticationApi authenticationApi;
+
     private static final String TRAKING_ID = "X-Tracking-trackingId";
 
 
-
-    protected InfoCamereTokenClient(InfoCamereWebClient infoCamereGetTokenWebClient,
-                                    @Value("${pn.national.registries.infocamere.client-id}") String clientId,
-                                    InfoCamereJwsGenerator infoCamereJwsGenerator) {
+    protected InfoCamereTokenClient(@Value("${pn.national.registries.infocamere.client-id}") String clientId,
+                                    InfoCamereJwsGenerator infoCamereJwsGenerator,
+                                    AuthenticationApi authenticationApi) {
         this.clientId = clientId;
         this.infoCamereJwsGenerator = infoCamereJwsGenerator;
-        webClient = infoCamereGetTokenWebClient.init();
+        this.authenticationApi = authenticationApi;
     }
 
     public Mono<String> getToken(String scope) {
         String jws = infoCamereJwsGenerator.createAuthRest(scope);
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_GET_TOKEN);
-        return webClient.post()
-                .uri(uriBuilder -> uriBuilder
-                        .path("/authentication")
-                        .queryParamIfPresent(CLIENT_ID, Optional.ofNullable(clientId))
-                        .build())
-                .headers(httpHeaders -> httpHeaders.setContentType(MediaType.APPLICATION_JSON))
-                .bodyValue(jws)
-                .retrieve()
-                .bodyToMono(String.class)
+
+        return authenticationApi.getToken(jws, clientId)
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
                     if (isUnauthorized(throwable)) {
@@ -66,7 +56,6 @@ public class InfoCamereTokenClient {
                     }
                 });
     }
-
 
     private boolean isUnauthorized(Throwable throwable) {
         if (throwable instanceof WebClientResponseException exception) {

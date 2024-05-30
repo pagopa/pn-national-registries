@@ -1,13 +1,14 @@
 package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.UsageInfo;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.UsageInfoDto;
-import it.pagopa.pn.national.registries.model.inad.ElementDigitalAddressDto;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
-import it.pagopa.pn.national.registries.model.inad.MotivationTerminationDto;
-import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,8 @@ import org.springframework.util.StringUtils;
 import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.List;
-
+import java.util.Objects;
+import java.util.Optional;
 
 
 @Slf4j
@@ -31,13 +33,13 @@ public class InadConverter {
     private InadConverter() {
     }
 
-    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddressDto elementDigitalAddressDto, String recipientType, String taxId) {
+    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, String recipientType, String taxId) {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
-        if (elementDigitalAddressDto != null) {
-            response.setSince(elementDigitalAddressDto.getSince());
-            response.setTaxId(elementDigitalAddressDto.getTaxId());
-            if (elementDigitalAddressDto.getDigitalAddress() != null) {
-                List<DigitalAddressDto> digitalAddressDtoList = elementDigitalAddressDto.getDigitalAddress().stream()
+        if (elementDigitalAddress != null) {
+            response.setSince(elementDigitalAddress.getSince());
+            response.setTaxId(elementDigitalAddress.getCodiceFiscale());
+            if (elementDigitalAddress.getDigitalAddress() != null) {
+                List<DigitalAddressDto> digitalAddressDtoList = elementDigitalAddress.getDigitalAddress().stream()
                         .filter(InadConverter::isValid)
                         .map(InadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
                         .toList();
@@ -84,7 +86,8 @@ public class InadConverter {
                         }
                 );
     }
-    private static DigitalAddressDto convertToGetDigitalAddressINADOKDigitalAddressInnerDto(ElementDigitalAddressDto item) {
+
+    private static DigitalAddressDto convertToGetDigitalAddressINADOKDigitalAddressInnerDto(ElementDigitalAddress item) {
         DigitalAddressDto digitalAddress = new DigitalAddressDto();
 
         digitalAddress.setDigitalAddress(item.getDigitalAddress());
@@ -94,7 +97,7 @@ public class InadConverter {
         return digitalAddress;
     }
 
-    private static UsageInfoDto convertUsageInfo(ElementDigitalAddressDto item) {
+    private static UsageInfoDto convertUsageInfo(ElementDigitalAddress item) {
         UsageInfoDto usageInfoDto = new UsageInfoDto();
         if (item != null && item.getUsageInfo() != null) {
             usageInfoDto.setMotivation(convertMotivation(item.getUsageInfo().getMotivation()));
@@ -103,7 +106,7 @@ public class InadConverter {
         return usageInfoDto;
     }
 
-    private static UsageInfoDto.MotivationEnum convertMotivation(MotivationTerminationDto motivation) {
+    private static UsageInfoDto.MotivationEnum convertMotivation(MotivationTermination motivation) {
         if (motivation == null) {
             return null;
         }
@@ -113,15 +116,16 @@ public class InadConverter {
         };
     }
 
-    private static boolean isValid(ElementDigitalAddressDto dto) {
+    private static boolean isValid(ElementDigitalAddress dto) {
+        Date parsedEndValidity = Optional.ofNullable(dto.getUsageInfo())
+                .map(UsageInfo::getDateEndValidity)
+                .orElse(null);
+
         Date now = new Date();
-        if(dto.getUsageInfo() == null
-                || dto.getUsageInfo().getDateEndValidity() == null
-                || dto.getUsageInfo().getDateEndValidity().equals(now)
-                || dto.getUsageInfo().getDateEndValidity().after(now)){
+
+        if (Objects.isNull(parsedEndValidity) || parsedEndValidity.equals(now) || parsedEndValidity.after(now)) {
             return true;
-        }
-        else{
+        } else {
             log.info("inad digital address: {} is not valid", dto.getDigitalAddress());
             return false;
         }

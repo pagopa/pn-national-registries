@@ -4,14 +4,14 @@ import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.converter.IpaConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.ResultDto;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.WS05ResponseDto;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.WS23ResponseDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
-import it.pagopa.pn.national.registries.model.ipa.ResultDto;
-import it.pagopa.pn.national.registries.model.ipa.WS05ResponseDto;
-import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -56,7 +56,7 @@ public class IpaService {
         return callWS23(request.getFilter().getTaxId(), authId)
                 .flatMap(ws23ResponseDto -> {
                     if (ws23ResponseDto.getResult().getNumItems() > 1) {
-                        String codAmm = ws23ResponseDto.getData().get(0).getCodEnte();
+                        String codAmm = ws23ResponseDto.getData().get(0).getCodAmm();
                         return callWS05(codAmm, authId).map(ipaConverter::convertToIPAPecDtoFromWS05);
                     } else {
                         return Mono.just(ipaConverter.convertToIpaPecDtoFromWS23(ws23ResponseDto));
@@ -93,9 +93,9 @@ public class IpaService {
 
     private void checkErrorWsResultDto(ResultDto resultDto) {
         log.logChecking(PROCESS_CHECKING_ERROR_IPA);
-        if (resultDto.getCodError() != 0) {
-            log.logCheckingOutcome(PROCESS_CHECKING_ERROR_IPA,false,resultDto.getDescError());
-            throw new PnNationalRegistriesException(resultDto.getDescError(), HttpStatus.BAD_REQUEST.value(),
+        if (resultDto.getCodErr() != 0) {
+            log.logCheckingOutcome(PROCESS_CHECKING_ERROR_IPA,false,resultDto.getDescErr());
+            throw new PnNationalRegistriesException(resultDto.getDescErr(), HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null,
                     Charset.defaultCharset(), IPAPecErrorDto.class);
         }
@@ -105,7 +105,7 @@ public class IpaService {
     private void checkNumItemsResultDto(ResultDto resultDto, String service){
         log.logChecking(PROCESS_CHECKING_ITEMS_IPA);
         if (resultDto.getNumItems() == 0) {
-            log.logCheckingOutcome(PROCESS_CHECKING_ITEMS_IPA,false,resultDto.getDescError());
+            log.logCheckingOutcome(PROCESS_CHECKING_ITEMS_IPA,false,resultDto.getDescErr());
             throw new PnNationalRegistriesException("Service " + service + " responded with 0 items - IPA PEC not found", HttpStatus.NOT_FOUND.value(),
                     HttpStatus.NOT_FOUND.getReasonPhrase(), null, null,
                     Charset.defaultCharset(), IPAPecErrorDto.class);

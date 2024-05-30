@@ -12,11 +12,12 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 
+import java.time.OffsetDateTime;
 import java.util.*;
 
 import org.junit.jupiter.api.DisplayName;
@@ -238,13 +239,13 @@ class DigitalAddressBatchPollingServiceTest {
         IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
         iniPecPollingResponse.setCode("WSPA_ERR_05");
         iniPecPollingResponse.setDescription("List PEC in progress");
-        iniPecPollingResponse.setTimestamp("2023-10-06T10:00:00.000Z");
+        iniPecPollingResponse.setTimestamp(OffsetDateTime.now().toString());
         iniPecPollingResponse.setAppName("wspa-pedf");
 
         when(infoCamereClient.callEServiceRequestPec(any()))
                 .thenReturn(Mono.just(iniPecPollingResponse));
 
-        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
+        when(infoCamereConverter.checkIfResponseIsInfoCamereError((IniPecPollingResponse) any())).thenReturn(true);
 
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest)));
