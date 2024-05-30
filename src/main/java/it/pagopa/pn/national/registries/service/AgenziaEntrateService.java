@@ -5,9 +5,7 @@ import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
 import it.pagopa.pn.national.registries.exceptions.RuntimeJAXBException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
-import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -38,10 +36,23 @@ public class AgenziaEntrateService {
         this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
-    private Request createRequest(CheckTaxIdRequestBodyDto taxCodeRequestDto) {
-        Request richiesta = new Request();
-        richiesta.setCodiceFiscale(taxCodeRequestDto.getFilter().getTaxId());
-        return richiesta;
+    public Mono<ADELegalOKDto> checkTaxIdAndVatNumber(ADELegalRequestBodyDto request) {
+        log.logChecking(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL);
+
+        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL, false);
+        validateTaxIdUtils.validateTaxId(request.getFilter().getVatNumber(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL, false);
+
+        return adELegalClient.checkTaxIdAndVatNumberAdE(request.getFilter())
+                .map(response -> {
+                    try {
+                        CheckValidityRappresentanteResp checkValidityRappresentanteResp = unmarshaller(response);
+                        log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL,true);
+                        return agenziaEntrateConverter.adELegalResponseToDto(checkValidityRappresentanteResp);
+                    } catch (JAXBException e) {
+                        log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL,false,e.getMessage());
+                        throw new RuntimeJAXBException(e.getMessage());
+                    }
+                });
     }
 
     public CheckValidityRappresentanteResp unmarshaller(String response) throws JAXBException {
@@ -62,24 +73,5 @@ public class AgenziaEntrateService {
             checkValidityElement = matcher.group(1);
         }
         return checkValidityElement;
-    }
-
-    public Mono<ADELegalOKDto> checkTaxIdAndVatNumber(ADELegalRequestBodyDto request) {
-        log.logChecking(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL);
-
-        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL, false);
-        validateTaxIdUtils.validateTaxId(request.getFilter().getVatNumber(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL, false);
-
-        return adELegalClient.checkTaxIdAndVatNumberAdE(request.getFilter())
-                .map(response -> {
-                    try {
-                        CheckValidityRappresentanteResp checkValidityRappresentanteResp = unmarshaller(response);
-                        log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL,true);
-                        return agenziaEntrateConverter.adELegalResponseToDto(checkValidityRappresentanteResp);
-                    } catch (JAXBException e) {
-                        log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL,false,e.getMessage());
-                        throw new RuntimeJAXBException(e.getMessage());
-                    }
-                });
     }
 }
