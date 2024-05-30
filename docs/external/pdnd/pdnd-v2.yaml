@@ -542,6 +542,7 @@ components:
         client_assertion:
           type: string
           format: jws
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         client_assertion_type:
           type: string
           example: urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
@@ -564,6 +565,7 @@ components:
         access_token:
           type: string
           format: jws
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         token_type:
           $ref: '#/components/schemas/TokenType'
         expires_in:
