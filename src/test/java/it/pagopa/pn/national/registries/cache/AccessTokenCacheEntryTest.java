@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.cache;
 
-import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
-import it.pagopa.pn.national.registries.model.TokenTypeDto;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.ClientCredentialsResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,10 +13,10 @@ class AccessTokenCacheEntryTest {
     @Test
     void setClientCredentials() {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        TokenTypeDto tokenTypeDto = TokenTypeDto.BEARER;
-        ClientCredentialsResponseDto client = new ClientCredentialsResponseDto();
+        TokenType tokenType = TokenType.BEARER;
+        ClientCredentialsResponse client = new ClientCredentialsResponse();
         client.setAccessToken("test");
-        client.setTokenType(tokenTypeDto);
+        client.setTokenType(tokenType);
         accessTokenCacheEntry.setClientCredentials(client);
         Assertions.assertEquals("test",accessTokenCacheEntry.getTokenValue());
         Assertions.assertEquals("purposeId",accessTokenCacheEntry.getTokenKey());
