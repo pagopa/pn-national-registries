@@ -126,6 +126,7 @@ components:
       properties:
         codiceFiscale:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         idANPR:
           type: string
           description: Identificativo Unico Nazionale
@@ -247,12 +248,16 @@ components:
           $ref: '#/components/schemas/TipoCodiceFiscale'
         cognome:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         senzaCognome:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         nome:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         senzaNome:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         sesso:
           type: string
         dataNascita:
@@ -319,6 +324,7 @@ components:
       properties:
         cap:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         comune:
           $ref: '#/components/schemas/TipoComune'
         frazione:
@@ -332,6 +338,7 @@ components:
       properties:
         cap:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         localita:
           $ref: '#/components/schemas/TipoDatoLocalitaEstera'
         toponimo:
@@ -341,6 +348,7 @@ components:
       properties:
         codFiscale:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         validitaCF:
           type: string
         dataAttribuzioneValidita:
@@ -389,6 +397,7 @@ components:
           type: string
         denominazioneToponimo:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         toponimoFonte:
           type: string
     TipoToponimoEstero:
@@ -396,15 +405,19 @@ components:
       properties:
         denominazione:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         numeroCivico:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
     TipoNumeroCivico:
       type: object
       properties:
         codiceCivico:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         civicoFonte:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         numero:
           type: string
         metrico:
@@ -424,6 +437,7 @@ components:
       properties:
         descrizioneLocalita:
           type: string
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         descrizioneStato:
           type: string
         codiceStato:
