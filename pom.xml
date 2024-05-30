@@ -283,6 +283,7 @@
                         </goals>
                         <phase>process-resources</phase>
                         <configuration>
+                            <templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
                             <inputSpec>${project.basedir}/docs/external/infocamere/infocamere.yaml</inputSpec>
                             <generatorName>java</generatorName>
                             <library>webclient</library>
