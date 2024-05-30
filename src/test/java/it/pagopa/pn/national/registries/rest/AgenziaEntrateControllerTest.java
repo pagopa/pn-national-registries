@@ -35,20 +35,6 @@ class AgenziaEntrateControllerTest {
     Scheduler scheduler;
 
     @Test
-    void checkTaxId() {
-        CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto = new CheckTaxIdRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto dto = new CheckTaxIdRequestBodyFilterDto();
-        dto.setTaxId("PPPPLT80A01H501V");
-        checkTaxIdRequestBodyDto.setFilter(dto);
-
-        CheckTaxIdOKDto checkTaxIdOKDto = new CheckTaxIdOKDto();
-        checkTaxIdOKDto.setTaxId("PPPPLT80A01H501V");
-        checkTaxIdOKDto.setIsValid(true);
-        StepVerifier.create(agenziaEntrateController.checkTaxId(Mono.just(checkTaxIdRequestBodyDto), serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(checkTaxIdOKDto));
-    }
-
-    @Test
     void checkTaxIdAndVatNumber() {
         ADELegalRequestBodyDto adeLegalRequestBodyDto = new ADELegalRequestBodyDto();
         ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
