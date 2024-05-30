@@ -12,8 +12,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.PecApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.SedeApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.ClientCredentialsResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
@@ -191,13 +189,6 @@ class InfoCamereClientTest {
         IniPecPollingResponse response = new IniPecPollingResponse();
         response.setIdentificativoRichiesta("correlationId");
 
-        ClientCredentialsResponse ClientCredentialsResponse = new ClientCredentialsResponse();
-        ClientCredentialsResponse.setAccessToken("token");
-        ClientCredentialsResponse.setTokenType(TokenType.BEARER);
-        ClientCredentialsResponse.setExpiresIn(10);
-
-        //     callGetTokenTest();
-
         when(pecApi.callGetElencoPec(any(), any(), any())).thenReturn(Mono.just(response ));
         StepVerifier.create(infoCamereClient.callEServiceRequestPec(request)).expectNext(response).verifyComplete();
     }
@@ -211,11 +202,6 @@ class InfoCamereClientTest {
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
         String request = "correlationId";
-
-        ClientCredentialsResponse ClientCredentialsResponse = new ClientCredentialsResponse();
-        ClientCredentialsResponse.setAccessToken("accessToken");
-        ClientCredentialsResponse.setTokenType(TokenType.BEARER);
-        ClientCredentialsResponse.setExpiresIn(10);
 
         WebClientResponseException ex = buildException();
         when(pecApi.callGetElencoPec(any(), any(), any())).thenReturn(Mono.error(ex));
