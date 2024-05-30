@@ -89,9 +89,9 @@ components:
   schemas:
     RichiestaE002:
       type: object
+      x-field-extra-annotation: "@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)"
       required:
         - idOperazioneClient
-        - criteriRicerca
         - datiRichiesta
       properties:
         idOperazioneClient:

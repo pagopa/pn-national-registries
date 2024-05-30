@@ -293,6 +293,9 @@
                             <configOptions>
                                 <swaggerAnnotations>false</swaggerAnnotations>
                                 <openApiNullable>false</openApiNullable>
+                                <additionalModelTypeAnnotations>
+                                    @com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)
+                                </additionalModelTypeAnnotations>
                             </configOptions>
                             <modelPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto</modelPackage>
                             <apiPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.api</apiPackage>
