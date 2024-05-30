@@ -7,6 +7,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegal
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
@@ -22,19 +23,13 @@ import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NA
 
 @Component
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class AgenziaEntrateService {
 
     private final AgenziaEntrateConverter agenziaEntrateConverter;
     private final AdELegalClient adELegalClient;
     private final ValidateTaxIdUtils validateTaxIdUtils;
 
-    public AgenziaEntrateService(AgenziaEntrateConverter agenziaEntrateConverter,
-                                 AdELegalClient adELegalClient,
-                                 ValidateTaxIdUtils validateTaxIdUtils) {
-        this.agenziaEntrateConverter = agenziaEntrateConverter;
-        this.adELegalClient = adELegalClient;
-        this.validateTaxIdUtils = validateTaxIdUtils;
-    }
 
     public Mono<ADELegalOKDto> checkTaxIdAndVatNumber(ADELegalRequestBodyDto request) {
         log.logChecking(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL);
@@ -54,6 +49,7 @@ public class AgenziaEntrateService {
                     }
                 });
     }
+
 
     public CheckValidityRappresentanteResp unmarshaller(String response) throws JAXBException {
 
