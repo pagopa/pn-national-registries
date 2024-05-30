@@ -1,11 +1,11 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.national.registries.client.agenziaentrate.AdELegalClient;
-import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfClient;
 import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
 import it.pagopa.pn.national.registries.exceptions.RuntimeJAXBException;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
@@ -19,43 +19,23 @@ import java.io.StringReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_AGENZIA_ENTRATE_LEGAL;
 
 @Component
 @lombok.CustomLog
 public class AgenziaEntrateService {
 
     private final AgenziaEntrateConverter agenziaEntrateConverter;
-    private final CheckCfClient checkCfClient;
     private final AdELegalClient adELegalClient;
     private final ValidateTaxIdUtils validateTaxIdUtils;
-    private final ValidateUtils validateUtils;
 
     public AgenziaEntrateService(AgenziaEntrateConverter agenziaEntrateConverter,
-                                 CheckCfClient checkCfClient,
                                  AdELegalClient adELegalClient,
-                                 ValidateTaxIdUtils validateTaxIdUtils, ValidateUtils validateUtils) {
-        this.checkCfClient = checkCfClient;
+                                 ValidateTaxIdUtils validateTaxIdUtils) {
         this.agenziaEntrateConverter = agenziaEntrateConverter;
         this.adELegalClient = adELegalClient;
         this.validateTaxIdUtils = validateTaxIdUtils;
-        this.validateUtils = validateUtils;
-    }
-
-    public Mono<CheckTaxIdOKDto> callEService(CheckTaxIdRequestBodyDto request) {
-        log.logChecking(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID);
-        String cf = request.getFilter().getTaxId();
-        if(!validateUtils.taxIdIsInWhiteList(cf)) {
-            validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID, true);
-
-            return checkCfClient.callEService(createRequest(request))
-                    .doOnNext(taxIdVerification -> log.logCheckingOutcome(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID, true))
-                    .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID, false, throwable.getMessage()))
-                    .map(agenziaEntrateConverter::convertToCfStatusDto);
-        } else {
-            log.logCheckingOutcome(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID, true);
-            return Mono.just(new CheckTaxIdOKDto().taxId(cf).isValid(true));
-        }
     }
 
     private Request createRequest(CheckTaxIdRequestBodyDto taxCodeRequestDto) {
