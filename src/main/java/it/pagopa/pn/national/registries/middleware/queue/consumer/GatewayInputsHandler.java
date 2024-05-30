@@ -22,7 +22,7 @@ public class GatewayInputsHandler {
     public Consumer<Message<PnAddressGatewayEvent.Payload>> pnNationalRegistriesGatewayRequestConsumer() {
         return message -> {
             log.logStartingProcess(HANDLER_PROCESS);
-            log.debug(HANDLER_PROCESS + "- message: {}", message);
+            log.debug(HANDLER_PROCESS + "- message received for correlationId: {}", message.getPayload().getCorrelationId());
             MDC.put("correlationId", message.getPayload().getCorrelationId());
             gatewayService.handleMessage(message.getPayload())
                     .doOnNext(addressOKDto -> log.logEndingProcess(HANDLER_PROCESS))
