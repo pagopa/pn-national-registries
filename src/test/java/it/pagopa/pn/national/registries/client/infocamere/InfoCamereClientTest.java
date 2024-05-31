@@ -5,10 +5,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.ClientCredentialsResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
-import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
 import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
@@ -185,10 +185,10 @@ class InfoCamereClientTest {
         IniPecPollingResponse response = new IniPecPollingResponse();
         response.setIdentificativoRichiesta("correlationId");
 
-        ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
-        clientCredentialsResponseDto.setAccessToken("token");
-        clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
-        clientCredentialsResponseDto.setExpiresIn(10);
+        ClientCredentialsResponse clientCredentialsResponse = new ClientCredentialsResponse();
+        clientCredentialsResponse.setAccessToken("token");
+        clientCredentialsResponse.setTokenType(TokenType.BEARER);
+        clientCredentialsResponse.setExpiresIn(10);
 
         //     callGetTokenTest();
 
@@ -211,10 +211,10 @@ class InfoCamereClientTest {
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
         String request = "correlationId";
 
-        ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
-        clientCredentialsResponseDto.setAccessToken("accessToken");
-        clientCredentialsResponseDto.setTokenType(TokenTypeDto.BEARER);
-        clientCredentialsResponseDto.setExpiresIn(10);
+        ClientCredentialsResponse clientCredentialsResponse = new ClientCredentialsResponse();
+        clientCredentialsResponse.setAccessToken("accessToken");
+        clientCredentialsResponse.setTokenType(TokenType.BEARER);
+        clientCredentialsResponse.setExpiresIn(10);
         String jws = "jws";
 
         when(webClient.get()).thenReturn(requestHeadersUriSpec);
