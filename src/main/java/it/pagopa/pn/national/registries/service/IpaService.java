@@ -71,8 +71,8 @@ public class IpaService {
 
     private Mono<WS23ResponseDto> callWS23(String cf, String authId) {
         return ipaClient.callEServiceWS23(cf, authId)
-                .doOnNext(ws23ResponseDto -> log.info("Got WS23Response for cf: {}", MaskDataUtils.maskString(cf)))
-                .doOnError(throwable -> log.info("Failed to callWS23 for taxId: {}", MaskDataUtils.maskString(cf)))
+                .doOnNext(ws23ResponseDto -> log.info("Got WS23Response"))
+                .doOnError(throwable -> log.info("Failed to callWS23"))
                 .map(ws23ResponseDto -> {
                     checkErrorWsResultDto(ws23ResponseDto.getResult());
                     checkNumItemsResultDto(ws23ResponseDto.getResult(), "WS23");
