@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.client.inad;
 
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
-import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfWebClient;
 import it.pagopa.pn.national.registries.log.ResponseExchangeFilter;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -10,7 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ContextConfiguration;
 
-@ContextConfiguration(classes = {CheckCfWebClient.class, CommonBaseClient.class, ResponseExchangeFilter.class})
+@ContextConfiguration(classes = {InadWebClient.class, CommonBaseClient.class, ResponseExchangeFilter.class})
 @ExtendWith(MockitoExtension.class)
 class InadWebClientTest {
 

@@ -3,8 +3,6 @@ package it.pagopa.pn.national.registries.rest;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AgenziaEntrateApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,22 +23,6 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
         this.agenziaEntrateService = agenziaEntrateService;
         this.scheduler = scheduler;
 
-    }
-
-    /**
-     * POST /national-registries-private/agenzia-entrate/tax-id : Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
-     * Questo servizio ritorna la validità e l’esistenza di un dato codice fiscale descritta da un campo di ritorno booleano nell’oggetto json di response
-     *
-     * @param checkTaxIdRequestBodyDto Effettua la ricerca di un codice fiscale (required)
-     * @return OK (status code 200)
-     *         or Bad request (status code 400)
-     *         or Internal server error (status code 500)
-     */
-    @Override
-    public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        return checkTaxIdRequestBodyDto.flatMap(agenziaEntrateService::callEService)
-                .map(t -> ResponseEntity.ok().body(t))
-                .publishOn(scheduler);
     }
 
     /**
