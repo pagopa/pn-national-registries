@@ -51,7 +51,7 @@ public class AdELegalClient {
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ADE, MaskDataUtils.maskInformation(throwable.getMessage()));
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ADE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
