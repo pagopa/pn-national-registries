@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.service;
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.converter.IpaConverter;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
@@ -46,13 +47,13 @@ class IpaServiceTest {
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
         ResultDto resultDto = new ResultDto();
         resultDto.setNumItems(1);
-        resultDto.setCodError(0);
-        resultDto.setDescError("no error");
+        resultDto.setCodErr(0);
+        resultDto.setDescErr("no error");
         DataWS23Dto dataWS23Dto = new DataWS23Dto();
-        dataWS23Dto.setDenominazione("denominazione");
-        dataWS23Dto.setType("type");
+        dataWS23Dto.setDesAmm("denominazione");
+        dataWS23Dto.setTipo("type");
         dataWS23Dto.setDomicilioDigitale("domicilio digitale");
-        dataWS23Dto.setCodEnte("cod ente");
+        dataWS23Dto.setCodAmm("cod ente");
         List<DataWS23Dto> list = new ArrayList<>();
         list.add(dataWS23Dto);
         ws23ResponseDto.setResult(resultDto);
@@ -81,13 +82,13 @@ class IpaServiceTest {
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
         ResultDto resultDto = new ResultDto();
         resultDto.setNumItems(2);
-        resultDto.setCodError(0);
-        resultDto.setDescError("");
+        resultDto.setCodErr(0);
+        resultDto.setDescErr("");
         DataWS23Dto dataWS23Dto = new DataWS23Dto();
-        dataWS23Dto.setDenominazione("denominazione");
-        dataWS23Dto.setType("type");
+        dataWS23Dto.setDesAmm("denominazione");
+        dataWS23Dto.setTipo("type");
         dataWS23Dto.setDomicilioDigitale("domicilio digitale");
-        dataWS23Dto.setCodEnte("codEnte");
+        dataWS23Dto.setCodAmm("codEnte");
         List<DataWS23Dto> list = new ArrayList<>();
         list.add(dataWS23Dto);
         list.add(dataWS23Dto);
@@ -121,8 +122,8 @@ class IpaServiceTest {
         dataWS05Dto.setDesAmm("descrizioneAmministrazione");
 
         ResultDto resultDto1 = new ResultDto();
-        resultDto1.setCodError(0);
-        resultDto1.setDescError("no error");
+        resultDto1.setCodErr(0);
+        resultDto1.setDescErr("no error");
         resultDto1.setNumItems(1);
         ws05ResponseDto.setData(dataWS05Dto);
         ws05ResponseDto.setResult(resultDto1);
@@ -155,8 +156,8 @@ class IpaServiceTest {
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
         ResultDto resultDto = new ResultDto();
         resultDto.setNumItems(0);
-        resultDto.setCodError(0);
-        resultDto.setDescError("");
+        resultDto.setCodErr(0);
+        resultDto.setDescErr("");
         ws23ResponseDto.setResult(resultDto);
 
 
@@ -187,8 +188,8 @@ class IpaServiceTest {
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
         ResultDto resultDto = new ResultDto();
         resultDto.setNumItems(0);
-        resultDto.setCodError(1);
-        resultDto.setDescError("Error");
+        resultDto.setCodErr(1);
+        resultDto.setDescErr("Error");
         DataWS23Dto dataWS23Dto = new DataWS23Dto();
         ws23ResponseDto.setResult(resultDto);
         List<DataWS23Dto> list = new ArrayList<>();
@@ -212,13 +213,13 @@ class IpaServiceTest {
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
         ResultDto resultDto = new ResultDto();
         resultDto.setNumItems(2);
-        resultDto.setCodError(0);
-        resultDto.setDescError("");
+        resultDto.setCodErr(0);
+        resultDto.setDescErr("");
         DataWS23Dto dataWS23Dto = new DataWS23Dto();
-        dataWS23Dto.setDenominazione("denominazione");
-        dataWS23Dto.setType("type");
+        dataWS23Dto.setDesAmm("denominazione");
+        dataWS23Dto.setTipo("type");
         dataWS23Dto.setDomicilioDigitale("domicilio digitale");
-        dataWS23Dto.setCodEnte("codEnte");
+        dataWS23Dto.setCodAmm("codEnte");
         List<DataWS23Dto> list = new ArrayList<>();
         list.add(dataWS23Dto);
         list.add(dataWS23Dto);
@@ -252,8 +253,8 @@ class IpaServiceTest {
         dataWS05Dto.setDesAmm("descrizioneAmministrazione");
 
         ResultDto resultDto1 = new ResultDto();
-        resultDto1.setCodError(0);
-        resultDto1.setDescError("no error");
+        resultDto1.setCodErr(0);
+        resultDto1.setDescErr("no error");
         resultDto1.setNumItems(0);
         ws05ResponseDto.setData(dataWS05Dto);
         ws05ResponseDto.setResult(resultDto1);

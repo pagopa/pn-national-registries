@@ -1,11 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
-import it.pagopa.pn.national.registries.model.ipa.DataWS05Dto;
-import it.pagopa.pn.national.registries.model.ipa.DataWS23Dto;
-import it.pagopa.pn.national.registries.model.ipa.ResultDto;
-import it.pagopa.pn.national.registries.model.ipa.WS05ResponseDto;
-import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -17,10 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {IpaConverter.class})
 @ExtendWith(SpringExtension.class)
@@ -58,8 +51,8 @@ class IpaConverterTest {
         data.setTitoloResp("Titolo Resp");
 
         ResultDto result = new ResultDto();
-        result.setCodError(-1);
-        result.setDescError("An error occurred");
+        result.setCodErr(-1);
+        result.setDescErr("An error occurred");
         result.setNumItems(1000);
 
         WS05ResponseDto ws05ResponseDto = new WS05ResponseDto();
@@ -101,8 +94,8 @@ class IpaConverterTest {
         data.setTitoloResp("Titolo Resp");
 
         ResultDto result = new ResultDto();
-        result.setCodError(-1);
-        result.setDescError("An error occurred");
+        result.setCodErr(-1);
+        result.setDescErr("An error occurred");
         result.setNumItems(1000);
 
         DataWS05Dto dataWS05Dto = new DataWS05Dto();
@@ -146,16 +139,16 @@ class IpaConverterTest {
     @Test
     void testConvertToIPAPecOKDto() {
         DataWS23Dto dataWS23Dto = new DataWS23Dto();
-        dataWS23Dto.setCodEnte("Cod Ente");
-        dataWS23Dto.setDenominazione("Denominazione");
+        dataWS23Dto.setCodAmm("Cod Ente");
+        dataWS23Dto.setDesAmm("Denominazione");
         dataWS23Dto.setDomicilioDigitale("Domicilio Digitale");
-        dataWS23Dto.setType("Type");
+        dataWS23Dto.setTipo("Type");
         List<DataWS23Dto> dataWS23DtoList = new ArrayList<>();
         dataWS23DtoList.add(dataWS23Dto);
 
         ResultDto resultDto = new ResultDto();
-        resultDto.setCodError(-1);
-        resultDto.setDescError("An error occurred");
+        resultDto.setCodErr(-1);
+        resultDto.setDescErr("An error occurred");
         resultDto.setNumItems(1000);
 
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();

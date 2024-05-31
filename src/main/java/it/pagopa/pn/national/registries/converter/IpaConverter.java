@@ -1,11 +1,11 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.DataWS05Dto;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.DataWS23Dto;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.WS05ResponseDto;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.WS23ResponseDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 
-import it.pagopa.pn.national.registries.model.ipa.DataWS05Dto;
-import it.pagopa.pn.national.registries.model.ipa.DataWS23Dto;
-import it.pagopa.pn.national.registries.model.ipa.WS05ResponseDto;
-import it.pagopa.pn.national.registries.model.ipa.WS23ResponseDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -30,9 +30,9 @@ public class IpaConverter {
     public IPAPecDto convertToIpaPecDtoFromWS23(WS23ResponseDto ws23ResponseDto) {
         IPAPecDto ipaPecDto = new IPAPecDto();
         DataWS23Dto dataWS23Dto = ws23ResponseDto.getData().get(0);
-        ipaPecDto.setCodEnte(dataWS23Dto.getCodEnte());
-        ipaPecDto.setDenominazione(dataWS23Dto.getDenominazione());
-        ipaPecDto.setTipo(dataWS23Dto.getType());
+        ipaPecDto.setCodEnte(dataWS23Dto.getCodAmm());
+        ipaPecDto.setDenominazione(dataWS23Dto.getDesAmm());
+        ipaPecDto.setTipo(dataWS23Dto.getTipo());
         ipaPecDto.setDomicilioDigitale(dataWS23Dto.getDomicilioDigitale());
         return ipaPecDto;
     }
