@@ -11,7 +11,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.R
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -19,6 +18,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
+import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_INAD_ADDRESS;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
@@ -61,9 +61,12 @@ public class InadClient {
         apiEstrazioniPuntualiApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
         return apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(taxId, practicalReference)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, MaskDataUtils.maskInformation(throwable.getMessage()));
+                    String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
+                            .map(message -> message.replaceFirst("/extract/.*\\?", "/extract/***?"))
+                            .orElse("Unknown error");
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, maskedErrorMessage);
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                        throw new PnNationalRegistriesException(maskedErrorMessage, ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InadResponseKO.class);
                     }
