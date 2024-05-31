@@ -8,7 +8,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.InfoCamereVerification;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,8 +51,8 @@ public class InfoCamereService {
         String correlationId = dto.getFilter().getCorrelationId();
         validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_INIPEC_PEC, false);
         return createBatchRequestByCf(pnNationalRegistriesCxId, dto, MDC.get("AWS_messageId"), referenceRequestDate)
-                .doOnNext(batchRequest -> log.info("Created Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(cf), correlationId))
-                .doOnError(throwable -> log.info("Failed to create Batch Request for taxId: {} and correlationId: {}", MaskDataUtils.maskString(cf), correlationId))
+                .doOnNext(batchRequest -> log.info("Created Batch Request for correlationId: {}", correlationId))
+                .doOnError(throwable -> log.info("Failed to create Batch Request for correlationId: {}", correlationId))
                 .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
     }
 
@@ -61,7 +60,7 @@ public class InfoCamereService {
         String cf = request.getFilter().getTaxId();
         validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS, false);
         return infoCamereClient.getLegalAddress(cf)
-                .doOnError(throwable -> log.info("Failed to get Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId())))
+                .doOnError(throwable -> log.info("Failed to get Legal Address"))
                 .flatMap(response -> processResponseLegalAddressOk(request, response));
     }
 
@@ -71,16 +70,16 @@ public class InfoCamereService {
 
         return infoCamereClient.getLegalInstitutions(infoCamereLegalInstitutionsRequestBodyDto.getFilter())
                 .doOnNext(infoCamereLegalInstitutions -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS,true))
-                .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS,false,MaskDataUtils.maskString(throwable.getMessage())))
+                .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS,false,throwable.getMessage()))
                 .map(infoCamereConverter::mapToResponseOkByResponse);
     }
 
     private Mono<GetAddressRegistroImpreseOKDto> processResponseLegalAddressOk(GetAddressRegistroImpreseRequestBodyDto request, AddressRegistroImprese response) {
         if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
-            log.info("Failed to get Legal Address for taxId: {}, with error : {}", MaskDataUtils.maskString(request.getFilter().getTaxId()), response.getDescription());
+            log.info("Failed to get Legal Address with error : {}",  response.getDescription());
             return Mono.just(infoCamereConverter.mapToResponseOkByRequest(request));
         } else {
-            log.info("Got Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId()));
+            log.info("Got Legal Address");
             return Mono.just(infoCamereConverter.mapToResponseOkByResponse(response));
         }
     }
@@ -125,11 +124,11 @@ public class InfoCamereService {
         String process = "validating taxId and vatNumber";
         if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
             log.logCheckingOutcome(process, false, "Failed to check taxId and vatNumber with error: "+response.getDescription());
-            log.info("Failed to check tax id: {} and vat number: {}, with error : {}", MaskDataUtils.maskString(request.getFilter().getTaxId()), MaskDataUtils.maskString(request.getFilter().getVatNumber()), response.getDescription());
+            log.info("Failed to check tax id and vat number, with error : {}", response.getDescription());
             return Mono.just(infoCamereConverter.infoCamereResponseToDtoByRequest(request));
         } else {
             log.logCheckingOutcome(process, true);
-            log.info("Got Legal Address for taxId: {}", MaskDataUtils.maskString(request.getFilter().getTaxId()));
+            log.info("Got Legal Address");
             return Mono.just(infoCamereConverter.infoCamereResponseToDtoByResponse(response));
         }
     }
