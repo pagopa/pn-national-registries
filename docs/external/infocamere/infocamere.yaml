@@ -602,7 +602,6 @@ components:
         denominazione:
           type: string
           description: The name of the institution
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
       required:
         - cfImpresa
         - denominazione
