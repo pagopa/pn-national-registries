@@ -3,9 +3,9 @@ package it.pagopa.pn.national.registries.client.inad;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
-import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.inad.ResponseRequestDigitalAddressDto;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.junit.jupiter.api.DisplayName;
@@ -28,7 +28,8 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -61,7 +62,7 @@ class InadClientTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
+        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
 
         WebClient.RequestHeadersUriSpec requestHeadersUriSpec = mock(WebClient.RequestHeadersUriSpec.class);
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);

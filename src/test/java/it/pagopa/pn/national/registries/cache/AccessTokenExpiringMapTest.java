@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.cache;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.ClientCredentialsResponse;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.TokenProvider;
 import net.jodah.expiringmap.ExpiringMap;
@@ -38,14 +38,14 @@ class AccessTokenExpiringMapTest {
 
     @Test
     void testGetTokenExpiringMapMinor() {
-        ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
-        clientCredentialsResponseDto.setExpiresIn(1);
+        ClientCredentialsResponse clientCredentialsResponse = new ClientCredentialsResponse();
+        clientCredentialsResponse.setExpiresIn(1);
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purpose");
 
         accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, -5000, -5000);
 
-        when(tokenProvider.getTokenPdnd(new PdndSecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
+        when(tokenProvider.getTokenPdnd(new PdndSecretValue())).thenReturn(Mono.just(clientCredentialsResponse));
 
         StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose", new PdndSecretValue(), false))
                 .expectNext(accessTokenCacheEntry)
@@ -60,14 +60,14 @@ class AccessTokenExpiringMapTest {
 
     @Test
     void testGetTokenExpiringMapMajor() {
-        ClientCredentialsResponseDto clientCredentialsResponseDto = new ClientCredentialsResponseDto();
-        clientCredentialsResponseDto.setExpiresIn(1);
+        ClientCredentialsResponse clientCredentialsResponse = new ClientCredentialsResponse();
+        clientCredentialsResponse.setExpiresIn(1);
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purpose");
 
         accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, 5000, 5000);
 
-        when(tokenProvider.getTokenPdnd(new PdndSecretValue())).thenReturn(Mono.just(clientCredentialsResponseDto));
+        when(tokenProvider.getTokenPdnd(new PdndSecretValue())).thenReturn(Mono.just(clientCredentialsResponse));
 
         StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose", new PdndSecretValue(), false))
                 .expectNext(accessTokenCacheEntry)
