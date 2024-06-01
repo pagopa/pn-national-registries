@@ -83,11 +83,10 @@ public class AnprClient {
         e002ServiceApi.getApiClient().addDefaultHeader("bearerAuth", tokenEntry.getTokenValue());
         return e002ServiceApi.e002(request)
                 .doOnError(throwable -> {
-                    String maskedErrorMessage = throwable.getMessage().replaceFirst("/extract/.*\\?", "/extract***?");
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, maskedErrorMessage);
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info("GovWay-Transaction-ID: {}", e.getHeaders().getFirst("GovWay-Transaction-ID"));
-                        throw new PnNationalRegistriesException(maskedErrorMessage, e.getStatusCode().value(),
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), AnprResponseKO.class);
                     }
