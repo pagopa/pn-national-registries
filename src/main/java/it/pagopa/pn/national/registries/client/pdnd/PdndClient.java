@@ -30,13 +30,12 @@ public class PdndClient {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.PDND, PROCESS_SERVICE_PDND_TOKEN);
         return authApi.createToken(clientAssertion, clientAssertionType, grantType, clientId)
                 .doOnError(throwable -> {
-                    String maskedErrorMessage = throwable.getMessage().replaceFirst("/extract/.*\\?", "/extract***?");
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.PDND, maskedErrorMessage);
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.PDND, throwable.getMessage());
                     if (isUnauthorized(throwable)) {
                         throw new PnInternalException(ERROR_MESSSAGE_PDND_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, throwable);
                     }
                     if (throwable instanceof WebClientResponseException e) {
-                        throw new PnNationalRegistriesException(maskedErrorMessage, e.getStatusCode().value(),
+                        throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), PdndResponseKO.class);
                     }
