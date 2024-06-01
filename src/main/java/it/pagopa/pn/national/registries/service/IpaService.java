@@ -10,7 +10,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.WS
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;

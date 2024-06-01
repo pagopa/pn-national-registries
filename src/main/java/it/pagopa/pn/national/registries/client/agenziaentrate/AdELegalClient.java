@@ -5,7 +5,6 @@ import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalErrorDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import it.pagopa.pn.national.registries.utils.XMLWriter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;

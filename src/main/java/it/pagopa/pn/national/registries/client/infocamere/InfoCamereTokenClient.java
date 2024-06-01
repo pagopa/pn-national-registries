@@ -5,7 +5,6 @@ import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.AuthenticationApi;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;

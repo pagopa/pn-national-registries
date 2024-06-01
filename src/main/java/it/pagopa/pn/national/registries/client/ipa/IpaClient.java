@@ -6,7 +6,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.api.Ip
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.WS05ResponseDto;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.WS23ResponseDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;

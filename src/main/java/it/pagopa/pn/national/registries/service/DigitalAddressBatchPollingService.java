@@ -17,7 +17,6 @@ import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -258,7 +257,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.IMPRESA)));
                     request.setStatus(BatchStatus.WORKED.getValue());
                 })
-                .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}", request.getCorrelationId(), MaskDataUtils.maskString(request.getCf())))
+                .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
                 .onErrorResume(e -> {
                     logEServiceError(e);
                     CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
@@ -282,9 +281,9 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private void logEServiceError(Throwable throwable) {
         String message = "can not retrieve digital address from INAD: {}";
         if (CheckExceptionUtils.isForLogLevelWarn(throwable)) {
-            log.warn(message, MaskDataUtils.maskInformation(throwable.getMessage()));
+            log.warn(message, throwable.getMessage());
         } else {
-            log.error(message, MaskDataUtils.maskInformation(throwable.getMessage()));
+            log.error(message, throwable.getMessage());
         }
     }
 }
