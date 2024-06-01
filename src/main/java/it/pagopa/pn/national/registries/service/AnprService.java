@@ -11,7 +11,6 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddre
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -52,9 +51,7 @@ public class AnprService {
         }
 
         return createRequest(request)
-                .doOnNext(batchRequest -> log.info("Created ANPR request for taxId: {}", MaskDataUtils.maskString(cf)))
                 .flatMap(anprClient::callEService)
-                .doOnNext(batchRequest -> log.info("Got ResponseE002OKDto fox taxId: {}", MaskDataUtils.maskString(cf)))
                 .map(rispostaE002OK -> anprConverter.convertToGetAddressANPROK(rispostaE002OK, cf));
     }
 

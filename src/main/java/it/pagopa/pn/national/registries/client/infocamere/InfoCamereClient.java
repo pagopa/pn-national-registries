@@ -17,7 +17,6 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTax
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -38,8 +37,6 @@ public class InfoCamereClient {
     private final AccessTokenExpiringMap accessTokenExpiringMap;
     private final String clientId;
     private final ObjectMapper mapper;
-
-    private static final String SCOPE = "scope";
     private static final String TRAKING_ID = "X-Tracking-trackingId";
 
     private final LegalRepresentationApi legalRepresentationApi;
@@ -161,7 +158,7 @@ public class InfoCamereClient {
 
     private @NotNull Consumer<Throwable> handleErrorCall() {
         return throwable -> {
-            log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, MaskDataUtils.maskInformation(throwable.getMessage()));
+            log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
             if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                 log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                 throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),

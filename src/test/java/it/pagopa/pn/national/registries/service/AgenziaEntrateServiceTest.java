@@ -3,28 +3,20 @@ package it.pagopa.pn.national.registries.service;
 import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.national.registries.client.agenziaentrate.AdELegalClient;
 import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
-
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ContextConfiguration;
 import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
-
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {AgenziaEntrateService.class})
@@ -32,7 +24,6 @@ import static org.mockito.Mockito.*;
 class AgenziaEntrateServiceTest {
     @InjectMocks
     AgenziaEntrateService agenziaEntrateService;
-
     @Mock
     AdELegalClient adELegalClient;
     @Mock
@@ -42,7 +33,6 @@ class AgenziaEntrateServiceTest {
 
     @Mock
     ValidateUtils validateUtils;
-
 
     /**
      * Method under test: {@link AgenziaEntrateService#checkTaxIdAndVatNumber(ADELegalRequestBodyDto)}

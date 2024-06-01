@@ -28,7 +28,7 @@ public class IpaClient {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.IPA, PROCESS_SERVICE_WS23_PEC);
         return ipaApi.callEServiceWS23(taxId, authId)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.IPA, MaskDataUtils.maskInformation(throwable.getMessage()));
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.IPA, throwable.getMessage());
                     checkIPAException(throwable);
                 });
     }
@@ -37,7 +37,7 @@ public class IpaClient {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.IPA, PROCESS_SERVICE_WS05_PEC);
         return ipaApi.callEServiceWS05(codAmm, authId)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.IPA, MaskDataUtils.maskInformation(throwable.getMessage()));
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.IPA, throwable.getMessage());
                     checkIPAException(throwable);
                 });
     }

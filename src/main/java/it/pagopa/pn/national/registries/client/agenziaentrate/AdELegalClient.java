@@ -41,14 +41,17 @@ public class AdELegalClient {
     private Mono<String> callCheck(ADELegalRequestBodyFilterDto request) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.ADE + "_legal", PROCESS_SERVICE_AGENZIA_ENTRATE_LEGAL);
         WebClient webClient = adELegalWebClient.init();
+        String envelope = xmlWriter.getEnvelope(request.getTaxId(), request.getVatNumber());
+        String finalEnvelope = removeSensitiveData(envelope);
+        log.debug("Client method VerificaRappresentanteEnteService() with args: {}", finalEnvelope);
         return webClient.post()
                 .uri("/SPCBooleanoRappWS/VerificaRappresentanteEnteService")
                 .contentType(MediaType.TEXT_XML)
-                .bodyValue(xmlWriter.getEnvelope(request.getTaxId(), request.getVatNumber()))
+                .bodyValue(finalEnvelope)
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ADE, MaskDataUtils.maskInformation(throwable.getMessage()));
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ADE, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                                 e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
@@ -57,7 +60,14 @@ public class AdELegalClient {
                 }).retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_ADE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
-                );
+                )
+                .doOnNext(s -> log.debug("Return client method VerificaRappresentanteEnteService() Result: {}", s));
+    }
+
+    private String removeSensitiveData(String envelope) {
+        return envelope.replaceFirst("<anag:cfRappresentante>.*</anag:cfRappresentante>",
+                        "<anag:cfRappresentante>***</anag:cfRappresentante>")
+                .replaceFirst("<anag:cfEnte>.*</anag:cfEnte>", "<anag:cfEnte>***</anag:cfEnte>");
     }
 
     protected boolean shouldRetry(Throwable throwable) {

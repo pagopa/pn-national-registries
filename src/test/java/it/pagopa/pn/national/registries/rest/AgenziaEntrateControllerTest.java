@@ -34,6 +34,7 @@ class AgenziaEntrateControllerTest {
     @Mock
     Scheduler scheduler;
 
+
     @Test
     void checkTaxIdAndVatNumber() {
         ADELegalRequestBodyDto adeLegalRequestBodyDto = new ADELegalRequestBodyDto();

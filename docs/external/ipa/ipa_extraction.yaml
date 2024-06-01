@@ -15,7 +15,7 @@ paths:
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/WS23RequestDto'
       responses:
@@ -39,7 +39,7 @@ paths:
       requestBody:
         required: true
         content:
-          multipart/form-data:
+          application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/WS05RequestDto'
       responses:
@@ -65,6 +65,7 @@ components:
         CF:
           type: string
           description: Tax ID
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         AUTH_ID:
           type: string
           description: Authorization ID
@@ -86,6 +87,7 @@ components:
         COD_AMM:
           type: string
           description: Code of Amm
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         AUTH_ID:
           type: string
           description: Authorization ID
@@ -114,12 +116,14 @@ components:
         domicilio_digitale:
           type: string
           description: Digital domicile
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         tipo:
           type: string
           description: Type
         cod_amm:
           type: string
           description: Code of the entity
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         des_amm:
           type: string
           description: Name of the entity
@@ -129,6 +133,7 @@ components:
         cod_amm:
           type: string
           description: Code of Amm
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         acronimo:
           type: string
           description: Acronym
@@ -138,27 +143,35 @@ components:
         regione:
           type: string
           description: Region
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         provincia:
           type: string
           description: Province
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         comune:
           type: string
           description: Municipality
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         cap:
           type: string
           description: Postal code
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         indirizzo:
           type: string
           description: Address
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         titolo_resp:
           type: string
           description: Title of the responsible
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         nome_resp:
           type: string
           description: Name of the responsible
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         cogn_resp:
           type: string
           description: Surname of the responsible
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         sito_istituzionale:
           type: string
           description: Institutional site
@@ -168,18 +181,23 @@ components:
         mail1:
           type: string
           description: Primary email
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         mail2:
           type: string
           description: Secondary email
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         mail3:
           type: string
           description: Tertiary email
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         mail4:
           type: string
           description: Quaternary email
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         mail5:
           type: string
           description: Quinary email
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
         tipologia:
           type: string
           description: Typology
@@ -192,3 +210,4 @@ components:
         cf:
           type: string
           description: Fiscal code
+          x-field-extra-annotation: "@lombok.ToString.Exclude"

@@ -392,6 +392,7 @@ components:
       type: string
       description: Codice Fiscale/Partita IVA relativa al Domicilio Digitale
       example: RRANGL74M28R701V
+      x-field-extra-annotation: "@lombok.ToString.Exclude"
     PracticalReference:
       type: string
       description: Riferimento del procedimento amministrativo per il quale si richiede l'estrazione
@@ -401,6 +402,7 @@ components:
       type: string
       description: Indirizzo PEC del Domicilio Digitale
       example: example@pec.it
+      x-field-extra-annotation: "@lombok.ToString.Exclude"
     UUID:
       maxLength: 40
       minLength: 20
