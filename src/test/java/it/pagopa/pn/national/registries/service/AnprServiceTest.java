@@ -4,13 +4,13 @@ import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.converter.AnprConverter;
 import it.pagopa.pn.national.registries.entity.CounterModel;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RispostaE002OK;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoDatiSoggettiEnte;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoListaSoggetti;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoResidenza;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.model.anpr.ResponseE002OKDto;
-import it.pagopa.pn.national.registries.model.anpr.SubjectsInstitutionDataDto;
-import it.pagopa.pn.national.registries.model.anpr.SubjectsListDto;
-import it.pagopa.pn.national.registries.model.anpr.ResidenceDto;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -58,13 +58,13 @@ class AnprServiceTest {
         cf.setReferenceRequestDate("2022-10-28");
         request.setFilter(cf);
 
-        ResponseE002OKDto response = new ResponseE002OKDto();
-        SubjectsListDto listaSoggettiDto = new SubjectsListDto();
-        SubjectsInstitutionDataDto soggettoEnteDto = new SubjectsInstitutionDataDto();
+        RispostaE002OK response = new RispostaE002OK();
+        TipoListaSoggetti listaSoggettiDto = new TipoListaSoggetti();
+        TipoDatiSoggettiEnte soggettoEnteDto = new TipoDatiSoggettiEnte();
 
-        List<SubjectsInstitutionDataDto> listDatiSoggetto = new ArrayList<>();
-        List<ResidenceDto> listRes = new ArrayList<>();
-        ResidenceDto res = new ResidenceDto();
+        List<TipoDatiSoggettiEnte> listDatiSoggetto = new ArrayList<>();
+        List<TipoResidenza> listRes = new ArrayList<>();
+        TipoResidenza res = new TipoResidenza();
         res.setNoteIndirizzo("indirizzo di test");
         listRes.add(res);
         soggettoEnteDto.setResidenza(listRes);
@@ -80,7 +80,7 @@ class AnprServiceTest {
         counterModel.setCounter(1L);
         when(counterRepository.getCounter("anpr")).thenReturn(Mono.just(counterModel));
         when(anprClient.callEService(any())).thenReturn(Mono.just(response));
-        when(anprConverter.convertToGetAddressANPROKDto(any(), anyString())).thenReturn(getAddressANPROKDto);
+        when(anprConverter.convertToGetAddressANPROK(any(), anyString())).thenReturn(getAddressANPROKDto);
 
         StepVerifier.create(anprService.getAddressANPR(request)).expectNext(getAddressANPROKDto).expectComplete().verify();
     }

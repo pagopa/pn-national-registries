@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereTokenClient;
 import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
-import it.pagopa.pn.national.registries.model.ClientCredentialsResponseDto;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.ClientCredentialsResponse;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -31,7 +31,7 @@ public class TokenProvider {
         this.infoCamereTokenClient = infoCamereTokenClient;
     }
 
-    public Mono<ClientCredentialsResponseDto> getTokenPdnd(PdndSecretValue pdndSecretValue) {
+    public Mono<ClientCredentialsResponse> getTokenPdnd(PdndSecretValue pdndSecretValue) {
         String clientAssertion = assertionGenerator.generateClientAssertion(pdndSecretValue);
         return pdndClient.createToken(clientAssertion, clientAssertionType, grantType, pdndSecretValue.getClientId());
     }

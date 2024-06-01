@@ -5,9 +5,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.checkcf.CheckCfSecretConfig;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
-import it.pagopa.pn.national.registries.model.TokenTypeDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.Request;
 import it.pagopa.pn.national.registries.model.agenziaentrate.TaxIdVerification;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
@@ -69,7 +69,7 @@ class CheckCfClientTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
+        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
@@ -112,7 +112,7 @@ class CheckCfClientTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenTypeDto.BEARER);
+        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
