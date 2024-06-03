@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
+import com.amazonaws.util.CollectionUtils;
 import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
@@ -127,7 +128,7 @@ public class InfoCamereConverter {
     }
 
     private List<BusinessDto> convertToBusiness(InfoCamereLegalInstituionsResponse response) {
-        if(!response.getElencoImpreseRappresentate().isEmpty()) {
+        if(!CollectionUtils.isNullOrEmpty(response.getElencoImpreseRappresentate())) {
             return response.getElencoImpreseRappresentate().stream()
                     .map(infoCamereInstitution -> {
                         BusinessDto businessDto = new BusinessDto();
@@ -144,11 +145,13 @@ public class InfoCamereConverter {
     private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImprese response) {
         GetAddressRegistroImpreseOKProfessionalAddressDto dto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
         LegalAddress address = response.getIndirizzoLocalizzazione();
-        dto.setAddress(createLegalAddress(address));
-        dto.setMunicipality(address.getComune());
-        dto.setProvince(address.getProvincia());
-        dto.setZip(address.getCap());
-        dto.setDescription(address.getVia());
+        if (address != null) {
+            dto.setAddress(createLegalAddress(address));
+            dto.setMunicipality(address.getComune());
+            dto.setProvince(address.getProvincia());
+            dto.setZip(address.getCap());
+            dto.setDescription(address.getVia());
+        }
         return dto;
     }
 
