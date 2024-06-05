@@ -48,7 +48,6 @@ public class PnEventInboundService {
     }
 
     private String handleMessage(Message<?> message) {
-        log.debug("Message received from customRouter {}", MaskDataUtils.maskInformation(message.toString()));
         String eventType = (String) message.getHeaders().get("eventType");
         log.info("Message received from customRouter with eventType = {}", eventType );
 

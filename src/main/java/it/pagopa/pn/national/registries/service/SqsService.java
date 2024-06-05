@@ -47,21 +47,18 @@ public class SqsService {
 
     public Mono<SendMessageResponse> pushToOutputQueue(CodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
-        log.debug(INSERTING_MSG_WITH_DATA, msg, outputQueueName);
         log.info(INSERTING_MSG_WITHOUT_DATA, outputQueueName);
         return push(toJson(msg), pnNationalRegistriesCxId, outputQueueName, "NR_GATEWAY_RESPONSE");
     }
 
     public Mono<SendMessageResponse> pushToInputQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
-        log.debug(INSERTING_MSG_WITH_DATA, msg, inputQueueName);
         log.info(INSERTING_MSG_WITHOUT_DATA, inputQueueName);
         return push(toJson(msg), pnNationalRegistriesCxId, inputQueueName, "NR_GATEWAY_INPUT");
     }
 
     public Mono<SendMessageResponse> pushToInputDlqQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
-        log.debug(INSERTING_MSG_WITH_DATA, msg, inputDlqQueueName);
         log.info(INSERTING_MSG_WITHOUT_DATA, inputDlqQueueName);
         return push(toJson(msg), pnNationalRegistriesCxId, inputDlqQueueName, "NR_GATEWAY_INPUT");
     }
