@@ -1,0 +1,174 @@
+openapi: 3.0.1
+info:
+  title: Recupero Sede / Esistenza RI
+  termsOfService: /
+  contact:
+    name: InfoCamere
+    url: https://www.unioncamere.gov.it/
+  version: 1.0.0
+servers:
+  - url: https://icapis.infocamere.it
+    description: ambiente PRODUZIONE
+paths:
+  /sede/{cf}:
+    post:
+      tags:
+        - API Recupero Sede
+      description: Consente di ottenere l’indirizzo della sede legale dell’impresa al momento della consultazione
+      operationId: recuperoSedeImpresa
+      parameters:
+        - name: cf
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Controllo eseguito
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ServizioSedeImpresaResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Richiesta non valida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Utente non abilitato al servizio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Servizio non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore nell'esecuzione della richiesta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Servizio non disponibile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+  /esistenzari/{cf}:
+    get:
+      tags:
+        - API Esistenza R.I.
+      description: Consente di verificare se il codice fiscale o partita IVA corrispondono ad una impresa registrata nel Registro Imprese al momento della consultazione.
+      operationId: verificaEsistenzaInRI
+      parameters:
+        - name: cf
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Controllo eseguito
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EsistenzaImpresainRIResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Richiesta non valida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Utente non abilitato al servizio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Servizio non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore nell'esecuzione della richiesta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Servizio non disponibile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        appName:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    IndirizzoLocalizzazioneDTO:
+      type: object
+      properties:
+        comune:
+          type: string
+        provincia:
+          type: string
+        toponimo:
+          type: string
+        via:
+          type: string
+        getnCivico:
+          type: string
+        cap:
+          type: string
+    ServizioSedeImpresaResponse:
+      type: object
+      properties:
+        dataOraEstrazione:
+          type: string
+          format: date-time
+        cf:
+          type: string
+        denominazione:
+          type: string
+        indirizzoLocalizzazione:
+          $ref: '#/components/schemas/IndirizzoLocalizzazioneDTO'
+    EsistenzaImpresainRIResponse:
+      type: object
+      properties:
+        esito:
+          type: boolean
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

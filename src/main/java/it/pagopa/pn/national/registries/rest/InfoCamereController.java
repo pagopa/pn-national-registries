@@ -64,27 +64,6 @@ public class InfoCamereController implements InfoCamereApi {
                 .publishOn(scheduler);
     }
 
-
-    /**
-     * POST /national-registries-private/infocamere/legal : Questo servizio Il servizio consente di verificare se il codice fiscale della persona risulta legale rappresentante dell’impresa passata come parametro.
-     * Questo servizio Il servizio consente di verificare se il codice fiscale della persona risulta legale rappresentante dell’impresa passata come parametro.
-     *
-     * @param infoCamereLegalRequestBodyDto  (required)
-     * @return OK (status code 200)
-     *         or Bad request (status code 400)
-     *         or Unauthorized (status code 401)
-     *         or Not Found (status code 404)
-     *         or Internal server error (status code 500)
-     *         or Service Unavailable (status code 503)
-     */
-
-    @Override
-    public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(Mono<InfoCamereLegalRequestBodyDto> infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
-        return infoCamereLegalRequestBodyDto.flatMap(infoCamereService::checkTaxIdAndVatNumber)
-                .map(t -> ResponseEntity.ok().body(t))
-                .publishOn(scheduler);
-    }
-
     /**
      * POST /national-registries-private/infocamere/legal-institutions : Il servizio restituisce la lista delle imprese che hanno come legale rappresentante la persona fisica indicata.
      * Il servizio restituisce la lista delle imprese che hanno come legale rappresentante la persona fisica indicata.

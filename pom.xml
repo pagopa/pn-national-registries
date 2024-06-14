@@ -277,14 +277,14 @@
                         </configuration>
                     </execution>
                     <execution>
-                        <id>generate-infocamere-client</id>
+                        <id>generate-inipec-client</id>
                         <goals>
                             <goal>generate</goal>
                         </goals>
                         <phase>process-resources</phase>
                         <configuration>
                             <templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
-                            <inputSpec>${project.basedir}/docs/external/infocamere/infocamere.yaml</inputSpec>
+                            <inputSpec>${project.basedir}/docs/external/infocamere/inipec.yaml</inputSpec>
                             <generatorName>java</generatorName>
                             <library>webclient</library>
                             <generateApiDocumentation>false</generateApiDocumentation>
@@ -295,6 +295,112 @@
                                 <swaggerAnnotations>false</swaggerAnnotations>
                                 <openApiNullable>false</openApiNullable>
                             </configOptions>
+                            <modelPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto</modelPackage>
+                            <apiPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api</apiPackage>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-lrelenco-infocamere-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
+                            <inputSpec>${project.basedir}/docs/external/infocamere/LrElenco.yaml</inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>webclient</library>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <swaggerAnnotations>false</swaggerAnnotations>
+                                <openApiNullable>false</openApiNullable>
+                                <dateLibrary>custom</dateLibrary>
+                            </configOptions>
+                            <typeMappings>
+                                <typeMapping>DateTime=Date</typeMapping>
+                            </typeMappings>
+                            <importMappings>
+                                <importMapping>Date=java.util.Date</importMapping>
+                            </importMappings>
+                            <modelPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto</modelPackage>
+                            <apiPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api</apiPackage>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-sede-infocamere-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
+                            <inputSpec>${project.basedir}/docs/external/infocamere/Sede.yaml</inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>webclient</library>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <swaggerAnnotations>false</swaggerAnnotations>
+                                <openApiNullable>false</openApiNullable>
+                            </configOptions>
+                            <modelPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto</modelPackage>
+                            <apiPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api</apiPackage>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-elenco-pec-infocamere-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
+                            <inputSpec>${project.basedir}/docs/external/infocamere/getElencoPEC.yaml</inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>webclient</library>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <swaggerAnnotations>false</swaggerAnnotations>
+                                <openApiNullable>false</openApiNullable>
+                            </configOptions>
+                            <modelPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto</modelPackage>
+                            <apiPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api</apiPackage>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>generate-richiesta-elenco-infocamere-client</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                        <phase>process-resources</phase>
+                        <configuration>
+                            <templateDirectory>${project.build.directory}/dependency-resources/scripts/openapi/templates/5.4.0/client</templateDirectory>
+                            <inputSpec>${project.basedir}/docs/external/infocamere/richiestaElencoPEC.yaml</inputSpec>
+                            <generatorName>java</generatorName>
+                            <library>webclient</library>
+                            <generateApiDocumentation>false</generateApiDocumentation>
+                            <generateApiTests>false</generateApiTests>
+                            <generateModelTests>false</generateModelTests>
+                            <generateSupportingFiles>true</generateSupportingFiles>
+                            <configOptions>
+                                <swaggerAnnotations>false</swaggerAnnotations>
+                                <openApiNullable>false</openApiNullable>
+                                <dateLibrary>custom</dateLibrary>
+                            </configOptions>
+                            <typeMappings>
+                                <typeMapping>DateTime=Date</typeMapping>
+                            </typeMappings>
+                            <importMappings>
+                                <importMapping>Date=java.util.Date</importMapping>
+                            </importMappings>
                             <modelPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto</modelPackage>
                             <apiPackage>it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api</apiPackage>
                         </configuration>

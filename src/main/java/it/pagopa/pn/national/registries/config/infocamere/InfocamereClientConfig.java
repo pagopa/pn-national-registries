@@ -21,32 +21,31 @@ public class InfocamereClientConfig extends CommonBaseClient {
         return new AuthenticationApi(apiClient);
     }
 
-
     @Bean
-    LegalRepresentationApi legalRepresentationApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
+    ApiImpreseRappresentateElencoApi legalRepresentativeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
         var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
         apiClient.setBasePath(basePath);
-        return new LegalRepresentationApi(apiClient);
+        return new ApiImpreseRappresentateElencoApi(apiClient);
     }
 
     @Bean
-    LegalRepresentativeApi legalRepresentativeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
+    ApiRecuperoElencoPecApi pecApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
         var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
         apiClient.setBasePath(basePath);
-        return new LegalRepresentativeApi(apiClient);
+        return new ApiRecuperoElencoPecApi(apiClient);
     }
 
     @Bean
-    PecApi pecApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
+    ApiRecuperoSedeApi sedeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
         var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
         apiClient.setBasePath(basePath);
-        return new PecApi(apiClient);
+        return new ApiRecuperoSedeApi(apiClient);
     }
 
     @Bean
-    SedeApi sedeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
+    ApiRichiestaElencoPecApi apiRichiestaElencoPecApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
         var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
         apiClient.setBasePath(basePath);
-        return new SedeApi(apiClient);
+        return new ApiRichiestaElencoPecApi(apiClient);
     }
 }

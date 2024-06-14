@@ -17,6 +17,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.time.OffsetDateTime;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -58,12 +59,12 @@ class InfoCamereConverterTest {
         batchRequest.setCorrelationId("correlationId");
         batchRequest.setCf("cf");
 
-        Pec pec = new Pec();
+        ElencoPecElement pec = new ElencoPecElement();
         pec.setCf("cf");
-        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
-        iniPecPollingResponse.setElencoPec(List.of(pec));
+        GetElencoPec200Response elencoPec200Response = new GetElencoPec200Response();
+        elencoPec200Response.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, elencoPec200Response);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNull(codeSqsDto.getError());
         assertTrue(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()));
@@ -75,11 +76,11 @@ class InfoCamereConverterTest {
         batchRequest.setCf("Cf");
         batchRequest.setCorrelationId("correlationId");
 
-        Pec pec = new Pec();
+        ElencoPecElement pec = new ElencoPecElement();
         pec.setCf("Cf");
         pec.setPecImpresa("pecImpresa");
-        pec.setPecProfessionista(Collections.emptyList());
-        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        pec.setPecProfessionistas(Collections.emptyList());
+        GetElencoPec200Response iniPecPollingResponse = new GetElencoPec200Response();
         iniPecPollingResponse.setElencoPec(List.of(pec));
 
         CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
@@ -95,12 +96,12 @@ class InfoCamereConverterTest {
         batchRequest.setCf("cf");
         batchRequest.setCorrelationId("correlationId");
 
-        Pec pec = new Pec();
+        ElencoPecElement pec = new ElencoPecElement();
         pec.setCf("altro-cf");
-        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
-        iniPecPollingResponse.setElencoPec(List.of(pec));
+        GetElencoPec200Response elencoPec200Response = new GetElencoPec200Response();
+        elencoPec200Response.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, elencoPec200Response);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
@@ -146,27 +147,20 @@ class InfoCamereConverterTest {
     }
 
     /**
-     * Method under test: {@link InfoCamereConverter#checkIfResponseIsInfoCamereError(IniPecPollingResponse)}
+     * Method under test: {@link InfoCamereConverter#checkIfResponseIsInfoCamereError(GetElencoPec200Response)}
      */
     @Test
     void testCheckIfResponseIsInfoCamereError() {
-        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        GetElencoPec200Response iniPecPollingResponse = new GetElencoPec200Response();
         iniPecPollingResponse.setAppName("appName");
         assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(iniPecPollingResponse));
     }
 
     @Test
     void testCheckIfResponseIsInfoCamereErrorAddressRegistroImprese() {
-        AddressRegistroImprese addressRegistroImprese = new AddressRegistroImprese();
-        addressRegistroImprese.setAppName("appName");
-        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(addressRegistroImprese));
-    }
-
-    @Test
-    void testCheckIfResponseIsInfoCamereErrorInfoCamereVerification() {
-        InfoCamereVerification infoCamereVerification = new InfoCamereVerification();
-        infoCamereVerification.setAppName("appName");
-        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(infoCamereVerification));
+        RecuperoSedeImpresa200Response recuperoSedeImpresa200Response = new RecuperoSedeImpresa200Response();
+        recuperoSedeImpresa200Response.setAppName("appName");
+        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(recuperoSedeImpresa200Response));
     }
 
     @Test
@@ -193,50 +187,35 @@ class InfoCamereConverterTest {
 
     @Test
     void testMapToResponseOk() {
-        LegalAddress legalAddress = new LegalAddress();
-        legalAddress.setVia("42 Main St");
-        legalAddress.setComune("Municipality");
-        legalAddress.setCap("Postal Code");
-        legalAddress.setProvincia("Province");
-        legalAddress.setVia("Street");
-        legalAddress.setnCivico("42");
-        legalAddress.setToponimo("Toponym");
+        IndirizzoLocalizzazioneDTO indirizzoLocalizzazioneDTO = new IndirizzoLocalizzazioneDTO();
+        indirizzoLocalizzazioneDTO.setVia("42 Main St");
+        indirizzoLocalizzazioneDTO.setComune("Municipality");
+        indirizzoLocalizzazioneDTO.setCap("Postal Code");
+        indirizzoLocalizzazioneDTO.setProvincia("Province");
+        indirizzoLocalizzazioneDTO.setVia("Street");
+        indirizzoLocalizzazioneDTO.setGetnCivico("42");
+        indirizzoLocalizzazioneDTO.setToponimo("Toponym");
 
-        AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
-        addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
-        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
-        addressRegistroImpreseResponse.setCf("taxId");
+        RecuperoSedeImpresa200Response recuperoSedeImpresa200Response = new RecuperoSedeImpresa200Response();
+        recuperoSedeImpresa200Response.setIndirizzoLocalizzazione(indirizzoLocalizzazioneDTO);
+        recuperoSedeImpresa200Response.setDataOraEstrazione(OffsetDateTime.now());
+        recuperoSedeImpresa200Response.setCf("taxId");
 
         GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
-                .mapToResponseOkByResponse(addressRegistroImpreseResponse);
+                .mapToResponseOkByResponse(recuperoSedeImpresa200Response);
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
     }
 
     @Test
-    void testInfoCamereResponseToDto() {
-        InfoCamereVerification infoCamereVerificationResponse = new InfoCamereVerification();
-        infoCamereVerificationResponse.setEsitoVerifica("OK");
-        infoCamereVerificationResponse.setCfImpresa("vatNumber");
-        infoCamereVerificationResponse.setCfPersona("taxId");
-
-        InfoCamereLegalOKDto actualResult = infoCamereConverter
-                .infoCamereResponseToDtoByResponse(infoCamereVerificationResponse);
-
-        assertEquals("taxId", actualResult.getTaxId());
-        assertEquals("vatNumber", actualResult.getVatNumber());
-        assertEquals(true, actualResult.getVerificationResult());
-    }
-
-    @Test
     void mapToResponseOkByResponse() {
-        InfoCamereLegalInstituionsResponse response = new InfoCamereLegalInstituionsResponse();
+        LegaleRappresentanteLista200Response response = new LegaleRappresentanteLista200Response();
         response.setCfPersona("taxId");
-        InfoCamereInstitution businessDto = new InfoCamereInstitution();
-        businessDto.setCfImpresa("businessTaxId");
-        businessDto.setDenominazione("businessName");
-        response.setElencoImpreseRappresentate(List.of(businessDto));
-        response.setDataOraEstrazione(OffsetDateTime.now().toString());
+        ElencoImpreseRappresentate elencoImpreseRappresentate = new ElencoImpreseRappresentate();
+        elencoImpreseRappresentate.setCfImpresa("businessTaxId");
+        elencoImpreseRappresentate.setDenominazione("businessName");
+        response.setElencoImpreseRappresentate(List.of(elencoImpreseRappresentate));
+        response.setDataOraEstrazione(new Date());
 
         InfoCamereLegalInstitutionsOKDto actualResult = infoCamereConverter
                 .mapToResponseOkByResponse(response);
@@ -247,9 +226,9 @@ class InfoCamereConverterTest {
 
     @Test
     void mapToResponseOkByResponse2() {
-        InfoCamereLegalInstituionsResponse response = new InfoCamereLegalInstituionsResponse();
+        LegaleRappresentanteLista200Response response = new LegaleRappresentanteLista200Response();
         response.setCfPersona("taxId");
-        response.setDataOraEstrazione(OffsetDateTime.now().toString());
+        response.setDataOraEstrazione(new Date());
 
         InfoCamereLegalInstitutionsOKDto actualResult = infoCamereConverter
                 .mapToResponseOkByResponse(response);

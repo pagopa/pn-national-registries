@@ -55,10 +55,10 @@ public class InfoCamereConverter {
         return batchPolling;
     }
 
-    public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
+    public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, GetElencoPec200Response iniPecPollingResponse) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0]);
-        List<Pec> pecs = iniPecPollingResponse.getElencoPec();
+        List<ElencoPecElement> pecs = iniPecPollingResponse.getElencoPec();
         pecs.stream()
                 .filter(p -> p.getCf().equalsIgnoreCase(batchRequest.getCf()))
                 .findAny()
@@ -79,28 +79,21 @@ public class InfoCamereConverter {
         return codeSqsDto;
     }
 
-    public boolean checkIfResponseIsInfoCamereError(IniPecPollingResponse response) {
+    public boolean checkIfResponseIsInfoCamereError(GetElencoPec200Response response) {
         return org.springframework.util.StringUtils.hasText(response.getCode())
                 || org.springframework.util.StringUtils.hasText(response.getDescription())
                 || response.getTimestamp() != null
                 || org.springframework.util.StringUtils.hasText(response.getAppName());
     }
 
-    public boolean checkIfResponseIsInfoCamereError(AddressRegistroImprese response) {
+    public boolean checkIfResponseIsInfoCamereError(RecuperoSedeImpresa200Response response) {
         return org.springframework.util.StringUtils.hasText(response.getCode())
                 || org.springframework.util.StringUtils.hasText(response.getDescription())
                 || response.getTimestamp() != null
                 || org.springframework.util.StringUtils.hasText(response.getAppName());
     }
 
-    public boolean checkIfResponseIsInfoCamereError(InfoCamereVerification response) {
-        return org.springframework.util.StringUtils.hasText(response.getCode())
-                || org.springframework.util.StringUtils.hasText(response.getDescription())
-                || response.getTimestamp() != null
-                || org.springframework.util.StringUtils.hasText(response.getAppName());
-    }
-
-    public GetAddressRegistroImpreseOKDto mapToResponseOkByResponse(AddressRegistroImprese response) {
+    public GetAddressRegistroImpreseOKDto mapToResponseOkByResponse(RecuperoSedeImpresa200Response response) {
         GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
         getAddressRegistroImpreseOKDto.setTaxId(response.getCf());
         getAddressRegistroImpreseOKDto.setDateTimeExtraction(new Date());
@@ -115,10 +108,10 @@ public class InfoCamereConverter {
         return getAddressRegistroImpreseOKDto;
     }
 
-    public InfoCamereLegalInstitutionsOKDto mapToResponseOkByResponse(InfoCamereLegalInstituionsResponse response) {
+    public InfoCamereLegalInstitutionsOKDto mapToResponseOkByResponse(LegaleRappresentanteLista200Response response) {
         InfoCamereLegalInstitutionsOKDto infoCamereLegalInstitutions = new InfoCamereLegalInstitutionsOKDto();
         infoCamereLegalInstitutions.setLegalTaxId(response.getCfPersona());
-        infoCamereLegalInstitutions.setDateTimeExtraction(response.getDataOraEstrazione());
+        infoCamereLegalInstitutions.setDateTimeExtraction(String.valueOf(response.getDataOraEstrazione()));
         infoCamereLegalInstitutions.setBusinessList(convertToBusiness(response));
         infoCamereLegalInstitutions.setDescription(response.getDescription());
         infoCamereLegalInstitutions.setCode(response.getCode());
@@ -127,7 +120,7 @@ public class InfoCamereConverter {
         return infoCamereLegalInstitutions;
     }
 
-    private List<BusinessDto> convertToBusiness(InfoCamereLegalInstituionsResponse response) {
+    private List<BusinessDto> convertToBusiness(LegaleRappresentanteLista200Response response) {
         if(!CollectionUtils.isNullOrEmpty(response.getElencoImpreseRappresentate())) {
             return response.getElencoImpreseRappresentate().stream()
                     .map(infoCamereInstitution -> {
@@ -142,9 +135,9 @@ public class InfoCamereConverter {
     }
 
 
-    private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImprese response) {
+    private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(RecuperoSedeImpresa200Response response) {
         GetAddressRegistroImpreseOKProfessionalAddressDto dto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
-        LegalAddress address = response.getIndirizzoLocalizzazione();
+        IndirizzoLocalizzazioneDTO address = response.getIndirizzoLocalizzazione();
         if (address != null) {
             dto.setAddress(createLegalAddress(address));
             dto.setMunicipality(address.getComune());
@@ -155,35 +148,25 @@ public class InfoCamereConverter {
         return dto;
     }
 
-    private List<DigitalAddress> convertToDigitalAddress(Pec pec) {
+    private List<DigitalAddress> convertToDigitalAddress(ElencoPecElement pec) {
         List<DigitalAddress> digitalAddress = new ArrayList<>();
         if (!StringUtils.isNullOrEmpty(pec.getPecImpresa())) {
             digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
         }
-        if (pec.getPecProfessionista() != null) {
-            pec.getPecProfessionista().stream()
-                    .map(pecProf -> toDigitalAddress(pecProf.getPec(), DigitalAddressRecipientType.PROFESSIONISTA))
+        if (pec.getPecProfessionistas() != null) {
+            pec.getPecProfessionistas().stream()
+                    .map(pecProf -> toDigitalAddress(pecProf.getPecProfessionista(), DigitalAddressRecipientType.PROFESSIONISTA))
                     .forEach(digitalAddress::add);
         }
         return digitalAddress;
     }
 
-    private String createLegalAddress(LegalAddress address) {
-        return address.getToponimo() + " " + address.getVia() + " " + address.getnCivico();
+    private String createLegalAddress(IndirizzoLocalizzazioneDTO address) {
+        return address.getToponimo() + " " + address.getVia() + " " + address.getGetnCivico();
     }
 
     private DigitalAddress toDigitalAddress(String address, DigitalAddressRecipientType recipient) {
         return new DigitalAddress(DigitalAddressType.PEC.getValue(), address, recipient.getValue());
-    }
-
-    public InfoCamereLegalOKDto infoCamereResponseToDtoByResponse(InfoCamereVerification response) {
-        InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
-        infoCamereLegalOKDto.setDateTimeExtraction(new Date());
-        infoCamereLegalOKDto.setTaxId(response.getCfPersona());
-        infoCamereLegalOKDto.setVatNumber(response.getCfImpresa());
-        infoCamereLegalOKDto.setVerificationResult("OK".equalsIgnoreCase(response.getEsitoVerifica()));
-
-        return infoCamereLegalOKDto;
     }
 
     public InfoCamereLegalOKDto infoCamereResponseToDtoByRequest(InfoCamereLegalRequestBodyDto request) {

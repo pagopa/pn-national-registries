@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: InfoCamere API
+  description: API to interact with InfoCamere services.
+  version: 1.0.0
+paths:
+  /authentication:
+    post:
+      summary: Get authentication token
+      operationId: getToken
+      tags:
+        - Authentication
+      parameters:
+        - name: client_id
+          in: query
+          required: false
+          schema:
+            type: string
+          description: Client ID for authentication
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+              description: JSON Web Signature (JWS) token
+              x-field-extra-annotation: "@lombok.ToString.Exclude"
+              example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: string
+                description: Authentication token
+                example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+                x-field-extra-annotation: "@lombok.ToString.Exclude"
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  code:
+                    type: string
+                example:
+                  message: Unauthorized
+                  code: 401
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                  code:
+                    type: string
+                example:
+                  message: Internal server error
+                  code: 500
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+security:
+  - bearerAuth: []

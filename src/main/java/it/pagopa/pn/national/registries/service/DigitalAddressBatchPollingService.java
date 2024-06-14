@@ -10,7 +10,7 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.GetElencoPec200Response;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
@@ -158,7 +158,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .onErrorResume(e -> Mono.empty());
     }
 
-    private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
+    private Mono<GetElencoPec200Response> callIniPecEService(String batchId, String pollingId) {
         return infoCamereClient.callEServiceRequestPec(pollingId)
                 .doOnNext(response -> {
                     if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
@@ -188,7 +188,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         return matcher.find();
     }
 
-    private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
+    private Mono<Void> handleSuccessfulPolling(BatchPolling polling, GetElencoPec200Response response) {
         polling.setStatus(BatchStatus.WORKED.getValue());
         return batchPollingRepository.update(polling)
                 .doOnNext(p -> log.debug("IniPEC - batchId {} - pollingId {} - updated status to WORKED", polling.getBatchId(), polling.getPollingId()))
@@ -271,7 +271,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     return Mono.empty();
                 }).block();
     }
-    private Function<BatchRequest, CodeSqsDto> getSqsOk(IniPecPollingResponse response) {
+    private Function<BatchRequest, CodeSqsDto> getSqsOk(GetElencoPec200Response response) {
         return request -> infoCamereConverter.convertResponsePecToCodeSqsDto(request, response);
     }
 

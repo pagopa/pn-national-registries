@@ -61,23 +61,6 @@ class InfoCamereControllerTest {
     }
 
     @Test
-    void checkTaxIdAndVatNumber() {
-
-        InfoCamereLegalOKDto response = new InfoCamereLegalOKDto();
-        response.setTaxId("PPPPLT80A01H501V");
-        response.setVatNumber("vatNumber");
-
-        InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
-        InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
-        dto.setTaxId("PPPPLT80A01H501V");
-        dto.setVatNumber("vatNumber");
-        body.setFilter(dto);
-
-        StepVerifier.create(infoCamereController.infoCamereLegal(Mono.just(body), serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(response));
-    }
-
-    @Test
     void getLegalInstitutions() {
 
         InfoCamereLegalInstitutionsOKDto response = new InfoCamereLegalInstitutionsOKDto();

@@ -23,18 +23,10 @@ class InfocamereClientConfigTest {
     }
 
     @Test
-    void testLegalRepresentationApi() {
-        InfocamereClientConfig infocamereClientConfig = new InfocamereClientConfig();
-
-        LegalRepresentationApi legalRepresentationApi = infocamereClientConfig.legalRepresentationApi(BASE_PATH);
-        assertEquals(BASE_PATH, legalRepresentationApi.getApiClient().getBasePath());
-    }
-
-    @Test
     void testLegalRepresentativeApi() {
         InfocamereClientConfig infocamereClientConfig = new InfocamereClientConfig();
 
-        LegalRepresentativeApi legalRepresentativeApi = infocamereClientConfig.legalRepresentativeApi(BASE_PATH);
+        ApiImpreseRappresentateElencoApi legalRepresentativeApi = infocamereClientConfig.legalRepresentativeApi(BASE_PATH);
         assertEquals(BASE_PATH, legalRepresentativeApi.getApiClient().getBasePath());
     }
 
@@ -42,7 +34,7 @@ class InfocamereClientConfigTest {
     void testPecApi() {
         InfocamereClientConfig infocamereClientConfig = new InfocamereClientConfig();
 
-        PecApi pecApi = infocamereClientConfig.pecApi(BASE_PATH);
+        ApiRecuperoElencoPecApi pecApi = infocamereClientConfig.pecApi(BASE_PATH);
         assertEquals(BASE_PATH, pecApi.getApiClient().getBasePath());
     }
 
@@ -50,7 +42,15 @@ class InfocamereClientConfigTest {
     void testSedeApi() {
         InfocamereClientConfig infocamereClientConfig = new InfocamereClientConfig();
 
-        SedeApi sedeApi = infocamereClientConfig.sedeApi(BASE_PATH);
+        ApiRecuperoSedeApi sedeApi = infocamereClientConfig.sedeApi(BASE_PATH);
+        assertEquals(BASE_PATH, sedeApi.getApiClient().getBasePath());
+    }
+
+    @Test
+    void testApiRichiestaElencoPecApi() {
+        InfocamereClientConfig infocamereClientConfig = new InfocamereClientConfig();
+
+        ApiRichiestaElencoPecApi sedeApi = infocamereClientConfig.apiRichiestaElencoPecApi(BASE_PATH);
         assertEquals(BASE_PATH, sedeApi.getApiClient().getBasePath());
     }
 }

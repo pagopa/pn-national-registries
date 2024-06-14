@@ -1,0 +1,114 @@
+openapi: 3.0.1
+info:
+  title: Richiesta elenco PEC per codice fiscale o partita IVA
+  description: Consente di richiedere un elenco di PEC delle imprese oppure del professionista corrispondente all’elenco fornito in input
+  termsOfService: /
+  contact:
+    name: InfoCamere
+    url: https://www.unioncamere.gov.it/
+  version: 1.0.0
+  x-summary: Consente di richiedere un elenco di PEC delle imprese oppure del professionista corrispondente all’elenco fornito in input
+servers:
+  - url: https://icapis.infocamere.it
+    description: ambiente PRODUZIONE
+paths:
+  /richiestaElencoPec:
+    post:
+      tags:
+        - API Richiesta elenco PEC
+      operationId: richiestaElencoPec
+      parameters:
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RichiestaElencoPecRequest'
+        required: true
+      responses:
+        '200':
+          description: Controllo eseguito
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/RichiestaElencoPecResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Richiesta non valida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Utente non abilitato al servizio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Servizio non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore nell'esecuzione della richiesta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Servizio non disponibile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+components:
+  schemas:
+    CodiceFiscaleElement:
+      type: object
+      properties:
+        cf:
+          type: string
+    RichiestaElencoPecRequest:
+      type: object
+      properties:
+        dataOraRichiesta:
+          type: string
+          format: date-time
+        elencoCf:
+          type: array
+          items:
+            $ref: '#/components/schemas/CodiceFiscaleElement'
+    RichiestaElencoPecResponse:
+      type: object
+      properties:
+        dataOraEstrazione:
+          type: string
+          format: date-time
+        identificativoRichiesta:
+          type: string
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        appName:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

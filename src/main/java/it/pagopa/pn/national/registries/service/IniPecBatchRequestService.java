@@ -7,7 +7,7 @@ import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.RichiestaElencoPec200Response;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
@@ -26,10 +26,7 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 
@@ -140,7 +137,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .then();
     }
 
-    private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
+    private Mono<RichiestaElencoPec200Response> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
         return infoCamereClient.callEServiceRequestId(iniPecBatchRequest)
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to call EService", batchId, e));
     }
@@ -154,11 +151,11 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     return iniPecCf;
                 })
                 .toList());
-        iniPecBatchRequest.setDataOraRichiesta(LocalDateTime.now().toString());
+        iniPecBatchRequest.setDataOraRichiesta(new Date());
         return iniPecBatchRequest;
     }
 
-    private Mono<Void> createPolling(IniPecBatchResponse response, String batchId) {
+    private Mono<Void> createPolling(RichiestaElencoPec200Response response, String batchId) {
         String pollingId = response.getIdentificativoRichiesta();
         log.info("IniPEC - batchId {} - creating BatchPolling with pollingId: {}", batchId, pollingId);
         return batchPollingRepository.create(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId))

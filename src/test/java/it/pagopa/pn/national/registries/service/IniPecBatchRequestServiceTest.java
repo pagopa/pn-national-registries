@@ -1,10 +1,5 @@
 package it.pagopa.pn.national.registries.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verifyNoInteractions;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
@@ -13,13 +8,10 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.RichiestaElencoPec200Response;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-
-import java.util.*;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +24,14 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.batch.request.delay=30000",
@@ -88,7 +88,7 @@ class IniPecBatchRequestServiceTest {
         when(batchPollingRepository.create(batchPolling))
                 .thenReturn(Mono.just(batchPolling));
 
-        IniPecBatchResponse iniPecBatchResponse = new IniPecBatchResponse();
+        RichiestaElencoPec200Response iniPecBatchResponse = new RichiestaElencoPec200Response();
         iniPecBatchResponse.setIdentificativoRichiesta("pollingId");
 
         when(infoCamereClient.callEServiceRequestId(isNotNull()))
@@ -146,7 +146,7 @@ class IniPecBatchRequestServiceTest {
         when(batchRequestRepository.setNewBatchIdToBatchRequest(same(batchRequest2)))
                 .thenReturn(Mono.just(batchRequest2));
 
-        IniPecBatchResponse iniPecResponse = new IniPecBatchResponse();
+        RichiestaElencoPec200Response iniPecResponse = new RichiestaElencoPec200Response();
         iniPecResponse.setIdentificativoRichiesta("pollingId");
         when(infoCamereClient.callEServiceRequestId(any()))
                 .thenReturn(Mono.just(iniPecResponse));
