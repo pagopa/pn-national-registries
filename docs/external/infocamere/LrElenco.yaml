@@ -1,0 +1,109 @@
+openapi: 3.0.1
+info:
+  title: Legale rappresentante da cf persona con elenco imprese rappresentate
+  description: Consente di ottenere la lista delle imprese rappresentate dal codice fiscale della persona (fisica o giuridica) passata come parametro
+  termsOfService: /
+  contact:
+    name: InfoCamere
+    url: https://www.unioncamere.gov.it/
+  version: 1.0.0
+  x-summary: Consente di ottenere la lista delle imprese rappresentate dal codice fiscale della persona (fisica o giuridica) passata come parametro
+servers:
+  - url: https://icapis.infocamere.it
+    description: ambiente PRODUZIONE
+paths:
+  /listaLegaleRappresentante/{cfPersona}:
+    get:
+      tags:
+        - 'API Imprese Rappresentate (elenco) '
+      operationId: legaleRappresentanteLista
+      parameters:
+        - name: cfPersona
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Controllo eseguito
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/LrListaResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Richiesta non valida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Utente non abilitato al servizio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Servizio non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore nell'esecuzione della richiesta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Servizio non disponibile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+components:
+  schemas:
+    ElencoImpreseRappresentate:
+      type: object
+      properties:
+        cfImpresa:
+          type: string
+        denominazione:
+          type: string
+    LrListaResponse:
+      type: object
+      properties:
+        dataOraEstrazione:
+          type: string
+          format: date-time
+        cfPersona:
+          type: string
+        elencoImpreseRappresentate:
+          type: array
+          items:
+            $ref: '#/components/schemas/ElencoImpreseRappresentate'
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        appName:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

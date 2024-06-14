@@ -2,12 +2,13 @@ package it.pagopa.pn.national.registries.model.inipec;
 
 import lombok.Data;
 
+import java.util.Date;
 import java.util.List;
 
 @Data
 public class IniPecBatchRequest {
 
-    private String dataOraRichiesta;
+    private Date dataOraRichiesta;
 
     private List<IniPecCf> elencoCf;
 

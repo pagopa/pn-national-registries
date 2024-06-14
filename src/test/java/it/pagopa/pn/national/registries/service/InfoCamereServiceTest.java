@@ -3,12 +3,10 @@ package it.pagopa.pn.national.registries.service;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IndirizzoLocalizzazioneDTO;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.LegaleRappresentanteLista200Response;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.RecuperoSedeImpresa200Response;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
-import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +20,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.OffsetDateTime;
 import java.util.Date;
 
 import static org.mockito.Mockito.any;
@@ -85,14 +84,14 @@ class InfoCamereServiceTest {
         professional.setAddress("address");
         response.setProfessionalAddress(professional);
 
-        AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
-        addressRegistroImpreseResponse.setTaxId("cf");
-        LegalAddress legalAddress = new LegalAddress();
-        legalAddress.setToponym("address");
-        addressRegistroImpreseResponse.setAddress(legalAddress);
+        RecuperoSedeImpresa200Response recuperoSedeImpresa200Response = new RecuperoSedeImpresa200Response();
+        recuperoSedeImpresa200Response.setCf("cf");
+        IndirizzoLocalizzazioneDTO indirizzoLocalizzazioneDTO = new IndirizzoLocalizzazioneDTO();
+        indirizzoLocalizzazioneDTO.setToponimo("address");
+        recuperoSedeImpresa200Response.setIndirizzoLocalizzazione(indirizzoLocalizzazioneDTO);
 
-        when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
-        when(infoCamereConverter.mapToResponseOkByResponse((AddressRegistroImprese) any())).thenReturn(response);
+        when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(recuperoSedeImpresa200Response));
+        when(infoCamereConverter.mapToResponseOkByResponse((RecuperoSedeImpresa200Response) any())).thenReturn(response);
 
         StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
                 .expectNext(response)
@@ -112,73 +111,18 @@ class InfoCamereServiceTest {
         response.setProfessionalAddress(professional);
         response.setDateTimeExtraction(new Date());
 
-        AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
-        addressRegistroImpreseResponse.setCode("err-sede");
-        addressRegistroImpreseResponse.setDescription("description");
-        addressRegistroImpreseResponse.setAppName("appName");
-        addressRegistroImpreseResponse.setTimestamp("2022-10-01T10:00:00");
+        RecuperoSedeImpresa200Response recuperoSedeImpresa200Response = new RecuperoSedeImpresa200Response();
+        recuperoSedeImpresa200Response.setCode("err-sede");
+        recuperoSedeImpresa200Response.setDescription("description");
+        recuperoSedeImpresa200Response.setAppName("appName");
+        recuperoSedeImpresa200Response.setTimestamp(OffsetDateTime.now());
 
-        when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
-        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
+        when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(recuperoSedeImpresa200Response));
+        when(infoCamereConverter.checkIfResponseIsInfoCamereError((RecuperoSedeImpresa200Response)any())).thenReturn(true);
         when(infoCamereConverter.mapToResponseOkByRequest((GetAddressRegistroImpreseRequestBodyDto) any())).thenReturn(response);
 
         StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
                 .expectNext(response)
-                .verifyComplete();
-    }
-
-    @Test
-    void checkTaxIdAndVatNumber() {
-        InfoCamereVerification response = new InfoCamereVerification();
-        response.setTaxId("taxId");
-        response.setVatNumber("vatNumber");
-
-        InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
-        InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
-        dto.setTaxId("taxId");
-        dto.setVatNumber("vatNumber");
-        body.setFilter(dto);
-
-        InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
-        infoCamereLegalOKDto.setTaxId("taxId");
-        infoCamereLegalOKDto.setVatNumber("vatNumber");
-        infoCamereLegalOKDto.setVerificationResult(true);
-
-
-        when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
-        when(infoCamereConverter.infoCamereResponseToDtoByResponse(response)).thenReturn(infoCamereLegalOKDto);
-
-        StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
-                .expectNext(infoCamereLegalOKDto)
-                .verifyComplete();
-    }
-
-    @Test
-    void checkTaxIdAndVatNumberWhenNotFound() {
-        InfoCamereVerification response = new InfoCamereVerification();
-        response.setCode("err-lrpunt");
-        response.setDescription("description");
-        response.setAppName("appName");
-        response.setTimestamp("2022-10-01T10:00:00");
-
-        InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
-        InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
-        dto.setTaxId("taxId");
-        dto.setVatNumber("vatNumber");
-        body.setFilter(dto);
-
-        InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
-        infoCamereLegalOKDto.setTaxId("taxId");
-        infoCamereLegalOKDto.setVatNumber("vatNumber");
-        infoCamereLegalOKDto.setVerificationResult(false);
-
-
-        when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
-        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
-        when(infoCamereConverter.infoCamereResponseToDtoByRequest(body)).thenReturn(infoCamereLegalOKDto);
-
-        StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
-                .expectNext(infoCamereLegalOKDto)
                 .verifyComplete();
     }
 
@@ -192,11 +136,12 @@ class InfoCamereServiceTest {
         InfoCamereLegalInstitutionsOKDto response = new InfoCamereLegalInstitutionsOKDto();
         response.setLegalTaxId("cf");
 
-        InfoCamereLegalInstituionsResponse infoCamereLegalInstituionsResponse = new InfoCamereLegalInstituionsResponse();
-        infoCamereLegalInstituionsResponse.setLegalTaxId("cf");
+        LegaleRappresentanteLista200Response infoCamereLegalInstituionsResponse = new LegaleRappresentanteLista200Response();
+        infoCamereLegalInstituionsResponse.setCfPersona("cf");
+
 
         when(infoCamereClient.getLegalInstitutions(any())).thenReturn(Mono.just(infoCamereLegalInstituionsResponse));
-        when(infoCamereConverter.mapToResponseOkByResponse((InfoCamereLegalInstituionsResponse) any())).thenReturn(response);
+        when(infoCamereConverter.mapToResponseOkByResponse((LegaleRappresentanteLista200Response) any())).thenReturn(response);
 
         StepVerifier.create(infoCamereService.getLegalInstitutions(request))
                 .expectNext(response)

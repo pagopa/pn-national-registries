@@ -1,0 +1,120 @@
+openapi: 3.0.1
+info:
+  title: Recupero elenco PEC
+  description: Consente di scaricare un elenco di PEC  precedentemente richiesto con il servizio  RichiestaElencoPec
+  termsOfService: /
+  contact:
+    name: InfoCamere
+    url: https://www.unioncamere.gov.it/
+  version: 1.0.0
+  x-summary: Consente di scaricare un elenco di PEC  precedentemente richiesto con il servizio  RichiestaElencoPec
+servers:
+  - url: https://icapis.infocamere.it
+    description: ambiente PRODUZIONE
+paths:
+  /getElencoPec/{identificativoRichiesta}:
+    get:
+      tags:
+        - API Recupero elenco PEC
+      operationId: getElencoPec
+      parameters:
+        - name: identificativoRichiesta
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: client_id
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Controllo eseguito
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/EstrazioneElencoPecResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
+        '400':
+          description: Richiesta non valida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Utente non abilitato al servizio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Servizio non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Errore nell'esecuzione della richiesta
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Servizio non disponibile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - bearerAuth: []
+components:
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        appName:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+    ElencoPecElement:
+      type: object
+      properties:
+        cf:
+          type: string
+        pecImpresa:
+          type: string
+        pecProfessionistas:
+          type: array
+          items:
+            $ref: '#/components/schemas/PecProfessionista'
+    EstrazioneElencoPecResponse:
+      type: object
+      properties:
+        dataOraDownload:
+          type: string
+          format: date-time
+        identificativoRichiesta:
+          type: string
+        descrizioneErrore:
+          type: string
+        elencoPec:
+          type: array
+          items:
+            $ref: '#/components/schemas/ElencoPecElement'
+    PecProfessionista:
+      type: object
+      properties:
+        pecProfessionista:
+          type: string
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

@@ -10,10 +10,10 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.GetElencoPec200Response;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
@@ -34,13 +34,16 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 
 @Slf4j
 @Service
@@ -155,7 +158,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .onErrorResume(e -> Mono.empty());
     }
 
-    private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
+    private Mono<GetElencoPec200Response> callIniPecEService(String batchId, String pollingId) {
         return infoCamereClient.callEServiceRequestPec(pollingId)
                 .doOnNext(response -> {
                     if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
@@ -185,7 +188,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         return matcher.find();
     }
 
-    private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
+    private Mono<Void> handleSuccessfulPolling(BatchPolling polling, GetElencoPec200Response response) {
         polling.setStatus(BatchStatus.WORKED.getValue());
         return batchPollingRepository.update(polling)
                 .doOnNext(p -> log.debug("IniPEC - batchId {} - pollingId {} - updated status to WORKED", polling.getBatchId(), polling.getPollingId()))
@@ -268,7 +271,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     return Mono.empty();
                 }).block();
     }
-    private Function<BatchRequest, CodeSqsDto> getSqsOk(IniPecPollingResponse response) {
+    private Function<BatchRequest, CodeSqsDto> getSqsOk(GetElencoPec200Response response) {
         return request -> infoCamereConverter.convertResponsePecToCodeSqsDto(request, response);
     }
 
