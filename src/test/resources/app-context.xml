@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans
+                           http://www.springframework.org/schema/beans/spring-beans.xsd
+                           http://www.springframework.org/schema/context
+                           http://www.springframework.org/schema/context/spring-context.xsd">
+
+    <!-- Component scanning for the specified base package -->
+    <context:component-scan base-package="it.pagopa.pn.national.registries.config"/>
+    <context:component-scan base-package="it.pagopa.pn.national.registries.client"/>
+    <context:component-scan base-package="it.pagopa.pn.national.registries.log"/>
+    <context:component-scan base-package="it.pagopa.pn.national.registries.utils"/>
+    <context:component-scan base-package="it.pagopa.pn.national.registries.cache"/>
+    <!-- Other bean definitions can go here if needed -->
+    <bean id="pnNationalRegistriesSecretService"
+          class="it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService"/>
+    <bean id="tokenProvider"
+          class="it.pagopa.pn.national.registries.service.TokenProvider"/>
+    <bean id="pdndAssertionGenerator"
+          class="it.pagopa.pn.national.registries.service.PdndAssertionGenerator"/>
+    <bean id="objectMapper"
+          class="com.fasterxml.jackson.databind.ObjectMapper"/>
+    <bean id="counter"
+          class=" it.pagopa.pn.national.registries.repository.CounterRepositoryImpl"/>
+
+
+</beans>
