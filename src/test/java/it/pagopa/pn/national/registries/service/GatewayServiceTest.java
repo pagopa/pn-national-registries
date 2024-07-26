@@ -63,9 +63,15 @@ class GatewayServiceTest {
                 .recipientType("PF")
                 .domicileType("DIGITAL")
                 .build();
+
+        GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("digitalAddress@inad.com");
+        getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
+
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId("correlationId");
-        when(inadService.callEService(any(), any())).thenReturn(Mono.just(new GetDigitalAddressINADOKDto()));
+        when(inadService.callEService(any(), any())).thenReturn(Mono.just(getDigitalAddressINADOKDto));
         when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         StepVerifier.create(gatewayService.handleMessage(payload)).expectNext(addressOKDto).verifyComplete();
     }
@@ -165,6 +171,9 @@ class GatewayServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("digitalAddress@inad.com");
+        getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
 
         when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
@@ -242,7 +251,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
         IPAPecDto ipaPecOKDto = new IPAPecDto();
-        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale");
+        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale@ipa.com");
         ipaPecOKDto.setTipo("tipo");
         ipaPecOKDto.setCodEnte("codEnte");
         ipaPecOKDto.setDenominazione("denominazione");
@@ -284,7 +293,7 @@ class GatewayServiceTest {
     void testRetrieveDigitalOrPhysicalAddressIpa() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
         IPAPecDto ipaPecOKDto = new IPAPecDto();
-        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale");
+        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale@ipa.com");
         ipaPecOKDto.setTipo("tipo");
         ipaPecOKDto.setCodEnte("codEnte");
         ipaPecOKDto.setDenominazione("denominazione");

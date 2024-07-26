@@ -4,13 +4,11 @@ import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressErrorDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import org.slf4j.MDC;
@@ -138,6 +136,7 @@ public class GatewayService extends GatewayConverter {
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
             return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), "PF")
+                    .flatMap(this::emailValidation)
                     .flatMap(inadResponse -> sqsService.pushToOutputQueue(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.PERSONA_FISICA), pnNationalRegistriesCxId))
                     .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {} - cf: {}", addressRequestBodyDto.getFilter().getCorrelationId(), MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId())))
                     .doOnError(e -> logEServiceError(e, "can not retrieve digital address from INAD: {}"))
@@ -166,10 +165,11 @@ public class GatewayService extends GatewayConverter {
         } else {
             return ipaService.getIpaPec(convertToGetIpaPecRequest(addressRequestBodyDto))
                     .flatMap(response -> {
-                        if (response.getDomicilioDigitale() == null &&
+                        if ((response.getDomicilioDigitale() == null &&
                                 response.getDenominazione() == null &&
                                 response.getCodEnte() == null &&
-                                response.getTipo() == null) {
+                                response.getTipo() == null) ||
+                                !CheckEmailUtils.isValidEmail(response.getDomicilioDigitale())) {
                             return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto), addressRequestBodyDto.getFilter().getReferenceRequestDate());
                         }
                         log.info("retrieved digital address from IPA for correlationId: {} - cf: {}", addressRequestBodyDto.getFilter().getCorrelationId(), MaskDataUtils.maskString(addressRequestBodyDto.getFilter().getTaxId()));
