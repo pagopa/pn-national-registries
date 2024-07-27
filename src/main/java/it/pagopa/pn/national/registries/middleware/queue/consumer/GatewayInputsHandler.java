@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.middleware.queue.consumer;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.service.GatewayService;
 import lombok.RequiredArgsConstructor;
@@ -24,13 +25,15 @@ public class GatewayInputsHandler {
             log.logStartingProcess(HANDLER_PROCESS);
             log.debug(HANDLER_PROCESS + "- message received for correlationId: {}", message.getPayload().getCorrelationId());
             MDC.put("correlationId", message.getPayload().getCorrelationId());
-            gatewayService.handleMessage(message.getPayload())
+
+            var monoResult = gatewayService.handleMessage(message.getPayload())
                     .doOnNext(addressOKDto -> log.logEndingProcess(HANDLER_PROCESS))
                     .doOnError(e -> {
                         log.logEndingProcess(HANDLER_PROCESS, false, e.getMessage());
                         HandleEventUtils.handleException(message.getHeaders(), e);
-                    })
-                    .block();
+                    });
+
+            MDCUtils.addMDCToContextAndExecute(monoResult).block();
         };
     }
 
