@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -13,7 +14,9 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
+import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 
@@ -194,6 +197,14 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(List.of(batchRequest)));
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
+        DigitalAddress digitalAddress = new DigitalAddress();
+        digitalAddress.setAddress("address@pec.it");
+
+        DigitalAddress digitalAddress2 = new DigitalAddress();
+        digitalAddress2.setAddress("invalid_pec");
+
+        codeSqsDto.setDigitalAddress(List.of(digitalAddress, digitalAddress2));
+
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 

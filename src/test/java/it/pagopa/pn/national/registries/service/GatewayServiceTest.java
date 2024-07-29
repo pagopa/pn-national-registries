@@ -208,6 +208,30 @@ class GatewayServiceTest {
     }
 
     @Test
+    @DisplayName("Test failed retrieve from INAD")
+    void testRetrieveDigitalOrPhysicalAddressInadErrorIvalidEmail() {
+        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+
+        GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("digitalAddressInadIvalidEmail.com");
+        getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
+
+        when(inadService.callEService(any(), any()))
+                .thenReturn(Mono.just(getDigitalAddressINADOKDto));
+
+        when(sqsService.pushToOutputQueue((CodeSqsDto) any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId(C_ID);
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
+    @Test
     @DisplayName("Test retrieve from Registro Imprese")
     void testRetrieveDigitalOrPhysicalAddressRegImp() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
