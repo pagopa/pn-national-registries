@@ -27,6 +27,11 @@ public class AdELegalClient {
     private final AdELegalWebClient adELegalWebClient;
     private final XMLWriter xmlWriter;
 
+    private static final String RAPPRESENTANTE_REGEX = "<anag:cfRappresentante>.*</anag:cfRappresentante>";
+    private static final String RAPPRESENTANTE_REPLACEMENT = "<anag:cfRappresentante>***</anag:cfRappresentante>";
+    private static final String ENTE_REPLACEMENT = "<anag:cfEnte>***</anag:cfEnte>";
+    private static final String ENTE_REGEX = "<anag:cfEnte>.*</anag:cfEnte>";
+
     protected AdELegalClient(AdELegalWebClient adELegalWebClient,
                              XMLWriter xmlWriter) {
         this.adELegalWebClient = adELegalWebClient;
@@ -64,9 +69,9 @@ public class AdELegalClient {
     }
 
     private String removeSensitiveData(String envelope) {
-        return envelope.replaceFirst("<anag:cfRappresentante>.*</anag:cfRappresentante>",
-                        "<anag:cfRappresentante>***</anag:cfRappresentante>")
-                .replaceFirst("<anag:cfEnte>.*</anag:cfEnte>", "<anag:cfEnte>***</anag:cfEnte>");
+        return envelope.replaceFirst(RAPPRESENTANTE_REGEX,
+                        RAPPRESENTANTE_REPLACEMENT)
+                .replaceFirst(ENTE_REGEX, ENTE_REPLACEMENT);
     }
 
     protected boolean shouldRetry(Throwable throwable) {

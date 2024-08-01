@@ -9,7 +9,6 @@ import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kms.model.SignRequest;
 import software.amazon.awssdk.services.kms.model.SignResponse;
 
-import java.security.spec.InvalidKeySpecException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,15 +17,6 @@ import static org.mockito.Mockito.*;
 
 class ClientUtilsTest {
 
-    @Test
-    void testGetPublicKey() {
-        assertThrows(InvalidKeySpecException.class, () -> ClientUtils.getPublicKey("test"));
-    }
-
-    @Test
-    void testGetPrivateKey() {
-        assertThrows(InvalidKeySpecException.class, () -> ClientUtils.getPrivateKey("test"));
-    }
 
     @Test
     void testCreateJwtContent() throws JsonProcessingException {

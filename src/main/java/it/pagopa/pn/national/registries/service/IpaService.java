@@ -54,7 +54,10 @@ public class IpaService {
         String authId = pnNationalRegistriesSecretService.getIpaSecret(ipaSecretConfig.getIpaSecret()).getAuthId();
         return callWS23(request.getFilter().getTaxId(), authId)
                 .flatMap(ws23ResponseDto -> {
-                    if (ws23ResponseDto.getResult().getNumItems() > 1) {
+                    if (ws23ResponseDto.getResult() != null &&
+                            ws23ResponseDto.getResult().getNumItems() != null &&
+                            ws23ResponseDto.getResult().getNumItems() > 1 &&
+                            ws23ResponseDto.getData() != null) {
                         String codAmm = ws23ResponseDto.getData().get(0).getCodAmm();
                         return callWS05(codAmm, authId).map(ipaConverter::convertToIPAPecDtoFromWS05);
                     } else {
@@ -73,8 +76,10 @@ public class IpaService {
                 .doOnNext(ws23ResponseDto -> log.info("Got WS23Response"))
                 .doOnError(throwable -> log.info("Failed to callWS23"))
                 .map(ws23ResponseDto -> {
-                    checkErrorWsResultDto(ws23ResponseDto.getResult());
-                    checkNumItemsResultDto(ws23ResponseDto.getResult(), "WS23");
+                    if(ws23ResponseDto != null) {
+                        checkErrorWsResultDto(ws23ResponseDto.getResult());
+                        checkNumItemsResultDto(ws23ResponseDto.getResult(), "WS23");
+                    }
                     return ws23ResponseDto;
                 });
     }
@@ -92,19 +97,19 @@ public class IpaService {
 
     private void checkErrorWsResultDto(ResultDto resultDto) {
         log.logChecking(PROCESS_CHECKING_ERROR_IPA);
-        if (resultDto.getCodErr() != 0) {
-            log.logCheckingOutcome(PROCESS_CHECKING_ERROR_IPA,false,resultDto.getDescErr());
+        if (resultDto != null && resultDto.getCodErr() != null && resultDto.getCodErr() != 0) {
+            log.logCheckingOutcome(PROCESS_CHECKING_ERROR_IPA, false, resultDto.getDescErr());
             throw new PnNationalRegistriesException(resultDto.getDescErr(), HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null,
                     Charset.defaultCharset(), IPAPecErrorDto.class);
         }
-        log.logCheckingOutcome(PROCESS_CHECKING_ERROR_IPA,true);
+        log.logCheckingOutcome(PROCESS_CHECKING_ERROR_IPA, true);
     }
 
-    private void checkNumItemsResultDto(ResultDto resultDto, String service){
+    private void checkNumItemsResultDto(ResultDto resultDto, String service) {
         log.logChecking(PROCESS_CHECKING_ITEMS_IPA);
-        if (resultDto.getNumItems() == 0) {
-            log.logCheckingOutcome(PROCESS_CHECKING_ITEMS_IPA,false,resultDto.getDescErr());
+        if (resultDto != null && resultDto.getNumItems() != null && resultDto.getNumItems() == 0) {
+            log.logCheckingOutcome(PROCESS_CHECKING_ITEMS_IPA, false, resultDto.getDescErr());
             throw new PnNationalRegistriesException("Service " + service + " responded with 0 items - IPA PEC not found", HttpStatus.NOT_FOUND.value(),
                     HttpStatus.NOT_FOUND.getReasonPhrase(), null, null,
                     Charset.defaultCharset(), IPAPecErrorDto.class);

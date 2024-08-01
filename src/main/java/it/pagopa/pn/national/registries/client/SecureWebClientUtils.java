@@ -28,12 +28,4 @@ public class SecureWebClientUtils {
         return new ByteArrayInputStream(Base64.getDecoder().decode(clientKeyPem));
     }
 
-    protected final InputStream getKeyInputStream(String clientKeyPem) {
-        return new ByteArrayInputStream(clientKeyPem.getBytes(StandardCharsets.UTF_8));
-    }
-
-    protected final InputStream getCertInputStream(String stringCert) {
-        return new ByteArrayInputStream(Base64.getDecoder().decode(stringCert));
-    }
-
 }

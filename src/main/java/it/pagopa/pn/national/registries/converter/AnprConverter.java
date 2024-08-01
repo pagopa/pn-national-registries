@@ -100,7 +100,7 @@ public class AnprConverter {
 
     private String createAddressString(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo) {
         if (indirizzo.getToponimo() != null && indirizzo.getNumeroCivico() != null) {
-            return indirizzo.getToponimo().getSpecie() + " " + indirizzo.getToponimo().getDenominazioneToponimo() + " "
+            return Optional.ofNullable(indirizzo.getToponimo().getSpecie()).orElse("") + " " + indirizzo.getToponimo().getDenominazioneToponimo() + " "
                     + Optional.ofNullable(indirizzo.getNumeroCivico().getNumero()).orElse("") + Optional.ofNullable(indirizzo.getNumeroCivico().getLettera()).orElse("");
         } else {
             return "";
