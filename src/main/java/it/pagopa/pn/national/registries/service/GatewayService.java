@@ -53,7 +53,6 @@ public class GatewayService extends GatewayConverter {
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto request) {
         checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
         String correlationId = request.getFilter().getCorrelationId();
-        MDC.put(CORRELATION_ID, correlationId);
         sqsService.pushToInputQueue(InternalCodeSqsDto.builder()
                 .taxId(request.getFilter().getTaxId())
                 .correlationId(request.getFilter().getCorrelationId())
