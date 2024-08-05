@@ -3,12 +3,12 @@ package it.pagopa.pn.national.registries.service;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.AddressRegistroImprese;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.InfoCamereLegalInstituionsResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.InfoCamereVerification;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.LegalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
-import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +22,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.OffsetDateTime;
 import java.util.Date;
 
 import static org.mockito.Mockito.any;
@@ -86,10 +87,10 @@ class InfoCamereServiceTest {
         response.setProfessionalAddress(professional);
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
-        addressRegistroImpreseResponse.setTaxId("cf");
+        addressRegistroImpreseResponse.setCf("cf");
         LegalAddress legalAddress = new LegalAddress();
-        legalAddress.setToponym("address");
-        addressRegistroImpreseResponse.setAddress(legalAddress);
+        legalAddress.setToponimo("address");
+        addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
 
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
         when(infoCamereConverter.mapToResponseOkByResponse((AddressRegistroImprese) any())).thenReturn(response);
@@ -116,10 +117,10 @@ class InfoCamereServiceTest {
         addressRegistroImpreseResponse.setCode("err-sede");
         addressRegistroImpreseResponse.setDescription("description");
         addressRegistroImpreseResponse.setAppName("appName");
-        addressRegistroImpreseResponse.setTimestamp("2022-10-01T10:00:00");
+        addressRegistroImpreseResponse.setTimestamp(OffsetDateTime.now().toString());
 
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
-        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
+        when(infoCamereConverter.checkIfResponseIsInfoCamereError((AddressRegistroImprese)any())).thenReturn(true);
         when(infoCamereConverter.mapToResponseOkByRequest((GetAddressRegistroImpreseRequestBodyDto) any())).thenReturn(response);
 
         StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
@@ -130,8 +131,8 @@ class InfoCamereServiceTest {
     @Test
     void checkTaxIdAndVatNumber() {
         InfoCamereVerification response = new InfoCamereVerification();
-        response.setTaxId("taxId");
-        response.setVatNumber("vatNumber");
+        response.setCfPersona("taxId");
+        response.setCfImpresa("vatNumber");
 
         InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
         InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
@@ -159,7 +160,7 @@ class InfoCamereServiceTest {
         response.setCode("err-lrpunt");
         response.setDescription("description");
         response.setAppName("appName");
-        response.setTimestamp("2022-10-01T10:00:00");
+        response.setTimestamp(OffsetDateTime.now().toString());
 
         InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
         InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
@@ -174,7 +175,7 @@ class InfoCamereServiceTest {
 
 
         when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
-        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
+        when(infoCamereConverter.checkIfResponseIsInfoCamereError((InfoCamereVerification) any())).thenReturn(true);
         when(infoCamereConverter.infoCamereResponseToDtoByRequest(body)).thenReturn(infoCamereLegalOKDto);
 
         StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
@@ -193,7 +194,8 @@ class InfoCamereServiceTest {
         response.setLegalTaxId("cf");
 
         InfoCamereLegalInstituionsResponse infoCamereLegalInstituionsResponse = new InfoCamereLegalInstituionsResponse();
-        infoCamereLegalInstituionsResponse.setLegalTaxId("cf");
+        infoCamereLegalInstituionsResponse.setCfPersona("cf");
+
 
         when(infoCamereClient.getLegalInstitutions(any())).thenReturn(Mono.just(infoCamereLegalInstituionsResponse));
         when(infoCamereConverter.mapToResponseOkByResponse((InfoCamereLegalInstituionsResponse) any())).thenReturn(response);

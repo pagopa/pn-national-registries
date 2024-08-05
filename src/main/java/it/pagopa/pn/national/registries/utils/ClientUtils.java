@@ -12,18 +12,7 @@ import software.amazon.awssdk.services.kms.model.SignRequest;
 import software.amazon.awssdk.services.kms.model.SignResponse;
 import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.NoSuchAlgorithmException;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
-import java.util.Base64;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -34,22 +23,6 @@ public class ClientUtils {
     private ClientUtils(){}
 
     private static final Pattern myRegex = Pattern.compile("=+$");
-
-    public static RSAPublicKey getPublicKey(String pub) throws NoSuchAlgorithmException, InvalidKeySpecException, IOException {
-        log.debug("start getPublicKey");
-        InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(pub));
-        X509EncodedKeySpec encodedKeySpec = new X509EncodedKeySpec(is.readAllBytes());
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return (RSAPublicKey) kf.generatePublic(encodedKeySpec);
-    }
-
-    public static  RSAPrivateKey getPrivateKey(String key) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
-        log.debug("start getPrivateKey");
-        InputStream is = new ByteArrayInputStream(Base64.getDecoder().decode(key));
-        PKCS8EncodedKeySpec encodedKeySpec = new PKCS8EncodedKeySpec(is.readAllBytes());
-        KeyFactory kf = KeyFactory.getInstance("RSA");
-        return (RSAPrivateKey) kf.generatePrivate(encodedKeySpec);
-    }
 
     public static String createSignature(SignResponse signResult){
         byte[] signature = signResult.signature().asByteArray();

@@ -1,27 +1,11 @@
 package it.pagopa.pn.national.registries.converter;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereInstitution;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.inipec.Pec;
-import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
-
-import java.util.Collections;
-import java.util.List;
-
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
-import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,6 +14,12 @@ import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.CollectionUtils;
+
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.ttl=0",
@@ -156,13 +146,27 @@ class InfoCamereConverterTest {
     }
 
     /**
-     * Method under test: {@link InfoCamereConverter#checkIfResponseIsInfoCamereError(InfoCamereCommonError)}
+     * Method under test: {@link InfoCamereConverter#checkIfResponseIsInfoCamereError(IniPecPollingResponse)}
      */
     @Test
     void testCheckIfResponseIsInfoCamereError() {
-        InfoCamereCommonError infoCamereCommonError = new InfoCamereCommonError();
-        infoCamereCommonError.setAppName("appName");
-        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(infoCamereCommonError));
+        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        iniPecPollingResponse.setAppName("appName");
+        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(iniPecPollingResponse));
+    }
+
+    @Test
+    void testCheckIfResponseIsInfoCamereErrorAddressRegistroImprese() {
+        AddressRegistroImprese addressRegistroImprese = new AddressRegistroImprese();
+        addressRegistroImprese.setAppName("appName");
+        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(addressRegistroImprese));
+    }
+
+    @Test
+    void testCheckIfResponseIsInfoCamereErrorInfoCamereVerification() {
+        InfoCamereVerification infoCamereVerification = new InfoCamereVerification();
+        infoCamereVerification.setAppName("appName");
+        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(infoCamereVerification));
     }
 
     @Test
@@ -190,18 +194,18 @@ class InfoCamereConverterTest {
     @Test
     void testMapToResponseOk() {
         LegalAddress legalAddress = new LegalAddress();
-        legalAddress.setAddress("42 Main St");
-        legalAddress.setMunicipality("Municipality");
-        legalAddress.setPostalCode("Postal Code");
-        legalAddress.setProvince("Province");
-        legalAddress.setStreet("Street");
-        legalAddress.setStreetNumber("42");
-        legalAddress.setToponym("Toponym");
+        legalAddress.setVia("42 Main St");
+        legalAddress.setComune("Municipality");
+        legalAddress.setCap("Postal Code");
+        legalAddress.setProvincia("Province");
+        legalAddress.setVia("Street");
+        legalAddress.setnCivico("42");
+        legalAddress.setToponimo("Toponym");
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
-        addressRegistroImpreseResponse.setAddress(legalAddress);
-        addressRegistroImpreseResponse.setDate("2020-03-01");
-        addressRegistroImpreseResponse.setTaxId("taxId");
+        addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
+        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
+        addressRegistroImpreseResponse.setCf("taxId");
 
         GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
                 .mapToResponseOkByResponse(addressRegistroImpreseResponse);
@@ -212,9 +216,9 @@ class InfoCamereConverterTest {
     @Test
     void testInfoCamereResponseToDto() {
         InfoCamereVerification infoCamereVerificationResponse = new InfoCamereVerification();
-        infoCamereVerificationResponse.setVerificationResult("OK");
-        infoCamereVerificationResponse.setVatNumber("vatNumber");
-        infoCamereVerificationResponse.setTaxId("taxId");
+        infoCamereVerificationResponse.setEsitoVerifica("OK");
+        infoCamereVerificationResponse.setCfImpresa("vatNumber");
+        infoCamereVerificationResponse.setCfPersona("taxId");
 
         InfoCamereLegalOKDto actualResult = infoCamereConverter
                 .infoCamereResponseToDtoByResponse(infoCamereVerificationResponse);
@@ -227,12 +231,12 @@ class InfoCamereConverterTest {
     @Test
     void mapToResponseOkByResponse() {
         InfoCamereLegalInstituionsResponse response = new InfoCamereLegalInstituionsResponse();
-        response.setLegalTaxId("taxId");
+        response.setCfPersona("taxId");
         InfoCamereInstitution businessDto = new InfoCamereInstitution();
-        businessDto.setBusinessTaxId("businessTaxId");
-        businessDto.setBusinessName("businessName");
-        response.setBusinessList(List.of(businessDto));
-        response.setDateTimeExtraction("2020-03-01");
+        businessDto.setCfImpresa("businessTaxId");
+        businessDto.setDenominazione("businessName");
+        response.setElencoImpreseRappresentate(List.of(businessDto));
+        response.setDataOraEstrazione(OffsetDateTime.now().toString());
 
         InfoCamereLegalInstitutionsOKDto actualResult = infoCamereConverter
                 .mapToResponseOkByResponse(response);
@@ -244,8 +248,8 @@ class InfoCamereConverterTest {
     @Test
     void mapToResponseOkByResponse2() {
         InfoCamereLegalInstituionsResponse response = new InfoCamereLegalInstituionsResponse();
-        response.setLegalTaxId("taxId");
-        response.setDateTimeExtraction("2020-03-01");
+        response.setCfPersona("taxId");
+        response.setDataOraEstrazione(OffsetDateTime.now().toString());
 
         InfoCamereLegalInstitutionsOKDto actualResult = infoCamereConverter
                 .mapToResponseOkByResponse(response);

@@ -690,6 +690,7 @@ components:
       type: object
       properties:
         digitalAddress:
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
           type: string
         practicedProfession:
           type: string
@@ -790,6 +791,7 @@ components:
       type: object
       properties:
         domicilioDigitale:
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
           type: string
         tipo:
           type: string
@@ -1112,6 +1114,7 @@ components:
               type:
                 type: string
               address:
+                x-field-extra-annotation: "@lombok.ToString.Exclude"
                 type: string
               recipient:
                 type: string
@@ -1177,6 +1180,7 @@ components:
               type:
                 type: string
               address:
+                x-field-extra-annotation: "@lombok.ToString.Exclude"
                 type: string
               recipient:
                 type: string

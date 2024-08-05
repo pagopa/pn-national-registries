@@ -15,7 +15,6 @@ import it.pagopa.pn.national.registries.model.anpr.ResponseKO;
 import it.pagopa.pn.national.registries.model.ipa.IpaResponseKO;
 import it.pagopa.pn.national.registries.model.pdnd.PdndResponseError;
 import it.pagopa.pn.national.registries.model.pdnd.PdndResponseKO;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
 import org.springframework.boot.web.reactive.error.ErrorWebExceptionHandler;
@@ -83,9 +82,9 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
             }
 
             if (problem.getStatus() >= STATUS_OVER_500) {
-                log.error(LOG_EX, problem.getStatus(), MaskDataUtils.maskInformation(throwable.getMessage()), serverWebExchange.getRequest().getURI());
+                log.error(LOG_EX, problem.getStatus(), throwable.getMessage(), serverWebExchange.getRequest().getURI());
             } else {
-                log.warn(LOG_EX, problem.getStatus(), MaskDataUtils.maskInformation(throwable.getMessage()), serverWebExchange.getRequest().getURI());
+                log.warn(LOG_EX, problem.getStatus(), throwable.getMessage(), serverWebExchange.getRequest().getURI());
             }
 
             problem.setTraceId(MDC.get(MDCUtils.MDC_TRACE_ID_KEY));
@@ -150,7 +149,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         if (responseKO.getErrorsList() != null) {
             responseErrors = responseKO.getErrorsList().stream()
                     .map(e -> mapToAnprResponseKO(clientOperationId, e))
-                    .collect(Collectors.toList());
+                    .toList();
         }
         return responseErrors;
     }
