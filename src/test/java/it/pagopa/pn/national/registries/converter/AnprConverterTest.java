@@ -26,10 +26,10 @@ class AnprConverterTest {
         TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
         tipoListaSoggetti.setDatiSoggetto(new ArrayList<>());
 
-        RispostaE002OK RispostaE002OK = new RispostaE002OK();
-        RispostaE002OK.setListaAnomalie(new ArrayList<>());
-        RispostaE002OK.setListaSoggetti(tipoListaSoggetti);
-        assertNull(anprConverter.convertToGetAddressANPROK(RispostaE002OK, "Cf").getResidentialAddresses());
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaAnomalie(new ArrayList<>());
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+        assertNull(anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -69,10 +69,10 @@ class AnprConverterTest {
         TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
         tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
 
-        RispostaE002OK RispostaE002OK = new RispostaE002OK();
-        RispostaE002OK.setListaAnomalie(new ArrayList<>());
-        RispostaE002OK.setListaSoggetti(tipoListaSoggetti);
-        assertNotNull(anprConverter.convertToGetAddressANPROK(RispostaE002OK, "Cf").getResidentialAddresses());
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaAnomalie(new ArrayList<>());
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+        assertNotNull(anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses());
     }
 
 
@@ -138,10 +138,10 @@ class AnprConverterTest {
         TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
         tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
 
-        RispostaE002OK RispostaE002OK = new RispostaE002OK();
-        RispostaE002OK.setListaAnomalie(new ArrayList<>());
-        RispostaE002OK.setListaSoggetti(tipoListaSoggetti);
-        assertNotNull(anprConverter.convertToGetAddressANPROK(RispostaE002OK, "Cf").getResidentialAddresses());
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaAnomalie(new ArrayList<>());
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+        assertNotNull(anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -163,9 +163,9 @@ class AnprConverterTest {
         TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
         tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
 
-        RispostaE002OK RispostaE002OK = new RispostaE002OK();
-        RispostaE002OK.setListaSoggetti(tipoListaSoggetti);
-        assertNull(anprConverter.convertToGetAddressANPROK(RispostaE002OK, "Cf").getResidentialAddresses());
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+        assertNull(anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -181,9 +181,9 @@ class AnprConverterTest {
         TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
         tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
 
-        RispostaE002OK RispostaE002OK = new RispostaE002OK();
-        RispostaE002OK.setListaSoggetti(tipoListaSoggetti);
-        assertNull(anprConverter.convertToGetAddressANPROK(RispostaE002OK, "Cf").getResidentialAddresses());
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+        assertNull(anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -205,9 +205,9 @@ class AnprConverterTest {
         TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
         tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
 
-        RispostaE002OK RispostaE002OK = new RispostaE002OK();
-        RispostaE002OK.setListaSoggetti(tipoListaSoggetti);
-        assertNull(anprConverter.convertToGetAddressANPROK(RispostaE002OK, "cf2").getResidentialAddresses());
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+        assertNull(anprConverter.convertToGetAddressANPROK(rispostaE002OK, "cf2").getResidentialAddresses());
     }
 
     /**
@@ -262,10 +262,10 @@ class AnprConverterTest {
         TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
         tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
 
-        RispostaE002OK RispostaE002OK = new RispostaE002OK();
-        RispostaE002OK.setListaAnomalie(new ArrayList<>());
-        RispostaE002OK.setListaSoggetti(tipoListaSoggetti);
-        assertNotNull(anprConverter.convertToGetAddressANPROK(RispostaE002OK, "Cf").getResidentialAddresses());
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaAnomalie(new ArrayList<>());
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+        assertNotNull(anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -305,10 +305,10 @@ class AnprConverterTest {
         TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
         tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
 
-        RispostaE002OK RispostaE002OK = new RispostaE002OK();
-        RispostaE002OK.setListaAnomalie(new ArrayList<>());
-        RispostaE002OK.setListaSoggetti(tipoListaSoggetti);
-        assertNotNull(anprConverter.convertToGetAddressANPROK(RispostaE002OK, "Cf").getResidentialAddresses());
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaAnomalie(new ArrayList<>());
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+        assertNotNull(anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -355,10 +355,10 @@ class AnprConverterTest {
         TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
         tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
 
-        RispostaE002OK RispostaE002OK = new RispostaE002OK();
-        RispostaE002OK.setListaAnomalie(new ArrayList<>());
-        RispostaE002OK.setListaSoggetti(tipoListaSoggetti);
-        assertNotNull(anprConverter.convertToGetAddressANPROK(RispostaE002OK, "Cf").getResidentialAddresses());
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaAnomalie(new ArrayList<>());
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+        assertNotNull(anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses());
     }
 
     @Test
@@ -399,10 +399,10 @@ class AnprConverterTest {
         TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
         tipoListaSoggetti.setDatiSoggetto(List.of(tipoDatiSoggettiEnte1, tipoDatiSoggettiEnte2));
 
-        RispostaE002OK RispostaE002OK = new RispostaE002OK();
-        RispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
 
-        GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROK(RispostaE002OK, "COD_FISCALE_1");
+        GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
         assertNotNull(response);
         assertNotNull(response.getResidentialAddresses());
         assertEquals(1, response.getResidentialAddresses().size());

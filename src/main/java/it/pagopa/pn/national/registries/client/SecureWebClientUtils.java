@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import javax.net.ssl.SSLException;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 
 @Slf4j

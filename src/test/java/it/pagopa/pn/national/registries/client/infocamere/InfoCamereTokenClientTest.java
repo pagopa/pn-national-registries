@@ -52,7 +52,7 @@ class InfoCamereTokenClientTest {
      * Method under test: {@link InfoCamereTokenClient#getToken(String)}
      */
     @Test
-    void testGetToken2() throws UnsupportedEncodingException {
+    void testGetToken2(){
         HttpHeaders headers = new HttpHeaders();
         when(infoCamereJwsGenerator.createAuthRest(any()))
                 .thenThrow(new WebClientResponseException(1, "Status Text", headers, "AAAAAAAA".getBytes(StandardCharsets.UTF_8), null));

@@ -1,22 +1,17 @@
 package it.pagopa.pn.national.registries.config.ipa;
 
-import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.api.IpaApi;
-import org.checkerframework.checker.units.qual.A;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
-
-import javax.security.auth.login.LoginContext;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 class IpaClientConfigTest {

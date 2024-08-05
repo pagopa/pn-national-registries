@@ -149,7 +149,7 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
         if (responseKO.getErrorsList() != null) {
             responseErrors = responseKO.getErrorsList().stream()
                     .map(e -> mapToAnprResponseKO(clientOperationId, e))
-                    .collect(Collectors.toList());
+                    .toList();
         }
         return responseErrors;
     }

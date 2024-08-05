@@ -33,7 +33,7 @@ class CachedSecretsManagerConsumerTest {
     @Test
     void testGetSecretValue2() throws AwsServiceException, SdkClientException {
         when(secretsManagerClient.getSecretValue(Mockito.<GetSecretValueRequest>any()))
-                .thenThrow(new PnInternalException("An error occurred"));
+                .thenThrow(new PnInternalException("An error occurred",""));
         assertThrows(PnInternalException.class, () -> cachedSecretsManagerConsumer.getSecretValue("42"));
         verify(secretsManagerClient).getSecretValue(Mockito.<GetSecretValueRequest>any());
     }
@@ -44,7 +44,7 @@ class CachedSecretsManagerConsumerTest {
     @Test
     void testGetSecretValue3() throws AwsServiceException, SdkClientException {
         when(secretsManagerClient.getSecretValue(Mockito.<GetSecretValueRequest>any()))
-                .thenThrow(new PnInternalException("An error occurred"));
+                .thenThrow(new PnInternalException("An error occurred",""));
         assertThrows(PnInternalException.class,
                 () -> cachedSecretsManagerConsumer.getSecretValue("Value for {} not in cache"));
         verify(secretsManagerClient).getSecretValue(Mockito.<GetSecretValueRequest>any());
@@ -56,7 +56,7 @@ class CachedSecretsManagerConsumerTest {
     @Test
     void testGetSecretValue4() throws AwsServiceException, SdkClientException {
         when(secretsManagerClient.getSecretValue(Mockito.<GetSecretValueRequest>any()))
-                .thenThrow(new PnInternalException("An error occurred"));
+                .thenThrow(new PnInternalException("An error occurred",""));
         assertFalse(cachedSecretsManagerConsumer.getSecretValue(null).isPresent());
     }
 
@@ -76,7 +76,7 @@ class CachedSecretsManagerConsumerTest {
     @Test
     void testGetSecret2() throws AwsServiceException, SdkClientException {
         when(secretsManagerClient.getSecretValue(Mockito.<GetSecretValueRequest>any()))
-                .thenThrow(new PnInternalException("An error occurred"));
+                .thenThrow(new PnInternalException("An error occurred",""));
         assertThrows(PnInternalException.class, () -> cachedSecretsManagerConsumer.getSecret("42"));
         verify(secretsManagerClient).getSecretValue(Mockito.<GetSecretValueRequest>any());
     }

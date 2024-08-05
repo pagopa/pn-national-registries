@@ -134,8 +134,6 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest3)));
 
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-
         when(iniPecBatchSqsService.batchSendToSqs(anyList()))
                 .thenReturn(Mono.empty().then());
 
@@ -365,10 +363,6 @@ class DigitalAddressBatchPollingServiceTest {
 
         verifyNoInteractions(batchRequestRepository);
         verifyNoInteractions(iniPecBatchSqsService);
-       /* assertEquals(1, batchPolling.getRetry());
-        assertEquals(BatchStatus.WORKING.getValue(), batchPolling.getStatus());
-        assertNotNull(batchPolling.getLastReserved());
-        assertNotNull(batchPolling.getReservationId());*/
     }
 
     @Test
