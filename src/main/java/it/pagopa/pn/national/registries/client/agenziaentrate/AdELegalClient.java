@@ -51,7 +51,7 @@ public class AdELegalClient {
         return webClient.post()
                 .uri("/SPCBooleanoRappWS/VerificaRappresentanteEnteService")
                 .contentType(MediaType.TEXT_XML)
-                .bodyValue(finalEnvelope)
+                .bodyValue(envelope)
                 .retrieve()
                 .bodyToMono(String.class)
                 .doOnError(throwable -> {
