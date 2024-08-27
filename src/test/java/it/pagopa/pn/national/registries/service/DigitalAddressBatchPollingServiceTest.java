@@ -16,8 +16,6 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
-import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
-import it.pagopa.pn.national.registries.model.inipec.Pec;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 

@@ -14,8 +14,10 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,10 +35,7 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
