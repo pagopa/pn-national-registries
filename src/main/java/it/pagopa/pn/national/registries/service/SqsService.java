@@ -24,7 +24,6 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 public class SqsService {
 
     private static final String PUSHING_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}";
-    private static final String INSERTING_MSG_WITH_DATA = "Inserting data {} in SQS {}";
     private static final String INSERTING_MSG_WITHOUT_DATA = "Inserted data in SQS {}";
 
     private final SqsClient sqsClient;

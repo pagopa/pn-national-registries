@@ -2,7 +2,6 @@ package it.pagopa.pn.national.registries.middleware.queue.consumer;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.MDCUtils;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.cloud.function.context.MessageRoutingCallback;
@@ -62,7 +61,7 @@ public class PnEventInboundService {
             }
         }
         else {
-            log.error("eventType not present, cannot start scheduled action headers={} payload={}", MaskDataUtils.maskInformation(message.getHeaders().toString()), MaskDataUtils.maskInformation(message.getPayload().toString()));
+            log.error("eventType not present, cannot start scheduled action for message with headers: {}", message.getHeaders());
             throw new PnInternalException("eventType not present, cannot start scheduled action", "");
         }
     }

@@ -68,7 +68,7 @@ class PnNationalRegistriesSecretServiceTest {
     @Test
     void testGetPdndSecretValue5() throws AwsServiceException, SdkClientException {
         when(secretsManagerClient.getSecretValue(Mockito.<GetSecretValueRequest>any()))
-                .thenThrow(new PnInternalException("An error occurred"));
+                .thenThrow(new PnInternalException("An error occurred",""));
         assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getPdndSecretValue(""));
     }
 
@@ -80,7 +80,7 @@ class PnNationalRegistriesSecretServiceTest {
     @Test
     void testGetTrustedCertFromSecret5() throws AwsServiceException, SdkClientException {
         when(secretsManagerClient.getSecretValue(Mockito.<GetSecretValueRequest>any()))
-                .thenThrow(new PnInternalException("An error occurred"));
+                .thenThrow(new PnInternalException("An error occurred",""));
         assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getTrustedCertFromSecret(""));
     }
 
@@ -90,7 +90,7 @@ class PnNationalRegistriesSecretServiceTest {
     @Test
     void testGetIpaSecret4() throws AwsServiceException, SdkClientException {
         when(secretsManagerClient.getSecretValue(Mockito.<GetSecretValueRequest>any()))
-                .thenThrow(new PnInternalException("An error occurred"));
+                .thenThrow(new PnInternalException("An error occurred",""));
         assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getIpaSecret(""));
     }
 
@@ -100,7 +100,7 @@ class PnNationalRegistriesSecretServiceTest {
     @Test
     void testGetSecret5() throws AwsServiceException, SdkClientException {
         when(secretsManagerClient.getSecretValue(Mockito.<GetSecretValueRequest>any()))
-                .thenThrow(new PnInternalException("An error occurred"));
+                .thenThrow(new PnInternalException("An error occurred",""));
         assertThrows(PnInternalException.class, () -> pnNationalRegistriesSecretService.getSecret(""));
     }
 }

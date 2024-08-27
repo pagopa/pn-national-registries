@@ -1,0 +1,812 @@
+openapi: 3.0.3
+info:
+  title: Interoperability API Gateway Micro Service
+  description: exposes the API for interacting with interoperability features
+  version: '0.1.0'
+  contact:
+    name: API Support
+    url: 'http://www.example.com/support'
+    email: support@example.com
+  termsOfService: 'http://swagger.io/terms/'
+  x-api-id: an x-api-id
+  x-summary: an x-summary
+servers:
+  - url: '/api-gateway/0.1'
+    description: This service is the interoperability API gateway
+tags:
+  - name: gateway
+    description: Everything about your APIs
+    externalDocs:
+      description: Find out more
+      url: 'http://swagger.io'
+  - name: auth
+    description: Get security information
+    externalDocs:
+      description: Find out more
+      url: http://swagger.io
+  - name: health
+    description: Verify service status
+    externalDocs:
+      description: Find out more
+      url: http://swagger.io
+security:
+  - bearerAuth: []
+paths:
+  '/token.oauth2':
+    post:
+      security: [{}]
+      tags:
+        - auth
+      summary: Create a new access token
+      description: Return ok
+      operationId: createToken
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AccessTokenRequest'
+      responses:
+        '200':
+          description: |-
+            an Access token
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                default: no-cache, no-store
+              description: |-
+                no-cache, no-store
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClientCredentialsResponse'
+        '401':
+          description: Unauthorized
+          x-noqa: RFC6749
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '400':
+          description: Bad request
+          x-noqa: RFC6749
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  '/agreements/{agreementId}':
+    get:
+      tags:
+        - gateway
+      summary: Get an agreement
+      description: Retrieve an agreement using an agreement identifier
+      operationId: getAgreement
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: agreementId
+          in: path
+          description: the agreement id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Agreement retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Agreement not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  '/purposes/{purposeId}':
+    get:
+      tags:
+        - gateway
+      summary: Get an purpose
+      description: Retrieve a purpose using a purpose identifier
+      operationId: getPurpose
+      parameters:
+        - name: purposeId
+          in: path
+          description: the purpose Id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Purpose retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Purpose'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Purpose not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  '/purposes/{purposeId}/agreement':
+    get:
+      tags:
+        - gateway
+      summary: Get an agreement by purposeId
+      description: Retrieve the agreement associated to a purpose
+      operationId: getAgreementByPurpose
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: purposeId
+          in: path
+          description: the purpose Id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Agreement retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreement'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Agreement not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  '/attributes/{attributeId}':
+    get:
+      tags:
+        - gateway
+      summary: Get an attribute
+      description: Retrieve an attribute using an attribute identifier
+      operationId: getAttribute
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: attributeId
+          in: path
+          description: the attribute Id
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Attribute retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attribute'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Attribute not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  '/eservices/{eserviceId}/descriptors/{descriptorId}':
+    get:
+      tags:
+        - gateway
+      summary: Get an eService
+      description: Retrieve an eService by identifier
+      operationId: getEService
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eserviceId
+          in: path
+          description: the eservice Id
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: descriptorId
+          in: path
+          description: the eservice descriptor Id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: EService retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EService'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: EService not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  '/organizations/{organizationId}':
+    get:
+      tags:
+        - gateway
+      summary: Get an organization
+      description: Retrieve an organization by identifier
+      operationId: getOrganization
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: organizationId
+          in: path
+          description: the organization Id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Organization retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Organization'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Organization not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /agreements:
+    get:
+      tags:
+        - gateway
+      summary: Retrieve a list of agreement
+      description: |
+        It is mandatory to insert either the producerId field or the consumerId field.
+      operationId: getAgreements
+      parameters:
+        - in: query
+          name: producerId
+          schema:
+            type: string
+        - in: query
+          name: consumerId
+          schema:
+            type: string
+        - in: query
+          name: eserviceId
+          schema:
+            type: string
+        - in: query
+          name: descriptorId
+          schema:
+            type: string
+        - in: query
+          name: state
+          schema:
+            $ref: '#/components/schemas/AgreementState'
+      responses:
+        '200':
+          description: A list of Agreement
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Agreements'
+        '400':
+          description: Bad Request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /status:
+    get:
+      summary: Returns the application status
+      description: |
+        Returns the application status. For testing purposes, it might randomly reply with an error.
+      operationId: get_status
+      tags:
+        - health
+      responses:
+        '200':
+          description: |
+            This is the valid status from the server.
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  '/agreements/{agreementId}/purposes':
+    get:
+      tags:
+        - gateway
+      summary: Get an purpose
+      description: Retrieve purposes of the agreement
+      operationId: getAgreementPurposes
+      parameters:
+        - name: agreementId
+          in: path
+          description: the agreement identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Purposes retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Purposes'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Purposes not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+  '/agreements/{agreementId}/attributes':
+    get:
+      tags:
+        - gateway
+      summary: Get agreement attributes
+      description: Retrieve attributes of the agreement
+      operationId: getAgreementAttributes
+      parameters:
+        - name: agreementId
+          in: path
+          description: the agreement identifier
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Attributes retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attributes'
+        '400':
+          description: Bad request
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '401':
+          description: Unauthorized
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
+          description: Forbidden
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          description: Purposes not found
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+components:
+  schemas:
+    AccessTokenRequest:
+      type: object
+      required:
+        - client_assertion
+        - client_assertion_type
+        - grant_type
+      properties:
+        client_id:
+          type: string
+          example: e58035ce-c753-4f72-b613-46f8a17b71cc
+        client_assertion:
+          type: string
+          format: jws
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
+        client_assertion_type:
+          type: string
+          example: urn%3Aietf%3Aparams%3Aoauth%3Aclient-assertion-type%3Ajwt-bearer
+        grant_type:
+          type: string
+          enum:
+            - client_credentials
+    TokenType:
+      type: string
+      description: Represents the token type
+      enum:
+        - Bearer
+    ClientCredentialsResponse:
+      type: object
+      required:
+        - access_token
+        - token_type
+        - expires_in
+      properties:
+        access_token:
+          type: string
+          format: jws
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
+        token_type:
+          $ref: '#/components/schemas/TokenType'
+        expires_in:
+          type: integer
+          format: int32
+          maximum: 600
+    Organization:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        category:
+          type: string
+      required:
+        - id
+        - name
+        - category
+    EServiceDescriptorState:
+      type: string
+      description: EService State
+      enum:
+        - DRAFT
+        - PUBLISHED
+        - DEPRECATED
+        - SUSPENDED
+        - ARCHIVED
+    EService:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          pattern: /^[a-zA-Z]/s+$/
+        version:
+          type: string
+          pattern: ^[0-9]{1,4}$
+        state:
+          $ref: '#/components/schemas/EServiceDescriptorState'
+      required:
+        - id
+        - name
+        - version
+        - state
+    PurposeState:
+      type: string
+      description: Purpose State
+      enum:
+        - ACTIVE
+        - DRAFT
+        - SUSPENDED
+        - WAITING_FOR_APPROVAL
+        - ARCHIVED
+    Purpose:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        throughput:
+          type: integer
+          format: int32
+        state:
+          $ref: '#/components/schemas/PurposeState'
+      required:
+        - id
+        - throughput
+        - state
+    Purposes:
+      type: object
+      properties:
+        purposes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Purpose'
+      required:
+        - purposes
+    AttributeKind:
+      type: string
+      enum:
+        - CERTIFIED
+        - DECLARED
+        - VERIFIED
+    AttributeValidity:
+      type: string
+      enum:
+        - VALID
+        - INVALID
+    Attribute:
+      type: object
+      additionalProperties: false
+      title: Attribute
+      description: represents the details of a verified attribute bound to the agreement.
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          pattern: '[a-z0-9 \-]{,48}'
+          maxLength: 48
+        kind:
+          $ref: '#/components/schemas/AttributeKind'
+      required:
+        - id
+        - name
+        - kind
+    Attributes:
+      type: object
+      properties:
+        attributes:
+          type: array
+          uniqueItems: true
+          items:
+            $ref: '#/components/schemas/AttributeValidityState'
+      required:
+        - attributes
+    AttributeValidityState:
+      type: object
+      additionalProperties: false
+      title: AttributeValidityState
+      description: represents the validity of a specified attribute
+      properties:
+        id:
+          type: string
+          format: uuid
+        validity:
+          $ref: '#/components/schemas/AttributeValidity'
+      required:
+        - id
+        - validity
+    AgreementState:
+      type: string
+      description: Agreement State
+      enum:
+        - ACTIVE
+        - PENDING
+        - SUSPENDED
+        - INACTIVE
+    Agreement:
+      type: object
+      additionalProperties: false
+      properties:
+        id:
+          type: string
+          format: uuid
+        eserviceId:
+          type: string
+          format: uuid
+        descriptorId:
+          type: string
+          format: uuid
+        producerId:
+          type: string
+          format: uuid
+        consumerId:
+          type: string
+          format: uuid
+        state:
+          $ref: '#/components/schemas/AgreementState'
+      required:
+        - id
+        - eserviceId
+        - descriptorId
+        - producerId
+        - consumerId
+        - state
+      description: business representation of an agreement
+    Agreements:
+      type: object
+      properties:
+        agreements:
+          type: array
+          items:
+            $ref: '#/components/schemas/Agreement'
+      required:
+        - agreements
+    Problem:
+      properties:
+        type:
+          description: URI reference of type definition
+          type: string
+        status:
+          description: The HTTP status code generated by the origin server for this occurrence of the problem.
+          example: 400
+          exclusiveMaximum: true
+          format: int32
+          maximum: 600
+          minimum: 100
+          type: integer
+        title:
+          description: A short, summary of the problem type. Written in english and readable
+          example: Service Unavailable
+          maxLength: 64
+          pattern: '^[ -~]{0,64}$'
+          type: string
+        detail:
+          description: A human readable explanation of the problem.
+          example: Request took too long to complete.
+          maxLength: 4096
+          pattern: '^.{0,1024}$'
+          type: string
+        errors:
+          type: array
+          minItems: 0
+          items:
+            $ref: '#/components/schemas/ProblemError'
+      additionalProperties: false
+      required:
+        - type
+        - status
+        - title
+        - errors
+    ProblemError:
+      properties:
+        code:
+          description: Internal code of the error
+          example: 123-4567
+          minLength: 8
+          maxLength: 8
+          pattern: '^[0-9]{3}-[0-9]{4}$'
+          type: string
+        detail:
+          description: A human readable explanation specific to this occurrence of the problem.
+          example: Parameter not valid
+          maxLength: 4096
+          pattern: '^.{0,1024}$'
+          type: string
+      required:
+        - code
+        - detail
+  securitySchemes:
+    bearerAuth:
+      type: http
+      description: 'A bearer token in the format of a JWS and conformed to the specifications included in [RFC8725](https://tools.ietf.org/html/RFC8725).'
+      scheme: bearer
+      bearerFormat: JWT

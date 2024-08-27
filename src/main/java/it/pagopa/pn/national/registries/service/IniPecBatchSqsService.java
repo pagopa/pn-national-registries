@@ -7,7 +7,6 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-import it.pagopa.pn.national.registries.utils.MaskDataUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -102,10 +101,10 @@ public class IniPecBatchSqsService {
                         return sqsService.pushToOutputQueue(codeSqsDto, item.getClientId())
                                 .thenReturn(item)
                                 .doOnNext(r -> {
-                                    log.info("PG - DigitalAddress - pushed message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()));
+                                    log.info("PG - DigitalAddress - pushed message for correlationId: {}", item.getCorrelationId());
                                     item.setSendStatus(BatchSendStatus.SENT.getValue());
                                 })
-                                .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()), e))
+                                .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {}", item.getCorrelationId(), e))
                                 .onErrorResume(e -> Mono.empty());
                     } else {
                         return sqsService.pushToInputDlqQueue(InternalCodeSqsDto.builder()
@@ -121,7 +120,7 @@ public class IniPecBatchSqsService {
                                         sendMessageResponse))
                                 .thenReturn(item)
                                 .doOnNext(r -> {
-                                    log.info("PG - DigitalAddress - send to dlq queue message for correlationId: {} and taxId: {}", item.getCorrelationId(), MaskDataUtils.maskString(item.getCf()));
+                                    log.info("PG - DigitalAddress - send to dlq queue message for correlationId: {}", item.getCorrelationId());
                                     item.setSendStatus(BatchSendStatus.SENT_TO_DLQ.getValue());
                                 });
                     }

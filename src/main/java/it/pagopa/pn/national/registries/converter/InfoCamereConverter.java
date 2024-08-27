@@ -1,32 +1,23 @@
 package it.pagopa.pn.national.registries.converter;
 
+import com.amazonaws.util.CollectionUtils;
 import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereCommonError;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereLegalInstituionsResponse;
-import it.pagopa.pn.national.registries.model.infocamere.InfoCamereVerification;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
-import it.pagopa.pn.national.registries.model.inipec.Pec;
-import it.pagopa.pn.national.registries.model.inipec.IniPecPollingResponse;
-
-import it.pagopa.pn.national.registries.model.registroimprese.AddressRegistroImprese;
-import it.pagopa.pn.national.registries.model.registroimprese.LegalAddress;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 @Component
 public class InfoCamereConverter {
@@ -88,16 +79,30 @@ public class InfoCamereConverter {
         return codeSqsDto;
     }
 
-    public boolean checkIfResponseIsInfoCamereError(InfoCamereCommonError response) {
+    public boolean checkIfResponseIsInfoCamereError(IniPecPollingResponse response) {
         return org.springframework.util.StringUtils.hasText(response.getCode())
                 || org.springframework.util.StringUtils.hasText(response.getDescription())
-                || org.springframework.util.StringUtils.hasText(response.getTimestamp())
+                || response.getTimestamp() != null
+                || org.springframework.util.StringUtils.hasText(response.getAppName());
+    }
+
+    public boolean checkIfResponseIsInfoCamereError(AddressRegistroImprese response) {
+        return org.springframework.util.StringUtils.hasText(response.getCode())
+                || org.springframework.util.StringUtils.hasText(response.getDescription())
+                || response.getTimestamp() != null
+                || org.springframework.util.StringUtils.hasText(response.getAppName());
+    }
+
+    public boolean checkIfResponseIsInfoCamereError(InfoCamereVerification response) {
+        return org.springframework.util.StringUtils.hasText(response.getCode())
+                || org.springframework.util.StringUtils.hasText(response.getDescription())
+                || response.getTimestamp() != null
                 || org.springframework.util.StringUtils.hasText(response.getAppName());
     }
 
     public GetAddressRegistroImpreseOKDto mapToResponseOkByResponse(AddressRegistroImprese response) {
         GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
-        getAddressRegistroImpreseOKDto.setTaxId(response.getTaxId());
+        getAddressRegistroImpreseOKDto.setTaxId(response.getCf());
         getAddressRegistroImpreseOKDto.setDateTimeExtraction(new Date());
         getAddressRegistroImpreseOKDto.setProfessionalAddress(convertToProfessionalAddressDto(response));
         return getAddressRegistroImpreseOKDto;
@@ -112,23 +117,23 @@ public class InfoCamereConverter {
 
     public InfoCamereLegalInstitutionsOKDto mapToResponseOkByResponse(InfoCamereLegalInstituionsResponse response) {
         InfoCamereLegalInstitutionsOKDto infoCamereLegalInstitutions = new InfoCamereLegalInstitutionsOKDto();
-        infoCamereLegalInstitutions.setLegalTaxId(response.getLegalTaxId());
-        infoCamereLegalInstitutions.setDateTimeExtraction(response.getDateTimeExtraction());
+        infoCamereLegalInstitutions.setLegalTaxId(response.getCfPersona());
+        infoCamereLegalInstitutions.setDateTimeExtraction(response.getDataOraEstrazione());
         infoCamereLegalInstitutions.setBusinessList(convertToBusiness(response));
         infoCamereLegalInstitutions.setDescription(response.getDescription());
         infoCamereLegalInstitutions.setCode(response.getCode());
         infoCamereLegalInstitutions.setAppName(response.getAppName());
-        infoCamereLegalInstitutions.setTimestamp(response.getTimestamp());
+        infoCamereLegalInstitutions.setTimestamp(Objects.toString(response.getTimestamp()));
         return infoCamereLegalInstitutions;
     }
 
     private List<BusinessDto> convertToBusiness(InfoCamereLegalInstituionsResponse response) {
-        if(response.getBusinessList() != null && !response.getBusinessList().isEmpty()) {
-            return response.getBusinessList().stream()
+        if(!CollectionUtils.isNullOrEmpty(response.getElencoImpreseRappresentate())) {
+            return response.getElencoImpreseRappresentate().stream()
                     .map(infoCamereInstitution -> {
                         BusinessDto businessDto = new BusinessDto();
-                        businessDto.setBusinessName(infoCamereInstitution.getBusinessName());
-                        businessDto.setBusinessTaxId(infoCamereInstitution.getBusinessTaxId());
+                        businessDto.setBusinessName(infoCamereInstitution.getDenominazione());
+                        businessDto.setBusinessTaxId(infoCamereInstitution.getCfImpresa());
                         return businessDto;
                     })
                     .toList();
@@ -139,12 +144,13 @@ public class InfoCamereConverter {
 
     private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImprese response) {
         GetAddressRegistroImpreseOKProfessionalAddressDto dto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
-        if (response.getAddress() != null) {
-            dto.setAddress(createLegalAddress(response.getAddress()));
-            dto.setMunicipality(response.getAddress().getMunicipality());
-            dto.setProvince(response.getAddress().getProvince());
-            dto.setZip(response.getAddress().getPostalCode());
-            dto.setDescription(response.getAddress().getAddress());
+        LegalAddress address = response.getIndirizzoLocalizzazione();
+        if (Objects.nonNull(address)) {
+            dto.setAddress(createLegalAddress(address));
+            dto.setMunicipality(address.getComune());
+            dto.setProvince(address.getProvincia());
+            dto.setZip(address.getCap());
+            dto.setDescription(address.getVia());
         }
         return dto;
     }
@@ -163,7 +169,7 @@ public class InfoCamereConverter {
     }
 
     private String createLegalAddress(LegalAddress address) {
-        return address.getToponym() + " " + address.getStreet() + " " + address.getStreetNumber();
+        return address.getToponimo() + " " + address.getVia() + " " + address.getnCivico();
     }
 
     private DigitalAddress toDigitalAddress(String address, DigitalAddressRecipientType recipient) {
@@ -173,9 +179,9 @@ public class InfoCamereConverter {
     public InfoCamereLegalOKDto infoCamereResponseToDtoByResponse(InfoCamereVerification response) {
         InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
         infoCamereLegalOKDto.setDateTimeExtraction(new Date());
-        infoCamereLegalOKDto.setTaxId(response.getTaxId());
-        infoCamereLegalOKDto.setVatNumber(response.getVatNumber());
-        infoCamereLegalOKDto.setVerificationResult("OK".equalsIgnoreCase(response.getVerificationResult()));
+        infoCamereLegalOKDto.setTaxId(response.getCfPersona());
+        infoCamereLegalOKDto.setVatNumber(response.getCfImpresa());
+        infoCamereLegalOKDto.setVerificationResult("OK".equalsIgnoreCase(response.getEsitoVerifica()));
 
         return infoCamereLegalOKDto;
     }
