@@ -68,6 +68,95 @@ class DigitalAddressBatchPollingServiceTest {
     private IniPecBatchRequestService iniPecBatchRequestService;
 
     @Test
+    void testBatchPecPollingIncrementAndCheckRetryError() {
+        BatchPolling batchPolling1 = new BatchPolling();
+        batchPolling1.setBatchId("batchId1");
+        batchPolling1.setPollingId("pollingId1");
+        batchPolling1.setRetry(2);
+        batchPolling1.setInProgressRetry(2);
+
+        BatchRequest batchRequest1 = new BatchRequest();
+        batchRequest1.setCorrelationId("correlationId1");
+        batchRequest1.setBatchId("batchId1");
+
+        Page<BatchPolling> page1 = Page.create(List.of(batchPolling1), new HashMap<>());
+
+        when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
+                .thenReturn(Mono.just(page1));
+
+        when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPolling1)))
+                .thenReturn(Mono.just(batchPolling1));
+
+        PnNationalRegistriesException pnNationalRegistriesException = mock(PnNationalRegistriesException.class);
+
+        when(infoCamereClient.callEServiceRequestPec("pollingId1")).thenReturn(Mono.error(pnNationalRegistriesException));
+
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
+                .thenReturn(Mono.just(List.of(batchRequest1)));
+
+
+        CodeSqsDto codeSqsDto = mock(CodeSqsDto.class);
+        when(codeSqsDto.getError()).thenReturn("error");
+        when(infoCamereConverter.convertIniPecRequestToSqsDto(any(), any()))
+                .thenReturn(codeSqsDto);
+
+        when(iniPecBatchSqsService.batchSendToSqs(anyList()))
+                .thenReturn(Mono.empty().then());
+
+        when(batchPollingRepository.update(same(batchPolling1)))
+                .thenReturn(Mono.just(batchPolling1));
+        when(batchRequestRepository.update(same(batchRequest1)))
+                .thenReturn(Mono.just(batchRequest1));
+
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+    }
+
+    @Test
+    void testBatchPecPollingIncrementAndCheckRetryNotError() {
+        BatchPolling batchPolling1 = new BatchPolling();
+        batchPolling1.setBatchId("batchId1");
+        batchPolling1.setPollingId("pollingId1");
+        batchPolling1.setRetry(2);
+        batchPolling1.setInProgressRetry(2);
+
+        BatchRequest batchRequest1 = new BatchRequest();
+        batchRequest1.setCorrelationId("correlationId1");
+        batchRequest1.setBatchId("batchId1");
+        BatchRequest batchRequest2 = new BatchRequest();
+        batchRequest2.setCorrelationId("correlationId2");
+        batchRequest2.setBatchId("batchId1");
+        BatchRequest batchRequest3 = new BatchRequest();
+        batchRequest3.setCorrelationId("correlationId3");
+        batchRequest3.setBatchId("batchId3");
+
+        Page<BatchPolling> page1 = Page.create(List.of(batchPolling1), new HashMap<>());
+
+        when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
+                .thenReturn(Mono.just(page1));
+
+        when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPolling1)))
+                .thenReturn(Mono.just(batchPolling1));
+
+        IniPecPollingResponse iniPecPollingResponse1 = new IniPecPollingResponse();
+        iniPecPollingResponse1.setIdentificativoRichiesta("correlationId1");
+        iniPecPollingResponse1.setElencoPec(Collections.emptyList());
+        iniPecPollingResponse1.setDescription("List PEC in progress");
+
+        when(infoCamereClient.callEServiceRequestPec("pollingId1")).thenReturn(Mono.just(iniPecPollingResponse1));
+        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
+                .thenReturn(Mono.just(List.of(batchRequest1, batchRequest2)));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId2", BatchStatus.WORKING))
+                .thenReturn(Mono.just(Collections.emptyList()));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING))
+                .thenReturn(Mono.just(List.of(batchRequest3)));
+
+        when(batchPollingRepository.update(any()))
+                .thenReturn(Mono.just(batchPolling1));
+
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+    }
+    @Test
     void testBatchPecPolling() {
         /*
         Questo test simula il flusso con tre polling recuperati da query separate, di cui:

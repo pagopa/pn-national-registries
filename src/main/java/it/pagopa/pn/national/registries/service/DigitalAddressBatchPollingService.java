@@ -195,14 +195,12 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<Void> incrementAndCheckRetry(BatchPolling polling, Throwable throwable) {
-        int nextRetry = polling.getRetry() != null ? polling.getRetry() + 1 : 1;
-        int inProgressNextRetry = polling.getInProgressRetry() != null ? polling.getInProgressRetry() + 1 : 1;
         if(isPollingResponseNotReady(throwable)){
-            polling.setInProgressRetry(inProgressNextRetry);
+            polling.setInProgressRetry(polling.getInProgressRetry() != null ? polling.getInProgressRetry() + 1 : 1);
         }else{
-            polling.setRetry(nextRetry);
+            polling.setRetry(polling.getRetry() != null ? polling.getRetry() + 1 : 1);
         }
-        if (nextRetry >= maxRetry || inProgressNextRetry >= inProgressMaxRetry ||
+        if (maxRetry <= Optional.ofNullable(polling.getRetry()).orElse(0) || inProgressMaxRetry <= Optional.ofNullable(polling.getInProgressRetry()).orElse(0) ||
                 (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
             polling.setStatus(BatchStatus.ERROR.getValue());
             log.debug("IniPEC - batchId {} - polling {} status in {} (retry: {})", polling.getBatchId(), polling.getPollingId(), polling.getStatus(), polling.getRetry());
