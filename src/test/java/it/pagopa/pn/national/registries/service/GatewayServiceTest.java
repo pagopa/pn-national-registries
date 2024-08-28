@@ -63,9 +63,15 @@ class GatewayServiceTest {
                 .recipientType("PF")
                 .domicileType("DIGITAL")
                 .build();
+
+        GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("digitalAddress@inad.com");
+        getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
+
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId("correlationId");
-        when(inadService.callEService(any(), any())).thenReturn(Mono.just(new GetDigitalAddressINADOKDto()));
+        when(inadService.callEService(any(), any())).thenReturn(Mono.just(getDigitalAddressINADOKDto));
         when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         StepVerifier.create(gatewayService.handleMessage(payload)).expectNext(addressOKDto).verifyComplete();
     }
@@ -165,6 +171,9 @@ class GatewayServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("digitalAddress@inad.com");
+        getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
 
         when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
@@ -196,6 +205,30 @@ class GatewayServiceTest {
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
                 .expectError(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("Test failed retrieve from INAD")
+    void testRetrieveDigitalOrPhysicalAddressInadErrorIvalidEmail() {
+        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+
+        GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("digitalAddressInadIvalidEmail.com");
+        getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
+
+        when(inadService.callEService(any(), any()))
+                .thenReturn(Mono.just(getDigitalAddressINADOKDto));
+
+        when(sqsService.pushToOutputQueue((CodeSqsDto) any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId(C_ID);
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
     }
 
     @Test
@@ -242,7 +275,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
         IPAPecDto ipaPecOKDto = new IPAPecDto();
-        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale");
+        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale@ipa.com");
         ipaPecOKDto.setTipo("tipo");
         ipaPecOKDto.setCodEnte("codEnte");
         ipaPecOKDto.setDenominazione("denominazione");
@@ -284,7 +317,7 @@ class GatewayServiceTest {
     void testRetrieveDigitalOrPhysicalAddressIpa() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
         IPAPecDto ipaPecOKDto = new IPAPecDto();
-        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale");
+        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale@ipa.com");
         ipaPecOKDto.setTipo("tipo");
         ipaPecOKDto.setCodEnte("codEnte");
         ipaPecOKDto.setDenominazione("denominazione");

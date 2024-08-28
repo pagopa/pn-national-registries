@@ -14,8 +14,10 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,10 +35,7 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -230,6 +229,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .flatMapIterable(requests -> requests)
                 .doOnNext(request -> {
                     CodeSqsDto sqsDto = sqsDtoProvider.apply(request);
+                    removeInvalidEmails(sqsDto);
                     if (CollectionUtils.isEmpty(sqsDto.getDigitalAddress()) && !StringUtils.hasText(sqsDto.getError())) {
                         //if IniPec doesn't retrieve pec try to call INAD
                         callInadEservice(request);
@@ -250,9 +250,20 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .flatMap(iniPecBatchSqsService::batchSendToSqs);
     }
 
+    private static void removeInvalidEmails(CodeSqsDto sqsDto) {
+        List<DigitalAddress> digitalAddresses = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(sqsDto.getDigitalAddress())) {
+            digitalAddresses = sqsDto.getDigitalAddress().stream()
+                    .filter(digitalAddress -> CheckEmailUtils.isValidEmail(digitalAddress.getAddress()))
+                    .toList();
+        }
+        sqsDto.setDigitalAddress(digitalAddresses);
+    }
+
     private void callInadEservice(BatchRequest request) {
         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
         inadService.callEService(convertToGetDigitalAddressInadRequest(request), "PG")
+                .flatMap(this::emailValidation)
                 .doOnNext(inadResponse -> {
                     request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.IMPRESA)));
                     request.setStatus(BatchStatus.WORKED.getValue());

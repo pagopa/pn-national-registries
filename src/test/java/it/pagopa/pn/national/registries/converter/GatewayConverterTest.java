@@ -42,12 +42,13 @@ import java.util.List;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
+import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
-
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -524,5 +525,44 @@ class GatewayConverterTest {
         when(objectMapper.writeValueAsString(codeSqsDto))
                 .thenThrow(JsonProcessingException.class);
         assertThrows(DigitalAddressException.class, () -> gatewayConverter.convertCodeSqsDtoToString(codeSqsDto));
+    }
+
+
+
+    @Test
+    void testEmailValidationWithValidEmail() {
+        // Arrange
+        GatewayConverter gatewayConverter = new GatewayConverter();
+        GetDigitalAddressINADOKDto inadResponse = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("valid@example.com");
+        inadResponse.setDigitalAddress(digitalAddressDto);
+
+        // Act
+        Mono<GetDigitalAddressINADOKDto> result = gatewayConverter.emailValidation(inadResponse);
+
+        // Assert
+        StepVerifier.create(result)
+                .expectNext(inadResponse)
+                .verifyComplete();
+    }
+
+    @Test
+    void testEmailValidationWithInvalidEmail() {
+        // Arrange
+        GetDigitalAddressINADOKDto inadResponse = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("invalid-email");
+        inadResponse.setDigitalAddress(digitalAddressDto);
+
+        // Act
+        Mono<GetDigitalAddressINADOKDto> result = gatewayConverter.emailValidation(inadResponse);
+
+        // Assert
+        StepVerifier.create(result)
+                .expectErrorMatches(throwable -> throwable instanceof PnNationalRegistriesException &&
+                        throwable.getMessage().equals("CF non trovato") &&
+                        ((PnNationalRegistriesException) throwable).getStatusCode().value() == HttpStatus.NOT_FOUND.value())
+                .verify();
     }
 }
