@@ -374,6 +374,11 @@ Parameters:
     Type: String
     Description: 'DLQ ARN for NationalRegistryGatewayInputs'
 
+  JavaToolOptions:
+    Default: ''
+    Type: String
+    Description: add system properties and other parameters to the JVM
+
 Resources:
 
   # PN-National-Registry microservice
@@ -449,7 +454,7 @@ Resources:
         TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskManagedPolicy
         EcsLogGroup: !Ref EcsLogGroup
         LogAlarmStrategyV1: !Ref LogAlarmStrategy
-        JavaToolOptions: '-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath="/mnt/efs/dump_national-registries.hprof"'
+        JavaToolOptions: !Ref JavaToolOptions
 
   NationalRegistryMicroserviceTaskManagedPolicy:
     Type: AWS::IAM::ManagedPolicy

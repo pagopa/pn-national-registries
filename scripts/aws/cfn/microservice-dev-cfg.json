@@ -38,7 +38,6 @@
     "MaxTasksNumber": "4",
     "AutoscalingThreshold": "1500",
     "CpuValue": "2048",
-    "MemoryAmount": "4GB",
-    "MountEfs": "true"
+    "MemoryAmount": "4GB"
   }
 }
