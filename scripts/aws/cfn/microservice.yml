@@ -449,6 +449,7 @@ Resources:
         TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskManagedPolicy
         EcsLogGroup: !Ref EcsLogGroup
         LogAlarmStrategyV1: !Ref LogAlarmStrategy
+        JavaToolOptions: '-XX:+HeapDumpOnOutOfMemoryError -XX:HeapDumpPath="/mnt/efs/dump_national-registries.hprof"'
 
   NationalRegistryMicroserviceTaskManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
