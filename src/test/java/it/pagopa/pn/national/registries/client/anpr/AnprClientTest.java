@@ -105,7 +105,7 @@ class AnprClientTest {
         when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
 
         when(e002ServiceApi.getApiClient()).thenReturn(apiClient);
-        when(e002ServiceApi.e002(any())).thenReturn(Mono.just(rispostaE002OKDto));
+        when(e002ServiceApi.e002(any(), any(), any(), any(), any(), any())).thenReturn(Mono.just(rispostaE002OKDto));
         doNothing().when(apiClient).setBearerToken(anyString());
         when(apiClient.addDefaultHeader(any(),any())).thenReturn(apiClient);
 
@@ -153,7 +153,7 @@ class AnprClientTest {
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         WebClientResponseException exception = mock(WebClientResponseException.class);
-        when(e002ServiceApi.e002(any())).thenThrow(mock(PnNationalRegistriesException.class));
+        when(e002ServiceApi.e002(any(), any(), any(), any(), any(), any())).thenThrow(mock(PnNationalRegistriesException.class));
         when(exception.getStatusCode()).thenReturn(HttpStatus.NOT_FOUND);
         when(exception.getHeaders()).thenReturn(new HttpHeaders());
         when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
@@ -196,7 +196,7 @@ class AnprClientTest {
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         WebClientResponseException exception = mock(WebClientResponseException.class);
-        when(e002ServiceApi.e002(any())).thenThrow(mock(PnInternalException.class));
+        when(e002ServiceApi.e002(any(), any(), any(), any(), any(), any())).thenThrow(mock(PnInternalException.class));
         when(exception.getStatusCode()).thenReturn(HttpStatus.UNAUTHORIZED);
 
         when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
@@ -241,7 +241,7 @@ class AnprClientTest {
         when(requestBodySpec.contentType(MediaType.APPLICATION_JSON)).thenReturn(requestBodySpec);
         when(requestBodySpec.headers(any())).thenReturn(requestBodySpec);
         WebClientResponseException exception = mock(WebClientResponseException.class);
-        when(e002ServiceApi.e002(any())).thenReturn(Mono.error(webClientResponseException));
+        when(e002ServiceApi.e002(any(), any(), any(), any(), any(), any())).thenReturn(Mono.error(webClientResponseException));
         when(exception.getStatusCode()).thenReturn(HttpStatus.UNAUTHORIZED);
         when(requestBodySpec.bodyValue(anyString())).thenReturn(requestHeadersSpec);
         when(requestHeadersSpec.retrieve()).thenReturn(responseSpec);

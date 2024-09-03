@@ -21,6 +21,7 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
+import javax.annotation.PostConstruct;
 import javax.xml.bind.DatatypeConverter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -57,6 +58,11 @@ public class AnprClient {
         this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
+    @PostConstruct
+    public void init() {
+        e002ServiceApi.getApiClient().addDefaultHeader("Content-Encoding", "UTF-8");
+    }
+
     public Mono<RispostaE002OK> callEService(RichiestaE002 requestDto) {
         String agidTrackingEvidence = agidJwtTrackingEvidence.createAgidJwt();
         String auditAudience = createDigestFromAuditJws(agidTrackingEvidence);
@@ -75,13 +81,10 @@ public class AnprClient {
         String s = convertToJson(request);
         String digest = createDigestFromPayload(s);
         log.debug("digest: {}", digest);
-        e002ServiceApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
-        e002ServiceApi.getApiClient().addDefaultHeader("Agid-JWT-Signature", agidJwtSignature.createAgidJwt(digest));
-        e002ServiceApi.getApiClient().addDefaultHeader("Agid-JWT-TrackingEvidence", agidTrackingEvidence);
-        e002ServiceApi.getApiClient().addDefaultHeader("Content-Encoding", "UTF-8");
-        e002ServiceApi.getApiClient().addDefaultHeader("Digest", digest);
-        e002ServiceApi.getApiClient().addDefaultHeader("bearerAuth", tokenEntry.getTokenValue());
-        return e002ServiceApi.e002(request)
+        var bearerToken = "Bearer: " + tokenEntry.getTokenValue();
+        var agidJWTSignature = agidJwtSignature.createAgidJwt(digest);
+        var bearerAuth = tokenEntry.getTokenValue();
+        return e002ServiceApi.e002(request, bearerToken, agidJWTSignature, agidTrackingEvidence, bearerAuth, digest)
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
