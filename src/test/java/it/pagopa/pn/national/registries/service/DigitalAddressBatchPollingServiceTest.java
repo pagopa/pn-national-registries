@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.service;
 
-import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -143,7 +142,7 @@ class DigitalAddressBatchPollingServiceTest {
         iniPecPollingResponse1.setDescription("List PEC in progress");
 
         when(infoCamereClient.callEServiceRequestPec("pollingId1")).thenReturn(Mono.just(iniPecPollingResponse1));
-        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any())).thenReturn(true);
+        when(infoCamereConverter.checkIfResponseIsInfoCamereError((IniPecPollingResponse) any())).thenReturn(true);
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest1, batchRequest2)));
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId2", BatchStatus.WORKING))
