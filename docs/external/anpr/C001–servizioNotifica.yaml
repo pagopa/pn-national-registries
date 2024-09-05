@@ -49,10 +49,27 @@ paths:
       summary: Trova caso d'uso
       description: Consultazione di un caso d'uso
       operationId: e002
-      security:
-        - bearerAuth: []
-          Agid-JWT-Signature: []
-          Agid-JWT-TrackingEvidence: []
+      parameters:
+        - name: Authorization
+          in: header
+          schema:
+            type: string
+        - name: Agid-JWT-Signature
+          in: header
+          schema:
+            type: string
+        - name: Agid-JWT-TrackingEvidence
+          in: header
+          schema:
+            type: string
+        - name: bearerAuth
+          in: header
+          schema:
+            type: string
+        - name: Digest
+          in: header
+          schema:
+            type: string
       requestBody:
         required: true
         description: Richiesta da consultare
