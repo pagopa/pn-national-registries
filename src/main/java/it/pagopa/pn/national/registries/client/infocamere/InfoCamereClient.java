@@ -26,6 +26,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
@@ -158,7 +159,10 @@ public class InfoCamereClient {
 
     private @NotNull Consumer<Throwable> handleErrorCall() {
         return throwable -> {
-            log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
+            String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
+                    .map(message -> message.replaceFirst("/sede/.*\\?", "/sede/***?"))
+                    .orElse("Unknown error");
+            log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage);
             if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                 log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                 throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
