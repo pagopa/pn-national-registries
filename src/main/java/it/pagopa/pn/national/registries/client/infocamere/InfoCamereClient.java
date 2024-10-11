@@ -105,7 +105,9 @@ public class InfoCamereClient {
                 .flatMap(token -> callGetLegalAddress(taxId, token.getTokenValue()))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
+                                // don't pass retrySignal.failure() to PnInternalException as cause
+                                // the common handler prints the stack trace that includes the called URL and for InfoCamere Sede in the URL is the taxId
+                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED))
                 );
     }
 
@@ -165,7 +167,7 @@ public class InfoCamereClient {
             log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage);
             if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                 log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
-                throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                throw new PnNationalRegistriesException(maskedErrorMessage, e.getStatusCode().value(),
                         e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                         Charset.defaultCharset(), InfocamereResponseKO.class);
             }
