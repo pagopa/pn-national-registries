@@ -11,6 +11,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.R
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
+import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -62,7 +63,7 @@ public class InadClient {
         return apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(taxId, practicalReference)
                 .doOnError(throwable -> {
                     String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
-                            .map(message -> message.replaceFirst("/extract/.*\\?", "/extract/***?"))
+                            .map(MaskTaxIdInPathUtils::maskTaxIdInPathInad)
                             .orElse("Unknown error");
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, maskedErrorMessage);
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
