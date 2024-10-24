@@ -28,6 +28,7 @@
     "PnNationalRegistriesInipecBatchPollingRecoveryDelay": "",
     "PnNationalRegistriesInipecBatchPollingRecoveryAfter": "",
     "PnNationalRegistriesInipecBatchPollingMaxRetry": "",
-    "PnNationalRegistriesInipecBatchSqsRecoveryDelay": ""
+    "PnNationalRegistriesInipecBatchSqsRecoveryDelay": "",
+    "CustomRetryMaxAttempts": ""
   }
 }
