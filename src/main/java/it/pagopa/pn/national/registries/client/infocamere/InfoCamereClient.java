@@ -17,6 +17,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTax
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
+import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -105,8 +106,6 @@ public class InfoCamereClient {
                 .flatMap(token -> callGetLegalAddress(taxId, token.getTokenValue()))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                // don't pass retrySignal.failure() to PnInternalException as cause
-                                // the common handler prints the stack trace that includes the called URL and for InfoCamere Sede in the URL is the taxId
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED))
                 );
     }
@@ -162,7 +161,7 @@ public class InfoCamereClient {
     private @NotNull Consumer<Throwable> handleErrorCall() {
         return throwable -> {
             String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
-                    .map(message -> message.replaceFirst("/sede/.*\\?", "/sede/***?"))
+                    .map(MaskTaxIdInPathUtils::maskTaxIdInPathICRegistroImprese)
                     .orElse("Unknown error");
             log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage);
             if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
