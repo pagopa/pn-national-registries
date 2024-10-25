@@ -161,7 +161,7 @@ public class InfoCamereClient {
     private @NotNull Consumer<Throwable> handleErrorCall() {
         return throwable -> {
             String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
-                    .map(MaskTaxIdInPathUtils::maskTaxIdInPathICRegistroImprese)
+                    .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
                     .orElse("Unknown error");
             log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage);
             if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {

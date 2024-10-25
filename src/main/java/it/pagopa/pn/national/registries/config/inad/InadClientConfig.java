@@ -32,20 +32,6 @@ public class InadClientConfig extends CommonBaseClient {
 
     @Override
     protected ExchangeFilterFunction buildRetryExchangeFilterFunction() {
-        return (request, next) ->
-                next.exchange(request).flatMap((clientResponse) ->
-                                Mono.just(clientResponse).filter((response) ->
-                                                clientResponse.statusCode().isError()).flatMap((response) ->
-                                                clientResponse.createException())
-                                        .flatMap(Mono::error)
-                                        .thenReturn(clientResponse))
-                        .retryWhen(Retry.backoff(customRetryConfig.getRetryMaxAttempts(), Duration.ofMillis(25L))
-                                .jitter(0.75)
-                                .filter(CustomRetryConfig::isRetryableException)
-                                .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> {
-                                    Throwable lastExceptionInRetry = retrySignal.failure();
-                                    log.warn("Retries exhausted {}, with last Exception: {}", retrySignal.totalRetries(), MaskTaxIdInPathUtils.maskTaxIdInPathInad(lastExceptionInRetry.getMessage()));
-                                    return lastExceptionInRetry;
-                                }));
+        return customRetryConfig.buildRetryExchangeFilterFunction();
     }
 }

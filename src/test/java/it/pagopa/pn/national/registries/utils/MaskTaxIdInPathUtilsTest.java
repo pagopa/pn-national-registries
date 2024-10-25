@@ -10,7 +10,7 @@ class MaskTaxIdInPathUtilsTest {
     void testMaskTaxIdInPathInad() {
         String message = "/extract/12345?";
         String expected = "/extract/***?";
-        String actual = MaskTaxIdInPathUtils.maskTaxIdInPathInad(message);
+        String actual = MaskTaxIdInPathUtils.maskTaxIdInPath(message);
         assertEquals(expected, actual);
     }
 
@@ -18,7 +18,7 @@ class MaskTaxIdInPathUtilsTest {
     void testMaskTaxIdInPathICRegistroImprese() {
         String message = "/sede/12345?";
         String expected = "/sede/***?";
-        String actual = MaskTaxIdInPathUtils.maskTaxIdInPathICRegistroImprese(message);
+        String actual = MaskTaxIdInPathUtils.maskTaxIdInPath(message);
         assertEquals(expected, actual);
     }
 }

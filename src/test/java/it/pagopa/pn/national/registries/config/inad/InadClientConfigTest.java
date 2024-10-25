@@ -29,15 +29,13 @@ class InadClientConfigTest {
 
     private InadClientConfig inadClientConfig;
 
-    @Mock
-    private CustomRetryConfig customRetryConfig;
 
     @BeforeEach
     void setUp() {
         when(webClientBuilder.build()).thenReturn(webClient);
         when(webClientBuilder.defaultHeader(any(), any())).thenReturn(webClientBuilder);
         when(webClientBuilder.baseUrl(any())).thenReturn(webClientBuilder);
-        inadClientConfig = new InadClientConfig(customRetryConfig);
+        inadClientConfig = new InadClientConfig(new CustomRetryConfig(1));
     }
 
     @Test
@@ -57,8 +55,6 @@ class InadClientConfigTest {
 
     @Test
     void testBuildRetryExchangeFilterFunction() {
-        CustomRetryConfig customRetryConfig = mock(CustomRetryConfig.class);
-        when(customRetryConfig.getRetryMaxAttempts()).thenReturn(1);
         ExchangeFunction exchangeFunction = mock(ExchangeFunction.class);
         ClientRequest clientRequest = mock(ClientRequest.class);
         ClientResponse clientResponse = mock(ClientResponse.class);

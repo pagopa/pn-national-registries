@@ -63,7 +63,7 @@ public class InadClient {
         return apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(taxId, practicalReference)
                 .doOnError(throwable -> {
                     String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
-                            .map(MaskTaxIdInPathUtils::maskTaxIdInPathInad)
+                            .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
                             .orElse("Unknown error");
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, maskedErrorMessage);
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
