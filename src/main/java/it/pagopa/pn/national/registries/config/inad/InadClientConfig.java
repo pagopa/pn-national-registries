@@ -4,17 +4,12 @@ import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.ApiClient;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
-import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
-import reactor.core.publisher.Mono;
-import reactor.util.retry.Retry;
-
-import java.time.Duration;
 
 @Configuration
 @RequiredArgsConstructor
