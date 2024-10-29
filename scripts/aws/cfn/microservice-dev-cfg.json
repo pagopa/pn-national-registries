@@ -38,6 +38,9 @@
     "MaxTasksNumber": "4",
     "AutoscalingThreshold": "1500",
     "CpuValue": "2048",
-    "MemoryAmount": "4GB"
+    "MemoryAmount": "4GB",
+    "PnCronAnalyzer": "* */1 * * * *",
+    "WireTapLogActivation": "false",
+    "MountEfs": "false"
   }
 }
