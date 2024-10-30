@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.config.springobootcfg;
+package it.pagopa.pn.national.registries.config.springbootcfg;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import it.pagopa.pn.commons.utils.metrics.SpringAnalyzer;

@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.config.springobootcfg;
+package it.pagopa.pn.national.registries.config.springbootcfg;
 
 import it.pagopa.pn.commons.configs.SpringAnalyzerConfiguration;
 import org.springframework.context.annotation.Configuration;
