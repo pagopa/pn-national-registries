@@ -17,6 +17,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTax
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
+import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -26,6 +27,7 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
+import java.util.Optional;
 import java.util.function.Consumer;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
@@ -104,7 +106,7 @@ public class InfoCamereClient {
                 .flatMap(token -> callGetLegalAddress(taxId, token.getTokenValue()))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
+                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED))
                 );
     }
 
@@ -158,10 +160,13 @@ public class InfoCamereClient {
 
     private @NotNull Consumer<Throwable> handleErrorCall() {
         return throwable -> {
-            log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
+            String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
+                    .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
+                    .orElse("Unknown error");
+            log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage);
             if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                 log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
-                throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
+                throw new PnNationalRegistriesException(maskedErrorMessage, e.getStatusCode().value(),
                         e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                         Charset.defaultCharset(), InfocamereResponseKO.class);
             }
