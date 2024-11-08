@@ -78,6 +78,11 @@ Parameters:
     Type: String
     Description: 'keep track of used projects commitIds'
 
+  CustomRetryMaxAttempts:
+    Default: 3
+    Type: Number
+    Description: 'Max number of retry attempts for clients with custom retry behaviour'
+
   IPASecret:
     Type: String
     Description: 'IPA SecretName'
@@ -466,8 +471,9 @@ Resources:
         ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_HEALTH_CHECK_PATH=${HealthCheckPath}'
         ContainerEnvEntry37: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_INPROGRESS_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
         ContainerEnvEntry38: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_BATCH_REQUEST_SIZE=${PnNationalRegistriesInipecMaxBatchRequestSize}'
-        ContainerEnvEntry39: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
-        ContainerEnvEntry40: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
+        ContainerEnvEntry39: !Sub 'PN_NATIONAL_REGISTRY_CUSTOM_RETRY_MAX_ATTEMPTS=${CustomRetryMaxAttempts}'
+        ContainerEnvEntry40: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
+        ContainerEnvEntry41: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
