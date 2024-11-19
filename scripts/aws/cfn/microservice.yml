@@ -742,6 +742,7 @@ Resources:
                 Effect: Allow
                 Resource: 
                   - !GetAtt InfocamereCertRenewalCodebuildProject.Arn
+                  - !GetAtt AdeCertRenewalCodebuildProject.Arn
         - PolicyName: sqsPut
           PolicyDocument:
             Statement:
