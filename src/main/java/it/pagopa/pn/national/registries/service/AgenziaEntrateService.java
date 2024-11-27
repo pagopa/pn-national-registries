@@ -1,9 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.agenziaentrate.AdELegalClient;
-import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
 import it.pagopa.pn.national.registries.exceptions.RuntimeJAXBException;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
@@ -26,12 +24,11 @@ import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NA
 @RequiredArgsConstructor
 public class AgenziaEntrateService {
 
-    private final AgenziaEntrateConverter agenziaEntrateConverter;
     private final AdELegalClient adELegalClient;
     private final ValidateTaxIdUtils validateTaxIdUtils;
 
 
-    public Mono<ADELegalOKDto> checkTaxIdAndVatNumber(ADELegalRequestBodyDto request) {
+    public Mono<CheckValidityRappresentanteResp> checkTaxIdAndVatNumber(ADELegalRequestBodyDto request) {
         log.logChecking(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL);
 
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_LEGAL, false);
@@ -42,7 +39,7 @@ public class AgenziaEntrateService {
                     try {
                         CheckValidityRappresentanteResp checkValidityRappresentanteResp = unmarshaller(response);
                         log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL,true);
-                        return agenziaEntrateConverter.adELegalResponseToDto(checkValidityRappresentanteResp);
+                        return checkValidityRappresentanteResp;
                     } catch (JAXBException e) {
                         log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL,false,e.getMessage());
                         throw new RuntimeJAXBException(e.getMessage());

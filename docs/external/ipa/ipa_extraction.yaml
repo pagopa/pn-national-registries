@@ -3,8 +3,6 @@ info:
   title: IPA Client API
   description: API client for interacting with IPA services.
   version: 1.0.0
-servers:
-  - url: /ws
 paths:
   /ws/WS23DOMDIGCFServices/api/WS23_DOM_DIG_CF:
     post:

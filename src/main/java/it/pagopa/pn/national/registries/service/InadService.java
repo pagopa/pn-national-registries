@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.inad.InadClient;
-import it.pagopa.pn.national.registries.converter.InadConverter;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
@@ -24,9 +24,8 @@ public class InadService{
         this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
-    public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request, String recipientType) {
+    public Mono<ResponseRequestDigitalAddress> callEService(GetDigitalAddressINADRequestBodyDto request, String recipientType) {
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INAD_ADDRESS, false);
-        return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference())
-                .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, request.getFilter().getTaxId()));
+        return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference());
     }
 }

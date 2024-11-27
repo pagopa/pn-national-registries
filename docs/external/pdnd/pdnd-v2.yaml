@@ -10,9 +10,6 @@ info:
   termsOfService: 'http://swagger.io/terms/'
   x-api-id: an x-api-id
   x-summary: an x-summary
-servers:
-  - url: '/api-gateway/0.1'
-    description: This service is the interoperability API gateway
 tags:
   - name: gateway
     description: Everything about your APIs
