@@ -126,7 +126,7 @@ public class InadConverter {
         if (Objects.isNull(parsedEndValidity) || parsedEndValidity.equals(now) || parsedEndValidity.after(now)) {
             return true;
         } else {
-            log.info("inad digital address: {} is not valid", dto.getDigitalAddress());
+            log.info("inad digital address is not valid");
             return false;
         }
     }
