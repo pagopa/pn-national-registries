@@ -78,8 +78,6 @@ public class InfoCamereJwsGenerator {
                     .keyId(optSslData.get().getKeyId())
                     .build();
 
-            log.info("START - KmsClient.sign Request: {}",
-                    signRequest);
             long startTimeKms = System.currentTimeMillis();
             SignResponse signResult = kmsClient.sign(signRequest);
             log.info("END - KmsClient.sign Timelapse: {} ms", System.currentTimeMillis() - startTimeKms);
@@ -87,7 +85,6 @@ public class InfoCamereJwsGenerator {
             byte[] signature = signResult.signature().asByteArray();
             String signatureString = bytesToUrlSafeBase64String(signature);
             log.info("END - AdigJwtSignature.createAgidJwt Timelapse: {} ms", System.currentTimeMillis() - startTime);
-            log.info("generated jwt: {}", jwtContent + "." + signatureString);
             return jwtContent + "." + signatureString;
         } catch (IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_INFOCAMERE, ERROR_CODE_INFOCAMERE, e);
