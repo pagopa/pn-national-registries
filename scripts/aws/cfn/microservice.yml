@@ -280,6 +280,32 @@ Parameters:
     Type: String
     Default: '/actuator/health'
 
+  # Logging parameters
+  WireTapLogActivation:
+    Type: String
+    Default: false
+    Description: Activation of wire logs
+    AllowedValues:
+      - true
+      - false
+
+  PnCronAnalyzer:
+    Type: String
+    Default: '-'
+    Description: Cron for which you send the metric to CloudWatch
+
+  # EFS parameters
+  FargateEFSFileSystemID:
+    Type: String
+    Description: "EFS Filesystem"
+
+  MountEfs:
+    Type: String
+    Default: false
+    AllowedValues:
+      - "true"
+      - "false"
+
   # Instance parameters
   # 256 (.25 vCPU) - Available memory values: 0.5GB, 1GB, 2GB
   # 512 (.5 vCPU) - Available memory values: 1GB, 2GB, 3GB, 4GB
@@ -403,6 +429,9 @@ Resources:
         AutoscalingStrategy: REST-API
         MicroServiceUniqueName: !Sub '${ProjectName}-national-registries'
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        EfsFilesystem: !Ref FargateEFSFileSystemID
+        MountEfs: !Ref MountEfs
+        WireTapLogActivation: !Ref WireTapLogActivation
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
         ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_BASE_URL=${PDNDBaseURL}'
@@ -443,6 +472,8 @@ Resources:
         ContainerEnvEntry37: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_INPROGRESS_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
         ContainerEnvEntry38: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_BATCH_REQUEST_SIZE=${PnNationalRegistriesInipecMaxBatchRequestSize}'
         ContainerEnvEntry39: !Sub 'PN_NATIONAL_REGISTRY_CUSTOM_RETRY_MAX_ATTEMPTS=${CustomRetryMaxAttempts}'
+        ContainerEnvEntry40: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
+        ContainerEnvEntry41: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'

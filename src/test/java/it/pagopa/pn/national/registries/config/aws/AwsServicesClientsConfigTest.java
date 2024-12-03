@@ -23,4 +23,10 @@ class AwsServicesClientsConfigTest {
         AwsServicesClientsConfig awsServicesClientsConfig = new AwsServicesClientsConfig("eu-south-1");
         assertEquals("ssm", awsServicesClientsConfig.ssmClient().serviceName());
     }
+
+    @Test
+    void cloudWatchClient() {
+        AwsServicesClientsConfig awsServicesClientsConfig = new AwsServicesClientsConfig("eu-south-1");
+        assertEquals("monitoring", awsServicesClientsConfig.cloudWatchClient().serviceName());
+    }
 }
