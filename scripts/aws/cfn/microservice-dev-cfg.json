@@ -41,7 +41,7 @@
     "MemoryAmount": "4GB",
     "CustomRetryMaxAttempts": "3",
     "PnCronAnalyzer": "* */1 * * * *",
-    "WireTapLogActivation": "false",
-    "MountEfs": "false"
+    "WireTapLogActivation": "true",
+    "MountEfs": "true"
   }
 }
