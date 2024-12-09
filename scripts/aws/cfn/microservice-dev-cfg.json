@@ -39,6 +39,9 @@
     "AutoscalingThreshold": "1500",
     "CpuValue": "2048",
     "MemoryAmount": "4GB",
-    "CustomRetryMaxAttempts": "3"
+    "CustomRetryMaxAttempts": "3",
+    "PnCronAnalyzer": "* */1 * * * *",
+    "WireTapLogActivation": "true",
+    "MountEfs": "true"
   }
 }
