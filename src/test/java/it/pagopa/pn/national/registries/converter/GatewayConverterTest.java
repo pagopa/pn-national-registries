@@ -24,6 +24,7 @@ import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
 import it.pagopa.pn.national.registries.service.*;
+import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -49,6 +50,8 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
+
+import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -69,6 +72,9 @@ class GatewayConverterTest {
     private GatewayConverter gatewayConverter;
     @MockBean
     private ObjectMapper objectMapper;
+
+    @MockBean
+    private FeatureEnabledUtils featureEnabledUtils;
 
 
     /**
@@ -265,7 +271,7 @@ class GatewayConverterTest {
     @Test
     void testIpaToSqsDto() {
         CodeSqsDto actualIpaToSqsDtoResult = gatewayConverter.ipaToSqsDto("42", new IPAPecDto());
-        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals(DIGITAL.name(), actualIpaToSqsDtoResult.getAddressType());
         assertEquals("42", actualIpaToSqsDtoResult.getCorrelationId());
     }
 
@@ -275,7 +281,7 @@ class GatewayConverterTest {
     @Test
     void testIpaToSqsDto2() {
         CodeSqsDto actualIpaToSqsDtoResult = (new GatewayConverter()).ipaToSqsDto("foo", null);
-        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals(DIGITAL.name(), actualIpaToSqsDtoResult.getAddressType());
         assertEquals("foo", actualIpaToSqsDtoResult.getCorrelationId());
     }
 
@@ -288,7 +294,7 @@ class GatewayConverterTest {
         IPAPecDto ipaResponse = new IPAPecDto();
         ipaResponse.domicilioDigitale("foo");
         CodeSqsDto actualIpaToSqsDtoResult = gatewayConverter.ipaToSqsDto("foo", ipaResponse);
-        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals(DIGITAL.name(), actualIpaToSqsDtoResult.getAddressType());
         List<DigitalAddress> digitalAddress = actualIpaToSqsDtoResult.getDigitalAddress();
         assertEquals(1, digitalAddress.size());
         assertEquals("foo", actualIpaToSqsDtoResult.getCorrelationId());
@@ -324,7 +330,7 @@ class GatewayConverterTest {
         InfoCamereService infoCamereService = new InfoCamereService(infoCamereClient,
                 new InfoCamereConverter(2L, "~"), iniPecBatchRequestRepository, 2L, "~", validateTaxIdUtils);
 
-        InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils);
+        InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils, featureEnabledUtils);
         PnNationalRegistriesSecretService pnNationalRegistriesSecretService = new PnNationalRegistriesSecretService(new CachedSecretsManagerConsumer(mock(SecretsManagerClient.class)));
         IpaSecretConfig ipaSecretConfig = new IpaSecretConfig("ipaSecret");
         IpaService ipaService = new IpaService(new IpaConverter(), mock(IpaClient.class), validateTaxIdUtils, pnNationalRegistriesSecretService, ipaSecretConfig);
@@ -332,10 +338,10 @@ class GatewayConverterTest {
         SqsClient sqsClient = mock(SqsClient.class);
         GatewayService gatewayService = new GatewayService(anprService, inadService, infoCamereService, ipaService,
                 new SqsService("outputQueue", "inputQueue", "inputDlqQueue", sqsClient,
-                        new ObjectMapper()),
+                        new ObjectMapper()), featureEnabledUtils,
                 true);
         CodeSqsDto actualIpaToSqsDtoResult = gatewayService.ipaToSqsDto("42", new IPAPecDto());
-        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals(DIGITAL.name(), actualIpaToSqsDtoResult.getAddressType());
         assertEquals("42", actualIpaToSqsDtoResult.getCorrelationId());
         verify(dynamoDbEnhancedAsyncClient).table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any());
         verify(dynamoDbEnhancedAsyncClient2).table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any());

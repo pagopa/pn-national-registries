@@ -4,7 +4,9 @@ import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
+import it.pagopa.pn.national.registries.converter.InadConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -41,6 +43,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
+import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 
 @Slf4j
@@ -259,11 +262,14 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private void callInadEservice(BatchRequest request) {
+
+        RecipientType recipientType = InadConverter.retrieveRecipientType(request);
+
         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
-        inadService.callEService(convertToGetDigitalAddressInadRequest(request), "PG")
+        inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType, request.getReferenceRequestDate().toInstant(ZoneOffset.UTC))
                 .flatMap(this::emailValidation)
                 .doOnNext(inadResponse -> {
-                    request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.IMPRESA)));
+                    request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, PF.equals(recipientType) ? DigitalAddressRecipientType.PERSONA_FISICA : DigitalAddressRecipientType.IMPRESA)));
                     request.setStatus(BatchStatus.WORKED.getValue());
                 })
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
