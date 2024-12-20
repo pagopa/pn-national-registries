@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.DigitalAddressInadApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
@@ -39,7 +40,8 @@ public class InadController implements DigitalAddressInadApi {
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
-        return extractDigitalAddressINADRequestBodyDto.flatMap(request -> inadService.callEService(request, recipientType))
+        RecipientType recipientTypeEnum = RecipientType.fromString(recipientType);
+        return extractDigitalAddressINADRequestBodyDto.flatMap(request -> inadService.callEService(request, recipientTypeEnum, null))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

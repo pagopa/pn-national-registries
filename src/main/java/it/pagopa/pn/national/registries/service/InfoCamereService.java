@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.util.Date;
 
@@ -91,7 +90,7 @@ public class InfoCamereService {
         batchRequest.setClientId(pnNationalRegistriesCxId);
         batchRequest.setAwsMessageId(messageId);
         if (referenceRequestDate != null) {
-            batchRequest.setReferenceRequestDate(referenceRequestDate.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime());
+            batchRequest.setReferenceRequestDate(referenceRequestDate.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime());
         }
         return iniPecBatchRequestRepository.create(batchRequest);
     }
