@@ -265,7 +265,7 @@ class GatewayConverterTest {
     @Test
     void testIpaToSqsDto() {
         CodeSqsDto actualIpaToSqsDtoResult = gatewayConverter.ipaToSqsDto("42", new IPAPecDto());
-        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals("DIGITAL", actualIpaToSqsDtoResult.getAddressType());
         assertEquals("42", actualIpaToSqsDtoResult.getCorrelationId());
     }
 
@@ -275,7 +275,7 @@ class GatewayConverterTest {
     @Test
     void testIpaToSqsDto2() {
         CodeSqsDto actualIpaToSqsDtoResult = (new GatewayConverter()).ipaToSqsDto("foo", null);
-        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals("DIGITAL", actualIpaToSqsDtoResult.getAddressType());
         assertEquals("foo", actualIpaToSqsDtoResult.getCorrelationId());
     }
 
@@ -288,7 +288,7 @@ class GatewayConverterTest {
         IPAPecDto ipaResponse = new IPAPecDto();
         ipaResponse.domicilioDigitale("foo");
         CodeSqsDto actualIpaToSqsDtoResult = gatewayConverter.ipaToSqsDto("foo", ipaResponse);
-        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals("DIGITAL", actualIpaToSqsDtoResult.getAddressType());
         List<DigitalAddress> digitalAddress = actualIpaToSqsDtoResult.getDigitalAddress();
         assertEquals(1, digitalAddress.size());
         assertEquals("foo", actualIpaToSqsDtoResult.getCorrelationId());
@@ -335,7 +335,7 @@ class GatewayConverterTest {
                         new ObjectMapper()),
                 true);
         CodeSqsDto actualIpaToSqsDtoResult = gatewayService.ipaToSqsDto("42", new IPAPecDto());
-        assertEquals("PHYSICAL", actualIpaToSqsDtoResult.getAddressType());
+        assertEquals("DIGITAL", actualIpaToSqsDtoResult.getAddressType());
         assertEquals("42", actualIpaToSqsDtoResult.getCorrelationId());
         verify(dynamoDbEnhancedAsyncClient).table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any());
         verify(dynamoDbEnhancedAsyncClient2).table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any());
