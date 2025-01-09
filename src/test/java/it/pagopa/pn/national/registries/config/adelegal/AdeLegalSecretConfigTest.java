@@ -1,7 +1,6 @@
-package it.pagopa.pn.national.registries.config.ade;
+package it.pagopa.pn.national.registries.config.adelegal;
 
 import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
-import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
