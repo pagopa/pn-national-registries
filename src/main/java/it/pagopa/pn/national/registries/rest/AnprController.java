@@ -39,7 +39,7 @@ public class AnprController implements AddressAnprApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(Mono<GetAddressANPRRequestBodyDto> getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
-        return getAddressANPRRequestBodyDto.flatMap(anprService::getAddressANPR)
+        return getAddressANPRRequestBodyDto.flatMap(requestBody -> anprService.getAddressANPR(requestBody, null))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

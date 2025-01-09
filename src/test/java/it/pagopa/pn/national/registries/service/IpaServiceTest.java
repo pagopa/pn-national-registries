@@ -1,5 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.converter.IpaConverter;
@@ -9,6 +11,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDt
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.model.ipa.*;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -18,7 +21,9 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
@@ -42,6 +47,18 @@ class IpaServiceTest {
     @Mock
     PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
+
+    @BeforeEach
+    public void setup() {
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
+    }
+
     @Test
     void testGetIpaPec() {
         WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
@@ -58,7 +75,7 @@ class IpaServiceTest {
         list.add(dataWS23Dto);
         ws23ResponseDto.setResult(resultDto);
         ws23ResponseDto.setData(list);
-        when(ipaClient.callEServiceWS23(any(), any())).thenReturn(Mono.just(ws23ResponseDto));
+        when(ipaClient.callEServiceWS23(any(), any(), any())).thenReturn(Mono.just(ws23ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
         filter.setTaxId("42");
@@ -74,7 +91,7 @@ class IpaServiceTest {
         when(pnNationalRegistriesSecretService.getIpaSecret(any())).thenReturn(ipaSecret);
         when(ipaConverter.convertToIpaPecDtoFromWS23(any())).thenReturn(ipaPecOKDto);
         when(ipaSecretConfig.getIpaSecret()).thenReturn("ipaSecret");
-        StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto)).expectNext(ipaPecOKDto).expectComplete().verify();
+        StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto, logEvent)).expectNext(ipaPecOKDto).expectComplete().verify();
     }
 
     @Test
@@ -128,8 +145,8 @@ class IpaServiceTest {
         ws05ResponseDto.setData(dataWS05Dto);
         ws05ResponseDto.setResult(resultDto1);
 
-        when(ipaClient.callEServiceWS23(any(), any())).thenReturn(Mono.just(ws23ResponseDto));
-        when(ipaClient.callEServiceWS05(any(), any())).thenReturn(Mono.just(ws05ResponseDto));
+        when(ipaClient.callEServiceWS23(any(), any(), any())).thenReturn(Mono.just(ws23ResponseDto));
+        when(ipaClient.callEServiceWS05(any(), any(), any())).thenReturn(Mono.just(ws05ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
         filter.setTaxId("42");
@@ -147,7 +164,7 @@ class IpaServiceTest {
         when(ipaConverter.convertToIPAPecDtoFromWS05(any())).thenReturn(ipaPecOKDto);
         when(ipaSecretConfig.getIpaSecret()).thenReturn("ipaSecret");
 
-        StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto)).expectNext(ipaPecOKDto).expectComplete().verify();
+        StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto, logEvent)).expectNext(ipaPecOKDto).expectComplete().verify();
     }
 
 
@@ -162,7 +179,7 @@ class IpaServiceTest {
 
 
 
-        when(ipaClient.callEServiceWS23(any(), any())).thenReturn(Mono.just(ws23ResponseDto));
+        when(ipaClient.callEServiceWS23(any(), any(), any())).thenReturn(Mono.just(ws23ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
         filter.setTaxId("42");
@@ -180,7 +197,7 @@ class IpaServiceTest {
         when(ipaSecretConfig.getIpaSecret()).thenReturn("ipaSecret");
         when(ipaConverter.convertToIpaPecDtoFromWS23(any())).thenReturn(ipaPecOKDto);
 
-        StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto)).expectNext(new IPAPecDto()).expectComplete().verify();
+        StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto, logEvent)).expectNext(new IPAPecDto()).expectComplete().verify();
     }
 
     @Test
@@ -195,7 +212,7 @@ class IpaServiceTest {
         List<DataWS23Dto> list = new ArrayList<>();
         list.add(dataWS23Dto);
         ws23ResponseDto.setData(list);
-        when(ipaClient.callEServiceWS23(any(), any())).thenReturn(Mono.just(ws23ResponseDto));
+        when(ipaClient.callEServiceWS23(any(), any(), any())).thenReturn(Mono.just(ws23ResponseDto));
         when(ipaSecretConfig.getIpaSecret()).thenReturn("ipaSecret");
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
@@ -205,7 +222,7 @@ class IpaServiceTest {
         ipaSecret.setAuthId("authId");
         when(pnNationalRegistriesSecretService.getIpaSecret(any())).thenReturn(ipaSecret);
 
-        StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto)).expectError().verify();
+        StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto, logEvent)).expectError().verify();
     }
 
     @Test
@@ -259,8 +276,8 @@ class IpaServiceTest {
         ws05ResponseDto.setData(dataWS05Dto);
         ws05ResponseDto.setResult(resultDto1);
 
-        when(ipaClient.callEServiceWS23(any(), any())).thenReturn(Mono.just(ws23ResponseDto));
-        when(ipaClient.callEServiceWS05(any(), any())).thenReturn(Mono.just(ws05ResponseDto));
+        when(ipaClient.callEServiceWS23(any(), any(), any())).thenReturn(Mono.just(ws23ResponseDto));
+        when(ipaClient.callEServiceWS05(any(), any(), any())).thenReturn(Mono.just(ws05ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
         filter.setTaxId("42");
@@ -273,7 +290,7 @@ class IpaServiceTest {
         when(ipaConverter.convertToIpaPecDtoFromWS23(any())).thenReturn(ipaPecOKDto);
         when(ipaConverter.convertToIPAPecDtoFromWS05(any())).thenReturn(ipaPecOKDto);
 
-        StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto)).expectNext(new IPAPecDto()).expectComplete().verify();
+        StepVerifier.create(ipaService.getIpaPec(ipaRequestBodyDto, logEvent)).expectNext(new IPAPecDto()).expectComplete().verify();
     }
 }
 

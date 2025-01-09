@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.cache;
 
 import com.auth0.jwt.JWT;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.TokenProvider;
 import lombok.extern.slf4j.Slf4j;
@@ -37,43 +38,43 @@ public class AccessTokenExpiringMap {
         this.infoCamereDeadline = infoCamereDeadline;
     }
 
-    public Mono<AccessTokenCacheEntry> getPDNDToken(String purposeId, PdndSecretValue pdndSecretValue, boolean isAnpr) {
+    public Mono<AccessTokenCacheEntry> getPDNDToken(String purposeId, PdndSecretValue pdndSecretValue, boolean isAnpr, PnAuditLogEvent logEvent) {
         if (isAnpr || expiringMap.isEmpty() || !expiringMap.containsKey(purposeId)) {
-            return requireNewPDNDAccessToken(purposeId, pdndSecretValue);
+            return requireNewPDNDAccessToken(purposeId, pdndSecretValue, logEvent);
         }
         try {
             long expiration = expiringMap.getExpectedExpiration(purposeId);
             if (expiration <= pdndDeadline) {
-                return requireNewPDNDAccessToken(purposeId, pdndSecretValue);
+                return requireNewPDNDAccessToken(purposeId, pdndSecretValue, logEvent);
             } else {
                 log.info("Existing Access Token Required with purposeId: {}", purposeId);
                 return Mono.just(expiringMap.get(purposeId));
             }
         } catch (NoSuchElementException e) {
-            return requireNewPDNDAccessToken(purposeId, pdndSecretValue);
+            return requireNewPDNDAccessToken(purposeId, pdndSecretValue, logEvent);
         }
     }
 
-    public Mono<AccessTokenCacheEntry> getInfoCamereToken(String scope) {
+    public Mono<AccessTokenCacheEntry> getInfoCamereToken(String scope, PnAuditLogEvent logEvent) {
         if (expiringMap.isEmpty() || !expiringMap.containsKey(scope)) {
-            return requireNewInfoCamereAccessToken(scope);
+            return requireNewInfoCamereAccessToken(scope, logEvent);
         }
         try {
             long expiration = expiringMap.getExpectedExpiration(scope);
             if (expiration <= infoCamereDeadline) {
-                return requireNewInfoCamereAccessToken(scope);
+                return requireNewInfoCamereAccessToken(scope, logEvent);
             } else {
                 log.info("Existing InfoCamere Access Token Required with scope: {}", scope);
                 return Mono.just(expiringMap.get(scope));
             }
         } catch (NoSuchElementException e) {
-            return requireNewInfoCamereAccessToken(scope);
+            return requireNewInfoCamereAccessToken(scope, logEvent);
         }
     }
 
-    private Mono<AccessTokenCacheEntry> requireNewPDNDAccessToken(String purposeId, PdndSecretValue pdndSecretValue) {
+    private Mono<AccessTokenCacheEntry> requireNewPDNDAccessToken(String purposeId, PdndSecretValue pdndSecretValue, PnAuditLogEvent logEvent) {
         log.info("New PDND Access Token Required with purposeId: {}", purposeId);
-        return tokenProvider.getTokenPdnd(pdndSecretValue)
+        return tokenProvider.getTokenPdnd(pdndSecretValue, logEvent)
                 .map(dto -> {
                     AccessTokenCacheEntry entry = new AccessTokenCacheEntry(purposeId);
                     entry.setClientCredentials(dto);
@@ -84,9 +85,9 @@ public class AccessTokenExpiringMap {
                 });
     }
 
-    private Mono<AccessTokenCacheEntry> requireNewInfoCamereAccessToken(String scope) {
+    private Mono<AccessTokenCacheEntry> requireNewInfoCamereAccessToken(String scope, PnAuditLogEvent logEvent) {
         log.info("New InfoCamere Access Token Required with scope: {}", scope);
-        return tokenProvider.getTokenInfoCamere(scope)
+        return tokenProvider.getTokenInfoCamere(scope, logEvent)
                 .map(token -> {
                     AccessTokenCacheEntry entry = new AccessTokenCacheEntry(scope);
                     entry.setClientCredentials(token);

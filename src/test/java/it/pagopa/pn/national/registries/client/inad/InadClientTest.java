@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.client.inad;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
@@ -12,6 +14,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.T
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +28,8 @@ import reactor.test.StepVerifier;
 
 import java.nio.charset.Charset;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -47,6 +52,18 @@ class InadClientTest {
     @MockBean
     PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
+
+    @BeforeEach
+    public void setup() {
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
+    }
+
     @Test
     void callEService() {
 
@@ -60,14 +77,14 @@ class InadClientTest {
         accessTokenCacheEntry.setTokenValue("fafsff");
         accessTokenCacheEntry.setTokenType(TokenType.BEARER);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(anyString(), anyString())).thenReturn(Mono.just(response));
 
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
         when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
-        StepVerifier.create(inadClient.callEService("cf","test"))
+        StepVerifier.create(inadClient.callEService("cf","test", logEvent))
                 .expectNext()
                 .verifyError();
     }
@@ -80,11 +97,11 @@ class InadClientTest {
         String test = "test";
         WebClientResponseException webClientResponseException = new WebClientResponseException(test, HttpStatus.NOT_FOUND.value(), test, headers, testByteArray, Charset.defaultCharset());
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.error(webClientResponseException));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean(), any())).thenReturn(Mono.error(webClientResponseException));
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
         when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
-        StepVerifier.create(inadClient.callEService("cf", "test"))
+        StepVerifier.create(inadClient.callEService("cf", "test", logEvent))
                 .verifyError(WebClientResponseException.class);
     }
 
@@ -106,11 +123,11 @@ class InadClientTest {
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.BAD_REQUEST.value(), "statusText", HttpHeaders.EMPTY, null, null);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
         when(apiEstrazioniPuntualiApi.getApiClient()).thenReturn(mock(ApiClient.class));
         when(apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(any(),any())).thenReturn(Mono.error(webClientResponseException));
-        StepVerifier.create(inadClient.callEService("cf","test"))
+        StepVerifier.create(inadClient.callEService("cf","test", logEvent))
                 .expectError(PnNationalRegistriesException.class)
                 .verify();
     }
@@ -133,11 +150,11 @@ class InadClientTest {
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
         when(apiEstrazioniPuntualiApi.getApiClient()).thenReturn(mock(ApiClient.class));
         when(apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(any(),any())).thenThrow(webClientResponseException);
-        StepVerifier.create(inadClient.callEService("cf","test"))
+        StepVerifier.create(inadClient.callEService("cf","test", logEvent))
                 .expectError(PnInternalException.class)
                 .verify();
     }

@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.converter.IpaConverter;
@@ -49,17 +50,17 @@ public class IpaService {
         this.ipaSecretConfig = ipaSecretConfig;
     }
 
-    public Mono<IPAPecDto> getIpaPec(IPARequestBodyDto request) {
+    public Mono<IPAPecDto> getIpaPec(IPARequestBodyDto request, PnAuditLogEvent logEvent) {
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_IPA_ADDRESS, false);
         String authId = pnNationalRegistriesSecretService.getIpaSecret(ipaSecretConfig.getIpaSecret()).getAuthId();
-        return callWS23(request.getFilter().getTaxId(), authId)
+        return callWS23(request.getFilter().getTaxId(), authId, logEvent)
                 .flatMap(ws23ResponseDto -> {
                     if (ws23ResponseDto.getResult() != null &&
                             ws23ResponseDto.getResult().getNumItems() != null &&
                             ws23ResponseDto.getResult().getNumItems() > 1 &&
                             ws23ResponseDto.getData() != null) {
                         String codAmm = ws23ResponseDto.getData().get(0).getCodAmm();
-                        return callWS05(codAmm, authId).map(ipaConverter::convertToIPAPecDtoFromWS05);
+                        return callWS05(codAmm, authId, logEvent).map(ipaConverter::convertToIPAPecDtoFromWS05);
                     } else {
                         return Mono.just(ipaConverter.convertToIpaPecDtoFromWS23(ws23ResponseDto));
                     }
@@ -71,8 +72,8 @@ public class IpaService {
                 .doOnError(throwable -> log.error("Error while calling IPA service", throwable));
     }
 
-    private Mono<WS23ResponseDto> callWS23(String cf, String authId) {
-        return ipaClient.callEServiceWS23(cf, authId)
+    private Mono<WS23ResponseDto> callWS23(String cf, String authId, PnAuditLogEvent logEvent) {
+        return ipaClient.callEServiceWS23(cf, authId, logEvent)
                 .doOnNext(ws23ResponseDto -> log.info("Got WS23Response"))
                 .doOnError(throwable -> log.info("Failed to callWS23"))
                 .map(ws23ResponseDto -> {
@@ -84,8 +85,8 @@ public class IpaService {
                 });
     }
 
-    private Mono<WS05ResponseDto> callWS05(String codAmm, String authId) {
-        return ipaClient.callEServiceWS05(codAmm, authId)
+    private Mono<WS05ResponseDto> callWS05(String codAmm, String authId, PnAuditLogEvent logEvent) {
+        return ipaClient.callEServiceWS05(codAmm, authId, logEvent)
                 .doOnNext(ws05ResponseDto -> log.info("Got WS05Response for codAmm: {}", codAmm))
                 .doOnError(throwable -> log.info("Failed to callWS05 for codAmm: {}", codAmm))
                 .map(ws05ResponseDto -> {

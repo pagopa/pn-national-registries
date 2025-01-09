@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InadConverter;
@@ -28,10 +29,10 @@ public class InadService{
     private final FeatureEnabledUtils featureEnabledUtils;
 
 
-    public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request, RecipientType recipientType, Instant referenceRequestDate) {
+    public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request, RecipientType recipientType, Instant referenceRequestDate, PnAuditLogEvent logEvent) {
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INAD_ADDRESS, false);
         boolean newWorkflowEnabled = Objects.nonNull(referenceRequestDate) && featureEnabledUtils.isPfNewWorkflowEnabled(referenceRequestDate);
-        return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference())
+        return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference(), logEvent)
                 .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, request.getFilter().getTaxId(), newWorkflowEnabled));
     }
 }

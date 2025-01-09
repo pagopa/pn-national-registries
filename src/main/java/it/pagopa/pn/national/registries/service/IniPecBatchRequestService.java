@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
@@ -63,7 +64,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
-    public void batchPecRequest() {
+    public void batchPecRequest(PnAuditLogEvent logEvent) {
         log.trace("IniPEC - batchPecRequest start");
         Page<BatchRequest> page;
         Map<String, AttributeValue> lastEvaluatedKey = new HashMap<>();
@@ -72,7 +73,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
             lastEvaluatedKey = page.lastEvaluatedKey();
             if (!page.items().isEmpty()) {
                 String batchId = UUID.randomUUID().toString();
-                execBatchRequest(page.items(), batchId)
+                execBatchRequest(page.items(), batchId, logEvent)
                         .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + batchId))
                         .block();
             } else {
@@ -83,7 +84,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.request.recovery.delay}")
-    public void recoveryBatchRequest() {
+    public void recoveryBatchRequest(PnAuditLogEvent logEvent) {
         log.trace("IniPEC - recoveryBatchRequest start");
         batchRequestRepository.getBatchRequestToRecovery()
                 .flatMapIterable(requests -> requests)
@@ -96,7 +97,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                                 e -> log.info("IniPEC - conditional check failed - skip recovery correlationId: {}", request.getCorrelationId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .count()
-                .doOnNext(c -> batchPecRequest())
+                .doOnNext(c -> batchPecRequest(logEvent))
                 .subscribe(c -> log.info("IniPEC - executed batch recovery on {} requests", c),
                         e -> log.error("IniPEC - failed execution of batch request recovery", e));
         log.trace("IniPEC - recoveryBatchRequest end");
@@ -111,7 +112,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 });
     }
 
-    private Mono<Void> execBatchRequest(List<BatchRequest> items, String batchId) {
+    private Mono<Void> execBatchRequest(List<BatchRequest> items, String batchId, PnAuditLogEvent logEvent) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return Flux.fromStream(items.stream())
                 .doOnNext(item -> {
@@ -129,7 +130,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .flatMap(requests -> {
                     IniPecBatchRequest iniPecBatchRequest = createIniPecRequest(requests);
                     log.info("IniPEC - batchId {} - calling with {} cf", batchId, iniPecBatchRequest.getElencoCf().size());
-                    return callEService(iniPecBatchRequest, batchId)
+                    return callEService(iniPecBatchRequest, batchId, logEvent)
                             .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId).then(Mono.error(t)))
                             .flatMap(response -> createPolling(response, batchId))
                             .thenReturn(requests);
@@ -140,8 +141,8 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .then();
     }
 
-    private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
-        return infoCamereClient.callEServiceRequestId(iniPecBatchRequest)
+    private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId, PnAuditLogEvent logEvent) {
+        return infoCamereClient.callEServiceRequestId(iniPecBatchRequest, logEvent)
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to call EService", batchId, e));
     }
 

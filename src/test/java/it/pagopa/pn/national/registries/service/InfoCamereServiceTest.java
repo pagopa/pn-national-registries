@@ -1,5 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -11,6 +13,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +26,8 @@ import reactor.test.StepVerifier;
 
 import java.time.OffsetDateTime;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
@@ -47,6 +52,18 @@ class InfoCamereServiceTest {
 
     @MockBean
     ValidateTaxIdUtils validateTaxIdUtils;
+
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
+
+    @BeforeEach
+    public void setup() {
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
+    }
 
     @Test
     void testGetDigitalAddress() {
@@ -91,10 +108,10 @@ class InfoCamereServiceTest {
         legalAddress.setToponimo("address");
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
 
-        when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
+        when(infoCamereClient.getLegalAddress(any(), any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
         when(infoCamereConverter.mapToResponseOkByResponse((AddressRegistroImprese) any())).thenReturn(response);
 
-        StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
+        StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request, logEvent))
                 .expectNext(response)
                 .verifyComplete();
     }
@@ -118,11 +135,11 @@ class InfoCamereServiceTest {
         addressRegistroImpreseResponse.setAppName("appName");
         addressRegistroImpreseResponse.setTimestamp(OffsetDateTime.now().toString());
 
-        when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
+        when(infoCamereClient.getLegalAddress(any(), any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
         when(infoCamereConverter.checkIfResponseIsInfoCamereError((AddressRegistroImprese)any())).thenReturn(true);
         when(infoCamereConverter.mapToResponseOkByRequest((GetAddressRegistroImpreseRequestBodyDto) any())).thenReturn(response);
 
-        StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
+        StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request, logEvent))
                 .expectNext(response)
                 .verifyComplete();
     }
@@ -145,10 +162,10 @@ class InfoCamereServiceTest {
         infoCamereLegalOKDto.setVerificationResult(true);
 
 
-        when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
+        when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter(), logEvent)).thenReturn(Mono.just(response));
         when(infoCamereConverter.infoCamereResponseToDtoByResponse(response)).thenReturn(infoCamereLegalOKDto);
 
-        StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
+        StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body, logEvent))
                 .expectNext(infoCamereLegalOKDto)
                 .verifyComplete();
     }
@@ -173,11 +190,11 @@ class InfoCamereServiceTest {
         infoCamereLegalOKDto.setVerificationResult(false);
 
 
-        when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter())).thenReturn(Mono.just(response));
+        when(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(body.getFilter(), logEvent)).thenReturn(Mono.just(response));
         when(infoCamereConverter.checkIfResponseIsInfoCamereError((InfoCamereVerification) any())).thenReturn(true);
         when(infoCamereConverter.infoCamereResponseToDtoByRequest(body)).thenReturn(infoCamereLegalOKDto);
 
-        StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
+        StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body, logEvent))
                 .expectNext(infoCamereLegalOKDto)
                 .verifyComplete();
     }
@@ -196,10 +213,10 @@ class InfoCamereServiceTest {
         infoCamereLegalInstituionsResponse.setCfPersona("cf");
 
 
-        when(infoCamereClient.getLegalInstitutions(any())).thenReturn(Mono.just(infoCamereLegalInstituionsResponse));
+        when(infoCamereClient.getLegalInstitutions(any(), any())).thenReturn(Mono.just(infoCamereLegalInstituionsResponse));
         when(infoCamereConverter.mapToResponseOkByResponse((InfoCamereLegalInstituionsResponse) any())).thenReturn(response);
 
-        StepVerifier.create(infoCamereService.getLegalInstitutions(request))
+        StepVerifier.create(infoCamereService.getLegalInstitutions(request, logEvent))
                 .expectNext(response)
                 .verifyComplete();
     }

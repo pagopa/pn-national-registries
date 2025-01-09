@@ -1,5 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.converter.AnprConverter;
 import it.pagopa.pn.national.registries.entity.CounterModel;
@@ -14,6 +16,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddre
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -23,7 +26,9 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,6 +53,18 @@ class AnprServiceTest {
 
     @Mock
     ValidateTaxIdUtils validateTaxIdUtils;
+
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
+
+    @BeforeEach
+    public void setup() {
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
+    }
 
     @Test
     void testGetAddressANPR2() {
@@ -79,10 +96,10 @@ class AnprServiceTest {
         CounterModel counterModel = new CounterModel();
         counterModel.setCounter(1L);
         when(counterRepository.getCounter("anpr")).thenReturn(Mono.just(counterModel));
-        when(anprClient.callEService(any())).thenReturn(Mono.just(response));
+        when(anprClient.callEService(any(), any())).thenReturn(Mono.just(response));
         when(anprConverter.convertToGetAddressANPROK(any(), anyString())).thenReturn(getAddressANPROKDto);
 
-        StepVerifier.create(anprService.getAddressANPR(request)).expectNext(getAddressANPROKDto).expectComplete().verify();
+        StepVerifier.create(anprService.getAddressANPR(request, logEvent)).expectNext(getAddressANPROKDto).expectComplete().verify();
     }
 
 
@@ -92,7 +109,7 @@ class AnprServiceTest {
         GetAddressANPRRequestBodyFilterDto cf = new GetAddressANPRRequestBodyFilterDto();
         cf.setTaxId("DDDFFF80A01H501F");
         request.setFilter(cf);
-        assertThrows(PnNationalRegistriesException.class, () -> anprService.getAddressANPR(request));
+        assertThrows(PnNationalRegistriesException.class, () -> anprService.getAddressANPR(request, logEvent));
     }
 
 }

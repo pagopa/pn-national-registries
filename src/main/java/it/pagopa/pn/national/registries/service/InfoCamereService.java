@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -55,19 +56,19 @@ public class InfoCamereService {
                 .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
     }
 
-    public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseLegalAddress(GetAddressRegistroImpreseRequestBodyDto request) {
+    public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseLegalAddress(GetAddressRegistroImpreseRequestBodyDto request, PnAuditLogEvent logEvent) {
         String cf = request.getFilter().getTaxId();
         validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS, false);
-        return infoCamereClient.getLegalAddress(cf)
+        return infoCamereClient.getLegalAddress(cf, logEvent)
                 .doOnError(throwable -> log.info("Failed to get Legal Address"))
                 .flatMap(response -> processResponseLegalAddressOk(request, response));
     }
 
-    public Mono<InfoCamereLegalInstitutionsOKDto> getLegalInstitutions(InfoCamereLegalInstitutionsRequestBodyDto infoCamereLegalInstitutionsRequestBodyDto) {
+    public Mono<InfoCamereLegalInstitutionsOKDto> getLegalInstitutions(InfoCamereLegalInstitutionsRequestBodyDto infoCamereLegalInstitutionsRequestBodyDto, PnAuditLogEvent logEvent) {
         log.logChecking(PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS);
         validateTaxIdUtils.validateTaxId(infoCamereLegalInstitutionsRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_INFO_CAMERE_LEGAL_INSTITUTIONS, false);
 
-        return infoCamereClient.getLegalInstitutions(infoCamereLegalInstitutionsRequestBodyDto.getFilter())
+        return infoCamereClient.getLegalInstitutions(infoCamereLegalInstitutionsRequestBodyDto.getFilter(), logEvent)
                 .doOnNext(infoCamereLegalInstitutions -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS,true))
                 .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS,false,throwable.getMessage()))
                 .map(infoCamereConverter::mapToResponseOkByResponse);
@@ -108,12 +109,12 @@ public class InfoCamereService {
         return batchRequest;
     }
 
-    public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
+    public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request, PnAuditLogEvent logEvent) {
         log.logChecking(PROCESS_CHEKING_INFO_CAMERE_LEGAL);
 
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INFO_CAMERE_LEGAL, false);
 
-        return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
+        return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter(), logEvent)
                 .doOnNext(infoCamereVerification -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL,true))
                 .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL,false,throwable.getMessage()))
                 .flatMap(response -> processResponseCheckTaxIdAndVatNumberOk(request, response));

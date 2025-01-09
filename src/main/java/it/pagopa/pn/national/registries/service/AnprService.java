@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import com.amazonaws.util.StringUtils;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.converter.AnprConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -40,7 +41,7 @@ public class AnprService {
         this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
-    public Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto request) {
+    public Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto request, PnAuditLogEvent logEvent) {
         String cf = request.getFilter().getTaxId();
         validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_ANPR_ADDRESS, false);
 
@@ -51,7 +52,7 @@ public class AnprService {
         }
 
         return createRequest(request)
-                .flatMap(anprClient::callEService)
+                .flatMap(req -> anprClient.callEService(req, logEvent))
                 .map(rispostaE002OK -> anprConverter.convertToGetAddressANPROK(rispostaE002OK, cf));
     }
 

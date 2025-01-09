@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereTokenClient;
 import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.ClientCredentialsResponse;
@@ -31,12 +32,12 @@ public class TokenProvider {
         this.infoCamereTokenClient = infoCamereTokenClient;
     }
 
-    public Mono<ClientCredentialsResponse> getTokenPdnd(PdndSecretValue pdndSecretValue) {
+    public Mono<ClientCredentialsResponse> getTokenPdnd(PdndSecretValue pdndSecretValue, PnAuditLogEvent logEvent) {
         String clientAssertion = assertionGenerator.generateClientAssertion(pdndSecretValue);
-        return pdndClient.createToken(clientAssertion, clientAssertionType, grantType, pdndSecretValue.getClientId());
+        return pdndClient.createToken(clientAssertion, clientAssertionType, grantType, pdndSecretValue.getClientId(), logEvent);
     }
 
-    public Mono<String> getTokenInfoCamere(String scope) {
-        return infoCamereTokenClient.getToken(scope);
+    public Mono<String> getTokenInfoCamere(String scope, PnAuditLogEvent logEvent) {
+        return infoCamereTokenClient.getToken(scope, logEvent);
     }
 }

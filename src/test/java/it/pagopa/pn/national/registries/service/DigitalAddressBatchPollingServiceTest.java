@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -21,6 +23,7 @@ import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import java.time.OffsetDateTime;
 import java.util.*;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,6 +69,18 @@ class DigitalAddressBatchPollingServiceTest {
     @MockBean
     private IniPecBatchRequestService iniPecBatchRequestService;
 
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
+
+    @BeforeEach
+    public void setup() {
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
+    }
+
     @Test
     void testBatchPecPollingIncrementAndCheckRetryError() {
         BatchPolling batchPolling1 = new BatchPolling();
@@ -88,7 +103,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         PnNationalRegistriesException pnNationalRegistriesException = mock(PnNationalRegistriesException.class);
 
-        when(infoCamereClient.callEServiceRequestPec("pollingId1")).thenReturn(Mono.error(pnNationalRegistriesException));
+        when(infoCamereClient.callEServiceRequestPec("pollingId1", logEvent)).thenReturn(Mono.error(pnNationalRegistriesException));
 
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest1)));
@@ -107,7 +122,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.update(same(batchRequest1)))
                 .thenReturn(Mono.just(batchRequest1));
 
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
     }
 
     @Test
@@ -141,7 +156,7 @@ class DigitalAddressBatchPollingServiceTest {
         iniPecPollingResponse1.setElencoPec(Collections.emptyList());
         iniPecPollingResponse1.setDescription("List PEC in progress");
 
-        when(infoCamereClient.callEServiceRequestPec("pollingId1")).thenReturn(Mono.just(iniPecPollingResponse1));
+        when(infoCamereClient.callEServiceRequestPec("pollingId1", logEvent)).thenReturn(Mono.just(iniPecPollingResponse1));
         when(infoCamereConverter.checkIfResponseIsInfoCamereError((IniPecPollingResponse) any())).thenReturn(true);
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest1, batchRequest2)));
@@ -153,7 +168,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchPollingRepository.update(any()))
                 .thenReturn(Mono.just(batchPolling1));
 
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
     }
     @Test
     void testBatchPecPolling() {
@@ -210,11 +225,11 @@ class DigitalAddressBatchPollingServiceTest {
         iniPecPollingResponse3.setIdentificativoRichiesta("correlationId3");
         iniPecPollingResponse3.setElencoPec(Collections.emptyList());
 
-        when(infoCamereClient.callEServiceRequestPec("pollingId1"))
+        when(infoCamereClient.callEServiceRequestPec("pollingId1", logEvent))
                 .thenReturn(Mono.just(iniPecPollingResponse1));
-        when(infoCamereClient.callEServiceRequestPec("pollingId2"))
+        when(infoCamereClient.callEServiceRequestPec("pollingId2", logEvent))
                 .thenReturn(Mono.just(iniPecPollingResponse2));
-        when(infoCamereClient.callEServiceRequestPec("pollingId3"))
+        when(infoCamereClient.callEServiceRequestPec("pollingId3", logEvent))
                 .thenReturn(Mono.just(iniPecPollingResponse3));
 
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
@@ -240,7 +255,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.update(same(batchRequest3)))
                 .thenReturn(Mono.just(batchRequest3));
 
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
     }
 
     @Test
@@ -275,7 +290,7 @@ class DigitalAddressBatchPollingServiceTest {
         iniPecPollingResponse.setElencoPec(Collections.emptyList());
 
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
-        when(infoCamereClient.callEServiceRequestPec(any()))
+        when(infoCamereClient.callEServiceRequestPec(any(), any()))
                 .thenReturn(Mono.error(exception))
                 .thenReturn(Mono.just(iniPecPollingResponse));
 
@@ -304,7 +319,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.update(same(batchRequest)))
                 .thenReturn(Mono.just(batchRequest));
 
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
 
     }
 
@@ -338,7 +353,7 @@ class DigitalAddressBatchPollingServiceTest {
         iniPecPollingResponse.setTimestamp(OffsetDateTime.now().toString());
         iniPecPollingResponse.setAppName("wspa-pedf");
 
-        when(infoCamereClient.callEServiceRequestPec(any()))
+        when(infoCamereClient.callEServiceRequestPec(any(), any()))
                 .thenReturn(Mono.just(iniPecPollingResponse));
 
         when(infoCamereConverter.checkIfResponseIsInfoCamereError((IniPecPollingResponse) any())).thenReturn(true);
@@ -360,7 +375,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.update(same(batchRequest)))
                 .thenReturn(Mono.just(batchRequest));
 
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
 
     }
 
@@ -369,14 +384,14 @@ class DigitalAddressBatchPollingServiceTest {
     void testBatchPecPollingDynamoFailure() {
         when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
                 .thenReturn(Mono.empty());
-        assertThrows(DigitalAddressException.class, () -> digitalAddressBatchPollingService.batchPecPolling());
+        assertThrows(DigitalAddressException.class, () -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
     }
 
     @Test
     void testBatchPecPollingEmpty() {
         when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
                 .thenReturn(Mono.just(Page.create(Collections.emptyList())));
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
         verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);
     }
@@ -389,7 +404,7 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(Page.create(List.of(batchPolling))));
         when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPolling)))
                 .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
         verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);
     }
@@ -418,7 +433,7 @@ class DigitalAddressBatchPollingServiceTest {
         iniPecPollingResponse.setIdentificativoRichiesta("correlationId");
         iniPecPollingResponse.setElencoPec(Collections.emptyList());
 
-        when(infoCamereClient.callEServiceRequestPec("pollingId"))
+        when(infoCamereClient.callEServiceRequestPec("pollingId", logEvent))
                 .thenReturn(Mono.just(iniPecPollingResponse));
 
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
@@ -436,7 +451,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.update(same(batchRequest)))
                 .thenReturn(Mono.just(batchRequest));
 
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
 
     }
 
@@ -454,10 +469,10 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(batchPolling));
 
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
-        when(infoCamereClient.callEServiceRequestPec("pollingId"))
+        when(infoCamereClient.callEServiceRequestPec("pollingId", logEvent))
                 .thenReturn(Mono.error(exception));
 
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
 
         verifyNoInteractions(batchRequestRepository);
         verifyNoInteractions(iniPecBatchSqsService);
@@ -488,7 +503,7 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(batchRequest2));
 
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
-        when(infoCamereClient.callEServiceRequestPec("pollingId"))
+        when(infoCamereClient.callEServiceRequestPec("pollingId", logEvent))
                 .thenReturn(Mono.error(exception));
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
@@ -497,9 +512,9 @@ class DigitalAddressBatchPollingServiceTest {
         when(iniPecBatchSqsService.batchSendToSqs(anyList()))
                 .thenReturn(Mono.empty().then());
 
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling(logEvent));
 
     }
 
@@ -517,7 +532,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         testBatchPecPolling();
 
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.recoveryBatchPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.recoveryBatchPolling(logEvent));
 
         assertEquals(BatchStatus.NOT_WORKED.getValue(), batchPollingToRecover2.getStatus());
         assertNull(batchPollingToRecover2.getReservationId());
@@ -527,7 +542,7 @@ class DigitalAddressBatchPollingServiceTest {
     void testRecoveryBatchPollingEmpty() {
         when(batchPollingRepository.getBatchPollingToRecover())
                 .thenReturn(Mono.just(Collections.emptyList()));
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.recoveryBatchPolling());
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.recoveryBatchPolling(logEvent));
         verify(batchPollingRepository, never()).setNewReservationIdToBatchPolling(any());
         verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);

@@ -1,9 +1,12 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -12,6 +15,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
@@ -24,10 +30,22 @@ class IpaControllerTest {
     @Mock
     private IpaService ipaService;
 
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
+
+    @BeforeEach
+    public void setup() {
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
+    }
+
     @Test
     void testIpaPec4() {
         IPAPecDto ipaPecDto = new IPAPecDto();
-        when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaPecDto));
+        when(ipaService.getIpaPec(any(), any())).thenReturn(Mono.just(ipaPecDto));
 
         CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
         checkTaxIdRequestBodyFilterDto.taxId("42");

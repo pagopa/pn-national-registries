@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.client.ipa;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.api.IpaApi;
@@ -23,19 +24,21 @@ public class IpaClient {
 
     private final IpaApi ipaApi;
 
-    public Mono<WS23ResponseDto> callEServiceWS23(String taxId, String authId) {
+    public Mono<WS23ResponseDto> callEServiceWS23(String taxId, String authId, PnAuditLogEvent logEvent) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.IPA, PROCESS_SERVICE_WS23_PEC);
         return ipaApi.callEServiceWS23(taxId, authId)
                 .doOnError(throwable -> {
+                    logEvent.generateFailure("Error calling IPA service").log();
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.IPA, throwable.getMessage());
                     checkIPAException(throwable);
                 });
     }
 
-    public Mono<WS05ResponseDto> callEServiceWS05(String codAmm, String authId) {
+    public Mono<WS05ResponseDto> callEServiceWS05(String codAmm, String authId, PnAuditLogEvent logEvent) {
         log.logInvokingExternalService(PnLogger.EXTERNAL_SERVICES.IPA, PROCESS_SERVICE_WS05_PEC);
         return ipaApi.callEServiceWS05(codAmm, authId)
                 .doOnError(throwable -> {
+                    logEvent.generateFailure("Error calling IPA service").log();
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.IPA, throwable.getMessage());
                     checkIPAException(throwable);
                 });

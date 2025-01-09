@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.client.infocamere;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.AuthenticationApi;
@@ -37,12 +38,13 @@ public class InfoCamereTokenClient {
         this.authenticationApi = authenticationApi;
     }
 
-    public Mono<String> getToken(String scope) {
+    public Mono<String> getToken(String scope, PnAuditLogEvent logEvent) {
         String jws = infoCamereJwsGenerator.createAuthRest(scope);
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_GET_TOKEN);
 
         return authenticationApi.getToken(jws, clientId)
                 .doOnError(throwable -> {
+                    logEvent.generateFailure("Error calling Info Camere service").log();
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage());
                     if (isUnauthorized(throwable)) {
                         throw new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, throwable);

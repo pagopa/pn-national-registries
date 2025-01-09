@@ -37,7 +37,7 @@ public class IpaController implements IpaApi {
      */
     @Override
     public Mono<ResponseEntity<IPAPecDto>> ipaPec(Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
-        return ipARequestBodyDto.flatMap(ipaService::getIpaPec)
+        return ipARequestBodyDto.flatMap(requestBody -> ipaService.getIpaPec(requestBody, null))
             .map(t -> ResponseEntity.ok().body(t))
             .publishOn(scheduler);
     }

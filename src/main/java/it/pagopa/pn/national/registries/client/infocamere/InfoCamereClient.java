@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.client.infocamere;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
@@ -64,102 +65,103 @@ public class InfoCamereClient {
         this.sedeApi = sedeApi;
     }
 
-    public Mono<IniPecBatchResponse> callEServiceRequestId(IniPecBatchRequest request) {
+    public Mono<IniPecBatchResponse> callEServiceRequestId(IniPecBatchRequest request, PnAuditLogEvent logEvent) {
         String requestJson = convertToJson(request);
-        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value())
-                .flatMap(token -> callRichiestaElencoPec(requestJson, token.getTokenValue()))
+        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value(), logEvent)
+                .flatMap(token -> callRichiestaElencoPec(requestJson, token.getTokenValue(), logEvent))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
-    private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token) {
+    private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token, PnAuditLogEvent logEvent) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, "Retrieving correlationId [INFOCAMERE]");
 
         var apiClient = pecApi.getApiClient();
         apiClient.setBearerToken(token);
         return pecApi.callRichiestaElencoPec(InipecScopeEnum.PEC.value(), body, clientId)
-                .doOnError(handleErrorCall());
+                .doOnError(handleErrorCall(logEvent));
     }
 
-    public Mono<IniPecPollingResponse> callEServiceRequestPec(String correlationId) {
-        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value())
-                .flatMap(token -> callGetElencoPec(correlationId, token.getTokenValue()))
+    public Mono<IniPecPollingResponse> callEServiceRequestPec(String correlationId, PnAuditLogEvent logEvent) {
+        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value(), logEvent)
+                .flatMap(token -> callGetElencoPec(correlationId, token.getTokenValue(), logEvent))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
-    private Mono<IniPecPollingResponse> callGetElencoPec(String correlationId, String token) {
+    private Mono<IniPecPollingResponse> callGetElencoPec(String correlationId, String token, PnAuditLogEvent logEvent) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, "Getting elencoPec InfoCamere for correlationId");
 
         ApiClient apiClient = pecApi.getApiClient();
         apiClient.setBearerToken(token);
         return pecApi.callGetElencoPec(correlationId, InipecScopeEnum.PEC.value(), clientId)
-                .doOnError(handleErrorCall());
+                .doOnError(handleErrorCall(logEvent));
     }
 
-    public Mono<AddressRegistroImprese> getLegalAddress(String taxId) {
-        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.SEDE.value())
-                .flatMap(token -> callGetLegalAddress(taxId, token.getTokenValue()))
+    public Mono<AddressRegistroImprese> getLegalAddress(String taxId, PnAuditLogEvent logEvent) {
+        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.SEDE.value(), logEvent)
+                .flatMap(token -> callGetLegalAddress(taxId, token.getTokenValue(), logEvent))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED))
                 );
     }
 
-    private Mono<AddressRegistroImprese> callGetLegalAddress(String taxId, String token) {
+    private Mono<AddressRegistroImprese> callGetLegalAddress(String taxId, String token, PnAuditLogEvent logEvent) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_REGISTRO_IMPRESE_ADDRESS);
 
         ApiClient apiClient = sedeApi.getApiClient();
         apiClient.setBearerToken(token);
         return sedeApi.getAddressByTaxId(taxId, InipecScopeEnum.SEDE.value(), clientId)
-                .doOnError(handleErrorCall());
+                .doOnError(handleErrorCall(logEvent));
     }
 
-    public Mono<InfoCamereLegalInstituionsResponse> getLegalInstitutions(CheckTaxIdRequestBodyFilterDto filter) {
-        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value())
-                .flatMap(token -> callGetLegalInstitutions(filter.getTaxId(), token.getTokenValue()))
+    public Mono<InfoCamereLegalInstituionsResponse> getLegalInstitutions(CheckTaxIdRequestBodyFilterDto filter, PnAuditLogEvent logEvent) {
+        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), logEvent)
+                .flatMap(token -> callGetLegalInstitutions(filter.getTaxId(), token.getTokenValue(), logEvent))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
-    public Mono<InfoCamereLegalInstituionsResponse> callGetLegalInstitutions(String taxId, String token) {
+    public Mono<InfoCamereLegalInstituionsResponse> callGetLegalInstitutions(String taxId, String token, PnAuditLogEvent logEvent) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS);
 
         ApiClient apiClient = legalRepresentativeApi.getApiClient();
         apiClient.setBearerToken(token);
         return legalRepresentativeApi.getLegalRepresentativeListByTaxId(taxId, InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
-                .doOnError(handleErrorCall());
+                .doOnError(handleErrorCall(logEvent));
     }
 
-    public Mono<InfoCamereVerification> checkTaxIdAndVatNumberInfoCamere(InfoCamereLegalRequestBodyFilterDto filterDto) {
-        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value())
-                .flatMap(token -> callCheckTaxId(filterDto, token.getTokenValue()))
+    public Mono<InfoCamereVerification> checkTaxIdAndVatNumberInfoCamere(InfoCamereLegalRequestBodyFilterDto filterDto, PnAuditLogEvent logEvent) {
+        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), logEvent)
+                .flatMap(token -> callCheckTaxId(filterDto, token.getTokenValue(), logEvent))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
-    private Mono<InfoCamereVerification> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
+    private Mono<InfoCamereVerification> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token, PnAuditLogEvent logEvent) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL);
 
         legalRepresentationApi.getApiClient().setBearerToken(token);
         return legalRepresentationApi.checkTaxIdForLegalRepresentation(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
-                .doOnError(handleErrorCall());
+                .doOnError(handleErrorCall(logEvent));
     }
 
     protected boolean shouldRetry(Throwable throwable) {
         return isUnauthorized(throwable);
     }
 
-    private @NotNull Consumer<Throwable> handleErrorCall() {
+    private @NotNull Consumer<Throwable> handleErrorCall(PnAuditLogEvent logEvent) {
         return throwable -> {
+            logEvent.generateFailure("Can not retrieve physical address from Info Camere").log();
             String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
                     .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
                     .orElse("Unknown error");

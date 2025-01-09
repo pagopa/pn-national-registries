@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.client.pdnd;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.api.AuthApi;
@@ -26,10 +27,11 @@ public class PdndClient {
         this.authApi = authApi;
     }
 
-    public Mono<ClientCredentialsResponse> createToken(String clientAssertion, String clientAssertionType, String grantType, String clientId) {
+    public Mono<ClientCredentialsResponse> createToken(String clientAssertion, String clientAssertionType, String grantType, String clientId, PnAuditLogEvent logEvent) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.PDND, PROCESS_SERVICE_PDND_TOKEN);
         return authApi.createToken(clientAssertion, clientAssertionType, grantType, clientId)
                 .doOnError(throwable -> {
+                    logEvent.generateFailure("Error calling Pdnd service").log();
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.PDND, throwable.getMessage());
                     if (isUnauthorized(throwable)) {
                         throw new PnInternalException(ERROR_MESSSAGE_PDND_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, throwable);

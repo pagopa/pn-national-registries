@@ -1,8 +1,11 @@
 package it.pagopa.pn.national.registries.client.pdnd;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.api.AuthApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.ClientCredentialsResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.boot.test.mock.mockito.MockBean;
@@ -15,16 +18,29 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.nio.charset.Charset;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {PdndClient.class})
 @ExtendWith(SpringExtension.class)
 class PdndClientTest {
     @MockBean
     AuthApi authApi;
+
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
+
+    @BeforeEach
+    public void setup() {
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
+    }
 
     @Test
     void testCallCreateToken() {
@@ -37,7 +53,7 @@ class PdndClientTest {
 
         when(authApi.createToken(any(), any(), any(), any())).thenReturn(Mono.just(clientCredentialsResponse));
 
-        StepVerifier.create(pdndClient.createToken("", "", "", ""))
+        StepVerifier.create(pdndClient.createToken("", "", "", "", logEvent))
                 .expectNext(clientCredentialsResponse)
                 .verifyComplete();
     }
@@ -51,7 +67,7 @@ class PdndClientTest {
         String test = "test";
         WebClientResponseException webClientResponseException = new WebClientResponseException(test, HttpStatus.NOT_FOUND.value(), test, headers, testByteArray, Charset.defaultCharset());
         when(authApi.createToken(any(), any(), any(), any())).thenReturn(Mono.error(webClientResponseException));
-        StepVerifier.create(pdndClient.createToken("test", "test", "test", "test"))
+        StepVerifier.create(pdndClient.createToken("test", "test", "test", "test", logEvent))
                 .verifyError(WebClientResponseException.class);
     }
 

@@ -1,5 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
@@ -9,6 +11,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.U
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,10 +24,7 @@ import reactor.test.StepVerifier;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static org.mockito.ArgumentMatchers.any;
@@ -48,6 +48,18 @@ class InadServiceTest {
     private static final String DIGITAL_ADDRESS_1 = "da_1";
     private static final String DIGITAL_ADDRESS_2 = "da_2";
     private static final String DIGITAL_ADDRESS_3 = "da_3";
+
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
+
+    @BeforeEach
+    public void setup() {
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
+    }
 
     @Test
     void callEServiceOldWorkflow() {
@@ -83,7 +95,7 @@ class InadServiceTest {
         List<ElementDigitalAddress> lista = List.of(elementDigitalAddressDto1, elementDigitalAddressDto2, elementDigitalAddressDto3);
         responseRequestDigitalAddressDto.setDigitalAddress(lista);
 
-        when(inadClient.callEService(TAX_ID, practicalReference))
+        when(inadClient.callEService(TAX_ID, practicalReference, logEvent))
                 .thenReturn(Mono.just(responseRequestDigitalAddressDto));
 
         GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
@@ -93,7 +105,7 @@ class InadServiceTest {
         req.setFilter(filterDto);
 
 
-        StepVerifier.create(inadService.callEService(req, PF, Instant.now()))
+        StepVerifier.create(inadService.callEService(req, PF, Instant.now(), logEvent))
                 .expectNextMatches(getDigitalAddressINADOKDto -> Objects.isNull(getDigitalAddressINADOKDto.getDigitalAddress().getPracticedProfession()))
                 .verifyComplete();
     }
@@ -131,7 +143,7 @@ class InadServiceTest {
         List<ElementDigitalAddress> lista = List.of(elementDigitalAddressDto1, elementDigitalAddressDto2, elementDigitalAddressDto3);
         responseRequestDigitalAddressDto.setDigitalAddress(lista);
 
-        when(inadClient.callEService(TAX_ID, practicalReference))
+        when(inadClient.callEService(TAX_ID, practicalReference, logEvent))
                 .thenReturn(Mono.just(responseRequestDigitalAddressDto));
 
         GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
@@ -151,7 +163,7 @@ class InadServiceTest {
                                 .motivation(UsageInfoDto.MotivationEnum.UFFICIO)));
 
 
-        StepVerifier.create(inadService.callEService(req, PF, null))
+        StepVerifier.create(inadService.callEService(req, PF, null, logEvent))
                 .expectNext(response)
                 .verifyComplete();
     }
@@ -192,7 +204,7 @@ class InadServiceTest {
         List<ElementDigitalAddress> lista = List.of(elementDigitalAddressDto1, elementDigitalAddressDto2, elementDigitalAddressDto3);
         responseRequestDigitalAddressDto.setDigitalAddress(lista);
 
-        when(inadClient.callEService(TAX_ID, practicalReference))
+        when(inadClient.callEService(TAX_ID, practicalReference, logEvent))
                 .thenReturn(Mono.just(responseRequestDigitalAddressDto));
 
         GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
@@ -202,7 +214,7 @@ class InadServiceTest {
         req.setFilter(filterDto);
 
 
-        StepVerifier.create(inadService.callEService(req, PF, Instant.now()))
+        StepVerifier.create(inadService.callEService(req, PF, Instant.now(), logEvent))
                 .expectNextMatches(getDigitalAddressINADOKDto -> getDigitalAddressINADOKDto.getDigitalAddress().getPracticedProfession()
                         .equals("practicedProfession")
                         && getDigitalAddressINADOKDto.getDigitalAddress().getDigitalAddress().equals(DIGITAL_ADDRESS_3))
@@ -230,7 +242,7 @@ class InadServiceTest {
         List<ElementDigitalAddress> lista = List.of(elementDigitalAddressDto3);
         responseRequestDigitalAddressDto.setDigitalAddress(lista);
 
-        when(inadClient.callEService(TAX_ID, practicalReference))
+        when(inadClient.callEService(TAX_ID, practicalReference, logEvent))
                 .thenReturn(Mono.just(responseRequestDigitalAddressDto));
 
         GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
@@ -239,7 +251,7 @@ class InadServiceTest {
         filterDto.setPracticalReference(practicalReference);
         req.setFilter(filterDto);
 
-        StepVerifier.create(inadService.callEService(req, PF, Instant.now()))
+        StepVerifier.create(inadService.callEService(req, PF, Instant.now(), logEvent))
                 .expectNextMatches(getDigitalAddressINADOKDto -> Objects.isNull(getDigitalAddressINADOKDto.getDigitalAddress().getPracticedProfession())
                         && getDigitalAddressINADOKDto.getDigitalAddress().getDigitalAddress().equals(DIGITAL_ADDRESS_3))
                 .verifyComplete();
@@ -258,7 +270,7 @@ class InadServiceTest {
         List<ElementDigitalAddress> lista = Collections.emptyList();
         responseRequestDigitalAddressDto.setDigitalAddress(lista);
 
-        when(inadClient.callEService(TAX_ID, practicalReference))
+        when(inadClient.callEService(TAX_ID, practicalReference, logEvent))
                 .thenReturn(Mono.just(responseRequestDigitalAddressDto));
 
         GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
@@ -267,7 +279,7 @@ class InadServiceTest {
         filterDto.setPracticalReference(practicalReference);
         req.setFilter(filterDto);
 
-        StepVerifier.create(inadService.callEService(req, PF, Instant.now()))
+        StepVerifier.create(inadService.callEService(req, PF, Instant.now(), logEvent))
                 .expectErrorMatches(throwable -> throwable instanceof PnNationalRegistriesException
                         && ((PnNationalRegistriesException) throwable).getStatusCode() == HttpStatus.NOT_FOUND)
                 .verify();

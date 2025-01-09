@@ -59,7 +59,7 @@ public class InfoCamereController implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
-        return getAddressRegistroImpreseRequestBodyDto.flatMap(infoCamereService::getRegistroImpreseLegalAddress)
+        return getAddressRegistroImpreseRequestBodyDto.flatMap(requestBody -> infoCamereService.getRegistroImpreseLegalAddress(requestBody, null))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }
@@ -80,7 +80,7 @@ public class InfoCamereController implements InfoCamereApi {
 
     @Override
     public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(Mono<InfoCamereLegalRequestBodyDto> infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
-        return infoCamereLegalRequestBodyDto.flatMap(infoCamereService::checkTaxIdAndVatNumber)
+        return infoCamereLegalRequestBodyDto.flatMap(requestBody -> infoCamereService.checkTaxIdAndVatNumber(requestBody, null))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }
@@ -100,7 +100,7 @@ public class InfoCamereController implements InfoCamereApi {
     @Override
     public Mono<ResponseEntity<InfoCamereLegalInstitutionsOKDto>> infoCamereLegalInstitutions(Mono<InfoCamereLegalInstitutionsRequestBodyDto> infoCamereLegalInstitutionsRequestBodyDto, final ServerWebExchange exchange) {
         return infoCamereLegalInstitutionsRequestBodyDto
-                .flatMap(infoCamereService::getLegalInstitutions)
+                .flatMap(requestBody -> infoCamereService.getLegalInstitutions(requestBody, null))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

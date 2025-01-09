@@ -41,7 +41,7 @@ public class InadController implements DigitalAddressInadApi {
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
         RecipientType recipientTypeEnum = RecipientType.fromString(recipientType);
-        return extractDigitalAddressINADRequestBodyDto.flatMap(request -> inadService.callEService(request, recipientTypeEnum, null))
+        return extractDigitalAddressINADRequestBodyDto.flatMap(request -> inadService.callEService(request, recipientTypeEnum, null, null))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

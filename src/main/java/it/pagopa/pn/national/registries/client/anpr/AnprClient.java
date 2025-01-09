@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
@@ -63,20 +64,20 @@ public class AnprClient {
         e002ServiceApi.getApiClient().addDefaultHeader("Content-Encoding", "UTF-8");
     }
 
-    public Mono<RispostaE002OK> callEService(RichiestaE002 requestDto) {
+    public Mono<RispostaE002OK> callEService(RichiestaE002 requestDto, PnAuditLogEvent logEvent) {
         String agidTrackingEvidence = agidJwtTrackingEvidence.createAgidJwt();
         String auditAudience = createDigestFromAuditJws(agidTrackingEvidence);
         PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPdndSecretName());
         pdndSecretValue.setAuditDigest(auditAudience);
-        return accessTokenExpiringMap.getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, true)
-                .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry, agidTrackingEvidence))
+        return accessTokenExpiringMap.getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, true, logEvent)
+                .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry, agidTrackingEvidence, logEvent))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_ANPR_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
-    private Mono<RispostaE002OK> callAnpr(RichiestaE002 request, AccessTokenCacheEntry tokenEntry, String agidTrackingEvidence) {
+    private Mono<RispostaE002OK> callAnpr(RichiestaE002 request, AccessTokenCacheEntry tokenEntry, String agidTrackingEvidence, PnAuditLogEvent logEvent) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.ANPR, PROCESS_SERVICE_ANPR_ADDRESS);
         String s = convertToJson(request);
         String digest = createDigestFromPayload(s);
@@ -86,6 +87,7 @@ public class AnprClient {
         var bearerAuth = tokenEntry.getTokenValue();
         return e002ServiceApi.e002(request, bearerToken, agidJWTSignature, agidTrackingEvidence, bearerAuth, digest)
                 .doOnError(throwable -> {
+                    logEvent.generateFailure("Error calling ANPR service").log();
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, throwable.getMessage());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info("GovWay-Transaction-ID: {}", e.getHeaders().getFirst("GovWay-Transaction-ID"));

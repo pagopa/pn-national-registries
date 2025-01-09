@@ -3,6 +3,8 @@ package it.pagopa.pn.national.registries.client.infocamere;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -29,7 +31,9 @@ import reactor.test.StepVerifier;
 import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -54,9 +58,16 @@ class InfoCamereClientTest {
     ObjectMapper mapper;
 
     final String clientId = "tezt_clientId";
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
 
     @BeforeEach
     public void setup() {
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
         ApiClient apiClient = mock(ApiClient.class);
         legalRepresentationApi = mock(LegalRepresentationApi.class);
         legalRepresentativeApi = mock(LegalRepresentativeApi.class);
@@ -98,13 +109,13 @@ class InfoCamereClientTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(legalRepresentativeApi.getLegalRepresentativeListByTaxId(any(), any(), any()))
                 .thenReturn(Mono.just(infoCamereLegalInstituionsResponse));
 
 
-        StepVerifier.create(infoCamereClient.getLegalInstitutions(checkTaxIdRequestBodyFilterDto))
+        StepVerifier.create(infoCamereClient.getLegalInstitutions(checkTaxIdRequestBodyFilterDto, logEvent))
                 .expectNext(infoCamereLegalInstituionsResponse)
                 .verifyComplete();
     }
@@ -141,10 +152,10 @@ class InfoCamereClientTest {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(pecApi.callRichiestaElencoPec(any(), any(), any())).thenReturn(Mono.just(iniPecBatchResponse));
 
-        StepVerifier.create(infoCamereClient.callEServiceRequestId(request)).expectNext(iniPecBatchResponse).verifyComplete();
+        StepVerifier.create(infoCamereClient.callEServiceRequestId(request, logEvent)).expectNext(iniPecBatchResponse).verifyComplete();
     }
 
     @Test
@@ -154,7 +165,7 @@ class InfoCamereClientTest {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
         IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
         iniPecCf.setCf("taxId");
         IniPecBatchRequest request = new IniPecBatchRequest();
@@ -172,7 +183,7 @@ class InfoCamereClientTest {
         when(pecApi.callRichiestaElencoPec(any(), any(), any()))
                 .thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereClient.callEServiceRequestId(request))
+        StepVerifier.create(infoCamereClient.callEServiceRequestId(request, logEvent))
                 .expectError(PnNationalRegistriesException.class)
                 .verify();
     }
@@ -184,13 +195,13 @@ class InfoCamereClientTest {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
         String request = "correlationId";
         IniPecPollingResponse response = new IniPecPollingResponse();
         response.setIdentificativoRichiesta("correlationId");
 
         when(pecApi.callGetElencoPec(any(), any(), any())).thenReturn(Mono.just(response ));
-        StepVerifier.create(infoCamereClient.callEServiceRequestPec(request)).expectNext(response).verifyComplete();
+        StepVerifier.create(infoCamereClient.callEServiceRequestPec(request, logEvent)).expectNext(response).verifyComplete();
     }
 
     @Test
@@ -200,13 +211,13 @@ class InfoCamereClientTest {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
         String request = "correlationId";
 
         WebClientResponseException ex = buildException();
         when(pecApi.callGetElencoPec(any(), any(), any())).thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereClient.callEServiceRequestPec(request))
+        StepVerifier.create(infoCamereClient.callEServiceRequestPec(request, logEvent))
                 .expectError(PnNationalRegistriesException.class)
                 .verify();
     }
@@ -224,10 +235,10 @@ class InfoCamereClientTest {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials(jws);
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(sedeApi.getAddressByTaxId(anyString(), any(), any())).thenReturn(Mono.just(response));
 
-        StepVerifier.create(infoCamereClient.getLegalAddress(request))
+        StepVerifier.create(infoCamereClient.getLegalAddress(request, logEvent))
                 .expectNext(response)
                 .verifyComplete();
     }
@@ -242,10 +253,10 @@ class InfoCamereClientTest {
         accessTokenCacheEntry.setClientCredentials("jws");
 
         WebClientResponseException ex = buildException();
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(sedeApi.getAddressByTaxId(anyString(), any(), any())).thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereClient.getLegalAddress(request))
+        StepVerifier.create(infoCamereClient.getLegalAddress(request, logEvent))
                 .expectError(PnNationalRegistriesException.class)
                 .verify();
     }
@@ -279,12 +290,12 @@ class InfoCamereClientTest {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any()))
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any()))
                 .thenReturn(Mono.just(accessTokenCacheEntry));
         when(legalRepresentationApi.checkTaxIdForLegalRepresentation(anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.just(response));
 
-        StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(filterDto))
+        StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(filterDto, logEvent))
                 .expectNext(response)
                 .verifyComplete();
     }
@@ -301,11 +312,11 @@ class InfoCamereClientTest {
         accessTokenCacheEntry.setClientCredentials("jws");
 
         WebClientResponseException ex = buildException();
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(legalRepresentationApi.checkTaxIdForLegalRepresentation(anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(filterDto))
+        StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(filterDto, logEvent))
                 .expectError(PnNationalRegistriesException.class)
                 .verify();
     }
@@ -314,11 +325,16 @@ class InfoCamereClientTest {
     void testCallEServiceRequestIdExceptionOnRetry() {
         InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
         WebClientResponseException ex = buildExceptionUnauthorized();
+        IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
+        iniPecCf.setCf("taxId");
+        IniPecBatchRequest request = new IniPecBatchRequest();
+        request.setDataOraRichiesta(LocalDateTime.now().toString());
+        request.setElencoCf(List.of(iniPecCf));
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
         when(pecApi.callRichiestaElencoPec(any(), any(), any())).thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereClient.callEServiceRequestId(any()))
+        StepVerifier.create(infoCamereClient.callEServiceRequestId(request, logEvent))
                 .expectError(PnInternalException.class)
                 .verify();
     }
@@ -328,10 +344,10 @@ class InfoCamereClientTest {
         InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
         WebClientResponseException ex = buildExceptionUnauthorized();
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
         when(pecApi.callGetElencoPec(any(), any(), any())).thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereClient.callEServiceRequestPec(any()))
+        StepVerifier.create(infoCamereClient.callEServiceRequestPec("correlationId", logEvent))
                 .expectError(PnInternalException.class)
                 .verify();
     }
@@ -341,10 +357,10 @@ class InfoCamereClientTest {
         InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
         WebClientResponseException ex = buildExceptionUnauthorized();
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
         when(sedeApi.getAddressByTaxId(any(), any(), any())).thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereClient.getLegalAddress(any()))
+        StepVerifier.create(infoCamereClient.getLegalAddress("taxId", logEvent))
                 .expectError(PnInternalException.class)
                 .verify();
     }
@@ -356,10 +372,10 @@ class InfoCamereClientTest {
         CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
         checkTaxIdRequestBodyFilterDto.setTaxId("taxId");
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
         when(legalRepresentativeApi.getLegalRepresentativeListByTaxId(any(), any(), any())).thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereClient.getLegalInstitutions(checkTaxIdRequestBodyFilterDto))
+        StepVerifier.create(infoCamereClient.getLegalInstitutions(checkTaxIdRequestBodyFilterDto, logEvent))
                 .expectError(PnInternalException.class)
                 .verify();
     }
@@ -372,10 +388,10 @@ class InfoCamereClientTest {
         filterDto.setVatNumber("vatNumber");
         filterDto.setTaxId("taxId");
 
-        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
+        when(accessTokenExpiringMap.getInfoCamereToken(any(), any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
         when(legalRepresentationApi.checkTaxIdForLegalRepresentation(any(), any(), any(), any())).thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(filterDto))
+        StepVerifier.create(infoCamereClient.checkTaxIdAndVatNumberInfoCamere(filterDto, logEvent))
                 .expectError(PnInternalException.class)
                 .verify();
     }
@@ -395,6 +411,6 @@ class InfoCamereClientTest {
             throw new RuntimeException(e);
         }
 
-        assertThrows(PnInternalException.class, () -> infoCamereClient.callEServiceRequestId(request));
+        assertThrows(PnInternalException.class, () -> infoCamereClient.callEServiceRequestId(request, logEvent));
     }
 }

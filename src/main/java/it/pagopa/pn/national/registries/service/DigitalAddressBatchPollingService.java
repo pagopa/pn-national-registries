@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
@@ -85,7 +86,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
-    public void batchPecPolling() {
+    public void batchPecPolling(PnAuditLogEvent logEvent) {
         log.trace("IniPEC - batchPecPolling start");
         Page<BatchPolling> page;
         Map<String, AttributeValue> lastEvaluatedKey = new HashMap<>();
@@ -94,7 +95,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
             lastEvaluatedKey = page.lastEvaluatedKey();
             if (!page.items().isEmpty()) {
                 String reservationId = UUID.randomUUID().toString();
-                execBatchPolling(page.items(), reservationId)
+                execBatchPolling(page.items(), reservationId, logEvent)
                         .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + reservationId))
                         .block();
             } else {
@@ -105,7 +106,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.recovery.delay}")
-    public void recoveryBatchPolling() {
+    public void recoveryBatchPolling(PnAuditLogEvent logEvent) {
         log.trace("IniPEC - recoveryBatchPolling start");
         batchPollingRepository.getBatchPollingToRecover()
                 .flatMapIterable(polling -> polling)
@@ -118,7 +119,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                                 e -> log.info("IniPEC - conditional check failed - skip recovery pollingId {} and batchId {}", polling.getPollingId(), polling.getBatchId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .count()
-                .doOnNext(c -> batchPecPolling())
+                .doOnNext(c -> batchPecPolling(logEvent))
                 .subscribe(c -> log.info("IniPEC - executed batch recovery on {} polling", c),
                         e -> log.error("IniPEC - failed execution of batch polling recovery", e));
         log.trace("IniPEC - recoveryBatchPolling end");
@@ -133,7 +134,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 });
     }
 
-    private Mono<Void> execBatchPolling(List<BatchPolling> items, String reservationId) {
+    private Mono<Void> execBatchPolling(List<BatchPolling> items, String reservationId, PnAuditLogEvent logEvent) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return Flux.fromStream(items.stream())
                 .map(item -> {
@@ -146,21 +147,21 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                         .doOnError(ConditionalCheckFailedException.class,
                                 e -> log.info("IniPEC - conditional check failed - skip pollingId: {}", item.getPollingId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
-                .flatMap(this::handlePolling)
+                .flatMap(polling -> handlePolling(polling, logEvent))
                 .doOnError(e -> log.error("IniPEC - reservationId {} - failed to execute polling on {} items", reservationId, items.size(), e))
                 .onErrorResume(e -> Mono.empty())
                 .then();
     }
 
-    private Mono<Void> handlePolling(BatchPolling polling) {
-        return callIniPecEService(polling.getBatchId(), polling.getPollingId())
-                .onErrorResume(t -> incrementAndCheckRetry(polling, t).then(Mono.error(t)))
-                .flatMap(response -> handleSuccessfulPolling(polling, response))
+    private Mono<Void> handlePolling(BatchPolling polling, PnAuditLogEvent logEvent) {
+        return callIniPecEService(polling.getBatchId(), polling.getPollingId(), logEvent)
+                .onErrorResume(t -> incrementAndCheckRetry(polling, t, logEvent).then(Mono.error(t)))
+                .flatMap(response -> handleSuccessfulPolling(polling, response, logEvent))
                 .onErrorResume(e -> Mono.empty());
     }
 
-    private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
-        return infoCamereClient.callEServiceRequestPec(pollingId)
+    private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId, PnAuditLogEvent logEvent) {
+        return infoCamereClient.callEServiceRequestPec(pollingId, logEvent)
                 .doOnNext(response -> {
                     if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
                         throw new PnNationalRegistriesException(response.getDescription(), HttpStatus.NOT_FOUND.value(),
@@ -189,15 +190,15 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         return matcher.find();
     }
 
-    private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
+    private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response, PnAuditLogEvent logEvent) {
         polling.setStatus(BatchStatus.WORKED.getValue());
         return batchPollingRepository.update(polling)
                 .doOnNext(p -> log.debug("IniPEC - batchId {} - pollingId {} - updated status to WORKED", polling.getBatchId(), polling.getPollingId()))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - pollingId {} - failed to update status to WORKED", polling.getBatchId(), polling.getPollingId(), e))
-                .flatMap(p -> updateBatchRequest(p, BatchStatus.WORKED, getSqsOk(response)));
+                .flatMap(p -> updateBatchRequest(p, BatchStatus.WORKED, getSqsOk(response), logEvent));
     }
 
-    private Mono<Void> incrementAndCheckRetry(BatchPolling polling, Throwable throwable) {
+    private Mono<Void> incrementAndCheckRetry(BatchPolling polling, Throwable throwable, PnAuditLogEvent logEvent) {
         if(isPollingResponseNotReady(throwable)){
             polling.setInProgressRetry(polling.getInProgressRetry() != null ? polling.getInProgressRetry() + 1 : 1);
         }else{
@@ -219,11 +220,11 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     } else {
                         error = ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
                     }
-                    return updateBatchRequest(p, BatchStatus.ERROR, getSqsKo(error));
+                    return updateBatchRequest(p, BatchStatus.ERROR, getSqsKo(error), logEvent);
                 });
     }
 
-    private Mono<Void> updateBatchRequest(BatchPolling polling, BatchStatus status, Function<BatchRequest, CodeSqsDto> sqsDtoProvider) {
+    private Mono<Void> updateBatchRequest(BatchPolling polling, BatchStatus status, Function<BatchRequest, CodeSqsDto> sqsDtoProvider, PnAuditLogEvent logEvent) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return batchRequestRepository.getBatchRequestByBatchIdAndStatus(polling.getBatchId(), BatchStatus.WORKING)
                 .doOnNext(requests -> log.debug("IniPEC - batchId {} - updating {} requests in status {}", polling.getBatchId(), requests.size(), status))
@@ -233,7 +234,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     removeInvalidEmails(sqsDto);
                     if (CollectionUtils.isEmpty(sqsDto.getDigitalAddress()) && !StringUtils.hasText(sqsDto.getError())) {
                         //if IniPec doesn't retrieve pec try to call INAD
-                        callInadEservice(request);
+                        callInadEservice(request, logEvent);
                         request.setEservice(EService.INAD.name());
                     } else {
                         request.setMessage(convertCodeSqsDtoToString(sqsDto));
@@ -261,12 +262,10 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         sqsDto.setDigitalAddress(digitalAddresses);
     }
 
-    private void callInadEservice(BatchRequest request) {
-
+    private void callInadEservice(BatchRequest request, PnAuditLogEvent logEvent) {
         RecipientType recipientType = InadConverter.retrieveRecipientType(request);
-
         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
-        inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType, request.getReferenceRequestDate().toInstant(ZoneOffset.UTC))
+        inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType, request.getReferenceRequestDate().toInstant(ZoneOffset.UTC), logEvent)
                 .flatMap(this::emailValidation)
                 .doOnNext(inadResponse -> {
                     request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, PF.equals(recipientType) ? DigitalAddressRecipientType.PERSONA_FISICA : DigitalAddressRecipientType.IMPRESA)));

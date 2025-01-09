@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.client.infocamere;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.AuthenticationApi;
@@ -17,9 +19,10 @@ import org.springframework.web.reactive.function.client.WebClientResponseExcepti
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
@@ -37,9 +40,17 @@ class InfoCamereTokenClientTest {
     AuthenticationApi authenticationApi;
 
     final String clientId = "tezt_clientId";
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
 
     @BeforeEach
     public void setup() {
+
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
         ApiClient apiClient = mock(ApiClient.class);
         authenticationApi = mock(AuthenticationApi.class);
 
@@ -56,7 +67,7 @@ class InfoCamereTokenClientTest {
         HttpHeaders headers = new HttpHeaders();
         when(infoCamereJwsGenerator.createAuthRest(any()))
                 .thenThrow(new WebClientResponseException(1, "Status Text", headers, "AAAAAAAA".getBytes(StandardCharsets.UTF_8), null));
-        assertThrows(WebClientResponseException.class, () -> infoCamereTokenClient.getToken("Scope"));
+        assertThrows(WebClientResponseException.class, () -> infoCamereTokenClient.getToken("Scope", logEvent));
         verify(infoCamereJwsGenerator).createAuthRest(any());
     }
 
@@ -71,7 +82,7 @@ class InfoCamereTokenClientTest {
 
         when(authenticationApi.getToken(any(), any())).thenReturn(Mono.just(jws));
 
-        StepVerifier.create(infoCamereTokenClient1.getToken(scope))
+        StepVerifier.create(infoCamereTokenClient1.getToken(scope, logEvent))
                 .expectNext(jws)
                 .verifyComplete();
     }
@@ -93,7 +104,7 @@ class InfoCamereTokenClientTest {
         when(infoCamereJwsGenerator.createAuthRest(any())).thenReturn(jws);
         when(authenticationApi.getToken(any(), any())).thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereTokenClient1.getToken(scope)).expectError(PnNationalRegistriesException.class).verify();
+        StepVerifier.create(infoCamereTokenClient1.getToken(scope, logEvent)).expectError(PnNationalRegistriesException.class).verify();
     }
 
     @Test
@@ -108,7 +119,7 @@ class InfoCamereTokenClientTest {
                 HttpStatus.UNAUTHORIZED.getReasonPhrase(), null, null, null);
         when(authenticationApi.getToken(any(), any())).thenReturn(Mono.error(exception));
 
-        StepVerifier.create(infoCamereTokenClient1.getToken(scope)).expectError(PnInternalException.class).verify();
+        StepVerifier.create(infoCamereTokenClient1.getToken(scope, logEvent)).expectError(PnInternalException.class).verify();
     }
 }
 

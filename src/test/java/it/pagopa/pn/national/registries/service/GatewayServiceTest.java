@@ -2,6 +2,8 @@ package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
@@ -10,6 +12,7 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.joda.time.LocalDateTime;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,6 +28,7 @@ import reactor.test.StepVerifier;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.util.Date;
+import java.util.HashMap;
 import java.util.Map;
 
 import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL;
@@ -62,6 +66,18 @@ class GatewayServiceTest {
     private static final String CF = "CF";
     private static final String C_ID = "correlationId";
 
+    PnAuditLogEventType type = PnAuditLogEventType.AUD_NR_PF_PHYSICAL;
+    Map<String, String> mdc = new HashMap<>();
+    String message = "message";
+    Object[] arguments = new Object[] {"arg1", "arg2"};
+    PnAuditLogEvent logEvent;
+
+    @BeforeEach
+    public void setup() {
+        mdc.put("key", "value");
+        logEvent = new PnAuditLogEvent(type, mdc, message, arguments);
+    }
+
     @Test
     void handleMessage(){
         PnAddressGatewayEvent.Payload payload = PnAddressGatewayEvent.Payload.builder()
@@ -80,7 +96,7 @@ class GatewayServiceTest {
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId("correlationId");
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(getDigitalAddressINADOKDto));
+        when(inadService.callEService(any(), any(), any(), any())).thenReturn(Mono.just(getDigitalAddressINADOKDto));
         when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         StepVerifier.create(gatewayService.handleMessage(payload)).expectNext(addressOKDto).verifyComplete();
     }
@@ -100,7 +116,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.filter(new AddressRequestBodyFilterDto());
         assertThrows(PnInternalException.class,
-                () -> gatewayService.retrieveDigitalOrPhysicalAddress("Recipient Type", "clientId", addressRequestBodyDto));
+                () -> gatewayService.retrieveDigitalOrPhysicalAddress("Recipient Type", "clientId", addressRequestBodyDto, logEvent));
     }
 
     @Test
@@ -109,7 +125,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.filter(new AddressRequestBodyFilterDto());
         assertThrows(PnInternalException.class,
-                () -> gatewayService.retrieveDigitalOrPhysicalAddress("Recipient Type", null, addressRequestBodyDto));
+                () -> gatewayService.retrieveDigitalOrPhysicalAddress("Recipient Type", null, addressRequestBodyDto, logEvent));
     }
 
     @Test
@@ -119,7 +135,7 @@ class GatewayServiceTest {
 
         GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
 
-        when(anprService.getAddressANPR(any()))
+        when(anprService.getAddressANPR(any(), any()))
                 .thenReturn(Mono.just(getAddressANPROKDto));
 
         when(sqsService.pushToOutputQueue(any(), any()))
@@ -142,7 +158,7 @@ class GatewayServiceTest {
 
         GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
 
-        when(anprService.getAddressANPR(any()))
+        when(anprService.getAddressANPR(any(), any()))
                 .thenReturn(Mono.just(getAddressANPROKDto));
 
         when(sqsService.pushToOutputQueue(any(), any()))
@@ -151,7 +167,7 @@ class GatewayServiceTest {
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto, logEvent))
                 .expectNext(addressOKDto)
                 .verifyComplete();
     }
@@ -161,13 +177,13 @@ class GatewayServiceTest {
     void testRetrieveDigitalOrPhysicalAddressAnprError() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
 
-        when(anprService.getAddressANPR(any()))
+        when(anprService.getAddressANPR(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
         when(sqsService.pushToInputDlqQueue(any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto, logEvent))
                 .expectError(RuntimeException.class);
     }
 
@@ -181,7 +197,7 @@ class GatewayServiceTest {
         digitalAddressDto.setDigitalAddress("digitalAddress@inad.com");
         getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any(), any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
         when(sqsService.pushToOutputQueue(any(), any()))
@@ -190,7 +206,7 @@ class GatewayServiceTest {
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto, logEvent))
                 .expectNext(addressOKDto)
                 .verifyComplete();
 
@@ -206,7 +222,7 @@ class GatewayServiceTest {
         IPAPecDto ipaPecDto = new IPAPecDto();
        ipaPecDto.setDomicilioDigitale("digitalAddress@ipa.com");
 
-        when(ipaService.getIpaPec(any()))
+        when(ipaService.getIpaPec(any(), any()))
                 .thenReturn(Mono.just(ipaPecDto));
 
         ArgumentCaptor<CodeSqsDto> codeSqsDtoArgumentCaptor = ArgumentCaptor.forClass(CodeSqsDto.class);
@@ -216,11 +232,11 @@ class GatewayServiceTest {
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto, logEvent))
                 .expectNext(addressOKDto)
                 .verifyComplete();
 
-        verify(ipaService, times(1)).getIpaPec(any());
+        verify(ipaService, times(1)).getIpaPec(any(), any());
         verifyNoInteractions(inadService);
         verifyNoInteractions(infoCamereService);
         Assertions.assertEquals(ipaPecDto.getDomicilioDigitale(), codeSqsDtoArgumentCaptor.getValue().getDigitalAddress().get(0).getAddress());
@@ -234,18 +250,18 @@ class GatewayServiceTest {
 
         IPAPecDto ipaPecDto = new IPAPecDto();
 
-        when(ipaService.getIpaPec(any()))
+        when(ipaService.getIpaPec(any(), any()))
                 .thenReturn(Mono.just(ipaPecDto));
         when(infoCamereService.getIniPecDigitalAddress(any(), any(), any())).thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto, logEvent))
                 .expectNext(addressOKDto)
                 .verifyComplete();
 
-        verify(ipaService, times(1)).getIpaPec(any());
+        verify(ipaService, times(1)).getIpaPec(any(), any());
         verifyNoInteractions(inadService);
         verify(infoCamereService, times(1)).getIniPecDigitalAddress(any(), any(), any());
     }
@@ -256,13 +272,13 @@ class GatewayServiceTest {
     void testRetrieveDigitalOrPhysicalAddressInadError() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any(), any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
         when(sqsService.pushToInputDlqQueue(any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto, logEvent))
                 .expectError(RuntimeException.class);
         verifyNoInteractions(infoCamereService);
         verifyNoInteractions(ipaService);
@@ -278,7 +294,7 @@ class GatewayServiceTest {
         digitalAddressDto.setDigitalAddress("digitalAddressInadIvalidEmail.com");
         getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any(), any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
         when(sqsService.pushToOutputQueue(any(), any()))
@@ -287,7 +303,7 @@ class GatewayServiceTest {
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto, logEvent))
                 .expectNext(addressOKDto)
                 .verifyComplete();
         verifyNoInteractions(infoCamereService);
@@ -302,7 +318,7 @@ class GatewayServiceTest {
 
         GetAddressRegistroImpreseOKDto getAddressRegistroImpreseOKDto = new GetAddressRegistroImpreseOKDto();
 
-        when(infoCamereService.getRegistroImpreseLegalAddress(any()))
+        when(infoCamereService.getRegistroImpreseLegalAddress(any(), any()))
                 .thenReturn(Mono.just(getAddressRegistroImpreseOKDto));
 
         when(sqsService.pushToOutputQueue(any(), any()))
@@ -311,7 +327,7 @@ class GatewayServiceTest {
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto, logEvent))
                 .expectNext(addressOKDto)
                 .verifyComplete();
     }
@@ -321,12 +337,12 @@ class GatewayServiceTest {
     void testRetrieveDigitalOrPhysicalAddressRegImpError() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
 
-        when(infoCamereService.getRegistroImpreseLegalAddress(any()))
+        when(infoCamereService.getRegistroImpreseLegalAddress(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
         when(sqsService.pushToInputDlqQueue(any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto, logEvent))
                 .expectError(RuntimeException.class);
     }
 
@@ -341,14 +357,14 @@ class GatewayServiceTest {
         ipaPecOKDto.setCodEnte("codEnte");
         ipaPecOKDto.setDenominazione("denominazione");
 
-        when(ipaService.getIpaPec(any()))
+        when(ipaService.getIpaPec(any(), any()))
                 .thenReturn(Mono.just(ipaPecOKDto));
 
         when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto, logEvent))
                 .expectNext(addressOKDto)
                 .verifyComplete();
     }
@@ -360,7 +376,7 @@ class GatewayServiceTest {
 
         IPAPecDto ipaPecOKDto = new IPAPecDto();
 
-        when(ipaService.getIpaPec(any()))
+        when(ipaService.getIpaPec(any(), any()))
                 .thenReturn(Mono.just(ipaPecOKDto));
 
         when(infoCamereService.getIniPecDigitalAddress(any(),any(), any())).thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
@@ -368,7 +384,7 @@ class GatewayServiceTest {
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto, logEvent))
                 .expectNext(addressOKDto)
                 .verifyComplete();
     }
@@ -378,7 +394,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
 
         PnNationalRegistriesException exception = new PnNationalRegistriesException("", 400, "", null, null, null, null);
-        when(infoCamereService.getRegistroImpreseLegalAddress(any()))
+        when(infoCamereService.getRegistroImpreseLegalAddress(any(), any()))
                 .thenReturn(Mono.error(exception));
         when(sqsService.pushToInputDlqQueue(any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
@@ -386,7 +402,7 @@ class GatewayServiceTest {
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto, logEvent))
                 .expectNext(addressOKDto)
                 .verifyComplete();
     }
