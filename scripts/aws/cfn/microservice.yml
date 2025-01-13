@@ -91,6 +91,10 @@ Parameters:
     Type: String
     Description: 'IPA Base URL'
 
+  CodecMemorySize:
+    Type: Number
+    Description: 'Memory size reserved to buffer (ex. of accepted values 4MB / 4000000)'
+
   PDNDBaseURL:
     Type: String
     Description: 'PDND Base URL'
@@ -486,6 +490,7 @@ Resources:
         ContainerEnvEntry41: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
         ContainerEnvEntry42: !Sub 'PN_NATIONAL_REGISTRY_PFNEWWORKFLOWSTART=${pfNewWorkflowStart}'
         ContainerEnvEntry43: !Sub 'PN_NATIONAL_REGISTRY_PFNEWWORKFLOWSTOP=${pfNewWorkflowStop}'
+        ContainerEnvEntry44: !Sub 'SPRING_CODEC_MAXINMEMORYSIZE=${CodecMemorySize}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
