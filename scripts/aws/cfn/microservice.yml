@@ -92,7 +92,7 @@ Parameters:
     Description: 'IPA Base URL'
 
   CodecMemorySize:
-    Type: Number
+    Type: String
     Description: 'Memory size reserved to buffer (ex. of accepted values 4MB / 4000000)'
 
   PDNDBaseURL:
