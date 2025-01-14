@@ -9,6 +9,7 @@ import org.mockito.Mock;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.*;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -35,7 +36,10 @@ class InadClientConfigTest {
         when(webClientBuilder.build()).thenReturn(webClient);
         when(webClientBuilder.defaultHeader(any(), any())).thenReturn(webClientBuilder);
         when(webClientBuilder.baseUrl(any())).thenReturn(webClientBuilder);
-        inadClientConfig = new InadClientConfig(new CustomRetryConfig(1));
+        when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
+        when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
+        when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
+        inadClientConfig = new InadClientConfig(webClientBuilder,new CustomRetryConfig(1));
     }
 
     @Test

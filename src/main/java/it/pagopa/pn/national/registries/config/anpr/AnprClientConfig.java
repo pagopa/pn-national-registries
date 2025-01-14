@@ -14,6 +14,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.reactive.function.client.WebClient;
 import reactor.netty.http.client.HttpClient;
 
 import java.io.IOException;
@@ -29,10 +30,11 @@ public class AnprClientConfig extends CommonBaseClient {
     private final SecureWebClientUtils secureWebClientUtils;
     private final AnprSecretConfig anprSecretConfig;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+    private final WebClient.Builder builder;
 
     @Bean
     E002ServiceApi e002ServiceApi(@Value("${pn.national.registries.anpr.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
+        var apiClient = new ApiClient(initWebClient(this.builder));
         apiClient.setBasePath(basePath);
         return new E002ServiceApi(apiClient);
     }
