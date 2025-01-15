@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
 @Configuration
-@ConfigurationProperties(prefix = "pn.national.registries")
+@ConfigurationProperties(prefix = "pn.national-registries")
 @Data
 @Import(SharedAutoConfiguration.class)
 public class NationalRegistriesConfig {
