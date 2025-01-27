@@ -40,7 +40,7 @@
     "CpuValue": "2048",
     "MemoryAmount": "4GB",
     "CustomRetryMaxAttempts": "3",
-    "PnCronAnalyzer": "* */1 * * * *",
+    "PnCronAnalyzer": "-",
     "WireTapLogActivation": "false",
     "MountEfs": "false"
   }
