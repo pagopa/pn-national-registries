@@ -120,7 +120,7 @@ public class GatewayConverter {
         } else {
             log.info("correlationId: {} - IPA - WS23 - domicili digitali non presenti", correlationId);
         }
-        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
     }
 
