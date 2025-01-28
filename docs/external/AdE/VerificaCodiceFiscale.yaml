@@ -19,10 +19,6 @@ x-commons:
       $ref: '#/components/responses/503ServiceUnavailable'
     default:
       $ref: '#/components/responses/default'
-
-security:
-  - IBM-Client-Secret: []
-    IBM-Client-Id: []
     
 openapi: 3.0.0
 info:
@@ -249,18 +245,6 @@ components:
           format: uri
           type: string
       type: object
-  securitySchemes:
-      IBM-Client-Secret:
-        type: apiKey
-        description: ''
-        name: X-IBM-Client-Secret
-        in: header
-      IBM-Client-Id:
-        type: apiKey
-        description: ''
-        name: X-IBM-Client-Id
-        in: header
-
   headers:
     Retry-After:
       description: |-
@@ -329,3 +313,11 @@ components:
           $ref: '#/components/headers/Retry-After'
     default:
       description: Unexpected error
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Implementazione conforme ad RFC8725. Contiene il JWT recuperato da PDND interoperabilità applicando le Linee Guida sull'infrastruttura tecnologica della Piattaforma Digitale Nazionale Dati per l'interoperabilità dei sistemi informativi e delle basi di dati ai sensi dell'articolo 50-ter, comma 2 del CAD
+security:
+  - bearerAuth: [ ]
