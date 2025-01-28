@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
@@ -10,7 +11,8 @@ import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
-import org.slf4j.MDC;
+import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
+import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -22,6 +24,8 @@ import java.nio.charset.Charset;
 import java.util.Map;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_CX_ID_FLAG;
+import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
+import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 
 @Service
 @lombok.CustomLog
@@ -35,10 +39,13 @@ public class GatewayService extends GatewayConverter {
     private final boolean pnNationalRegistriesCxIdFlag;
     private static final String CORRELATION_ID = "correlationId";
 
+    private final FeatureEnabledUtils featureEnabledUtils;
+
     public GatewayService(AnprService anprService,
                           InadService inadService,
                           InfoCamereService infoCamereService,
                           IpaService ipaService, SqsService sqsService,
+                          FeatureEnabledUtils featureEnabledUtils,
                           @Value("${pn.national.registries.val.cx.id.enabled}") boolean pnNationalRegistriesCxIdFlag) {
         this.anprService = anprService;
         this.inadService = inadService;
@@ -46,6 +53,7 @@ public class GatewayService extends GatewayConverter {
         this.ipaService = ipaService;
         this.sqsService = sqsService;
         this.pnNationalRegistriesCxIdFlag = pnNationalRegistriesCxIdFlag;
+        this.featureEnabledUtils = featureEnabledUtils;
     }
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto request) {
@@ -104,17 +112,11 @@ public class GatewayService extends GatewayConverter {
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddress(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         log.info("recipientType {} and domicileType {}", recipientType, addressRequestBodyDto.getFilter().getDomicileType());
-        return switch (recipientType) {
-            case "PF" -> retrieveAddressForPF(pnNationalRegistriesCxId, addressRequestBodyDto);
-            case "PG" -> retrieveAddressForPG(pnNationalRegistriesCxId, addressRequestBodyDto);
-            default -> neitherPFAndPG(recipientType);
+        RecipientType recipientTypeEnum = RecipientType.fromString(recipientType);
+        return switch (recipientTypeEnum) {
+            case PF -> retrieveAddressForPF(pnNationalRegistriesCxId, addressRequestBodyDto);
+            case PG -> retrieveAddressForPG(pnNationalRegistriesCxId, addressRequestBodyDto);
         };
-    }
-
-    private Mono<AddressOKDto> neitherPFAndPG(String recipientType) {
-        log.warn("recipientType {} is not valid", recipientType);
-        throw new PnNationalRegistriesException("recipientType not valid", HttpStatus.BAD_REQUEST.value(),
-                HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
     }
 
     private Mono<AddressOKDto> retrieveAddressForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
@@ -129,11 +131,14 @@ public class GatewayService extends GatewayConverter {
                         if(codeSqsDto != null) {
                             return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId);
                         }
-                        return handleException(e, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), "PF", pnNationalRegistriesCxId));
+                        return handleException(e, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), PF.name(), pnNationalRegistriesCxId));
                     })
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
-            return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), "PF")
+            if (featureEnabledUtils.isPfNewWorkflowEnabled(addressRequestBodyDto.getFilter().getReferenceRequestDate().toInstant())) {
+                return retrieveDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId, PF);
+            }
+            return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), PF, null)
                     .flatMap(this::emailValidation)
                     .flatMap(inadResponse -> sqsService.pushToOutputQueue(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.PERSONA_FISICA), pnNationalRegistriesCxId))
                     .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId()))
@@ -143,7 +148,7 @@ public class GatewayService extends GatewayConverter {
                         if(codeSqsDto != null) {
                             return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId);
                         }
-                        return handleException(e, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), "PF", pnNationalRegistriesCxId));
+                        return handleException(e, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), PF.name(), pnNationalRegistriesCxId));
                     })
                     .map(sqs -> mapToAddressesOKDto(correlationId));
         }
@@ -156,25 +161,30 @@ public class GatewayService extends GatewayConverter {
             return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                     .flatMap(registroImpreseResponse -> sqsService.pushToOutputQueue(regImpToSqsDto(correlationId, registroImpreseResponse), pnNationalRegistriesCxId))
                     .doOnError(e -> logEServiceError(e, "can not retrieve physical address from Registro Imprese: {}"))
-                    .onErrorResume(throwable -> handleException(throwable, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), "PG", pnNationalRegistriesCxId)))
+                    .onErrorResume(throwable -> handleException(throwable, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), PG.name(), pnNationalRegistriesCxId)))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
-            return ipaService.getIpaPec(convertToGetIpaPecRequest(addressRequestBodyDto))
-                    .flatMap(response -> {
-                        if ((response.getDomicilioDigitale() == null &&
-                                response.getDenominazione() == null &&
-                                response.getCodEnte() == null &&
-                                response.getTipo() == null) ||
-                                !CheckEmailUtils.isValidEmail(response.getDomicilioDigitale())) {
-                            return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto), addressRequestBodyDto.getFilter().getReferenceRequestDate());
-                        }
-                        log.info("retrieved digital address from IPA for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId());
-                        return sqsService.pushToOutputQueue(ipaToSqsDto(correlationId, response), pnNationalRegistriesCxId);
-                    })
-                    .doOnError(e -> logEServiceError(e, "can not retrieve digital address from IPA: {}"))
-                    .onErrorResume(e -> handleException(e, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), "PG", pnNationalRegistriesCxId)))
-                    .map(sqs -> mapToAddressesOKDto(correlationId));
+            return retrieveDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId, PG);
         }
+    }
+
+    @NotNull
+    private Mono<AddressOKDto> retrieveDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId, RecipientType recipientType) {
+        return ipaService.getIpaPec(convertToGetIpaPecRequest(addressRequestBodyDto))
+                .flatMap(response -> {
+                    if ((response.getDomicilioDigitale() == null &&
+                            response.getDenominazione() == null &&
+                            response.getCodEnte() == null &&
+                            response.getTipo() == null) ||
+                            !CheckEmailUtils.isValidEmail(response.getDomicilioDigitale())) {
+                        return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto), addressRequestBodyDto.getFilter().getReferenceRequestDate());
+                    }
+                    log.info("retrieved digital address from IPA for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId());
+                    return sqsService.pushToOutputQueue(ipaToSqsDto(correlationId, response), pnNationalRegistriesCxId);
+                })
+                .doOnError(e -> logEServiceError(e, "can not retrieve digital address from IPA: {}"))
+                .onErrorResume(e -> handleException(e, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), recipientType.name(), pnNationalRegistriesCxId)))
+                .map(sqs -> mapToAddressesOKDto(correlationId));
     }
 
     private InternalCodeSqsDto toInternalCodeSqsDto(AddressRequestBodyFilterDto filter, String recipientType, String pnNationalRegistriesCxId) {

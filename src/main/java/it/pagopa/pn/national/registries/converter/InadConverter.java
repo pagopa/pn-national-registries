@@ -1,5 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.constant.RecipientType;
+import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;
@@ -33,7 +35,11 @@ public class InadConverter {
     private InadConverter() {
     }
 
-    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, String recipientType, String taxId) {
+    public static RecipientType retrieveRecipientType(BatchRequest request) {
+        return  StringUtils.hasText(request.getCf()) && request.getCf().length() == CF_LENGTH ? RecipientType.PF : RecipientType.PG;
+    }
+
+    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, RecipientType recipientType, String taxId, boolean newWorkflowEnabled) {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
         if (elementDigitalAddress != null) {
             response.setSince(elementDigitalAddress.getSince());
@@ -44,8 +50,8 @@ public class InadConverter {
                         .map(InadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
                         .toList();
                 switch (recipientType) {
-                    case "PF" -> mapToPfAddress(digitalAddressDtoList, response);
-                    case "PG" -> mapToPgAddress(digitalAddressDtoList, taxId, response);
+                    case PF -> mapToPfAddress(digitalAddressDtoList, response, newWorkflowEnabled);
+                    case PG -> mapToPgAddress(digitalAddressDtoList, taxId, response);
                     default -> throw new PnNationalRegistriesException("Invalid recipientType",HttpStatus.BAD_REQUEST.value(),
                             HttpStatus.BAD_REQUEST.getReasonPhrase(),null,null , Charset.defaultCharset(), InadResponseKO.class);
                 }
@@ -61,9 +67,7 @@ public class InadConverter {
                 digitalAddressDtoList.size() == 1 && !StringUtils.hasText(digitalAddressDtoList.get(0).getPracticedProfession())) {
             response.setDigitalAddress(digitalAddressDtoList.get(0));
         }else{
-            digitalAddressDtoList.stream()
-                    .filter(item -> StringUtils.hasText(item.getPracticedProfession()))
-                    .findFirst()
+            retrieveProfessionalAddress(digitalAddressDtoList)
                     .ifPresentOrElse(
                             response::setDigitalAddress,
                             () -> {
@@ -73,8 +77,19 @@ public class InadConverter {
                     );
         }
     }
-    private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response)
-    {
+    private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response, boolean newWorkflowEnabled) {
+        if (newWorkflowEnabled) {
+            retrieveProfessionalAddress(digitalAddressDtoList)
+                    .ifPresentOrElse(
+                            response::setDigitalAddress,
+                            () -> retrievePersonalAddress(digitalAddressDtoList, response));
+
+        } else {
+            retrievePersonalAddress(digitalAddressDtoList, response);
+        }
+    }
+
+    private static void retrievePersonalAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response) {
         digitalAddressDtoList.stream()
                 .filter(item -> !StringUtils.hasText(item.getPracticedProfession()) && response.getTaxId().length() == CF_LENGTH)
                 .findFirst()
@@ -82,10 +97,17 @@ public class InadConverter {
                         response::setDigitalAddress,
                         () -> {
                             throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
-                                    HttpStatus.NOT_FOUND.getReasonPhrase(),null, null, Charset.defaultCharset(), InadResponseKO.class);
+                                    HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class);
                         }
                 );
     }
+
+    private static Optional<DigitalAddressDto> retrieveProfessionalAddress(List<DigitalAddressDto> digitalAddressDtoList) {
+        return digitalAddressDtoList.stream()
+                .filter(item -> StringUtils.hasText(item.getPracticedProfession()))
+                .findFirst();
+    }
+
 
     private static DigitalAddressDto convertToGetDigitalAddressINADOKDigitalAddressInnerDto(ElementDigitalAddress item) {
         DigitalAddressDto digitalAddress = new DigitalAddressDto();
