@@ -10,6 +10,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
+import org.springframework.web.reactive.function.client.WebClient;
 
 @Configuration
 @RequiredArgsConstructor
@@ -17,10 +18,11 @@ import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 public class InfocamereClientConfig extends CommonBaseClient {
 
     private final CustomRetryConfig customRetryConfig;
+    private final WebClient.Builder builder;
 
     @Bean
     AuthenticationApi authenticationApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
+        var apiClient = new ApiClient(initWebClient(this.builder));
         apiClient.setBasePath(basePath);
         return new AuthenticationApi(apiClient);
     }
@@ -28,28 +30,28 @@ public class InfocamereClientConfig extends CommonBaseClient {
 
     @Bean
     LegalRepresentationApi legalRepresentationApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
+        var apiClient = new ApiClient(initWebClient(this.builder));
         apiClient.setBasePath(basePath);
         return new LegalRepresentationApi(apiClient);
     }
 
     @Bean
     LegalRepresentativeApi legalRepresentativeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
+        var apiClient = new ApiClient(initWebClient(this.builder));
         apiClient.setBasePath(basePath);
         return new LegalRepresentativeApi(apiClient);
     }
 
     @Bean
     PecApi pecApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
+        var apiClient = new ApiClient(initWebClient(this.builder));
         apiClient.setBasePath(basePath);
         return new PecApi(apiClient);
     }
 
     @Bean
     SedeApi sedeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
+        var apiClient = new ApiClient(initWebClient(this.builder));
         apiClient.setBasePath(basePath);
         return new SedeApi(apiClient);
     }

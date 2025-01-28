@@ -26,7 +26,10 @@ class IpaClientConfigTest {
         when(webClientBuilder.build()).thenReturn(webClient);
         when(webClientBuilder.defaultHeader(any(), any())).thenReturn(webClientBuilder);
         when(webClientBuilder.baseUrl(any())).thenReturn(webClientBuilder);
-        ipaClientConfig = new IpaClientConfig();
+        when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
+        when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
+        when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
+        ipaClientConfig = new IpaClientConfig(webClientBuilder);
     }
 
     @Test
