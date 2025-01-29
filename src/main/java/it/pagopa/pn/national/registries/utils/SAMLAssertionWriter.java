@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.utils;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -41,16 +42,18 @@ public class SAMLAssertionWriter {
     private final String environmentType;
     private final String issuerName;
 
+    private final AdeLegalSecretConfig adeLegalSecretConfig;
     public SAMLAssertionWriter(OpenSAMLUtils openSAMLUtils,
                                X509CertificateUtils x509CertificateUtils,
                                @Value("${pn.national.registries.ade.legal.name.id}") String clientId,
                                @Value("${pn.national.registries.environment.type}") String environmentType,
-                               @Value("${pn.national.registries.issuer}") String issuerName) {
+                               @Value("${pn.national.registries.issuer}") String issuerName, AdeLegalSecretConfig adeLegalSecretConfig) {
         this.openSAMLUtils = openSAMLUtils;
         this.x509CertificateUtils = x509CertificateUtils;
         this.clientId = clientId;
         this.environmentType = environmentType;
         this.issuerName = issuerName;
+        this.adeLegalSecretConfig = adeLegalSecretConfig;
     }
 
     public Assertion buildDefaultAssertion() {
@@ -153,7 +156,7 @@ public class SAMLAssertionWriter {
         SAMLObjectContentReference samlObjectContentReference = new SAMLObjectContentReference(assertion);
         samlObjectContentReference.setDigestAlgorithm(SignatureConstants.ALGO_ID_DIGEST_SHA1);
         signature.getContentReferences().add(samlObjectContentReference);
-        SSLData sslData = x509CertificateUtils.getKeyAndCertificate();
+        SSLData sslData = x509CertificateUtils.getKeyAndCertificate(adeLegalSecretConfig.getAuthChannelData());
 
         signature.setKeyInfo(getKeyInfo(sslData.getCert()));
         signature.setSigningCredential(getSigningCredential(sslData));

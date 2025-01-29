@@ -36,8 +36,8 @@ public class X509CertificateUtils {
         this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
     }
 
-    public SSLData getKeyAndCertificate() {
-        Optional<SSLData> optSslData = ssmParameterConsumerActivation.getParameterValue(adeLegalSecretConfig.getAuthChannelData(), SSLData.class);
+    public SSLData getKeyAndCertificate(String parameterName) {
+        Optional<SSLData> optSslData = ssmParameterConsumerActivation.getParameterValue(parameterName, SSLData.class);
         if(optSslData.isEmpty()) {
             throw new PnInternalException(ERROR_MESSAGE_ADE_LEGAL_LOAD_CERT, ERROR_CODE_ADE_LEGAL_LOAD_CERT);
         }
