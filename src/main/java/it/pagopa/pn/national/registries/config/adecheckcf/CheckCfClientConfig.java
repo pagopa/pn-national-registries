@@ -49,7 +49,7 @@ public class CheckCfClientConfig extends CommonBaseClient {
     protected SslContext buildSslContext() {
         try {
             TrustData trustData = pnNationalRegistriesSecretService.getTrustedCertFromSecret(checkCfSecretConfig.getTrustData());
-            return secureWebClientUtils.getSslContext(SslContextBuilder.forClient(), trustData.getTrust());
+            return secureWebClientUtils.getSslContextForAde(SslContextBuilder.forClient(), trustData.getTrust());
         } catch (IOException e) {
             throw new PnInternalException(ERROR_MESSAGE_CHECK_CF, ERROR_CODE_CHECK_CF, e);
         }

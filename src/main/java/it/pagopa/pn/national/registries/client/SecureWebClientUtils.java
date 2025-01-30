@@ -28,6 +28,14 @@ public class SecureWebClientUtils {
         if (notHasTrust) {
             return sslContextBuilder.build();
         }
+        return sslContextBuilder.trustManager(getTrustCertInputStream(trust)).build();
+    }
+
+    public final SslContext getSslContextForAde(SslContextBuilder sslContextBuilder, String trust ) throws SSLException {
+        boolean notHasTrust = StringUtils.isNullOrEmpty(trust);
+        if (notHasTrust) {
+            return sslContextBuilder.build();
+        }
         SSLData sslData = x509CertificateUtils.getKeyAndCertificate(checkCfSecretConfig.getAuthChannelData());
         return sslContextBuilder.trustManager(getTrustCertInputStream(trust))
                 .keyManager(x509CertificateUtils.getPrivateKey(sslData.getSecretid()), x509CertificateUtils.loadCertificate(sslData.getCert())).build();
