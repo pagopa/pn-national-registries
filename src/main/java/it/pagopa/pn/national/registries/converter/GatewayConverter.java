@@ -228,10 +228,10 @@ public class GatewayConverter {
         return dto;
     }
 
-    protected IPARequestBodyDto convertToGetIpaPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
+    protected IPARequestBodyDto convertToGetIpaPecRequest(BatchRequest batchRequest) {
         IPARequestBodyDto dto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filterDto = new CheckTaxIdRequestBodyFilterDto();
-        filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
+        filterDto.setTaxId(batchRequest.getCf());
         dto.setFilter(filterDto);
         return dto;
     }

@@ -203,11 +203,11 @@ class GatewayServiceTest {
         when(featureEnabledUtils.isPfNewWorkflowEnabled(any())).thenReturn(true);
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
-        IPAPecDto ipaPecDto = new IPAPecDto();
-       ipaPecDto.setDomicilioDigitale("digitalAddress@ipa.com");
+        GetDigitalAddressIniPECOKDto inipecDto = new GetDigitalAddressIniPECOKDto();
 
-        when(ipaService.getIpaPec(any()))
-                .thenReturn(Mono.just(ipaPecDto));
+        when(infoCamereService.getIniPecDigitalAddress(any(), any(), any()))
+                .thenReturn(Mono.just(inipecDto));
+
 
         ArgumentCaptor<CodeSqsDto> codeSqsDtoArgumentCaptor = ArgumentCaptor.forClass(CodeSqsDto.class);
         when(sqsService.pushToOutputQueue(codeSqsDtoArgumentCaptor.capture(), any()))
@@ -220,35 +220,7 @@ class GatewayServiceTest {
                 .expectNext(addressOKDto)
                 .verifyComplete();
 
-        verify(ipaService, times(1)).getIpaPec(any());
-        verifyNoInteractions(inadService);
-        verifyNoInteractions(infoCamereService);
-        Assertions.assertEquals(ipaPecDto.getDomicilioDigitale(), codeSqsDtoArgumentCaptor.getValue().getDigitalAddress().get(0).getAddress());
-        Assertions.assertEquals(DIGITAL.name(), codeSqsDtoArgumentCaptor.getValue().getAddressType());
-    }
-
-    @Test
-    void testRetrieveDigitalOrPhysicalAddressNewWorkflowIpaNotFound() {
-        when(featureEnabledUtils.isPfNewWorkflowEnabled(any())).thenReturn(true);
-        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
-
-        IPAPecDto ipaPecDto = new IPAPecDto();
-
-        when(ipaService.getIpaPec(any()))
-                .thenReturn(Mono.just(ipaPecDto));
-        when(infoCamereService.getIniPecDigitalAddress(any(), any(), any())).thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
-
-        AddressOKDto addressOKDto = new AddressOKDto();
-        addressOKDto.setCorrelationId(C_ID);
-
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
-                .expectNext(addressOKDto)
-                .verifyComplete();
-
-        verify(ipaService, times(1)).getIpaPec(any());
-        verifyNoInteractions(inadService);
-        verify(infoCamereService, times(1)).getIniPecDigitalAddress(any(), any(), any());
-    }
+   }
 
 
     @Test
@@ -335,14 +307,10 @@ class GatewayServiceTest {
     void testRetrieveDigitalOrPhysicalAddressIniPEC() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
-        IPAPecDto ipaPecOKDto = new IPAPecDto();
-        ipaPecOKDto.setDomicilioDigitale("domicilioDigitale@ipa.com");
-        ipaPecOKDto.setTipo("tipo");
-        ipaPecOKDto.setCodEnte("codEnte");
-        ipaPecOKDto.setDenominazione("denominazione");
+        GetDigitalAddressIniPECOKDto inipecDto = new GetDigitalAddressIniPECOKDto();
 
-        when(ipaService.getIpaPec(any()))
-                .thenReturn(Mono.just(ipaPecOKDto));
+        when(infoCamereService.getIniPecDigitalAddress(any(), any(), any()))
+                .thenReturn(Mono.just(inipecDto));
 
         when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         AddressOKDto addressOKDto = new AddressOKDto();
