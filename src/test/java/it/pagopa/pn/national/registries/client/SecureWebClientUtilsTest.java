@@ -6,9 +6,9 @@ import io.netty.handler.ssl.SslContextBuilder;
 import it.pagopa.pn.national.registries.config.adecheckcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.utils.X509CertificateUtils;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
@@ -34,6 +34,33 @@ class SecureWebClientUtilsTest {
     @MockBean
     private X509CertificateUtils x509CertificateUtils;
 
+
+    @Test
+    void getSslContextForAde_shouldReturnSslContextWhenTrustIsProvided() throws SSLException {
+        SslContextBuilder sslContextBuilder = mock(SslContextBuilder.class);
+        when(sslContextBuilder.build()).thenReturn(mock(SslContext.class));
+        when(sslContextBuilder.trustManager(any(InputStream.class))).thenReturn(sslContextBuilder);
+        when(sslContextBuilder.keyManager(any(PrivateKey.class), any(X509Certificate.class))).thenReturn(sslContextBuilder);
+
+        SSLData sslData = new SSLData();
+        when(x509CertificateUtils.getKeyAndCertificate(any())).thenReturn(sslData);
+        when(x509CertificateUtils.getPrivateKey(any())).thenReturn(mock(PrivateKey.class));
+        when(x509CertificateUtils.loadCertificate(any())).thenReturn(mock(X509Certificate.class));
+
+        SslContext sslContext = secureWebClientUtils.getSslContextForAde(sslContextBuilder, "dHJ1c3QK");
+        assertNotNull(sslContext);
+        verify(sslContextBuilder).trustManager(any(InputStream.class));
+        verify(sslContextBuilder).keyManager(any(PrivateKey.class), any(X509Certificate.class));
+    }
+
+
+    @Test
+    void getSslContextForAde_NoTrust() throws SSLException {
+        SslContextBuilder sslContextBuilder = mock(SslContextBuilder.class);
+        when(sslContextBuilder.build()).thenReturn(mock(SslContext.class));
+        SslContext sslContext = secureWebClientUtils.getSslContextForAde(sslContextBuilder, null);
+        Assertions.assertNotNull(sslContext);
+    }
 
     /**
      * Method under test:
