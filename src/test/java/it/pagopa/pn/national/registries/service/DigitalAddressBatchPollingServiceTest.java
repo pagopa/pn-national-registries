@@ -57,6 +57,10 @@ class DigitalAddressBatchPollingServiceTest {
 
     @MockBean
     private InadService inadService;
+
+    @MockBean
+    private IpaService ipaService;
+
     @Autowired
     private DigitalAddressBatchPollingService digitalAddressBatchPollingService;
 

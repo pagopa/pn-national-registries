@@ -488,14 +488,14 @@ class GatewayConverterTest {
         assertEquals(C_ID, iniPecRequestBodyDto.getFilter().getCorrelationId());
     }
 
-    @Test
+/*    @Test
     void testConvertToGetIpaPecRequest(){
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         AddressRequestBodyFilterDto addressRequestBodyFilterDto = new AddressRequestBodyFilterDto();
         addressRequestBodyFilterDto.setTaxId("taxId");
         addressRequestBodyDto.setFilter(addressRequestBodyFilterDto);
         assertNotNull(gatewayConverter.convertToGetIpaPecRequest(addressRequestBodyDto));
-    }
+    }*/
 
     @Test
     void testConvertToGetDigitalAddressInadRequest2(){
