@@ -11,7 +11,7 @@ class CheckCfSecretConfigTest {
 
     @Test
     void getCheckCfSecretConfigTest() {
-        CheckCfSecretConfig checkCfSecretConfig = new CheckCfSecretConfig("test2", "trustedCert");
+        CheckCfSecretConfig checkCfSecretConfig = new CheckCfSecretConfig("test2", "trustedCert", "");
         Assertions.assertNotNull(checkCfSecretConfig.getPdndSecret());
         Assertions.assertNotNull(checkCfSecretConfig.getTrustData());
     }

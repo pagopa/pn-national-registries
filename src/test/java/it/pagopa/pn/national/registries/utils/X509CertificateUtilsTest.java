@@ -81,7 +81,7 @@ class X509CertificateUtilsTest {
     @Test
     void getKeyAndCertificateTest2() {
         when(ssmParameterConsumerActivation.getParameterValue(any(), any())).thenReturn(Optional.empty());
-        assertThrows(PnInternalException.class, () -> x509CertificateUtils.getKeyAndCertificate());
+        assertThrows(PnInternalException.class, () -> x509CertificateUtils.getKeyAndCertificate("/data"));
     }
 }
 
