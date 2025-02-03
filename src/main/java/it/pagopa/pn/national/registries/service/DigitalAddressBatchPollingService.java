@@ -45,7 +45,6 @@ import java.util.regex.Pattern;
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
-import static it.pagopa.pn.national.registries.middleware.queue.consumer.HandleEventUtils.handleException;
 import static it.pagopa.pn.national.registries.model.EService.*;
 
 @Slf4j
@@ -260,7 +259,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private Mono<Void> callIpaEservice(BatchRequest request) {
         log.info("START retrieve digital address for [{}] on [{}] - Step {} - nextSource: [{}]", request.getCorrelationId(), IPA, IPA.getStepNumber(), IPA.getNextStep());
         return ipaService.getIpaPec(convertToGetIpaPecRequest(request))
-                .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
+                .doOnNext(sendMessageResponse -> log.info("retrieved digital address from IPA for correlationId: {}", request.getCorrelationId()))
                 .onErrorResume(e -> {
                     logEServiceError(e, "can not retrieve digital address from IPA: {}");
                     request.setStatus(BatchStatus.ERROR.getValue());
