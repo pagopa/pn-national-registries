@@ -274,7 +274,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                         log.info("digital Address not found for [{}] on {} - Step {} - nextSource: [{}]", request.getCorrelationId(), IPA, IPA.getStepNumber(), IPA.getNextStep());
                         return callInadEservice(request);
                     }else{
-                        request.setMessage(convertCodeSqsDtoToString(ipaToSqsDto(request.getCorrelationId(), response)));
+                        String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
+                        request.setMessage(convertCodeSqsDtoToString(ipaToSqsDto(correlationId, response)));
                         request.setStatus(BatchStatus.WORKED.getValue());
                         request.setEservice(IPA.name());
                         return Mono.empty();
