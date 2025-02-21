@@ -308,7 +308,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
         GetDigitalAddressIniPECOKDto inipecDto = new GetDigitalAddressIniPECOKDto();
-
+        when(ipaService.getIpaPec(any())).thenReturn(Mono.just(new IPAPecDto()));
         when(infoCamereService.getIniPecDigitalAddress(any(), any(), any()))
                 .thenReturn(Mono.just(inipecDto));
 
