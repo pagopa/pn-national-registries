@@ -21,6 +21,7 @@ import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import java.time.OffsetDateTime;
 import java.util.*;
 
+import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,6 +55,9 @@ class DigitalAddressBatchPollingServiceTest {
     private InfoCamereConverter infoCamereConverter;
     @MockBean
     private IniPecBatchSqsService iniPecBatchSqsService;
+
+    @MockBean
+    private FeatureEnabledUtils featureEnabledUtils;
 
     @MockBean
     private InadService inadService;
