@@ -91,6 +91,10 @@ Parameters:
     Type: String
     Description: 'IPA Base URL'
 
+  CodecMemorySize:
+    Type: String
+    Description: 'Memory size reserved to buffer (ex. of accepted values 4MB / 4000000)'
+
   PDNDBaseURL:
     Type: String
     Description: 'PDND Base URL'
@@ -280,6 +284,42 @@ Parameters:
     Type: String
     Default: '/actuator/health'
 
+  # Logging parameters
+  WireTapLogActivation:
+    Type: String
+    Default: false
+    Description: Activation of wire logs
+    AllowedValues:
+      - true
+      - false
+
+  pfNewWorkflowStart:
+    Type: String
+    Description: 'Start date for new workflow'
+    Default: '2021-01-01T00:00:00Z'
+
+  pfNewWorkflowStop:
+    Type: String
+    Description: 'End date for new workflow'
+    Default: '2021-01-01T00:00:00Z'
+
+  PnCronAnalyzer:
+    Type: String
+    Default: '-'
+    Description: Cron for which you send the metric to CloudWatch
+
+  # EFS parameters
+  FargateEFSFileSystemID:
+    Type: String
+    Description: "EFS Filesystem"
+
+  MountEfs:
+    Type: String
+    Default: false
+    AllowedValues:
+      - "true"
+      - "false"
+
   # Instance parameters
   # 256 (.25 vCPU) - Available memory values: 0.5GB, 1GB, 2GB
   # 512 (.5 vCPU) - Available memory values: 1GB, 2GB, 3GB, 4GB
@@ -403,8 +443,11 @@ Resources:
         AutoscalingStrategy: REST-API
         MicroServiceUniqueName: !Sub '${ProjectName}-national-registries'
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        EfsFilesystem: !Ref FargateEFSFileSystemID
+        MountEfs: !Ref MountEfs
+        WireTapLogActivation: !Ref WireTapLogActivation
         ContainerImageURI: !Sub '${ContainerImageUri}'
-        ContainerEnvEntry1: !Sub 'AWS_REGION=${AWS::Region}'
+        ContainerEnvEntry1: !Sub 'AWS_REGIONCODE=${AWS::Region}'
         ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_BASE_URL=${PDNDBaseURL}'
         ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
         ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
@@ -438,11 +481,16 @@ Resources:
         ContainerEnvEntry32: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
         ContainerEnvEntry33: !Sub 'PN_NATIONAL_REGISTRY_TOPICS_GATEWAYEVENTS=${NationalRegistryGatewayInputsQueueName}'
         ContainerEnvEntry34: !Sub 'PN_NATIONAL_REGISTRY_INPUT_QUEUE_NAME=${NationalRegistryGatewayInputsQueueName}'
-        ContainerEnvEntry45: !Sub 'PN_NATIONAL_REGISTRY_INPUT_DLQ_QUEUE_NAME=${NationalRegistryGatewayInputsDLQName}'
+        ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_INPUT_DLQ_QUEUE_NAME=${NationalRegistryGatewayInputsDLQName}'
         ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_HEALTH_CHECK_PATH=${HealthCheckPath}'
         ContainerEnvEntry37: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_INPROGRESS_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
         ContainerEnvEntry38: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_BATCH_REQUEST_SIZE=${PnNationalRegistriesInipecMaxBatchRequestSize}'
         ContainerEnvEntry39: !Sub 'PN_NATIONAL_REGISTRY_CUSTOM_RETRY_MAX_ATTEMPTS=${CustomRetryMaxAttempts}'
+        ContainerEnvEntry40: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
+        ContainerEnvEntry41: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
+        ContainerEnvEntry42: !Sub 'SPRING_CODEC_MAXINMEMORYSIZE=${CodecMemorySize}'
+        ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTART=${pfNewWorkflowStart}'
+        ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTOP=${pfNewWorkflowStop}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -577,6 +625,7 @@ Resources:
               - secretsmanager:GetSecretValue
               - secretsmanager:CreateSecret
               - secretsmanager:UpdateSecret
+              - secretsmanager:DescribeSecret
             Resource: !Sub arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}*      
           - Effect: Allow
             Action:
@@ -742,6 +791,7 @@ Resources:
                 Effect: Allow
                 Resource: 
                   - !GetAtt InfocamereCertRenewalCodebuildProject.Arn
+                  - !GetAtt AdeCertRenewalCodebuildProject.Arn
         - PolicyName: sqsPut
           PolicyDocument:
             Statement:

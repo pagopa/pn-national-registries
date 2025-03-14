@@ -7,7 +7,7 @@ x-commons:
     X-RateLimit-Remaining:
       $ref: '#/components/headers/X-RateLimit-Remaining'
     X-RateLimit-Reset:
-        $ref: '#/components/headers/X-RateLimit-Reset'
+      $ref: '#/components/headers/X-RateLimit-Reset'
   common-responses: &common-responses
     '400':
       $ref: '#/components/responses/400BadRequest'
@@ -20,19 +20,16 @@ x-commons:
     default:
       $ref: '#/components/responses/default'
 
-security:
-  - IBM-Client-Secret: []
-    IBM-Client-Id: []
-    
+
 openapi: 3.0.0
 info:
   version: "1.0.0"
-
+  termsOfService: https://www.agenziaentrate.gov.it/portale/web/guest/privacy
   title: |-
     Verifica validità codice fiscale.
   x-summary: >-
     Verifica validità di codice fiscale di persona fisica e persona non fisica
-   
+
   description: |
     #### Documentazione
     Questo servizio ritorna la validità di una dato codice fiscale descritta da 
@@ -50,11 +47,7 @@ info:
     L'Header di Throttling X-RateLimit-Reset non viene inviato in caso di https 
     status code 200, sarà presente solo in caso di 429
 
-    #### Sicurezza
-    Pur essendo questa API di pubblico accesso, è richiesto l'invio delle 
-    API Key che consentono all'infrastruttura di applicare le politiche di 
-    throttling definite nell'ambito del piano sottoscritto
-      
+
     #### Informazioni tecniche ed esempi
 
     Esempio:
@@ -63,7 +56,7 @@ info:
     curl --header "Content-Type: application/json" \
          --request POST \
          --data '{"codiceFiscale":"AAAZZZ00H00T000Z"}' \
-        https://api.agenziaentrate.gov.it/entrate/api/codice-fiscale/v0/verifica
+        https://modipa-val.agenziaentrate.it/govway/rest/in/AgenziaEntrate/vcf2-verifica-cf/v1/verifica
     
     {
       "codiceFiscale": "AAAZZZ00H00T000Z"
@@ -91,8 +84,8 @@ tags:
     externalDocs:
       url: https://developer.agenziaentrate.gov.it/entrate/api
 servers:
-  - description: Production server
-    url: https://api.agenziaentrate.gov.it/entrate/api/codice-fiscale/v0
+  - description: Test server
+    url: https://modipa-val.agenziaentrate.it/govway/rest/in/AgenziaEntrate/vcf2-verifica-cf/v1
 
 
 paths:
@@ -123,7 +116,7 @@ paths:
       summary: Effettua una validazione del codice fiscale in input.
       operationId: post_verifica_codiceFiscale
       tags:
-        - verifiche 
+        - verifiche
       description: |
         Ritorna informazioni circa la validità del codice fiscale in input
       requestBody:
@@ -139,8 +132,8 @@ paths:
               codiceFiscaleNumerico:
                 value:
                   codiceFiscale: '06363391001'
-              
-          
+
+
       responses:
         <<: *common-responses
         '200':
@@ -183,16 +176,16 @@ components:
         codiceFiscale:
           $ref: '#/components/schemas/CodiceFiscale'
 
-    
     CodiceFiscale:
       type: string
+      x-field-extra-annotation: "@lombok.ToString.Exclude"
       minLength: 11
       maxLength: 16
       pattern: '^[0-9]{11}|(?:^(?:[A-Z][AEIOU][AEIOUX]|[B-DF-HJ-NP-TV-Z]{2}[A-Z]){2}(?:[\dLMNP-V]{2}(?:[A-EHLMPR-T](?:[04LQ][1-9MNP-V]|[15MR][\dLMNP-V]|[26NS][0-8LMNP-U])|[DHPS][37PT][0L]|[ACELMRT][37PT][01LM]|[AC-EHLMPR-T][26NS][9V])|(?:[02468LNQSU][048LQU]|[13579MPRTV][26NS])B[26NS][9V])(?:[A-MZ][1-9MNP-V][\dLMNP-V]{2}|[A-M][0L](?:[1-9MNP-V][\dLMNP-V]|[0L][1-9MNP-V]))[A-Z]$)'
-      
+
       example: '06363391001'
       description: 'può assumere un valore alfanumerico di lunghezza 16 o numerico di lunghezza 11 (i.e. 06363391001)'
-    
+
 
     VerificaCodiceFiscale:
       type: object
@@ -206,9 +199,9 @@ components:
           type: string
           example: "Codice fiscale valido"
           description: "messaggio congurente con il serivizio a libero accesso di verifica codice fiscale sul sito istituzionale"
-        
 
-    
+
+
     Problem:
       properties:
         detail:
@@ -249,17 +242,7 @@ components:
           format: uri
           type: string
       type: object
-  securitySchemes:
-      IBM-Client-Secret:
-        type: apiKey
-        description: ''
-        name: X-IBM-Client-Secret
-        in: header
-      IBM-Client-Id:
-        type: apiKey
-        description: ''
-        name: X-IBM-Client-Id
-        in: header
+
 
   headers:
     Retry-After:
@@ -329,3 +312,11 @@ components:
           $ref: '#/components/headers/Retry-After'
     default:
       description: Unexpected error
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Implementazione conforme ad RFC8725. Contiene il JWT recuperato da PDND interoperabilità applicando le Linee Guida sull'infrastruttura tecnologica della Piattaforma Digitale Nazionale Dati per l'interoperabilità dei sistemi informativi e delle basi di dati ai sensi dell'articolo 50-ter, comma 2 del CAD
+security:
+  - bearerAuth: [ ]

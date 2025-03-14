@@ -52,7 +52,6 @@ public class AgidJwtSignature {
             String jwtContent = ClientUtils.createJwtContent(createHeaderMap(th), createClaimMap(digest, tp, pdndSecretValue.getEserviceAudience()));
 
             SignRequest signRequest = ClientUtils.createSignRequest(jwtContent, pdndSecretValue.getKeyId());
-            log.info("START - KmsClient.sign Request: {}", signRequest);
             long startTimeKms = System.currentTimeMillis();
             SignResponse signResult = kmsClient.sign(signRequest);
             log.info("END - KmsClient.sign Timelapse: {} ms", System.currentTimeMillis() - startTimeKms);

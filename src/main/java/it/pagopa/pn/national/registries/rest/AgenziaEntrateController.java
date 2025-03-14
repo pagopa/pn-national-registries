@@ -1,13 +1,13 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.dto.VerificaCodiceFiscale;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
@@ -29,8 +29,7 @@ public class AgenziaEntrateController {
 
     }
 
-    @RequestMapping(
-            method = RequestMethod.POST,
+    @PostMapping(
             value = "/national-registries-private/agenzia-entrate/legal",
             produces = { "application/json" },
             consumes = { "application/json" }
@@ -40,4 +39,16 @@ public class AgenziaEntrateController {
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }
+
+    @PostMapping(
+            value = "/national-registries-private/agenzia-entrate/tax-id",
+            produces = { "application/json" },
+            consumes = { "application/json" }
+    )
+    public Mono<ResponseEntity<VerificaCodiceFiscale>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
+        return checkTaxIdRequestBodyDto.flatMap(agenziaEntrateService::callEService)
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
+    }
+
 }
