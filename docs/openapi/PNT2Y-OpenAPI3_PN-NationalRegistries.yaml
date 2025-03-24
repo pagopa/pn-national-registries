@@ -236,6 +236,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddressError'
+  /national-registries-private/physical-addresses:
+    post:
+      tags:
+        - address
+      summary: 'Questo servizio si occupa di smistare le richieste in ingresso al fine di fornire uno o più indirizzi fisici per la PF o la PG indicata'
+      description: 'Questo servizio si occupa di smistare le richieste in ingresso al fine di fornire uno o più indirizzi fisici per la PF o la PG indicata'
+      operationId: getPhysicalAddresses
+      parameters:
+        - name: pn-national-registries-cx-id
+          in: header
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhysicalAddressesRequestBody'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressOK'
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressError'
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressError'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressError'
   /national-registries-private/agenzia-entrate/tax-id:
     post:
       tags:
@@ -1193,3 +1236,38 @@ components:
                   
                   
                   _'PROFESSIONISTA'_: Indica che l'indirizzo digitale corrente è riferito ad un professionista
+    PhysicalAddressesRequestBody:
+      type: object
+      required:
+        - correlationId
+        - addresses
+      properties:
+        correlationId:
+          type: string
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipientAddressRequestBody'
+    RecipientAddressRequestBody:
+      type: object
+      properties:
+        filter:
+          type: object
+          required:
+            - taxId
+            - referenceRequestDate
+            - recIndex
+            - recipientType
+          properties:
+            taxId:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+              type: string
+              example: AAAZZZ00H00T000Z
+            referenceRequestDate:
+              type: string
+              format: date-time
+            recIndex:
+              type: string
+            recipientType:
+              type: string
+              enum: [ PG , PF ]
