@@ -1174,34 +1174,36 @@ components:
                   
                   _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica
         physicalAddress:
-          description: >
-            Rappresenta il domicilio fisico
-          type: object
-          properties:
-            at:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            address:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            addressDetails:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            zip:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            municipality:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            municipalityDetails:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            province:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            foreignState:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
+          $ref: '#/components/schemas/PhysicalAddress'
+    PhysicalAddress:
+      description: >
+        Rappresenta il domicilio fisico
+      type: object
+      properties:
+        at:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+        address:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+        addressDetails:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+        zip:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+        municipality:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+        municipalityDetails:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+        province:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+        foreignState:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
     GetDigitalAddressIniPECSQSMessage:
       type: object
       properties:
@@ -1236,6 +1238,45 @@ components:
                   
                   
                   _'PROFESSIONISTA'_: Indica che l'indirizzo digitale corrente è riferito ad un professionista
+    AddressesSQSMessage:
+      type: object
+      required:
+        - correlationId
+        - addresses
+      properties:
+        correlationId:
+          type: string
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhysicalAddressSQSMessage'
+    PhysicalAddressSQSMessage:
+      type: object
+      required:
+        - recIndex
+        - taxId
+      properties:
+        recIndex:
+          type: string
+        taxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+        error:
+          type: string
+          description: Se presente indica che si è verificato un errore durante l'esecuzione dell'operazione richiesta.
+        physicalAddress:
+          $ref: '#/components/schemas/PhysicalAddress'
+        registry:
+          $ref: '#/components/schemas/Registry'
+    Registry:
+      type: string
+      description: >
+        Rappresenta il registro consultato per ottenere l'indirizzo.
+        Può assumere i seguenti valori:
+        - ANPR
+        - REGISTRO_IMPRESE
+        - INIPEC
+        - INAD
     PhysicalAddressesRequestBody:
       type: object
       required:
