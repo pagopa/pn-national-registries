@@ -10,13 +10,13 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.model.MultiRecipientCodeSqsDto;
-import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
@@ -75,7 +75,7 @@ public class GatewayService extends GatewayConverter {
 
     public Mono<AddressOKDto>retrievePhysicalAddress(String pnNationalRegistriesCxId, PhysicalAddressesRequestBodyDto request) {
         String correlationId = request.getCorrelationId();
-        if (request.getAddresses() == null || request.getAddresses().isEmpty()) {
+        if (request.getAddresses() == null || CollectionUtils.isEmpty(request.getAddresses())) {
             return Mono.error(new PnNationalRegistriesException("addresses required", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class));
         }
