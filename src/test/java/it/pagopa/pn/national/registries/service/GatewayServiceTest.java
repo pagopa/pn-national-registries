@@ -25,6 +25,7 @@ import reactor.test.StepVerifier;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 
 import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL;
@@ -369,5 +370,80 @@ class GatewayServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         addressRequestBodyDto.setFilter(filterDto);
         return addressRequestBodyDto;
+    }
+
+    @Test
+    @DisplayName("Test retrieve physical address successfully")
+    void testRetrievePhysicalAddressSuccess() {
+        PhysicalAddressesRequestBodyDto request = new PhysicalAddressesRequestBodyDto();
+        request.setCorrelationId(C_ID);
+        request.setReferenceRequestDate(new Date());
+        RecipientAddressRequestBodyDto recipient = new RecipientAddressRequestBodyDto();
+        RecipientAddressRequestBodyFilterDto filter = new RecipientAddressRequestBodyFilterDto();
+        filter.setTaxId(CF);
+        filter.setRecipientType(RecipientAddressRequestBodyFilterDto.RecipientTypeEnum.PF);
+        filter.setRecIndex("1");
+        recipient.setFilter(filter);
+        request.setAddresses(List.of(recipient));
+
+        when(sqsService.pushToMultiInputQueue(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId(C_ID);
+
+        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Test retrieve physical address with error")
+    void testRetrievePhysicalAddressError() {
+        PhysicalAddressesRequestBodyDto request = new PhysicalAddressesRequestBodyDto();
+        request.setCorrelationId(C_ID);
+        request.setReferenceRequestDate(new Date());
+        RecipientAddressRequestBodyDto recipient = new RecipientAddressRequestBodyDto();
+        RecipientAddressRequestBodyFilterDto filter = new RecipientAddressRequestBodyFilterDto();
+        filter.setTaxId(CF);
+        filter.setRecipientType(RecipientAddressRequestBodyFilterDto.RecipientTypeEnum.PF);
+        filter.setRecIndex("1");
+        recipient.setFilter(filter);
+        request.setAddresses(List.of(recipient));
+
+        when(sqsService.pushToMultiInputQueue(any(), any()))
+                .thenReturn(Mono.error(new RuntimeException()));
+
+        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+                .expectError(RuntimeException.class);
+    }
+
+    @Test
+    @DisplayName("Test retrieve physical address with addresses not specified")
+    void testRetrievePhysicalAddressError_addressesNotSpecified() {
+        PhysicalAddressesRequestBodyDto request = new PhysicalAddressesRequestBodyDto();
+        request.setCorrelationId(C_ID);
+        request.setReferenceRequestDate(new Date());
+
+        when(sqsService.pushToMultiInputQueue(any(), any()))
+                .thenReturn(Mono.error(new RuntimeException()));
+
+        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+                .expectError(PnNationalRegistriesException.class);
+    }
+
+    @Test
+    @DisplayName("Test retrieve physical address with addresses empty list")
+    void testRetrievePhysicalAddressError_addressesEmptyList() {
+        PhysicalAddressesRequestBodyDto request = new PhysicalAddressesRequestBodyDto();
+        request.setCorrelationId(C_ID);
+        request.setReferenceRequestDate(new Date());
+        request.setAddresses(List.of());
+
+        when(sqsService.pushToMultiInputQueue(any(), any()))
+                .thenReturn(Mono.error(new RuntimeException()));
+
+        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+                .expectError(PnNationalRegistriesException.class);
     }
 }

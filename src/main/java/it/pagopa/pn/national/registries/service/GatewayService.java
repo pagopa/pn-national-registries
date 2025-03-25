@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.model.MultiRecipientCodeSqsDto;
 import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
@@ -21,6 +22,7 @@ import reactor.util.context.Context;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.nio.charset.Charset;
+import java.util.List;
 import java.util.Map;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_CX_ID_FLAG;
@@ -69,6 +71,30 @@ public class GatewayService extends GatewayConverter {
                 .build(), pnNationalRegistriesCxId);
 
         return Mono.just(mapToAddressesOKDto(correlationId));
+    }
+
+    public Mono<AddressOKDto>retrievePhysicalAddress(String pnNationalRegistriesCxId, PhysicalAddressesRequestBodyDto request) {
+        String correlationId = request.getCorrelationId();
+        if (request.getAddresses() == null || request.getAddresses().isEmpty()) {
+            return Mono.error(new PnNationalRegistriesException("addresses required", HttpStatus.BAD_REQUEST.value(),
+                    HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class));
+        }
+        sqsService.pushToMultiInputQueue(MultiRecipientCodeSqsDto.builder()
+                .correlationId(correlationId)
+                .pnNationalRegistriesCxId(pnNationalRegistriesCxId)
+                .referenceRequestDate(request.getReferenceRequestDate())
+                .internalRecipientAdresses(mapToInternalRecipientAddresses(request.getAddresses()))
+                .build(), pnNationalRegistriesCxId);
+        return Mono.just(mapToAddressesOKDto(correlationId));
+    }
+
+    private List<MultiRecipientCodeSqsDto.InternalRecipientAddress>mapToInternalRecipientAddresses(List<RecipientAddressRequestBodyDto> recipients) {
+        return recipients.stream().map(recipient -> MultiRecipientCodeSqsDto.InternalRecipientAddress.builder()
+                .taxId(recipient.getFilter().getTaxId())
+                .recipientType(recipient.getFilter().getRecipientType().getValue())
+                .recIndex(Integer.valueOf(recipient.getFilter().getRecIndex()))
+                .domicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue())
+                .build()).toList();
     }
 
     public Mono<AddressOKDto> handleMessage(PnAddressGatewayEvent.Payload payload) {

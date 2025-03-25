@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
+import it.pagopa.pn.national.registries.model.MultiRecipientCodeSqsDto;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -53,6 +54,26 @@ class SqsServiceTest {
         InternalCodeSqsDto codeSqsDto =InternalCodeSqsDto.builder().build();
         codeSqsDto.setCorrelationId("correlationId");
         StepVerifier.create(sqsService.pushToInputQueue(codeSqsDto,"clientId"))
+                .expectNext(sendMessageResponse)
+                .verifyComplete();
+    }
+
+    @Test
+    void testPushToMultiInputQueue() {
+        SqsClient amazonSQS = mock(SqsClient.class);
+        GetQueueUrlResponse getQueueUrlResponse = GetQueueUrlResponse.builder().queueUrl("queueUrl").build();
+        SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
+
+        when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
+        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponse);
+
+        ObjectMapper objectMapper = mock(ObjectMapper.class);
+
+        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
+
+        MultiRecipientCodeSqsDto codeSqsDto = MultiRecipientCodeSqsDto.builder().build();
+        codeSqsDto.setCorrelationId("correlationId");
+        StepVerifier.create(sqsService.pushToMultiInputQueue(codeSqsDto,"clientId"))
                 .expectNext(sendMessageResponse)
                 .verifyComplete();
     }
