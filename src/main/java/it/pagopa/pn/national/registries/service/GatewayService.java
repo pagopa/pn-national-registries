@@ -40,6 +40,7 @@ public class GatewayService extends GatewayConverter {
     private final SqsService sqsService;
     private final boolean pnNationalRegistriesCxIdFlag;
     private static final String CORRELATION_ID = "correlationId";
+    private static final String DOMICILE_TYPE_PHYSICAL = "PHYSICAL";
 
     private final FeatureEnabledUtils featureEnabledUtils;
 
@@ -73,7 +74,7 @@ public class GatewayService extends GatewayConverter {
         return Mono.just(mapToAddressesOKDto(correlationId));
     }
 
-    public Mono<AddressOKDto>retrievePhysicalAddress(String pnNationalRegistriesCxId, PhysicalAddressesRequestBodyDto request) {
+    public Mono<AddressOKDto> retrievePhysicalAddress(String pnNationalRegistriesCxId, PhysicalAddressesRequestBodyDto request) {
         String correlationId = request.getCorrelationId();
         if (request.getAddresses() == null || CollectionUtils.isEmpty(request.getAddresses())) {
             return Mono.error(new PnNationalRegistriesException("addresses required", HttpStatus.BAD_REQUEST.value(),
@@ -88,12 +89,12 @@ public class GatewayService extends GatewayConverter {
         return Mono.just(mapToAddressesOKDto(correlationId));
     }
 
-    private List<MultiRecipientCodeSqsDto.InternalRecipientAddress>mapToInternalRecipientAddresses(List<RecipientAddressRequestBodyDto> recipients) {
+    private List<MultiRecipientCodeSqsDto.InternalRecipientAddress> mapToInternalRecipientAddresses(List<RecipientAddressRequestBodyDto> recipients) {
         return recipients.stream().map(recipient -> MultiRecipientCodeSqsDto.InternalRecipientAddress.builder()
                 .taxId(recipient.getFilter().getTaxId())
                 .recipientType(recipient.getFilter().getRecipientType().getValue())
                 .recIndex(Integer.valueOf(recipient.getFilter().getRecIndex()))
-                .domicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue())
+                .domicileType(DOMICILE_TYPE_PHYSICAL)
                 .build()).toList();
     }
 
