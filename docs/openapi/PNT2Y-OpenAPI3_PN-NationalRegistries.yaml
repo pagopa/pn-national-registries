@@ -1285,6 +1285,9 @@ components:
       properties:
         correlationId:
           type: string
+        referenceRequestDate:
+          type: string
+          format: date-time
         addresses:
           type: array
           items:
@@ -1296,7 +1299,6 @@ components:
           type: object
           required:
             - taxId
-            - referenceRequestDate
             - recIndex
             - recipientType
           properties:
@@ -1304,9 +1306,6 @@ components:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
               example: AAAZZZ00H00T000Z
-            referenceRequestDate:
-              type: string
-              format: date-time
             recIndex:
               type: string
             recipientType:

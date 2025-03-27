@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
+import it.pagopa.pn.national.registries.model.MultiRecipientCodeSqsDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -54,6 +55,12 @@ public class SqsService {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
         log.info(INSERTING_MSG_WITHOUT_DATA, inputQueueName);
         return push(toJson(msg), pnNationalRegistriesCxId, inputQueueName, "NR_GATEWAY_INPUT");
+    }
+
+    public Mono<SendMessageResponse> pushToMultiInputQueue(MultiRecipientCodeSqsDto msg, String pnNationalRegistriesCxId) {
+        log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
+        log.info(INSERTING_MSG_WITHOUT_DATA, inputQueueName);
+        return push(toJson(msg), pnNationalRegistriesCxId, inputQueueName, "NR_GATEWAY_MULTI_INPUT");
     }
 
     public Mono<SendMessageResponse> pushToInputDlqQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
