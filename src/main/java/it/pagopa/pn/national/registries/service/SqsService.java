@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
+import it.pagopa.pn.national.registries.model.MultiCodeSqsDto;
 import it.pagopa.pn.national.registries.model.MultiRecipientCodeSqsDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -51,6 +52,12 @@ public class SqsService {
         return push(toJson(msg), pnNationalRegistriesCxId, outputQueueName, "NR_GATEWAY_RESPONSE");
     }
 
+    public Mono<SendMessageResponse> pushMultiToOutputQueue(MultiCodeSqsDto msg, String pnNationalRegistriesCxId) {
+        log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
+        log.info(INSERTING_MSG_WITHOUT_DATA, outputQueueName);
+        return push(toJson(msg), pnNationalRegistriesCxId, outputQueueName, "NR_GATEWAY_RESPONSE");
+    }
+
     public Mono<SendMessageResponse> pushToInputQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
         log.info(INSERTING_MSG_WITHOUT_DATA, inputQueueName);
@@ -64,6 +71,12 @@ public class SqsService {
     }
 
     public Mono<SendMessageResponse> pushToInputDlqQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
+        log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
+        log.info(INSERTING_MSG_WITHOUT_DATA, inputDlqQueueName);
+        return push(toJson(msg), pnNationalRegistriesCxId, inputDlqQueueName, "NR_GATEWAY_INPUT");
+    }
+
+    public Mono<SendMessageResponse> pushToInputDlqQueue(MultiRecipientCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
         log.info(INSERTING_MSG_WITHOUT_DATA, inputDlqQueueName);
         return push(toJson(msg), pnNationalRegistriesCxId, inputDlqQueueName, "NR_GATEWAY_INPUT");

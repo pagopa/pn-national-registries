@@ -1,15 +1,15 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
+import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressesGatewayEvent;
+import it.pagopa.pn.national.registries.model.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
-import it.pagopa.pn.national.registries.model.MultiRecipientCodeSqsDto;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.jetbrains.annotations.NotNull;
@@ -17,6 +17,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
@@ -24,10 +26,13 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_CX_ID_FLAG;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADDRESSES_REQUIRED;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESSES_REQUIRED;
 
 @Service
 @lombok.CustomLog
@@ -146,12 +151,17 @@ public class GatewayService extends GatewayConverter {
         };
     }
 
+    private Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto requestBodyDto, String correlationId) {
+        log.info("getAddressANPR for correlationId: {}", correlationId);
+        return anprService.getAddressANPR(requestBodyDto);
+    }
+
     private Mono<AddressOKDto> retrieveAddressForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
         if (AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.equals(addressRequestBodyDto.getFilter().getDomicileType())) {
-            return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
+            return getAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto), correlationId)
                     .flatMap(anprResponse -> sqsService.pushToOutputQueue(anprToSqsDto(correlationId, anprResponse), pnNationalRegistriesCxId))
-                    .doOnNext(sendMessageResponse -> log.info("retrieved physycal address from ANPR for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId()))
+                    .doOnNext(sendMessageResponse -> log.info("retrieved physical address from ANPR for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId()))
                     .doOnError(e -> logEServiceError(e, "can not retrieve physical address from ANPR: {}"))
                     .onErrorResume(e -> {
                         CodeSqsDto codeSqsDto = errorAnprToSqsDto(correlationId, e);
@@ -181,11 +191,16 @@ public class GatewayService extends GatewayConverter {
         }
     }
 
+    private Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseLegalAddress(GetAddressRegistroImpreseRequestBodyDto requestBodyDto, String correlationId) {
+        log.info("getRegistroImpreseLegalAddress for correlationId: {}", correlationId);
+        return infoCamereService.getRegistroImpreseLegalAddress(requestBodyDto);
+    }
+
     private Mono<AddressOKDto> retrieveAddressForPG(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto) {
         String correlationId = addressRequestBodyDto.getFilter().getCorrelationId();
 
         if (addressRequestBodyDto.getFilter().getDomicileType().equals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL)) {
-            return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
+            return getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto), correlationId)
                     .flatMap(registroImpreseResponse -> sqsService.pushToOutputQueue(regImpToSqsDto(correlationId, registroImpreseResponse), pnNationalRegistriesCxId))
                     .doOnError(e -> logEServiceError(e, "can not retrieve physical address from Registro Imprese: {}"))
                     .onErrorResume(throwable -> handleException(throwable, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), PG.name(), pnNationalRegistriesCxId)))
@@ -249,4 +264,69 @@ public class GatewayService extends GatewayConverter {
         }
         return Mono.error(throwable);
     }
+
+    public Mono<AddressOKDto> handleMessageMultiRequest(PnAddressesGatewayEvent.Payload payload) {
+        List<AddressQueryRequest> addressQueryRequests = toAddressQueryRequests(payload);
+        if (CollectionUtils.isEmpty(addressQueryRequests) || addressQueryRequests.get(0) == null) {
+            return Mono.error(new PnInternalException(ERROR_MESSAGE_ADDRESSES_REQUIRED, ERROR_CODE_ADDRESSES_REQUIRED));
+        }
+        return retrieveMultiPhysicalAddress(addressQueryRequests)
+                .contextWrite(ctx -> enrichFluxContext(ctx, MDCUtils.retrieveMDCContextMap()));
+    }
+
+    public Mono<AddressOKDto> retrieveMultiPhysicalAddress(List<AddressQueryRequest> addressQueryRequests) {
+        String commonCorrelationId = addressQueryRequests.get(0).getCorrelationId();
+        String commonPnNationalRegistriesCxId = addressQueryRequests.get(0).getPnNationalRegistriesCxId();
+        log.info("RetrieveMultiPhysicalAddress for correlationId: {} and {} recipients", commonCorrelationId, addressQueryRequests.size());
+
+        return Flux.fromIterable(addressQueryRequests)
+                .flatMap(this::retrievePhysicalAddresses)
+                .collectList()
+                .map(addresses -> convertToMultiCodeSqsDto(addresses, commonCorrelationId))
+                .flatMap(multiCodeSqsDto -> sqsService.pushMultiToOutputQueue(multiCodeSqsDto, commonPnNationalRegistriesCxId))
+                .onErrorResume(t -> handleException(t, convertToMultiRecipientCodeSqsDto(addressQueryRequests)))
+                .map(sendMessageResponse -> mapToAddressesOKDto(commonCorrelationId));
+
+    }
+
+    public Mono<MultiCodeSqsDto.PhysicalAddressSQSMessage> retrievePhysicalAddresses(AddressQueryRequest addressQueryRequest) {
+        return switch (addressQueryRequest.getRecipientType()) {
+            case PF -> retrievePhysicalAddressForPF(addressQueryRequest);
+            case PG -> retrievePhysicalAddressForPG(addressQueryRequest);
+        };
+    }
+
+    private Mono<MultiCodeSqsDto.PhysicalAddressSQSMessage> retrievePhysicalAddressForPF(AddressQueryRequest addressQueryRequest) {
+        return getAddressANPR(convertToGetAddressAnprRequest(addressQueryRequest), addressQueryRequest.getCorrelationId())
+                .map(res -> convertAnprResponseToInternalRecipientAddress(res, addressQueryRequest))
+                .doOnNext(unused -> log.info("Retrieved physical address from ANPR for correlationId: {} and recIndex: {}", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex()))
+                .doOnError(e -> logEServiceError(e, String.format("Can not retrieve physical address from ANPR for correlationId %s and recIndex %s, error: {}", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex())))
+                .onErrorResume(isAnprAddressNotFound, e -> {;
+                    log.info("correlationId: {} recIndex {} - ANPR - indirizzo non presente", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex());
+                    return Mono.just(anprNotFoundErrorToPhysicalAddressSQSMessage(addressQueryRequest));
+                });
+    }
+
+    private final Predicate<Throwable> isAnprAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
+            && exception.getStatusCode() == HttpStatus.NOT_FOUND
+            && StringUtils.hasText(exception.getResponseBodyAsString())
+            && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
+
+    private Mono<MultiCodeSqsDto.PhysicalAddressSQSMessage> retrievePhysicalAddressForPG(AddressQueryRequest addressQueryRequest) {
+        return getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressQueryRequest), addressQueryRequest.getCorrelationId())
+                .doOnNext(unused -> log.info("Retrieved physical address from REGISTRO_IMPRESE for correlationId: {} and recIndex: {}", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex()))
+                .doOnError(e -> logEServiceError(e, String.format("Can not retrieve physical address from REGISTRO_IMPRESE for correlationId %s and recIndex %s, error: {}", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex())))
+                .map(res -> convertRegImprResponseToInternalRecipientAddress(res, addressQueryRequest));
+    }
+
+    public Mono<SendMessageResponse> handleException(Throwable throwable, MultiRecipientCodeSqsDto multiRecipientCodeSqsDto) {
+        if (throwable instanceof PnNationalRegistriesException exception && (exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
+            return sqsService.pushToInputDlqQueue(multiRecipientCodeSqsDto, multiRecipientCodeSqsDto.getPnNationalRegistriesCxId())
+                    .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
+                            multiRecipientCodeSqsDto.getCorrelationId(),
+                            sendMessageResponse));
+        }
+        return Mono.error(throwable);
+    }
+
 }

@@ -3,13 +3,16 @@ package it.pagopa.pn.national.registries.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.constant.DomicileType;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.middleware.queue.consumer.event.InternalRecipientAddress;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressesGatewayEvent;
+import it.pagopa.pn.national.registries.model.*;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.joda.time.LocalDateTime;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -82,7 +85,7 @@ class GatewayServiceTest {
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId("correlationId");
         when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(getDigitalAddressINADOKDto));
-        when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         StepVerifier.create(gatewayService.handleMessage(payload)).expectNext(addressOKDto).verifyComplete();
     }
 
@@ -123,7 +126,7 @@ class GatewayServiceTest {
         when(anprService.getAddressANPR(any()))
                 .thenReturn(Mono.just(getAddressANPROKDto));
 
-        when(sqsService.pushToOutputQueue(any(), any()))
+        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -146,7 +149,7 @@ class GatewayServiceTest {
         when(anprService.getAddressANPR(any()))
                 .thenReturn(Mono.just(getAddressANPROKDto));
 
-        when(sqsService.pushToOutputQueue(any(), any()))
+        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -165,7 +168,7 @@ class GatewayServiceTest {
         when(anprService.getAddressANPR(any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        when(sqsService.pushToInputDlqQueue(any(), any()))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
@@ -185,7 +188,7 @@ class GatewayServiceTest {
         when(inadService.callEService(any(), any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
-        when(sqsService.pushToOutputQueue(any(), any()))
+        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -232,7 +235,7 @@ class GatewayServiceTest {
         when(inadService.callEService(any(), any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        when(sqsService.pushToInputDlqQueue(any(), any()))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
@@ -254,7 +257,7 @@ class GatewayServiceTest {
         when(inadService.callEService(any(), any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
-        when(sqsService.pushToOutputQueue(any(), any()))
+        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -278,7 +281,7 @@ class GatewayServiceTest {
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
                 .thenReturn(Mono.just(getAddressRegistroImpreseOKDto));
 
-        when(sqsService.pushToOutputQueue(any(), any()))
+        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -296,7 +299,7 @@ class GatewayServiceTest {
 
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
                 .thenReturn(Mono.error(new RuntimeException()));
-        when(sqsService.pushToInputDlqQueue(any(), any()))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
@@ -313,7 +316,7 @@ class GatewayServiceTest {
         when(infoCamereService.getIniPecDigitalAddress(any(), any(), any()))
                 .thenReturn(Mono.just(inipecDto));
 
-        when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
@@ -349,7 +352,7 @@ class GatewayServiceTest {
         PnNationalRegistriesException exception = new PnNationalRegistriesException("", 400, "", null, null, null, null);
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
                 .thenReturn(Mono.error(exception));
-        when(sqsService.pushToInputDlqQueue(any(), any()))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -446,4 +449,121 @@ class GatewayServiceTest {
         StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
                 .expectError(PnNationalRegistriesException.class);
     }
+
+    @Test
+    @DisplayName("Test handleMessageMultiRequest")
+    void testHandleMessageMultiRequest() {
+
+        when(sqsService.pushMultiToOutputQueue(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        MDC.setContextMap(Map.of(MDCUtils.MDC_TRACE_ID_KEY, "traceId"));
+        GetAddressANPROKDto anprResponse = new GetAddressANPROKDto();
+        anprResponse.setClientOperationId("clientOperationId");
+        when(anprService.getAddressANPR(any())).thenReturn(Mono.just(anprResponse));
+
+        StepVerifier.create(gatewayService.handleMessageMultiRequest(getPnAddressesGatewayEventPayload()))
+                .expectNextMatches(response -> response.getCorrelationId().equals("correlationId"))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Test retrieveMultiPhysicalAddress")
+    void testRetrieveMultiPhysicalAddress() {
+        when(sqsService.pushMultiToOutputQueue(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        MDC.setContextMap(Map.of(MDCUtils.MDC_TRACE_ID_KEY, "traceId"));
+
+        GetAddressANPROKDto anprResponse = new GetAddressANPROKDto();
+        anprResponse.setClientOperationId("clientOperationId");
+        when(anprService.getAddressANPR(any())).thenReturn(Mono.just(anprResponse));
+
+        GetAddressRegistroImpreseOKDto regImpreseResponse = new GetAddressRegistroImpreseOKDto();
+        regImpreseResponse.setTaxId("taxId");
+        when(infoCamereService.getRegistroImpreseLegalAddress(any())).thenReturn(Mono.just(regImpreseResponse));
+
+        StepVerifier.create(gatewayService.retrieveMultiPhysicalAddress(getAddressQueryRequestList()))
+                .expectNextMatches(response -> response.getCorrelationId().equals("correlationId"))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Test retrievePhysicalAddresses for PF")
+    void testRetrievePhysicalAddressesForPF() {
+        GetAddressANPROKDto anprResponse = new GetAddressANPROKDto();
+        anprResponse.setClientOperationId("clientOperationId");
+        when(anprService.getAddressANPR(any())).thenReturn(Mono.just(anprResponse));
+        AddressQueryRequest addressQueryRequestPF = AddressQueryRequest.builder()
+                .correlationId("correlationId")
+                .taxId("taxId")
+                .referenceRequestDate(new Date())
+                .recipientType(RecipientType.PF)
+                .recIndex(0)
+                .pnNationalRegistriesCxId("cxId")
+                .build();
+
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses(addressQueryRequestPF))
+                .expectNextMatches(response -> response.getRegistry().equals(GatewayDownstreamService.ANPR.name()))
+                .verifyComplete();
+    }
+
+    @Test
+    @DisplayName("Test retrievePhysicalAddresses for PG")
+    void testRetrievePhysicalAddressesForPG() {
+        GetAddressRegistroImpreseOKDto regImpreseResponse = new GetAddressRegistroImpreseOKDto();
+        regImpreseResponse.setTaxId("taxId2");
+        when(infoCamereService.getRegistroImpreseLegalAddress(any())).thenReturn(Mono.just(regImpreseResponse));
+
+        AddressQueryRequest addressQueryRequestPG = AddressQueryRequest.builder()
+                .correlationId("correlationId")
+                .taxId("taxId2")
+                .recipientType(RecipientType.PG)
+                .recIndex(1)
+                .pnNationalRegistriesCxId("cxId")
+                .build();
+
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses(addressQueryRequestPG))
+                .expectNextMatches(response -> response.getRegistry().equals(GatewayDownstreamService.REGISTRO_IMPRESE.name()))
+                .verifyComplete();
+    }
+
+
+    private static PnAddressesGatewayEvent.Payload getPnAddressesGatewayEventPayload() {
+        return PnAddressesGatewayEvent.Payload.builder()
+                .correlationId("correlationId")
+                .referenceRequestDate(new Date())
+                .pnNationalRegistriesCxId("cxId")
+                .internalRecipientAdresses(List.of(InternalRecipientAddress.builder()
+                        .taxId("taxId")
+                        .recipientType(String.valueOf(RecipientType.PF))
+                        .domicileType(DomicileType.PHYSICAL.name())
+                        .recIndex(0)
+                        .build()))
+                .build();
+    }
+
+    private static List<AddressQueryRequest> getAddressQueryRequestList() {
+        return List.of(
+                AddressQueryRequest.builder()
+                        .correlationId("correlationId")
+                        .taxId("taxId1")
+                        .recipientType(RecipientType.PF)
+                        .recIndex(0)
+                        .pnNationalRegistriesCxId("cxId")
+                        .referenceRequestDate(new Date())
+                        .domicileType(DomicileType.PHYSICAL)
+                        .build(),
+                AddressQueryRequest.builder()
+                        .correlationId("correlationId")
+                        .taxId("taxId2")
+                        .recipientType(RecipientType.PG)
+                        .referenceRequestDate(new Date())
+                        .domicileType(DomicileType.PHYSICAL)
+                        .recIndex(1)
+                        .pnNationalRegistriesCxId("cxId")
+                        .build()
+        );
+    }
+
 }
