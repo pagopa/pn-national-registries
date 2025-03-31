@@ -17,6 +17,8 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
+import it.pagopa.pn.national.registries.middleware.queue.consumer.event.InternalRecipientAddress;
+import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressesGatewayEvent;
 import it.pagopa.pn.national.registries.model.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.MultiCodeSqsDto;
 import it.pagopa.pn.national.registries.model.MultiRecipientCodeSqsDto;
@@ -43,6 +45,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Date;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collections;
 import java.util.List;
 
 import org.springframework.test.context.ContextConfiguration;
@@ -579,6 +582,51 @@ class GatewayConverterTest {
 
     // START METHODS TESTS FOR MULTI ADDRESSES
     @Test
+    void testToAddressQueryRequests() {
+        InternalRecipientAddress internalRecipientAddress1 = InternalRecipientAddress.builder()
+                .taxId("taxId1")
+                .recipientType(RecipientType.PF.name())
+                .domicileType(DomicileType.PHYSICAL.name())
+                .recIndex(0)
+                .build();
+
+        InternalRecipientAddress internalRecipientAddress2 = InternalRecipientAddress.builder()
+                .taxId("taxId2")
+                .recipientType(RecipientType.PG.name())
+                .domicileType(DomicileType.PHYSICAL.name())
+                .recIndex(1)
+                .build();
+
+        PnAddressesGatewayEvent.Payload payload = PnAddressesGatewayEvent.Payload.builder()
+                .correlationId("test-correlation-id")
+                .referenceRequestDate(new java.util.Date())
+                .pnNationalRegistriesCxId("test-cx-id")
+                .internalRecipientAdresses(List.of(internalRecipientAddress1, internalRecipientAddress2))
+                .build();
+
+        List<AddressQueryRequest> result = gatewayConverter.toAddressQueryRequests(payload);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        AddressQueryRequest request1 = result.get(0);
+        assertEquals("test-correlation-id", request1.getCorrelationId());
+        assertEquals("test-cx-id", request1.getPnNationalRegistriesCxId());
+        assertEquals("taxId1", request1.getTaxId());
+        assertEquals(RecipientType.PF, request1.getRecipientType());
+        assertEquals(DomicileType.PHYSICAL, request1.getDomicileType());
+        assertEquals(0, request1.getRecIndex());
+
+        AddressQueryRequest request2 = result.get(1);
+        assertEquals("test-correlation-id", request2.getCorrelationId());
+        assertEquals("test-cx-id", request2.getPnNationalRegistriesCxId());
+        assertEquals("taxId2", request2.getTaxId());
+        assertEquals(RecipientType.PG, request2.getRecipientType());
+        assertEquals(DomicileType.PHYSICAL, request2.getDomicileType());
+        assertEquals(1, request2.getRecIndex());
+    }
+
+    @Test
     void testConvertToGetPhysicalAddressAnprRequest() {
         AddressQueryRequest addressQueryRequest = getAddressQueryRequest1();
 
@@ -612,6 +660,28 @@ class GatewayConverterTest {
         assertEquals("test-zip", result.getPhysicalAddress().getZip());
         assertEquals("test-province", result.getPhysicalAddress().getProvince());
         assertEquals("test-municipality", result.getPhysicalAddress().getMunicipality());
+        assertEquals(0, result.getRecIndex());
+        assertEquals("ANPR", result.getRegistry());
+    }
+
+    @Test
+    void testConvertAnprResponseToInternalRecipientAddressWithNoResidentialAddresses() {
+        GetAddressANPROKDto response = new GetAddressANPROKDto();
+        response.setResidentialAddresses(Collections.emptyList());
+
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("test-correlation-id")
+                .pnNationalRegistriesCxId("test-cx-id")
+                .referenceRequestDate(new java.util.Date())
+                .taxId("test-tax-id")
+                .recipientType(RecipientType.PF)
+                .recIndex(0)
+                .domicileType(DomicileType.PHYSICAL)
+                .build();
+
+        MultiCodeSqsDto.PhysicalAddressSQSMessage result = gatewayConverter.convertAnprResponseToInternalRecipientAddress(response, addressQueryRequest);
+
+        assertNull(result.getPhysicalAddress());
         assertEquals(0, result.getRecIndex());
         assertEquals("ANPR", result.getRegistry());
     }
@@ -662,6 +732,28 @@ class GatewayConverterTest {
         assertEquals("test-zip", result.getPhysicalAddress().getZip());
         assertEquals("test-province", result.getPhysicalAddress().getProvince());
         assertEquals("test-municipality", result.getPhysicalAddress().getMunicipality());
+        assertEquals(0, result.getRecIndex());
+        assertEquals("REGISTRO_IMPRESE", result.getRegistry());
+    }
+
+    @Test
+    void testConvertRegImprResponseToInternalRecipientAddressWithNoProfessionalAddress() {
+        GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
+        response.setProfessionalAddress(null);
+
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("test-correlation-id")
+                .pnNationalRegistriesCxId("test-cx-id")
+                .referenceRequestDate(new java.util.Date())
+                .taxId("test-tax-id")
+                .recipientType(RecipientType.PG)
+                .recIndex(0)
+                .domicileType(DomicileType.PHYSICAL)
+                .build();
+
+        MultiCodeSqsDto.PhysicalAddressSQSMessage result = gatewayConverter.convertRegImprResponseToInternalRecipientAddress(response, addressQueryRequest);
+
+        assertNull(result.getPhysicalAddress());
         assertEquals(0, result.getRecIndex());
         assertEquals("REGISTRO_IMPRESE", result.getRegistry());
     }
