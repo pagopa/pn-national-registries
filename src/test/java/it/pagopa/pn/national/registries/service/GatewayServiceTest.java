@@ -535,6 +535,26 @@ class GatewayServiceTest {
     }
 
     @Test
+    void testRetrievePhysicalAddressesAnprAddressNotFound() {
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("correlationId")
+                .taxId("taxId")
+                .recipientType(RecipientType.PF)
+                .referenceRequestDate(new Date())
+                .pnNationalRegistriesCxId("pnNationalRegistriesCxId")
+                .build();
+
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("Not Found", HttpStatus.NOT_FOUND.value(), "Not Found", null, null, Charset.defaultCharset(), null);
+
+        when(anprService.getAddressANPR(any())).thenReturn(Mono.error(exception));
+
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses(addressQueryRequest))
+                .expectErrorMatches(throwable -> throwable instanceof PnNationalRegistriesException &&
+                        throwable.getMessage().equals("Not Found"))
+                .verify();
+    }
+
+    @Test
     @DisplayName("Test retrievePhysicalAddresses for PG")
     void testRetrievePhysicalAddressesForPG() {
         GetAddressRegistroImpreseOKDto regImpreseResponse = new GetAddressRegistroImpreseOKDto();
