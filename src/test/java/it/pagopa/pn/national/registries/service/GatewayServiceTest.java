@@ -20,6 +20,7 @@ import org.mockito.ArgumentCaptor;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
@@ -27,11 +28,14 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
+import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
 import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -451,8 +455,8 @@ class GatewayServiceTest {
     }
 
     @Test
-    @DisplayName("Test handleMessageMultiRequest")
-    void testHandleMessageMultiRequest() {
+    @DisplayName("Test handleMessageMultiRequest success")
+    void testHandleMessageMultiRequestSuccess() {
 
         when(sqsService.pushMultiToOutputQueue(any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
@@ -465,6 +469,28 @@ class GatewayServiceTest {
         StepVerifier.create(gatewayService.handleMessageMultiRequest(getPnAddressesGatewayEventPayload()))
                 .expectNextMatches(response -> response.getCorrelationId().equals("correlationId"))
                 .verifyComplete();
+    }
+
+    @Test
+    void testHandleMessageMultiRequestWithError() {
+        PnAddressesGatewayEvent.Payload payload = PnAddressesGatewayEvent.Payload.builder()
+                .correlationId("correlationId")
+                .referenceRequestDate(new Date())
+                .pnNationalRegistriesCxId("cxId")
+                .internalRecipientAdresses(new ArrayList<>())
+                .build();
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR.value(), "Internal Server Error", null, null, Charset.defaultCharset(), null);
+
+        when(sqsService.pushMultiToOutputQueue(any(), any())).thenReturn(Mono.error(exception));
+
+        MDC.setContextMap(Map.of(MDCUtils.MDC_TRACE_ID_KEY, "traceId"));
+        GetAddressANPROKDto anprResponse = new GetAddressANPROKDto();
+        anprResponse.setClientOperationId("clientOperationId");
+        when(anprService.getAddressANPR(any())).thenReturn(Mono.just(anprResponse));
+
+        StepVerifier.create(gatewayService.handleMessageMultiRequest(payload))
+                .expectError(PnInternalException.class)
+                .verify();
     }
 
     @Test
@@ -528,6 +554,40 @@ class GatewayServiceTest {
                 .verifyComplete();
     }
 
+    @Test
+    void testHandleException() {
+        MultiRecipientCodeSqsDto multiRecipientCodeSqsDto = getMutliRecipientCodeSqsDto();
+
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("Bad Request", HttpStatus.BAD_REQUEST.value(), "Bad Request", null, null, null, null);
+
+        SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
+        when(sqsService.pushToInputDlqQueue(any(MultiRecipientCodeSqsDto.class), any())).thenReturn(Mono.just(sendMessageResponse));
+
+        StepVerifier.create(gatewayService.handleException(exception, multiRecipientCodeSqsDto))
+                .expectNext(sendMessageResponse)
+                .verifyComplete();
+
+        ArgumentCaptor<MultiRecipientCodeSqsDto> captor = ArgumentCaptor.forClass(MultiRecipientCodeSqsDto.class);
+        verify(sqsService).pushToInputDlqQueue(captor.capture(), eq("pnNationalRegistriesCxId"));
+        MultiRecipientCodeSqsDto capturedDto = captor.getValue();
+
+        assertEquals("correlationId", capturedDto.getCorrelationId());
+        assertEquals("pnNationalRegistriesCxId", capturedDto.getPnNationalRegistriesCxId());
+        assertEquals("taxId", capturedDto.getInternalRecipientAdresses().get(0).getTaxId());
+        assertEquals("PF", capturedDto.getInternalRecipientAdresses().get(0).getRecipientType());
+        assertEquals("PHYSICAL", capturedDto.getInternalRecipientAdresses().get(0).getDomicileType());
+    }
+
+    @Test
+    void testHandleExceptionWithError() {
+        MultiRecipientCodeSqsDto multiRecipientCodeSqsDto = getMutliRecipientCodeSqsDto();
+
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("Internal Server Error", HttpStatus.INTERNAL_SERVER_ERROR.value(), "Internal Server Error", null, null, Charset.defaultCharset(), null);
+
+        StepVerifier.create(gatewayService.handleException(exception, multiRecipientCodeSqsDto))
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
+    }
 
     private static PnAddressesGatewayEvent.Payload getPnAddressesGatewayEventPayload() {
         return PnAddressesGatewayEvent.Payload.builder()
@@ -564,6 +624,22 @@ class GatewayServiceTest {
                         .pnNationalRegistriesCxId("cxId")
                         .build()
         );
+    }
+
+    private static MultiRecipientCodeSqsDto getMutliRecipientCodeSqsDto() {
+        return MultiRecipientCodeSqsDto.builder()
+                .correlationId("correlationId")
+                .pnNationalRegistriesCxId("pnNationalRegistriesCxId")
+                .referenceRequestDate(new Date())
+                .internalRecipientAdresses(List.of(
+                        MultiRecipientCodeSqsDto.InternalRecipientAddress.builder()
+                                .taxId("taxId")
+                                .recipientType("PF")
+                                .domicileType("PHYSICAL")
+                                .recIndex(0)
+                                .build()
+                ))
+                .build();
     }
 
 }
