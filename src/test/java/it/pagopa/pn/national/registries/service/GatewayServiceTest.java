@@ -9,7 +9,6 @@ import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddres
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.joda.time.LocalDateTime;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -386,13 +385,13 @@ class GatewayServiceTest {
         recipient.setFilter(filter);
         request.setAddresses(List.of(recipient));
 
-        when(sqsService.pushToMultiInputQueue(any(), any()))
+        when(sqsService.pushToValidationInputQueue(any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses("clientId", request))
                 .expectNext(addressOKDto)
                 .verifyComplete();
     }
@@ -411,10 +410,10 @@ class GatewayServiceTest {
         recipient.setFilter(filter);
         request.setAddresses(List.of(recipient));
 
-        when(sqsService.pushToMultiInputQueue(any(), any()))
+        when(sqsService.pushToValidationInputQueue(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses("clientId", request))
                 .expectError(RuntimeException.class);
     }
 
@@ -425,10 +424,10 @@ class GatewayServiceTest {
         request.setCorrelationId(C_ID);
         request.setReferenceRequestDate(new Date());
 
-        when(sqsService.pushToMultiInputQueue(any(), any()))
+        when(sqsService.pushToValidationInputQueue(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses("clientId", request))
                 .expectError(PnNationalRegistriesException.class);
     }
 
@@ -440,10 +439,10 @@ class GatewayServiceTest {
         request.setReferenceRequestDate(new Date());
         request.setAddresses(List.of());
 
-        when(sqsService.pushToMultiInputQueue(any(), any()))
+        when(sqsService.pushToValidationInputQueue(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses("clientId", request))
                 .expectError(PnNationalRegistriesException.class);
     }
 }
