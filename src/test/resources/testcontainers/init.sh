@@ -234,4 +234,15 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
         }
     ]'
 
+echo "### CREATE POLLING REQUESTS TABLE ###"
+aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
+    dynamodb create-table \
+    --table-name pn-gatewayRequestTracker \
+    --attribute-definitions \
+        AttributeName=correlationId,AttributeType=S \
+    --key-schema \
+        AttributeName=correlationId,KeyType=HASH \
+    --provisioned-throughput \
+        ReadCapacityUnits=10,WriteCapacityUnits=5 \
+
 echo "Initialization terminated"
