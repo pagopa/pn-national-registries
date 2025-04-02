@@ -31,7 +31,7 @@ public class GatewayRequestTrackerRepositoryImpl implements GatewayRequestTracke
 
         return Mono.fromFuture(table.putItem(putItemEnhancedRequest))
                 .thenReturn(entity)
-                .onErrorResume(ConditionalCheckFailedException.class, (t) -> this.getItem(entity));
+                .onErrorResume(ConditionalCheckFailedException.class, t -> this.getItem(entity));
     }
 
     private Mono<GatewayRequestTrackerEntity> getItem(GatewayRequestTrackerEntity entity) {
