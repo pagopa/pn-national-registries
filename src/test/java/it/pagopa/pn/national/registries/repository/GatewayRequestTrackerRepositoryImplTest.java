@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.repository;
 
 import it.pagopa.pn.national.registries.entity.GatewayRequestTrackerEntity;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -22,6 +23,8 @@ class GatewayRequestTrackerRepositoryImplTest {
     private GatewayRequestTrackerRepositoryImpl repository;
     private DynamoDbAsyncTable<GatewayRequestTrackerEntity> table;
 
+    private static final String CORRELATION_ID = "correlationId";
+
     @BeforeEach
     void setUp() {
         DynamoDbEnhancedAsyncClient dynamoDbEnhancedClient = Mockito.mock(DynamoDbEnhancedAsyncClient.class);
@@ -32,11 +35,15 @@ class GatewayRequestTrackerRepositoryImplTest {
 
     @Test
     void putIfAbsentOrRetrieve_itemDoesNotExist_putsItem() {
-        GatewayRequestTrackerEntity entity = new GatewayRequestTrackerEntity();
         when(table.putItem(any(PutItemEnhancedRequest.class))).thenReturn(Mono.empty().toFuture());
 
-        StepVerifier.create(repository.putIfAbsentOrRetrieve(entity))
-                .expectNext(entity)
+        StepVerifier.create(repository.putIfAbsentOrRetrieve(CORRELATION_ID))
+                .expectNextMatches(tracker -> {
+                    Assertions.assertEquals(CORRELATION_ID, tracker.getCorrelationId());
+                    Assertions.assertNotNull(tracker.getRequestTimestamp());
+                    Assertions.assertNotNull(tracker.getTtl());
+                    return true;
+                })
                 .verifyComplete();
     }
 
@@ -54,17 +61,16 @@ class GatewayRequestTrackerRepositoryImplTest {
 
         when(table.getItem(any(Key.class))).thenReturn(Mono.just(entity).toFuture());
 
-        StepVerifier.create(repository.putIfAbsentOrRetrieve(entity))
+        StepVerifier.create(repository.putIfAbsentOrRetrieve(CORRELATION_ID))
                 .expectNext(entity)
                 .verifyComplete();
     }
 
     @Test
     void putIfAbsentOrRetrieve_itemExists_retrieveFails() {
-        GatewayRequestTrackerEntity entity = new GatewayRequestTrackerEntity();
         when(table.putItem(any(PutItemEnhancedRequest.class))).thenReturn(Mono.error(new RuntimeException("Fake exception")).toFuture());
 
-        StepVerifier.create(repository.putIfAbsentOrRetrieve(entity))
+        StepVerifier.create(repository.putIfAbsentOrRetrieve(CORRELATION_ID))
                 .expectError(RuntimeException.class)
                 .verify();
     }
