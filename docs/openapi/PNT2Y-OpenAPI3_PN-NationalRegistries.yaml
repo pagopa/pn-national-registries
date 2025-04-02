@@ -1264,6 +1264,16 @@ components:
           $ref: '#/components/schemas/PhysicalAddress'
         registry:
           $ref: '#/components/schemas/Registry'
+        addressResolutionStart:
+          type: string
+          format: date-time
+          description: Data/ora di inizio elaborazione richiesta ricerca indirizzi, espressa in formato RFC3339.
+          example: "2022-06-21T11:44:28Z"
+        addressResolutionEnd:
+          type: string
+          format: date-time
+          description: Data/ora di fine elaborazione richiesta ricerca indirizzi, espressa in formato RFC3339.
+          example: "2022-06-21T11:44:28Z"
     Registry:
       type: string
       description: >
