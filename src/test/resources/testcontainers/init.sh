@@ -234,7 +234,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
         }
     ]'
 
-echo "### CREATE POLLING REQUESTS TABLE ###"
+echo "### CREATE GATEWAY REQUESTS TRACKER TABLE ###"
 aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     dynamodb create-table \
     --table-name pn-gatewayRequestTracker \
