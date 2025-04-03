@@ -337,7 +337,7 @@ class GatewayConverterTest {
 
         SqsClient sqsClient = mock(SqsClient.class);
         GatewayService gatewayService = new GatewayService(anprService, inadService, infoCamereService, ipaService,
-                new SqsService("outputQueue", "inputQueue", "inputDlqQueue", sqsClient,
+                new SqsService("outputQueue", "inputQueue", "inputDlqQueue", "validationInputQueueName", sqsClient,
                         new ObjectMapper()), featureEnabledUtils,
                 true);
         CodeSqsDto actualIpaToSqsDtoResult = gatewayService.ipaToSqsDto("42", new IPAPecDto());

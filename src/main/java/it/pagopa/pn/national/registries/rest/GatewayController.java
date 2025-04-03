@@ -58,7 +58,7 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<AddressOKDto>> getPhysicalAddresses(Mono<PhysicalAddressesRequestBodyDto> physicalAddressesRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
-        return  physicalAddressesRequestBodyDto.flatMap(physicalAddressRequestBodyDto -> gatewayService.retrievePhysicalAddress(pnNationalRegistriesCxId, physicalAddressRequestBodyDto))
+        return  physicalAddressesRequestBodyDto.flatMap(physicalAddressRequestBodyDto -> gatewayService.retrievePhysicalAddresses(pnNationalRegistriesCxId, physicalAddressRequestBodyDto))
                 .map(s -> ResponseEntity.ok().body(s))
                 .publishOn(scheduler);
     }
