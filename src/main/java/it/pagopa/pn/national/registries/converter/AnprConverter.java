@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
 
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +21,7 @@ public class AnprConverter {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-    public GetAddressANPROKDto convertToGetAddressANPROK(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RispostaE002OK rispostaE002OK, String cf) {
+    public GetAddressANPROKDto convertToGetAddressANPROK(RispostaE002OK rispostaE002OK, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
         if (rispostaE002OK != null) {
             response.setClientOperationId(rispostaE002OK.getIdOperazioneANPR());
@@ -100,10 +101,20 @@ public class AnprConverter {
 
     private String createAddressString(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo) {
         if (indirizzo.getToponimo() != null && indirizzo.getNumeroCivico() != null) {
-            return Optional.ofNullable(indirizzo.getToponimo().getSpecie()).orElse("") + " " + indirizzo.getToponimo().getDenominazioneToponimo() + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getNumero()).orElse("") + Optional.ofNullable(indirizzo.getNumeroCivico().getLettera()).orElse("");
+            return Optional.ofNullable(indirizzo.getToponimo().getSpecie()).orElse("") + " "
+                    + indirizzo.getToponimo().getDenominazioneToponimo() + " "
+                    + constructHouseNumber(Optional.ofNullable(indirizzo.getNumeroCivico().getNumero()).orElse(""),
+                    Optional.ofNullable(indirizzo.getNumeroCivico().getLettera()).orElse(""));
         } else {
             return "";
+        }
+    }
+
+    private String constructHouseNumber(String numeroCivico, String letteraNumeroCivico) {
+        if (StringUtils.hasText(numeroCivico) && letteraNumeroCivico.matches("\\d+")) {
+            return numeroCivico + "/" + letteraNumeroCivico;
+        }else {
+            return numeroCivico + letteraNumeroCivico;
         }
     }
 
