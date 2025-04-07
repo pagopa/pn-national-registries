@@ -33,9 +33,11 @@ public class SqsService {
     private final String outputQueueName;
     private final String inputQueueName;
     private final String inputDlqQueueName;
+    private final String validationInputQueueName;
 
     public SqsService(@Value("${pn.national.registries.sqs.output.queue.name}") String outputQueueName,
                       @Value("${pn.national.registries.sqs.input.queue.name}") String inputQueueName,
+                      @Value("${pn.national.registries.sqs.input.validation.queue.name}") String validationInputQueueName,
                       @Value("${pn.national.registries.sqs.input.dlq.queue.name}") String inputDlqQueueName,
                       SqsClient sqsClient,
                       ObjectMapper mapper) {
@@ -44,6 +46,7 @@ public class SqsService {
         this.outputQueueName = outputQueueName;
         this.inputQueueName = inputQueueName;
         this.inputDlqQueueName = inputDlqQueueName;
+        this.validationInputQueueName = validationInputQueueName;
     }
 
     public Mono<SendMessageResponse> pushToOutputQueue(CodeSqsDto msg, String pnNationalRegistriesCxId) {
@@ -64,10 +67,10 @@ public class SqsService {
         return push(toJson(msg), pnNationalRegistriesCxId, inputQueueName, "NR_GATEWAY_INPUT");
     }
 
-    public Mono<SendMessageResponse> pushToMultiInputQueue(MultiRecipientCodeSqsDto msg, String pnNationalRegistriesCxId) {
+    public Mono<SendMessageResponse> pushToValidationInputQueue(MultiRecipientCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
-        log.info(INSERTING_MSG_WITHOUT_DATA, inputQueueName);
-        return push(toJson(msg), pnNationalRegistriesCxId, inputQueueName, "NR_GATEWAY_MULTI_INPUT");
+        log.info(INSERTING_MSG_WITHOUT_DATA, validationInputQueueName);
+        return push(toJson(msg), pnNationalRegistriesCxId, validationInputQueueName, "NR_GATEWAY_MULTI_INPUT");
     }
 
     public Mono<SendMessageResponse> pushToInputDlqQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {

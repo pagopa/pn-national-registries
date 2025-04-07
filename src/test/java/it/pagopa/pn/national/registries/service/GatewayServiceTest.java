@@ -393,13 +393,13 @@ class GatewayServiceTest {
         recipient.setFilter(filter);
         request.setAddresses(List.of(recipient));
 
-        when(sqsService.pushToMultiInputQueue(any(), any()))
+        when(sqsService.pushToValidationInputQueue(any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
 
-        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses("clientId", request))
                 .expectNext(addressOKDto)
                 .verifyComplete();
     }
@@ -418,10 +418,10 @@ class GatewayServiceTest {
         recipient.setFilter(filter);
         request.setAddresses(List.of(recipient));
 
-        when(sqsService.pushToMultiInputQueue(any(), any()))
+        when(sqsService.pushToValidationInputQueue(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses("clientId", request))
                 .expectError(RuntimeException.class);
     }
 
@@ -432,10 +432,10 @@ class GatewayServiceTest {
         request.setCorrelationId(C_ID);
         request.setReferenceRequestDate(new Date());
 
-        when(sqsService.pushToMultiInputQueue(any(), any()))
+        when(sqsService.pushToValidationInputQueue(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses("clientId", request))
                 .expectError(PnNationalRegistriesException.class);
     }
 
@@ -447,10 +447,10 @@ class GatewayServiceTest {
         request.setReferenceRequestDate(new Date());
         request.setAddresses(List.of());
 
-        when(sqsService.pushToMultiInputQueue(any(), any()))
+        when(sqsService.pushToValidationInputQueue(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
-        StepVerifier.create(gatewayService.retrievePhysicalAddress("clientId", request))
+        StepVerifier.create(gatewayService.retrievePhysicalAddresses("clientId", request))
                 .expectError(PnNationalRegistriesException.class);
     }
 

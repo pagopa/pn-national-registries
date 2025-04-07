@@ -419,6 +419,10 @@ Parameters:
     Type: String
     Description: 'DLQ ARN for NationalRegistryGatewayInputs'
 
+  GatewayRequestTrackerTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table GatewayRequestTracker'
+
 Resources:
 
   # PN-National-Registry microservice
@@ -539,6 +543,7 @@ Resources:
               - !Ref BatchPollingTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
+              - !Ref GatewayRequestTrackerTableArn
           - Effect: Allow
             Action:
               - sqs:SendMessage

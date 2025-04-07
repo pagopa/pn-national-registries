@@ -31,7 +31,7 @@ class SqsServiceTest {
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
 
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
+        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", "validationInputQueueName", amazonSQS, objectMapper);
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId("correlationId");
@@ -70,7 +70,7 @@ class SqsServiceTest {
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
 
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
+        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", "validationInputQueueName", amazonSQS, objectMapper);
 
         InternalCodeSqsDto codeSqsDto =InternalCodeSqsDto.builder().build();
         codeSqsDto.setCorrelationId("correlationId");
@@ -90,11 +90,11 @@ class SqsServiceTest {
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
 
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
+        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", "validationInputQueueName", amazonSQS, objectMapper);
 
         MultiRecipientCodeSqsDto codeSqsDto = MultiRecipientCodeSqsDto.builder().build();
         codeSqsDto.setCorrelationId("correlationId");
-        StepVerifier.create(sqsService.pushToMultiInputQueue(codeSqsDto,"clientId"))
+        StepVerifier.create(sqsService.pushToValidationInputQueue(codeSqsDto,"clientId"))
                 .expectNext(sendMessageResponse)
                 .verifyComplete();
     }
@@ -110,7 +110,7 @@ class SqsServiceTest {
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
 
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
+        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", "validationInputQueueName", amazonSQS, objectMapper);
 
         InternalCodeSqsDto codeSqsDto = InternalCodeSqsDto.builder().build();
         codeSqsDto.setCorrelationId("correlationId");

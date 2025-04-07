@@ -79,13 +79,13 @@ public class GatewayService extends GatewayConverter {
         return Mono.just(mapToAddressesOKDto(correlationId));
     }
 
-    public Mono<AddressOKDto> retrievePhysicalAddress(String pnNationalRegistriesCxId, PhysicalAddressesRequestBodyDto request) {
+    public Mono<AddressOKDto> retrievePhysicalAddresses(String pnNationalRegistriesCxId, PhysicalAddressesRequestBodyDto request) {
         String correlationId = request.getCorrelationId();
         if (request.getAddresses() == null || CollectionUtils.isEmpty(request.getAddresses())) {
             return Mono.error(new PnNationalRegistriesException("addresses required", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class));
         }
-        sqsService.pushToMultiInputQueue(MultiRecipientCodeSqsDto.builder()
+        sqsService.pushToValidationInputQueue(MultiRecipientCodeSqsDto.builder()
                 .correlationId(correlationId)
                 .pnNationalRegistriesCxId(pnNationalRegistriesCxId)
                 .referenceRequestDate(request.getReferenceRequestDate())
