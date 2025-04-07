@@ -1,15 +1,21 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.log.PnAuditLogBuilder;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
+import it.pagopa.pn.national.registries.constant.DomicileType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
+import it.pagopa.pn.national.registries.entity.GatewayRequestTrackerEntity;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressesGatewayEvent;
 import it.pagopa.pn.national.registries.model.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.repository.GatewayRequestTrackerRepository;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.jetbrains.annotations.NotNull;
@@ -24,6 +30,7 @@ import reactor.util.context.Context;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
@@ -33,35 +40,39 @@ import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADDRESSES_REQUIRED;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_ADDRESSES_REQUIRED;
+import static it.pagopa.pn.national.registries.utils.Utils.getMostRecentInstant;
 
 @Service
 @lombok.CustomLog
 public class GatewayService extends GatewayConverter {
-
     private final AnprService anprService;
     private final InadService inadService;
     private final InfoCamereService infoCamereService;
-    private final IpaService ipaService;
     private final SqsService sqsService;
     private final boolean pnNationalRegistriesCxIdFlag;
-    private static final String CORRELATION_ID = "correlationId";
-    private static final String DOMICILE_TYPE_PHYSICAL = "PHYSICAL";
-
     private final FeatureEnabledUtils featureEnabledUtils;
+    private final GatewayRequestTrackerRepository gatewayRequestTrackerRepository;
+
+    private static final String CORRELATION_ID = "correlationId";
+    private static final String AUDIT_LOG_START_CALL_MESSAGE = "Start searching physical address in the registry: {} for the request with correlationId: {} and recIndex: {}. Start request processing timestamp: {}";
+    private static final String AUDIT_LOG_END_SUCCESS_MESSAGE = "The registry {} has responded successfully for the request with correlationId: {} and recIndex: {}. Response timestamp: {}";
+    private static final String AUDIT_LOG_END_FAILURE_MESSAGE = "The registry {} has responded with an error for the request with correlationId: {} and recIndex: {}";
+
 
     public GatewayService(AnprService anprService,
                           InadService inadService,
                           InfoCamereService infoCamereService,
-                          IpaService ipaService, SqsService sqsService,
+                          SqsService sqsService,
                           FeatureEnabledUtils featureEnabledUtils,
-                          @Value("${pn.national.registries.val.cx.id.enabled}") boolean pnNationalRegistriesCxIdFlag) {
+                          @Value("${pn.national.registries.val.cx.id.enabled}") boolean pnNationalRegistriesCxIdFlag,
+                          GatewayRequestTrackerRepository gatewayRequestTrackerRepository) {
         this.anprService = anprService;
         this.inadService = inadService;
         this.infoCamereService = infoCamereService;
-        this.ipaService = ipaService;
         this.sqsService = sqsService;
         this.pnNationalRegistriesCxIdFlag = pnNationalRegistriesCxIdFlag;
         this.featureEnabledUtils = featureEnabledUtils;
+        this.gatewayRequestTrackerRepository = gatewayRequestTrackerRepository;
     }
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto request) {
@@ -99,7 +110,7 @@ public class GatewayService extends GatewayConverter {
                 .taxId(recipient.getFilter().getTaxId())
                 .recipientType(recipient.getFilter().getRecipientType().getValue())
                 .recIndex(Integer.valueOf(recipient.getFilter().getRecIndex()))
-                .domicileType(DOMICILE_TYPE_PHYSICAL)
+                .domicileType(DomicileType.PHYSICAL.name())
                 .build()).toList();
     }
 
@@ -267,44 +278,70 @@ public class GatewayService extends GatewayConverter {
 
     public Mono<AddressOKDto> handleMessageMultiRequest(PnAddressesGatewayEvent.Payload payload) {
         List<AddressQueryRequest> addressQueryRequests = toAddressQueryRequests(payload);
-        if (CollectionUtils.isEmpty(addressQueryRequests) || addressQueryRequests.get(0) == null) {
+        if (CollectionUtils.isEmpty(addressQueryRequests)) {
             return Mono.error(new PnInternalException(ERROR_MESSAGE_ADDRESSES_REQUIRED, ERROR_CODE_ADDRESSES_REQUIRED));
         }
         return retrieveMultiPhysicalAddress(addressQueryRequests)
                 .contextWrite(ctx -> enrichFluxContext(ctx, MDCUtils.retrieveMDCContextMap()));
     }
 
-    public Mono<AddressOKDto> retrieveMultiPhysicalAddress(List<AddressQueryRequest> addressQueryRequests) {
+    private Mono<AddressOKDto> retrieveMultiPhysicalAddress(List<AddressQueryRequest> addressQueryRequests) {
         String commonCorrelationId = addressQueryRequests.get(0).getCorrelationId();
         String commonPnNationalRegistriesCxId = addressQueryRequests.get(0).getPnNationalRegistriesCxId();
         log.info("RetrieveMultiPhysicalAddress for correlationId: {} and {} recipients", commonCorrelationId, addressQueryRequests.size());
 
+        return gatewayRequestTrackerRepository.putIfAbsentOrRetrieve(commonCorrelationId)
+            .flatMap(tracker -> retrieveMultiPhysicalAddress(commonCorrelationId, commonPnNationalRegistriesCxId, tracker, addressQueryRequests));
+    }
+
+    private Mono<AddressOKDto> retrieveMultiPhysicalAddress(String commonCorrelationId, String commonPnNationalRegistriesCxId, GatewayRequestTrackerEntity tracker, List<AddressQueryRequest> addressQueryRequests) {
         return Flux.fromIterable(addressQueryRequests)
-                .flatMap(this::retrievePhysicalAddresses)
+                .flatMap(addressQueryRequest -> this.retrievePhysicalAddresses(addressQueryRequest, tracker.getRequestTimestamp()))
                 .collectList()
+                .doOnNext(addresses -> enrichAddressesWithResolutionTimes(tracker.getRequestTimestamp(), addresses))
                 .map(addresses -> convertToMultiCodeSqsDto(addresses, commonCorrelationId))
                 .flatMap(multiCodeSqsDto -> sqsService.pushMultiToOutputQueue(multiCodeSqsDto, commonPnNationalRegistriesCxId))
                 .onErrorResume(t -> handleException(t, convertToMultiRecipientCodeSqsDto(addressQueryRequests)))
                 .map(sendMessageResponse -> mapToAddressesOKDto(commonCorrelationId));
-
     }
 
-    public Mono<MultiCodeSqsDto.PhysicalAddressSQSMessage> retrievePhysicalAddresses(AddressQueryRequest addressQueryRequest) {
+    private Mono<MultiCodeSqsDto.PhysicalAddressSQSMessage> retrievePhysicalAddresses(AddressQueryRequest addressQueryRequest, Instant startResolutionTime) {
         return switch (addressQueryRequest.getRecipientType()) {
-            case PF -> retrievePhysicalAddressForPF(addressQueryRequest);
-            case PG -> retrievePhysicalAddressForPG(addressQueryRequest);
+            case PF -> retrievePhysicalAddressForPF(addressQueryRequest, startResolutionTime);
+            case PG -> retrievePhysicalAddressForPG(addressQueryRequest, startResolutionTime);
         };
     }
 
-    private Mono<MultiCodeSqsDto.PhysicalAddressSQSMessage> retrievePhysicalAddressForPF(AddressQueryRequest addressQueryRequest) {
+    private Mono<MultiCodeSqsDto.PhysicalAddressSQSMessage> retrievePhysicalAddressForPF(AddressQueryRequest addressQueryRequest, Instant startResolutionTime) {
+        PnAuditLogEvent auditLogEvent = buildAndPrintRequestAuditLog(addressQueryRequest, GatewayDownstreamService.ANPR, startResolutionTime);
+
         return getAddressANPR(convertToGetAddressAnprRequest(addressQueryRequest), addressQueryRequest.getCorrelationId())
                 .map(res -> convertAnprResponseToInternalRecipientAddress(res, addressQueryRequest))
-                .doOnNext(unused -> log.info("Retrieved physical address from ANPR for correlationId: {} and recIndex: {}", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex()))
-                .doOnError(e -> logEServiceError(e, String.format("Can not retrieve physical address from ANPR for correlationId %s and recIndex %s, error: {}", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex())))
-                .onErrorResume(isAnprAddressNotFound, e -> {;
+                .onErrorResume(isAnprAddressNotFound, e -> {
                     log.info("correlationId: {} recIndex {} - ANPR - indirizzo non presente", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex());
                     return Mono.just(anprNotFoundErrorToPhysicalAddressSQSMessage(addressQueryRequest));
-                });
+                })
+                .doOnNext(res -> auditLogEvent.generateSuccess(AUDIT_LOG_END_SUCCESS_MESSAGE, GatewayDownstreamService.ANPR, addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex(), res.getAddressResolutionEnd()).log())
+                .doOnError(e -> auditLogEvent.generateFailure(AUDIT_LOG_END_FAILURE_MESSAGE, GatewayDownstreamService.ANPR, addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex(), e).log());
+    }
+
+    private static PnAuditLogEvent buildAndPrintRequestAuditLog(
+            AddressQueryRequest addressQueryRequest,
+            GatewayDownstreamService registry,
+            Instant startResolutionTime
+    ) {
+        PnAuditLogBuilder auditLogBuilder = new PnAuditLogBuilder();
+        PnAuditLogEvent auditLogEvent = auditLogBuilder.before(
+            PnAuditLogEventType.AUD_NT_VALIDATION_ADDRESS_SEARCH,
+            AUDIT_LOG_START_CALL_MESSAGE,
+            registry,
+            addressQueryRequest.getCorrelationId(),
+            addressQueryRequest.getRecIndex(),
+            startResolutionTime
+        )
+        .build();
+
+        return auditLogEvent.log();
     }
 
     private final Predicate<Throwable> isAnprAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
@@ -312,15 +349,25 @@ public class GatewayService extends GatewayConverter {
             && StringUtils.hasText(exception.getResponseBodyAsString())
             && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
 
-    private Mono<MultiCodeSqsDto.PhysicalAddressSQSMessage> retrievePhysicalAddressForPG(AddressQueryRequest addressQueryRequest) {
+    private Mono<MultiCodeSqsDto.PhysicalAddressSQSMessage> retrievePhysicalAddressForPG(AddressQueryRequest addressQueryRequest, Instant startResolutionTime) {
+        PnAuditLogEvent auditLogEvent = buildAndPrintRequestAuditLog(addressQueryRequest, GatewayDownstreamService.REGISTRO_IMPRESE, startResolutionTime);
         return getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressQueryRequest), addressQueryRequest.getCorrelationId())
-                .doOnNext(unused -> log.info("Retrieved physical address from REGISTRO_IMPRESE for correlationId: {} and recIndex: {}", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex()))
-                .doOnError(e -> logEServiceError(e, String.format("Can not retrieve physical address from REGISTRO_IMPRESE for correlationId %s and recIndex %s, error: {}", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex())))
-                .map(res -> convertRegImprResponseToInternalRecipientAddress(res, addressQueryRequest));
+                .map(res -> convertRegImprResponseToInternalRecipientAddress(res, addressQueryRequest))
+                .doOnNext(res -> auditLogEvent.generateSuccess(AUDIT_LOG_END_SUCCESS_MESSAGE, GatewayDownstreamService.REGISTRO_IMPRESE, addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex(), res.getAddressResolutionEnd()).log())
+                .doOnError(e -> auditLogEvent.generateFailure(AUDIT_LOG_END_FAILURE_MESSAGE, GatewayDownstreamService.REGISTRO_IMPRESE, addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex(), e).log());
     }
 
-    public Mono<SendMessageResponse> handleException(Throwable throwable, MultiRecipientCodeSqsDto multiRecipientCodeSqsDto) {
-        if (throwable instanceof PnNationalRegistriesException exception && (exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
+    private void enrichAddressesWithResolutionTimes(Instant startResolutionTime, List<MultiCodeSqsDto.PhysicalAddressSQSMessage> addresses) {
+        Instant endResolutionTime = getMostRecentInstant(addresses.stream().map(MultiCodeSqsDto.PhysicalAddressSQSMessage::getAddressResolutionEnd).toList());
+        log.debug("Enriching addresses with resolution times: startResolutionTime: {}, endResolutionTime: {}", startResolutionTime, endResolutionTime);
+        addresses.forEach(address -> {
+            address.setAddressResolutionStart(startResolutionTime);
+            address.setAddressResolutionEnd(endResolutionTime);
+        });
+    }
+
+    private Mono<SendMessageResponse> handleException(Throwable throwable, MultiRecipientCodeSqsDto multiRecipientCodeSqsDto) {
+        if (throwable instanceof PnNationalRegistriesException exception && (exception.getStatusCode() == HttpStatus.BAD_REQUEST || exception.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS)) {
             return sqsService.pushToInputDlqQueue(multiRecipientCodeSqsDto, multiRecipientCodeSqsDto.getPnNationalRegistriesCxId())
                     .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
                             multiRecipientCodeSqsDto.getCorrelationId(),

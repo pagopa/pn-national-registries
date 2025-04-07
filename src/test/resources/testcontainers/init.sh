@@ -125,7 +125,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
 
 echo "### CREATE QUEUES FOR NATIONAL REGISTRIES ###"
 
-queues="pn-national_registry_gateway_inputs_DLQ pn-national_registry_gateway_inputs pn-national_registry_gateway_outputs"
+queues="pn-national_registry_gateway_inputs-DLQ pn-national_registry_gateway_inputs pn-national_registry_gateway_outputs"
 for qn in $(echo $queues | tr " " "\n");do
   echo creating queue $qn
   aws --profile default --region us-east-1 --endpoint-url http://localstack:4566 sqs create-queue --queue-name $qn

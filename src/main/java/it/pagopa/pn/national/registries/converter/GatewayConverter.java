@@ -25,6 +25,7 @@ import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -295,6 +296,7 @@ public class GatewayConverter {
         }
         physicalAddressSQSMessage.setRecIndex(addressQueryRequest.getRecIndex());
         physicalAddressSQSMessage.setRegistry(GatewayDownstreamService.ANPR.name());
+        physicalAddressSQSMessage.setAddressResolutionEnd(Instant.now());
         return physicalAddressSQSMessage;
     }
 
@@ -302,6 +304,7 @@ public class GatewayConverter {
         MultiCodeSqsDto.PhysicalAddressSQSMessage physicalAddressSQSMessage = new MultiCodeSqsDto.PhysicalAddressSQSMessage();
         physicalAddressSQSMessage.setRecIndex(addressQueryRequest.getRecIndex());
         physicalAddressSQSMessage.setRegistry(GatewayDownstreamService.ANPR.name());
+        physicalAddressSQSMessage.setAddressResolutionEnd(Instant.now());
         return physicalAddressSQSMessage;
     }
 
@@ -325,6 +328,7 @@ public class GatewayConverter {
         }
         physicalAddressSQSMessage.setRecIndex(addressQueryRequest.getRecIndex());
         physicalAddressSQSMessage.setRegistry(GatewayDownstreamService.REGISTRO_IMPRESE.name());
+        physicalAddressSQSMessage.setAddressResolutionEnd(Instant.now());
         return physicalAddressSQSMessage;
     }
 

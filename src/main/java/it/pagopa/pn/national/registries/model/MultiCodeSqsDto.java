@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.utils.JsonFilterSpEL;
 import lombok.Data;
 import lombok.ToString;
 
+import java.time.Instant;
 import java.util.List;
 
 import static it.pagopa.pn.national.registries.utils.JacksonCustomSpELSerializer.FILTER_NAME;
@@ -42,5 +43,9 @@ public class MultiCodeSqsDto {
         private String error;
 
         private String registry;
+
+        private Instant addressResolutionStart;
+
+        private Instant addressResolutionEnd;
     }
 }

@@ -51,7 +51,7 @@ class SqsServiceTest {
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
 
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
+        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputValidationQueue", "inputDqlQueue", amazonSQS, objectMapper);
 
         MultiCodeSqsDto codeSqsDto = new MultiCodeSqsDto();
         codeSqsDto.setCorrelationId("correlationId");
@@ -130,7 +130,7 @@ class SqsServiceTest {
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
 
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
+        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputValidationQueue", "inputDqlQueue", amazonSQS, objectMapper);
 
         MultiRecipientCodeSqsDto codeSqsDto = MultiRecipientCodeSqsDto.builder().build();
         codeSqsDto.setCorrelationId("correlationId");
