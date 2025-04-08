@@ -317,6 +317,25 @@ Resources:
         MaxReceiveCount: 10
         DelaySeconds: 1
 
+  GatewayRequestTrackerTable:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub '${ProjectName}-gatewayRequestTracker'
+      AttributeDefinitions:
+        - AttributeName: "correlationId"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "correlationId"
+          KeyType: "HASH"
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      BillingMode: "PAY_PER_REQUEST"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
   # Altra coda interna per gestire le richieste al gateway relative alla fase di validazione di una notifica
   # di conseguenza più allertata per i messaggi di errore.
   PnNationalRegistryValidationGatewayInputsQueue:
@@ -393,6 +412,10 @@ Outputs:
     Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueURL
   NationalRegistryGatewayInputsDLQARN:
     Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueARN
+
+  GatewayRequestTrackerTableArn:
+    Description: ARN Dynamo Name used by application to access the key-value store of GatewayRequestTrackerTable
+    Value: !Sub '${GatewayRequestTrackerTable.Arn}'
 
   # PnNationalRegistryValidationGatewayInputs Queue
   NationalRegistryValidationGatewayInputsQueueName:
