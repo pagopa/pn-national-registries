@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -266,6 +267,202 @@ class AnprConverterTest {
         rispostaE002OK.setListaAnomalie(new ArrayList<>());
         rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
         assertNotNull(anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses());
+    }
+
+    @Test
+    void testconvertToGetAddressANPROK4() {
+        TipoCodiceFiscale tipoCodiceFiscale = new TipoCodiceFiscale();
+        tipoCodiceFiscale.setCodFiscale("Cf");
+        tipoCodiceFiscale.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        tipoCodiceFiscale.setValiditaCF("Validita CF");
+
+        TipoGeneralita tipoGeneralita = new TipoGeneralita();
+        tipoGeneralita.setCodiceFiscale(tipoCodiceFiscale);
+
+        TipoDatiSoggettiEnte tipoDatiSoggettiEnte = new TipoDatiSoggettiEnte();
+        tipoDatiSoggettiEnte.setGeneralita(tipoGeneralita);
+
+        List<TipoResidenza> tipoResidenzaList = new ArrayList<>();
+        TipoResidenza tipoResidenza = new TipoResidenza();
+
+        TipoToponimo tipoToponimo= new TipoToponimo();
+        tipoToponimo.setDenominazioneToponimo("denToponimo");
+        tipoToponimo.setSpecie("specie");
+        tipoToponimo.setCodToponimo("codToponimo");
+        tipoToponimo.setSpecieFonte("specieFonte");
+        tipoToponimo.setToponimoFonte("toponimoFonte");
+
+        TipoIndirizzo tipoIndirizzo = new TipoIndirizzo();
+        tipoIndirizzo.setToponimo(tipoToponimo);
+        TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
+        tipoNumeroCivico.setNumero("70");
+        tipoNumeroCivico.setLettera("1");
+        tipoIndirizzo.setNumeroCivico(tipoNumeroCivico);
+
+        TipoComune tipoComune = new TipoComune();
+        tipoComune.setNomeComune("nomeComune");
+        tipoComune.setSiglaProvinciaIstat("RM");
+        tipoIndirizzo.setComune(tipoComune);
+
+        TipoLocalitaEstera1 tipoLocalitaEstera1 = new TipoLocalitaEstera1();
+        TipoIndirizzoEstero tipoIndirizzoEstero = new TipoIndirizzoEstero();
+        TipoDatoLocalitaEstera tipoDatoLocalitaEstera = new TipoDatoLocalitaEstera();
+        tipoDatoLocalitaEstera.setDescrizioneLocalita("descrizione");
+        tipoIndirizzoEstero.setLocalita(tipoDatoLocalitaEstera);
+
+        tipoLocalitaEstera1.setIndirizzoEstero(tipoIndirizzoEstero);
+        tipoResidenza.setLocalitaEstera(tipoLocalitaEstera1);
+
+        tipoResidenza.setIndirizzo(tipoIndirizzo);
+        tipoResidenza.setPresso("presso");
+        tipoResidenza.setTipoIndirizzo("4");
+
+        tipoResidenzaList.add(tipoResidenza);
+        tipoDatiSoggettiEnte.setResidenza(tipoResidenzaList);
+
+        ArrayList<TipoDatiSoggettiEnte> tipoDatiSoggettiEnteList = new ArrayList<>();
+        tipoDatiSoggettiEnteList.add(tipoDatiSoggettiEnte);
+
+        TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
+        tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
+
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaAnomalie(new ArrayList<>());
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+
+        List<ResidentialAddressDto> residentialAddresses = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses();
+        assertEquals(1, residentialAddresses.size());
+        assertTrue(residentialAddresses.get(0).getAddress().contains("70/1"));
+    }
+    @Test
+    void testconvertToGetAddressANPROK16() {
+        TipoCodiceFiscale tipoCodiceFiscale = new TipoCodiceFiscale();
+        tipoCodiceFiscale.setCodFiscale("Cf");
+        tipoCodiceFiscale.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        tipoCodiceFiscale.setValiditaCF("Validita CF");
+
+        TipoGeneralita tipoGeneralita = new TipoGeneralita();
+        tipoGeneralita.setCodiceFiscale(tipoCodiceFiscale);
+
+        TipoDatiSoggettiEnte tipoDatiSoggettiEnte = new TipoDatiSoggettiEnte();
+        tipoDatiSoggettiEnte.setGeneralita(tipoGeneralita);
+
+        List<TipoResidenza> tipoResidenzaList = new ArrayList<>();
+        TipoResidenza tipoResidenza = new TipoResidenza();
+
+        TipoToponimo tipoToponimo= new TipoToponimo();
+        tipoToponimo.setDenominazioneToponimo("denToponimo");
+        tipoToponimo.setSpecie("specie");
+        tipoToponimo.setCodToponimo("codToponimo");
+        tipoToponimo.setSpecieFonte("specieFonte");
+        tipoToponimo.setToponimoFonte("toponimoFonte");
+
+        TipoIndirizzo tipoIndirizzo = new TipoIndirizzo();
+        tipoIndirizzo.setToponimo(tipoToponimo);
+        TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
+        tipoNumeroCivico.setLettera("A");
+        tipoIndirizzo.setNumeroCivico(tipoNumeroCivico);
+
+        TipoComune tipoComune = new TipoComune();
+        tipoComune.setNomeComune("nomeComune");
+        tipoComune.setSiglaProvinciaIstat("RM");
+        tipoIndirizzo.setComune(tipoComune);
+
+        TipoLocalitaEstera1 tipoLocalitaEstera1 = new TipoLocalitaEstera1();
+        TipoIndirizzoEstero tipoIndirizzoEstero = new TipoIndirizzoEstero();
+        TipoDatoLocalitaEstera tipoDatoLocalitaEstera = new TipoDatoLocalitaEstera();
+        tipoDatoLocalitaEstera.setDescrizioneLocalita("descrizione");
+        tipoIndirizzoEstero.setLocalita(tipoDatoLocalitaEstera);
+
+        tipoLocalitaEstera1.setIndirizzoEstero(tipoIndirizzoEstero);
+        tipoResidenza.setLocalitaEstera(tipoLocalitaEstera1);
+
+        tipoResidenza.setIndirizzo(tipoIndirizzo);
+        tipoResidenza.setPresso("presso");
+        tipoResidenza.setTipoIndirizzo("4");
+
+        tipoResidenzaList.add(tipoResidenza);
+        tipoDatiSoggettiEnte.setResidenza(tipoResidenzaList);
+
+        ArrayList<TipoDatiSoggettiEnte> tipoDatiSoggettiEnteList = new ArrayList<>();
+        tipoDatiSoggettiEnteList.add(tipoDatiSoggettiEnte);
+
+        TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
+        tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
+
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaAnomalie(new ArrayList<>());
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+
+        List<ResidentialAddressDto> residentialAddresses = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses();
+        assertEquals(1, residentialAddresses.size());
+        assertTrue(residentialAddresses.get(0).getAddress().contains("A"));
+    }
+
+    @Test
+    void testconvertToGetAddressANPROK15() {
+        TipoCodiceFiscale tipoCodiceFiscale = new TipoCodiceFiscale();
+        tipoCodiceFiscale.setCodFiscale("Cf");
+        tipoCodiceFiscale.setDataAttribuzioneValidita("Data Attribuzione Validita");
+        tipoCodiceFiscale.setValiditaCF("Validita CF");
+
+        TipoGeneralita tipoGeneralita = new TipoGeneralita();
+        tipoGeneralita.setCodiceFiscale(tipoCodiceFiscale);
+
+        TipoDatiSoggettiEnte tipoDatiSoggettiEnte = new TipoDatiSoggettiEnte();
+        tipoDatiSoggettiEnte.setGeneralita(tipoGeneralita);
+
+        List<TipoResidenza> tipoResidenzaList = new ArrayList<>();
+        TipoResidenza tipoResidenza = new TipoResidenza();
+
+        TipoToponimo tipoToponimo= new TipoToponimo();
+        tipoToponimo.setDenominazioneToponimo("denToponimo");
+        tipoToponimo.setSpecie("specie");
+        tipoToponimo.setCodToponimo("codToponimo");
+        tipoToponimo.setSpecieFonte("specieFonte");
+        tipoToponimo.setToponimoFonte("toponimoFonte");
+
+        TipoIndirizzo tipoIndirizzo = new TipoIndirizzo();
+        tipoIndirizzo.setToponimo(tipoToponimo);
+        TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
+        tipoNumeroCivico.setNumero("70");
+        tipoNumeroCivico.setLettera("A");
+        tipoIndirizzo.setNumeroCivico(tipoNumeroCivico);
+
+        TipoComune tipoComune = new TipoComune();
+        tipoComune.setNomeComune("nomeComune");
+        tipoComune.setSiglaProvinciaIstat("RM");
+        tipoIndirizzo.setComune(tipoComune);
+
+        TipoLocalitaEstera1 tipoLocalitaEstera1 = new TipoLocalitaEstera1();
+        TipoIndirizzoEstero tipoIndirizzoEstero = new TipoIndirizzoEstero();
+        TipoDatoLocalitaEstera tipoDatoLocalitaEstera = new TipoDatoLocalitaEstera();
+        tipoDatoLocalitaEstera.setDescrizioneLocalita("descrizione");
+        tipoIndirizzoEstero.setLocalita(tipoDatoLocalitaEstera);
+
+        tipoLocalitaEstera1.setIndirizzoEstero(tipoIndirizzoEstero);
+        tipoResidenza.setLocalitaEstera(tipoLocalitaEstera1);
+
+        tipoResidenza.setIndirizzo(tipoIndirizzo);
+        tipoResidenza.setPresso("presso");
+        tipoResidenza.setTipoIndirizzo("4");
+
+        tipoResidenzaList.add(tipoResidenza);
+        tipoDatiSoggettiEnte.setResidenza(tipoResidenzaList);
+
+        ArrayList<TipoDatiSoggettiEnte> tipoDatiSoggettiEnteList = new ArrayList<>();
+        tipoDatiSoggettiEnteList.add(tipoDatiSoggettiEnte);
+
+        TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
+        tipoListaSoggetti.setDatiSoggetto(tipoDatiSoggettiEnteList);
+
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaAnomalie(new ArrayList<>());
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+
+        List<ResidentialAddressDto> residentialAddresses = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses();
+        assertEquals(1, residentialAddresses.size());
+        assertTrue(residentialAddresses.get(0).getAddress().contains("70A"));
     }
 
     @Test

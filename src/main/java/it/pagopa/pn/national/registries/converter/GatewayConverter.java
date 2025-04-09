@@ -234,6 +234,14 @@ public class GatewayConverter {
         return dto;
     }
 
+    protected IPARequestBodyDto convertToGetIpaPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
+        IPARequestBodyDto dto = new IPARequestBodyDto();
+        CheckTaxIdRequestBodyFilterDto filterDto = new CheckTaxIdRequestBodyFilterDto();
+        filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
+        dto.setFilter(filterDto);
+        return dto;
+    }
+
     protected IPARequestBodyDto convertToGetIpaPecRequest(BatchRequest batchRequest) {
         IPARequestBodyDto dto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filterDto = new CheckTaxIdRequestBodyFilterDto();
