@@ -16,6 +16,7 @@ import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddres
 import it.pagopa.pn.national.registries.model.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.repository.GatewayRequestTrackerRepository;
+import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.jetbrains.annotations.NotNull;
@@ -48,6 +49,7 @@ public class GatewayService extends GatewayConverter {
     private final AnprService anprService;
     private final InadService inadService;
     private final InfoCamereService infoCamereService;
+    private final IpaService ipaService;
     private final SqsService sqsService;
     private final boolean pnNationalRegistriesCxIdFlag;
     private final FeatureEnabledUtils featureEnabledUtils;
@@ -62,13 +64,14 @@ public class GatewayService extends GatewayConverter {
     public GatewayService(AnprService anprService,
                           InadService inadService,
                           InfoCamereService infoCamereService,
-                          SqsService sqsService,
+                          IpaService ipaService, SqsService sqsService,
                           FeatureEnabledUtils featureEnabledUtils,
                           @Value("${pn.national.registries.val.cx.id.enabled}") boolean pnNationalRegistriesCxIdFlag,
                           GatewayRequestTrackerRepository gatewayRequestTrackerRepository) {
         this.anprService = anprService;
         this.inadService = inadService;
         this.infoCamereService = infoCamereService;
+        this.ipaService = ipaService;
         this.sqsService = sqsService;
         this.pnNationalRegistriesCxIdFlag = pnNationalRegistriesCxIdFlag;
         this.featureEnabledUtils = featureEnabledUtils;
@@ -220,11 +223,11 @@ public class GatewayService extends GatewayConverter {
             if(featureEnabledUtils.isPfNewWorkflowEnabled(addressRequestBodyDto.getFilter().getReferenceRequestDate().toInstant())) {
                 return retrieveDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId, PG);
             }
-            return retrieveOldDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId, PG);
+            return retrieveOldDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId);
         }
     }
 
-    private Mono<AddressOKDto> retrieveOldDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId, RecipientType recipientType) {
+    private Mono<AddressOKDto> retrieveOldDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return ipaService.getIpaPec(convertToGetIpaPecRequest(addressRequestBodyDto))
                 .flatMap(response -> {
                     if ((response.getDomicilioDigitale() == null &&

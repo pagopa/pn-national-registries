@@ -390,7 +390,7 @@ class GatewayServiceTest {
         PnNationalRegistriesException exception = new PnNationalRegistriesException("", irrecoverableStatus, "", null, null, null, null);
         when(infoCamereService.getRegistroImpreseLegalAddress(any()))
                 .thenReturn(Mono.error(exception));
-        when(sqsService.pushToInputDlqQueue(any(), any()))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), any(String.class)))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -401,7 +401,7 @@ class GatewayServiceTest {
                 .verifyComplete();
 
         verify(infoCamereService, times(1)).getRegistroImpreseLegalAddress(any());
-        verify(sqsService, times(1)).pushToInputDlqQueue(any(), any());
+        verify(sqsService, times(1)).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any(String.class));
     }
 
     @Test
@@ -417,7 +417,7 @@ class GatewayServiceTest {
                 .verify();
 
         verify(infoCamereService, times(1)).getRegistroImpreseLegalAddress(any());
-        verify(sqsService, times(0)).pushToInputDlqQueue(any(), any());
+        verify(sqsService, times(0)).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any(String.class));
     }
 
     @ParameterizedTest
@@ -427,7 +427,7 @@ class GatewayServiceTest {
 
         PnNationalRegistriesException exception = new PnNationalRegistriesException("", irrecoverableStatus, "", null, null, null, null);
         when(anprService.getAddressANPR(any())).thenReturn(Mono.error(exception));
-        when(sqsService.pushToInputDlqQueue(any(), any()))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), any(String.class)))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -438,7 +438,7 @@ class GatewayServiceTest {
                 .verifyComplete();
 
         verify(anprService, times(1)).getAddressANPR(any());
-        verify(sqsService, times(1)).pushToInputDlqQueue(any(), any());
+        verify(sqsService, times(1)).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any(String.class));
     }
 
     @Test
@@ -452,7 +452,7 @@ class GatewayServiceTest {
                 .verify();
 
         verify(anprService, times(1)).getAddressANPR(any());
-        verify(sqsService, times(0)).pushToInputDlqQueue(any(), any());
+        verify(sqsService, times(0)).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any(String.class));
     }
 
     private AddressRequestBodyDto newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum domicileType) {
