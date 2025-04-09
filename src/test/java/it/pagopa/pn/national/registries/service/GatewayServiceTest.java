@@ -9,9 +9,12 @@ import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddres
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.joda.time.LocalDateTime;
+
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -308,7 +311,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
         GetDigitalAddressIniPECOKDto inipecDto = new GetDigitalAddressIniPECOKDto();
-
+        when(ipaService.getIpaPec(any())).thenReturn(Mono.just(new IPAPecDto()));
         when(infoCamereService.getIniPecDigitalAddress(any(), any(), any()))
                 .thenReturn(Mono.just(inipecDto));
 
@@ -357,6 +360,79 @@ class GatewayServiceTest {
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {400, 429})
+    void testRetrievePhysicalAddressFromRegImpreseWritesEventOnDlqIfIrrecoverableException(int irrecoverableStatus) {
+        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
+
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("", irrecoverableStatus, "", null, null, null, null);
+        when(infoCamereService.getRegistroImpreseLegalAddress(any()))
+                .thenReturn(Mono.error(exception));
+        when(sqsService.pushToInputDlqQueue(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId(C_ID);
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+
+        verify(infoCamereService, times(1)).getRegistroImpreseLegalAddress(any());
+        verify(sqsService, times(1)).pushToInputDlqQueue(any(), any());
+    }
+
+    @Test
+    void testRetrievePhysicalAddressFromRegImpreseThrowsException() {
+        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
+
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("", 500, "", null, null, null, null);
+        when(infoCamereService.getRegistroImpreseLegalAddress(any()))
+                .thenReturn(Mono.error(exception));
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
+
+        verify(infoCamereService, times(1)).getRegistroImpreseLegalAddress(any());
+        verify(sqsService, times(0)).pushToInputDlqQueue(any(), any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {400, 429})
+    void testRetrievePhysicalAddressFromAnprWritesEventOnDlqIfIrrecoverableException(int irrecoverableStatus) {
+        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
+
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("", irrecoverableStatus, "", null, null, null, null);
+        when(anprService.getAddressANPR(any())).thenReturn(Mono.error(exception));
+        when(sqsService.pushToInputDlqQueue(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        AddressOKDto addressOKDto = new AddressOKDto();
+        addressOKDto.setCorrelationId(C_ID);
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+                .expectNext(addressOKDto)
+                .verifyComplete();
+
+        verify(anprService, times(1)).getAddressANPR(any());
+        verify(sqsService, times(1)).pushToInputDlqQueue(any(), any());
+    }
+
+    @Test
+    void testRetrievePhysicalAddressFromAnprThrowsException() {
+        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
+
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("", 500, "", null, null, null, null);
+        when(anprService.getAddressANPR(any())).thenReturn(Mono.error(exception));
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
+
+        verify(anprService, times(1)).getAddressANPR(any());
+        verify(sqsService, times(0)).pushToInputDlqQueue(any(), any());
     }
 
     private AddressRequestBodyDto newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum domicileType) {
