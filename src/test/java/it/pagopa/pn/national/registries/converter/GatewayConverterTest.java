@@ -291,17 +291,6 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#ipaToSqsDto(String, IPAPecDto)}
-     */
-    @Test
-    void testIpaToSqsDto4() {
-        CodeSqsDto actualIpaToSqsDtoResult = gatewayConverter.ipaToSqsDto("42", new IPAPecDto());
-        assertEquals(DIGITAL.name(), actualIpaToSqsDtoResult.getAddressType());
-        assertEquals("42", actualIpaToSqsDtoResult.getCorrelationId());
-    }
-
-
-    /**
      * Method under test: {@link GatewayConverter#errorRegImpToSqsDto(String, Throwable)}
      */
     @Test

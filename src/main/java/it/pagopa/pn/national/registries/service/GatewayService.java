@@ -59,6 +59,7 @@ public class GatewayService extends GatewayConverter {
     private static final String AUDIT_LOG_START_CALL_MESSAGE = "Start searching physical address in the registry: {} for the request with correlationId: {} and recIndex: {}. Start request processing timestamp: {}";
     private static final String AUDIT_LOG_END_SUCCESS_MESSAGE = "The registry {} has responded successfully for the request with correlationId: {} and recIndex: {}. Response timestamp: {}";
     private static final String AUDIT_LOG_END_FAILURE_MESSAGE = "The registry {} has responded with an error for the request with correlationId: {} and recIndex: {}";
+    private static final String SENT_TO_DLQ_INPUT_MESSAGE = "Sent to DLQ Input message for correlationId {} -> response: {}";
 
 
     public GatewayService(AnprService anprService,
@@ -254,7 +255,7 @@ public class GatewayService extends GatewayConverter {
                 .onErrorResume(e -> {
                     InternalCodeSqsDto internalCodeSqsDto = toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), recipientType.name(), pnNationalRegistriesCxId);
                     return sqsService.pushToInputDlqQueue(internalCodeSqsDto, pnNationalRegistriesCxId)
-                            .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
+                            .doOnNext(sendMessageResponse -> log.info(SENT_TO_DLQ_INPUT_MESSAGE,
                                     internalCodeSqsDto.getCorrelationId(),
                                     sendMessageResponse))
                             .thenReturn(addressOKDto);
@@ -293,7 +294,7 @@ public class GatewayService extends GatewayConverter {
     public Mono<SendMessageResponse> handleException(Throwable throwable, InternalCodeSqsDto internalCodeSqsDto) {
         if (throwable instanceof PnNationalRegistriesException exception && (exception.getStatusCode() == HttpStatus.BAD_REQUEST || exception.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS)) {
             return sqsService.pushToInputDlqQueue(internalCodeSqsDto, internalCodeSqsDto.getPnNationalRegistriesCxId())
-                    .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
+                    .doOnNext(sendMessageResponse -> log.info(SENT_TO_DLQ_INPUT_MESSAGE,
                             internalCodeSqsDto.getCorrelationId(),
                             sendMessageResponse));
         }
@@ -393,7 +394,7 @@ public class GatewayService extends GatewayConverter {
     private Mono<SendMessageResponse> handleException(Throwable throwable, MultiRecipientCodeSqsDto multiRecipientCodeSqsDto) {
         if (throwable instanceof PnNationalRegistriesException exception && (exception.getStatusCode() == HttpStatus.BAD_REQUEST || exception.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS)) {
             return sqsService.pushToInputDlqQueue(multiRecipientCodeSqsDto, multiRecipientCodeSqsDto.getPnNationalRegistriesCxId())
-                    .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
+                    .doOnNext(sendMessageResponse -> log.info(SENT_TO_DLQ_INPUT_MESSAGE,
                             multiRecipientCodeSqsDto.getCorrelationId(),
                             sendMessageResponse));
         }
