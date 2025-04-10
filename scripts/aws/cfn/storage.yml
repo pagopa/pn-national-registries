@@ -350,6 +350,7 @@ Resources:
         VisibilityTimeout: 300
         MaxReceiveCount: 10
         DelaySeconds: 1
+        OncallQueueDlqOldestAgeLimit: 7200
 
 #Necessario a causa di bug script deploy
 Outputs:
