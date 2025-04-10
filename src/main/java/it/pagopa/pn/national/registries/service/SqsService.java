@@ -34,11 +34,13 @@ public class SqsService {
     private final String inputQueueName;
     private final String inputDlqQueueName;
     private final String validationInputQueueName;
+    private final String validationInputDlqQueueName;
 
     public SqsService(@Value("${pn.national.registries.sqs.output.queue.name}") String outputQueueName,
                       @Value("${pn.national.registries.sqs.input.queue.name}") String inputQueueName,
                       @Value("${pn.national.registries.sqs.input.validation.queue.name}") String validationInputQueueName,
                       @Value("${pn.national.registries.sqs.input.dlq.queue.name}") String inputDlqQueueName,
+                      @Value("${pn.national.registries.sqs.input.validation.dlq.queue.name}") String validationInputDlqQueueName,
                       SqsClient sqsClient,
                       ObjectMapper mapper) {
         this.sqsClient = sqsClient;
@@ -47,6 +49,7 @@ public class SqsService {
         this.inputQueueName = inputQueueName;
         this.inputDlqQueueName = inputDlqQueueName;
         this.validationInputQueueName = validationInputQueueName;
+        this.validationInputDlqQueueName = validationInputDlqQueueName;
     }
 
     public Mono<SendMessageResponse> pushToOutputQueue(CodeSqsDto msg, String pnNationalRegistriesCxId) {
@@ -81,8 +84,8 @@ public class SqsService {
 
     public Mono<SendMessageResponse> pushToInputDlqQueue(MultiRecipientCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
-        log.info(INSERTING_MSG_WITHOUT_DATA, inputDlqQueueName);
-        return push(toJson(msg), pnNationalRegistriesCxId, inputDlqQueueName, "NR_GATEWAY_INPUT");
+        log.info(INSERTING_MSG_WITHOUT_DATA, validationInputDlqQueueName);
+        return push(toJson(msg), pnNationalRegistriesCxId, validationInputDlqQueueName, "NR_GATEWAY_INPUT");
     }
 
     public Mono<SendMessageResponse> push(String msg, String pnNationalRegistriesCxId, String queueName, String eventType) {
