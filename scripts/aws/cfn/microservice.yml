@@ -423,6 +423,22 @@ Parameters:
     Type: String
     Description: 'ARN of DynamoDB table GatewayRequestTracker'
 
+  NationalRegistryValidationGatewayInputsQueueName:
+    Type: String
+    Description: 'Queue Name for NationalRegistryValidationGatewayInputs'
+
+  NationalRegistryValidationGatewayInputsQueueARN:
+    Type: String
+    Description: 'ARN for NationalRegistryValidationGatewayInputs'
+
+  NationalRegistryValidationGatewayInputsDLQName:
+    Type: String
+    Description: 'Queue name for NationalRegistryGatewayInputsDLQ'
+
+  NationalRegistryValidationGatewayInputsDLQARN:
+    Type: String
+    Description: 'DLQ ARN for NationalRegistryGatewayInputs'
+
 Resources:
 
   # PN-National-Registry microservice
@@ -495,6 +511,9 @@ Resources:
         ContainerEnvEntry42: !Sub 'SPRING_CODEC_MAXINMEMORYSIZE=${CodecMemorySize}'
         ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTART=${pfNewWorkflowStart}'
         ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTOP=${pfNewWorkflowStop}'
+        ContainerEnvEntry45: !Sub 'PN_NATIONAL_REGISTRY_INPUT_VALIDATION_QUEUE_NAME=${NationalRegistryValidationGatewayInputsQueueName}'
+        ContainerEnvEntry46: !Sub 'PN_NATIONAL_REGISTRY_TOPICS_VALIDATIONGATEWAYEVENTS=${NationalRegistryValidationGatewayInputsQueueName}'
+        ContainerEnvEntry47: !Sub 'PN_NATIONAL_REGISTRY_INPUT_VALIDATION_DLQ_QUEUE_NAME=${NationalRegistryValidationGatewayInputsDLQName}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -556,6 +575,8 @@ Resources:
               - !Ref NationalRegistryGatewayOutputsQueueARN
               - !Ref NationalRegistryGatewayInputsQueueARN
               - !Ref NationalRegistryGatewayInputsDLQARN
+              - !Ref NationalRegistryValidationGatewayInputsQueueARN
+              - !Ref NationalRegistryValidationGatewayInputsDLQARN
           - Effect: Allow
             Action:
               - ssm:GetParameter

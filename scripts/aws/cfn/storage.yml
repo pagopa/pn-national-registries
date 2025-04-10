@@ -336,6 +336,22 @@ Resources:
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
 
+  # Altra coda interna per gestire le richieste al gateway relative alla fase di validazione di una notifica
+  # di conseguenza più allertata per i messaggi di errore.
+  PnNationalRegistryValidationGatewayInputsQueue:
+    Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
+      Parameters:
+        QueueName: !Sub '${ProjectName}-national_registry_validation_gateway_inputs'
+        AlarmSNSTopicName: !Ref AlarmSNSTopicName
+        VisibilityTimeout: 300
+        MaxReceiveCount: 10
+        DelaySeconds: 1
+        OncallQueueDlqOldestAgeLimit: 7200
+
 #Necessario a causa di bug script deploy
 Outputs:
   PnBatchRequestEncryptKeyARN:
@@ -401,3 +417,15 @@ Outputs:
   GatewayRequestTrackerTableArn:
     Description: ARN Dynamo Name used by application to access the key-value store of GatewayRequestTrackerTable
     Value: !Sub '${GatewayRequestTrackerTable.Arn}'
+
+  # PnNationalRegistryValidationGatewayInputs Queue
+  NationalRegistryValidationGatewayInputsQueueName:
+    Value: !GetAtt PnNationalRegistryValidationGatewayInputsQueue.Outputs.QueueName
+  NationalRegistryValidationGatewayInputsQueueARN:
+    Value: !GetAtt PnNationalRegistryValidationGatewayInputsQueue.Outputs.QueueARN
+  NationalRegistryValidationGatewayInputsDLQName:
+    Value: !GetAtt PnNationalRegistryValidationGatewayInputsQueue.Outputs.DeadLetterQueueName
+  NationalRegistryValidationGatewayInputsDLQURL:
+    Value: !GetAtt PnNationalRegistryValidationGatewayInputsQueue.Outputs.DeadLetterQueueURL
+  NationalRegistryValidationGatewayInputsDLQARN:
+    Value: !GetAtt PnNationalRegistryValidationGatewayInputsQueue.Outputs.DeadLetterQueueARN
