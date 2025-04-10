@@ -1254,12 +1254,8 @@ components:
       type: object
       required:
         - recIndex
-        - taxId
       properties:
         recIndex:
-          type: string
-        taxId:
-          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
         error:
           type: string

@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -132,7 +133,7 @@ class IniPecBatchSqsServiceTest {
         BatchRequest request = new BatchRequest();
         request.setCorrelationId("correlationId");
         request.setReferenceRequestDate(LocalDateTime.now());
-        when(sqsService.pushToInputDlqQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         StepVerifier.create(iniPecBatchSqsService.sendListToDlqQueue(List.of(request)))
                 .verifyComplete();
     }
@@ -143,7 +144,7 @@ class IniPecBatchSqsServiceTest {
         request.setCorrelationId("correlationId");
         request.setReferenceRequestDate(LocalDateTime.now());
         request.setStatus(BatchSendStatus.ERROR.getValue());
-        when(sqsService.pushToInputDlqQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         StepVerifier.create(iniPecBatchSqsService.sendListToDlqQueue(List.of(request)))
                 .verifyComplete();
     }

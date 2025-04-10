@@ -28,6 +28,7 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
 
     public static final String ERROR_CODE_UNAUTHORIZED = "PN_NATIONAL_REGISTRIES_UNAUTHORIZED";
     public static final String ERROR_CODE_INVALID_RECIPIENTTYPE = "PN_NATIONAL_REGISTRIES_INVALID_RECIPIENTTYPE";
+    public static final String ERROR_CODE_INVALID_DOMICILETYPE = "PN_NATIONAL_REGISTRIES_INVALID_DOMICILETYPE";
     public static final String ERROR_CODE_INFOCAMERE_TOKEN_DURATION = "PN_NATIONAL_REGISTRIES_INFOCAMERE_TOKEN_DURATION";
 
     public static final String ERROR_CODE_ADE_LEGAL_OPENSAML_INIT = "PN_NATIONAL_REGISTRIES_ADE_LEGAL_OPENSAML_INIT";
@@ -69,6 +70,8 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_MESSAGE_ADE_LEGAL_LOAD_CERT = "Errore durante il caricamento del certificato";
     public static final String ERROR_MESSAGE_ADE_LEGAL_LOAD_KEY = "Errore durante il caricamento della private key";
     public static final String ERROR_MESSAGE_ADE_LEGAL_CREATE_SOAP = "Errore durante la creazione dell'envelope SOAP";
+    public static final String ERROR_MESSAGE_ADDRESSES_REQUIRED = "Errore, addresses required";
+    public static final String ERROR_CODE_ADDRESSES_REQUIRED = "MULTI_REQUEST_ADDRESSES_REQUIRED";
 
     public static final String ERROR_CODE_NATIONAL_REGISTRIES_HANDLEEVENTFAILED = "PN_NATIONAL_REGISTRIES_HANDLEEVENTFAILED";
 

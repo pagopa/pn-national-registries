@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
+import it.pagopa.pn.national.registries.model.MultiCodeSqsDto;
 import it.pagopa.pn.national.registries.model.MultiRecipientCodeSqsDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +27,8 @@ public class SqsService {
 
     private static final String PUSHING_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}";
     private static final String INSERTING_MSG_WITHOUT_DATA = "Inserted data in SQS {}";
+    private static final String MULTI_INPUT_EVENT_TYPE = "NR_GATEWAY_MULTI_INPUT";
+    private static final String SINGLE_INPUT_EVENT_TYPE = "NR_GATEWAY_INPUT";
 
     private final SqsClient sqsClient;
     private final ObjectMapper mapper;
@@ -33,11 +36,13 @@ public class SqsService {
     private final String inputQueueName;
     private final String inputDlqQueueName;
     private final String validationInputQueueName;
+    private final String validationInputDlqQueueName;
 
     public SqsService(@Value("${pn.national.registries.sqs.output.queue.name}") String outputQueueName,
                       @Value("${pn.national.registries.sqs.input.queue.name}") String inputQueueName,
                       @Value("${pn.national.registries.sqs.input.validation.queue.name}") String validationInputQueueName,
                       @Value("${pn.national.registries.sqs.input.dlq.queue.name}") String inputDlqQueueName,
+                      @Value("${pn.national.registries.sqs.input.validation.dlq.queue.name}") String validationInputDlqQueueName,
                       SqsClient sqsClient,
                       ObjectMapper mapper) {
         this.sqsClient = sqsClient;
@@ -46,6 +51,7 @@ public class SqsService {
         this.inputQueueName = inputQueueName;
         this.inputDlqQueueName = inputDlqQueueName;
         this.validationInputQueueName = validationInputQueueName;
+        this.validationInputDlqQueueName = validationInputDlqQueueName;
     }
 
     public Mono<SendMessageResponse> pushToOutputQueue(CodeSqsDto msg, String pnNationalRegistriesCxId) {
@@ -54,22 +60,34 @@ public class SqsService {
         return push(toJson(msg), pnNationalRegistriesCxId, outputQueueName, "NR_GATEWAY_RESPONSE");
     }
 
+    public Mono<SendMessageResponse> pushMultiToOutputQueue(MultiCodeSqsDto msg, String pnNationalRegistriesCxId) {
+        log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
+        log.info(INSERTING_MSG_WITHOUT_DATA, outputQueueName);
+        return push(toJson(msg), pnNationalRegistriesCxId, outputQueueName, "NR_GATEWAY_RESPONSE");
+    }
+
     public Mono<SendMessageResponse> pushToInputQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
         log.info(INSERTING_MSG_WITHOUT_DATA, inputQueueName);
-        return push(toJson(msg), pnNationalRegistriesCxId, inputQueueName, "NR_GATEWAY_INPUT");
+        return push(toJson(msg), pnNationalRegistriesCxId, inputQueueName, SINGLE_INPUT_EVENT_TYPE);
     }
 
     public Mono<SendMessageResponse> pushToValidationInputQueue(MultiRecipientCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
         log.info(INSERTING_MSG_WITHOUT_DATA, validationInputQueueName);
-        return push(toJson(msg), pnNationalRegistriesCxId, validationInputQueueName, "NR_GATEWAY_MULTI_INPUT");
+        return push(toJson(msg), pnNationalRegistriesCxId, validationInputQueueName, MULTI_INPUT_EVENT_TYPE);
     }
 
     public Mono<SendMessageResponse> pushToInputDlqQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
         log.info(INSERTING_MSG_WITHOUT_DATA, inputDlqQueueName);
-        return push(toJson(msg), pnNationalRegistriesCxId, inputDlqQueueName, "NR_GATEWAY_INPUT");
+        return push(toJson(msg), pnNationalRegistriesCxId, inputDlqQueueName, SINGLE_INPUT_EVENT_TYPE);
+    }
+
+    public Mono<SendMessageResponse> pushToInputDlqQueue(MultiRecipientCodeSqsDto msg, String pnNationalRegistriesCxId) {
+        log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
+        log.info(INSERTING_MSG_WITHOUT_DATA, validationInputDlqQueueName);
+        return push(toJson(msg), pnNationalRegistriesCxId, validationInputDlqQueueName, MULTI_INPUT_EVENT_TYPE);
     }
 
     public Mono<SendMessageResponse> push(String msg, String pnNationalRegistriesCxId, String queueName, String eventType) {
