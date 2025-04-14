@@ -2,9 +2,10 @@ package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
-
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
+import it.pagopa.pn.national.registries.model.MultiCodeSqsDto;
 import it.pagopa.pn.national.registries.model.MultiRecipientCodeSqsDto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -19,8 +20,10 @@ import static org.mockito.Mockito.when;
 
 class SqsServiceTest {
 
-    @Test
-    void testPushToOutputQueue() {
+    private SqsService sqsService;
+
+    @BeforeEach
+    void init() {
         SqsClient amazonSQS = mock(SqsClient.class);
         GetQueueUrlResponse getQueueUrlResponse = GetQueueUrlResponse.builder().queueUrl("queueUrl").build();
         SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
@@ -29,8 +32,20 @@ class SqsServiceTest {
         when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponse);
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
+        this.sqsService = new SqsService(
+                "outputQueue",
+                "inputQueue",
+                "validationInputQueueName",
+                "inputDqlQueue",
+                "validationInputDlqQueue",
+                amazonSQS,
+                objectMapper
+        );
+    }
 
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", "validationInputQueueName", amazonSQS, objectMapper);
+    @Test
+    void testPushToOutputQueue() {
+        SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId("correlationId");
@@ -38,18 +53,20 @@ class SqsServiceTest {
                 .expectNext(sendMessageResponse)
                 .verifyComplete();
     }
+
     @Test
-    void testPushToInputQueue() {
-        SqsClient amazonSQS = mock(SqsClient.class);
-        GetQueueUrlResponse getQueueUrlResponse = GetQueueUrlResponse.builder().queueUrl("queueUrl").build();
+    void testPushToOutputQueue_MultiRequest() {
         SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
 
-        when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
-        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponse);
-
-        ObjectMapper objectMapper = mock(ObjectMapper.class);
-
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", "validationInputQueueName", amazonSQS, objectMapper);
+        MultiCodeSqsDto codeSqsDto = new MultiCodeSqsDto();
+        codeSqsDto.setCorrelationId("correlationId");
+        StepVerifier.create(sqsService.pushMultiToOutputQueue(codeSqsDto,"clientId"))
+                .expectNext(sendMessageResponse)
+                .verifyComplete();
+    }
+    @Test
+    void testPushToInputQueue() {
+        SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
 
         InternalCodeSqsDto codeSqsDto =InternalCodeSqsDto.builder().build();
         codeSqsDto.setCorrelationId("correlationId");
@@ -60,16 +77,7 @@ class SqsServiceTest {
 
     @Test
     void testPushToMultiInputQueue() {
-        SqsClient amazonSQS = mock(SqsClient.class);
-        GetQueueUrlResponse getQueueUrlResponse = GetQueueUrlResponse.builder().queueUrl("queueUrl").build();
         SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
-
-        when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
-        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponse);
-
-        ObjectMapper objectMapper = mock(ObjectMapper.class);
-
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", "validationInputQueueName", amazonSQS, objectMapper);
 
         MultiRecipientCodeSqsDto codeSqsDto = MultiRecipientCodeSqsDto.builder().build();
         codeSqsDto.setCorrelationId("correlationId");
@@ -80,18 +88,20 @@ class SqsServiceTest {
 
     @Test
     void testPushToInputDlqQueue() {
-        SqsClient amazonSQS = mock(SqsClient.class);
-        GetQueueUrlResponse getQueueUrlResponse = GetQueueUrlResponse.builder().queueUrl("queueUrl").build();
         SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
 
-        when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
-        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponse);
-
-        ObjectMapper objectMapper = mock(ObjectMapper.class);
-
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", "validationInputQueueName", amazonSQS, objectMapper);
-
         InternalCodeSqsDto codeSqsDto = InternalCodeSqsDto.builder().build();
+        codeSqsDto.setCorrelationId("correlationId");
+        StepVerifier.create(sqsService.pushToInputDlqQueue(codeSqsDto,"clientId"))
+                .expectNext(sendMessageResponse)
+                .verifyComplete();
+    }
+
+    @Test
+    void testPushToInputDlqQueue_MultiRequest() {
+        SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
+
+        MultiRecipientCodeSqsDto codeSqsDto = MultiRecipientCodeSqsDto.builder().build();
         codeSqsDto.setCorrelationId("correlationId");
         StepVerifier.create(sqsService.pushToInputDlqQueue(codeSqsDto,"clientId"))
                 .expectNext(sendMessageResponse)

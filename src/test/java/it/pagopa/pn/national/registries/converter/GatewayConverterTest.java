@@ -2,60 +2,46 @@ package it.pagopa.pn.national.registries.converter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.commons.utils.dynamodb.async.DynamoDbAsyncTableDecorator;
-import it.pagopa.pn.national.registries.client.anpr.AnprClient;
-import it.pagopa.pn.national.registries.client.inad.InadClient;
-import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
-import it.pagopa.pn.national.registries.client.ipa.IpaClient;
-import it.pagopa.pn.national.registries.config.CachedSecretsManagerConsumer;
-import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
+import it.pagopa.pn.national.registries.constant.DomicileType;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
+import it.pagopa.pn.national.registries.middleware.queue.consumer.event.InternalRecipientAddress;
+import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressesGatewayEvent;
+import it.pagopa.pn.national.registries.model.AddressQueryRequest;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.MultiCodeSqsDto;
+import it.pagopa.pn.national.registries.model.MultiRecipientCodeSqsDto;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
-import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
-import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
-import it.pagopa.pn.national.registries.service.*;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
-
-import java.nio.charset.StandardCharsets;
-import java.sql.Date;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.List;
-
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
-import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
-import software.amazon.awssdk.services.sqs.SqsClient;
+
+import java.nio.charset.StandardCharsets;
+import java.sql.Date;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Collections;
+import java.util.List;
 
 import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @TestPropertySource(properties = {
@@ -305,50 +291,6 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#ipaToSqsDto(String, IPAPecDto)}
-     */
-    @Test
-    void testIpaToSqsDto4() {
-        DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient = mock(DynamoDbEnhancedAsyncClient.class);
-        when(dynamoDbEnhancedAsyncClient.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(
-                new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(
-                        new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(mock(DynamoDbAsyncTable.class)))))));
-        CounterRepositoryImpl counterRepository = new CounterRepositoryImpl(dynamoDbEnhancedAsyncClient,
-                "correlationId: {} - IPA - WS23 - domicili digitali non presenti");
-
-        ValidateTaxIdUtils validateTaxIdUtils = mock(ValidateTaxIdUtils.class);
-        AnprService anprService = new AnprService(new AnprConverter(), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
-
-        DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient2 = mock(DynamoDbEnhancedAsyncClient.class);
-        when(dynamoDbEnhancedAsyncClient2.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(
-                new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(
-                        new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(mock(DynamoDbAsyncTable.class)))))));
-        IniPecBatchRequestRepositoryImpl iniPecBatchRequestRepository = new IniPecBatchRequestRepositoryImpl(
-                dynamoDbEnhancedAsyncClient2, 3, 2);
-
-        InfoCamereClient infoCamereClient = mock(InfoCamereClient.class);
-        InfoCamereService infoCamereService = new InfoCamereService(infoCamereClient,
-                new InfoCamereConverter(2L, "~"), iniPecBatchRequestRepository, 2L, "~", validateTaxIdUtils);
-
-        InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils, featureEnabledUtils);
-        PnNationalRegistriesSecretService pnNationalRegistriesSecretService = new PnNationalRegistriesSecretService(new CachedSecretsManagerConsumer(mock(SecretsManagerClient.class)));
-        IpaSecretConfig ipaSecretConfig = new IpaSecretConfig("ipaSecret");
-        IpaService ipaService = new IpaService(new IpaConverter(), mock(IpaClient.class), validateTaxIdUtils, pnNationalRegistriesSecretService, ipaSecretConfig);
-
-        SqsClient sqsClient = mock(SqsClient.class);
-        GatewayService gatewayService = new GatewayService(anprService, inadService, infoCamereService, ipaService,
-                new SqsService("outputQueue", "inputQueue", "inputDlqQueue", "validationInputQueueName", sqsClient,
-                        new ObjectMapper()), featureEnabledUtils,
-                true);
-        CodeSqsDto actualIpaToSqsDtoResult = gatewayService.ipaToSqsDto("42", new IPAPecDto());
-        assertEquals(DIGITAL.name(), actualIpaToSqsDtoResult.getAddressType());
-        assertEquals("42", actualIpaToSqsDtoResult.getCorrelationId());
-        verify(dynamoDbEnhancedAsyncClient).table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any());
-        verify(dynamoDbEnhancedAsyncClient2).table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any());
-    }
-
-
-    /**
      * Method under test: {@link GatewayConverter#errorRegImpToSqsDto(String, Throwable)}
      */
     @Test
@@ -571,4 +513,253 @@ class GatewayConverterTest {
                         ((PnNationalRegistriesException) throwable).getStatusCode().value() == HttpStatus.NOT_FOUND.value())
                 .verify();
     }
+
+    // START METHODS TESTS FOR MULTI ADDRESSES
+    @Test
+    void testToAddressQueryRequests() {
+        InternalRecipientAddress internalRecipientAddress1 = InternalRecipientAddress.builder()
+                .taxId("taxId1")
+                .recipientType(RecipientType.PF.name())
+                .domicileType(DomicileType.PHYSICAL.name())
+                .recIndex(0)
+                .build();
+
+        InternalRecipientAddress internalRecipientAddress2 = InternalRecipientAddress.builder()
+                .taxId("taxId2")
+                .recipientType(RecipientType.PG.name())
+                .domicileType(DomicileType.PHYSICAL.name())
+                .recIndex(1)
+                .build();
+
+        PnAddressesGatewayEvent.Payload payload = PnAddressesGatewayEvent.Payload.builder()
+                .correlationId("test-correlation-id")
+                .referenceRequestDate(new java.util.Date())
+                .pnNationalRegistriesCxId("test-cx-id")
+                .internalRecipientAdresses(List.of(internalRecipientAddress1, internalRecipientAddress2))
+                .build();
+
+        List<AddressQueryRequest> result = gatewayConverter.toAddressQueryRequests(payload);
+
+        assertNotNull(result);
+        assertEquals(2, result.size());
+
+        AddressQueryRequest request1 = result.get(0);
+        assertEquals("test-correlation-id", request1.getCorrelationId());
+        assertEquals("test-cx-id", request1.getPnNationalRegistriesCxId());
+        assertEquals("taxId1", request1.getTaxId());
+        assertEquals(RecipientType.PF, request1.getRecipientType());
+        assertEquals(DomicileType.PHYSICAL, request1.getDomicileType());
+        assertEquals(0, request1.getRecIndex());
+
+        AddressQueryRequest request2 = result.get(1);
+        assertEquals("test-correlation-id", request2.getCorrelationId());
+        assertEquals("test-cx-id", request2.getPnNationalRegistriesCxId());
+        assertEquals("taxId2", request2.getTaxId());
+        assertEquals(RecipientType.PG, request2.getRecipientType());
+        assertEquals(DomicileType.PHYSICAL, request2.getDomicileType());
+        assertEquals(1, request2.getRecIndex());
+    }
+
+    @Test
+    void testConvertToGetPhysicalAddressAnprRequest() {
+        AddressQueryRequest addressQueryRequest = getAddressQueryRequest1();
+
+        GetAddressANPRRequestBodyDto result = gatewayConverter.convertToGetAddressAnprRequest(addressQueryRequest);
+
+        assertNotNull(result);
+        assertNotNull(result.getFilter());
+        assertEquals("test-correlation-id", result.getFilter().getRequestReason());
+        assertEquals("test-tax-id", result.getFilter().getTaxId());
+        assertEquals("2023-02-16", result.getFilter().getReferenceRequestDate());
+    }
+
+    @Test
+    void testConvertAnprResponseToInternalRecipientAddress() {
+        AddressQueryRequest addressQueryRequest = getAddressQueryRequest1();
+
+        ResidentialAddressDto residentialAddressDto = new ResidentialAddressDto();
+        residentialAddressDto.setAddress("test-address");
+        residentialAddressDto.setZip("test-zip");
+        residentialAddressDto.setProvince("test-province");
+        residentialAddressDto.setMunicipality("test-municipality");
+
+        GetAddressANPROKDto response = new GetAddressANPROKDto();
+        response.setResidentialAddresses(List.of(residentialAddressDto));
+
+        MultiCodeSqsDto.PhysicalAddressSQSMessage result = gatewayConverter.convertAnprResponseToInternalRecipientAddress(response, addressQueryRequest);
+
+        assertNotNull(result);
+        assertNotNull(result.getPhysicalAddress());
+        assertEquals("test-address", result.getPhysicalAddress().getAddress());
+        assertEquals("test-zip", result.getPhysicalAddress().getZip());
+        assertEquals("test-province", result.getPhysicalAddress().getProvince());
+        assertEquals("test-municipality", result.getPhysicalAddress().getMunicipality());
+        assertEquals(0, result.getRecIndex());
+        assertEquals("ANPR", result.getRegistry());
+    }
+
+    @Test
+    void testConvertAnprResponseToInternalRecipientAddressWithNoResidentialAddresses() {
+        GetAddressANPROKDto response = new GetAddressANPROKDto();
+        response.setResidentialAddresses(Collections.emptyList());
+
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("test-correlation-id")
+                .pnNationalRegistriesCxId("test-cx-id")
+                .referenceRequestDate(new java.util.Date())
+                .taxId("test-tax-id")
+                .recipientType(RecipientType.PF)
+                .recIndex(0)
+                .domicileType(DomicileType.PHYSICAL)
+                .build();
+
+        MultiCodeSqsDto.PhysicalAddressSQSMessage result = gatewayConverter.convertAnprResponseToInternalRecipientAddress(response, addressQueryRequest);
+
+        assertNull(result.getPhysicalAddress());
+        assertEquals(0, result.getRecIndex());
+        assertEquals("ANPR", result.getRegistry());
+    }
+
+    @Test
+    void testAnprNotFoundErrorToPhysicalAddressSQSMessage() {
+        AddressQueryRequest addressQueryRequest = getAddressQueryRequest1();
+
+        MultiCodeSqsDto.PhysicalAddressSQSMessage result = gatewayConverter.anprNotFoundErrorToPhysicalAddressSQSMessage(addressQueryRequest);
+
+        assertNotNull(result);
+        assertEquals(0, result.getRecIndex());
+        assertEquals("ANPR", result.getRegistry());
+        assertNull(result.getPhysicalAddress());
+    }
+
+    @Test
+    void testConvertToGetPhysicalAddressRegistroImpreseRequest() {
+        AddressQueryRequest addressQueryRequest = getAddressQueryRequest1();
+
+        // Act
+        GetAddressRegistroImpreseRequestBodyDto result = gatewayConverter.convertToGetAddressRegistroImpreseRequest(addressQueryRequest);
+
+        // Assert
+        assertNotNull(result);
+        assertNotNull(result.getFilter());
+        assertEquals("test-tax-id", result.getFilter().getTaxId());
+    }
+
+    @Test
+    void testConvertRegImprResponseToInternalRecipientAddress() {
+        AddressQueryRequest addressQueryRequest = getAddressQueryRequest1();
+
+        GetAddressRegistroImpreseOKProfessionalAddressDto professionalAddressDto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
+        professionalAddressDto.setAddress("test-address");
+        professionalAddressDto.setZip("test-zip");
+        professionalAddressDto.setProvince("test-province");
+        professionalAddressDto.setMunicipality("test-municipality");
+
+        GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
+        response.setProfessionalAddress(professionalAddressDto);
+
+        MultiCodeSqsDto.PhysicalAddressSQSMessage result = gatewayConverter.convertRegImprResponseToInternalRecipientAddress(response, addressQueryRequest);
+
+        assertNotNull(result);
+        assertNotNull(result.getPhysicalAddress());
+        assertEquals("test-address", result.getPhysicalAddress().getAddress());
+        assertEquals("test-zip", result.getPhysicalAddress().getZip());
+        assertEquals("test-province", result.getPhysicalAddress().getProvince());
+        assertEquals("test-municipality", result.getPhysicalAddress().getMunicipality());
+        assertEquals(0, result.getRecIndex());
+        assertEquals("REGISTRO_IMPRESE", result.getRegistry());
+    }
+
+    @Test
+    void testConvertRegImprResponseToInternalRecipientAddressWithNoProfessionalAddress() {
+        GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
+        response.setProfessionalAddress(null);
+
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("test-correlation-id")
+                .pnNationalRegistriesCxId("test-cx-id")
+                .referenceRequestDate(new java.util.Date())
+                .taxId("test-tax-id")
+                .recipientType(RecipientType.PG)
+                .recIndex(0)
+                .domicileType(DomicileType.PHYSICAL)
+                .build();
+
+        MultiCodeSqsDto.PhysicalAddressSQSMessage result = gatewayConverter.convertRegImprResponseToInternalRecipientAddress(response, addressQueryRequest);
+
+        assertNull(result.getPhysicalAddress());
+        assertEquals(0, result.getRecIndex());
+        assertEquals("REGISTRO_IMPRESE", result.getRegistry());
+    }
+
+    @Test
+    void testConvertToMultiCodeSqsDto() {
+        String correlationId = "test-correlation-id";
+        MultiCodeSqsDto.PhysicalAddressSQSMessage message1 = new MultiCodeSqsDto.PhysicalAddressSQSMessage();
+        message1.setRecIndex(1);
+        message1.setRegistry("ANPR");
+
+        MultiCodeSqsDto.PhysicalAddressSQSMessage message2 = new MultiCodeSqsDto.PhysicalAddressSQSMessage();
+        message2.setRecIndex(2);
+        message2.setRegistry("REGISTRO_IMPRESE");
+
+        List<MultiCodeSqsDto.PhysicalAddressSQSMessage> addresses = List.of(message1, message2);
+
+        MultiCodeSqsDto result = gatewayConverter.convertToMultiCodeSqsDto(addresses, correlationId);
+
+        assertNotNull(result);
+        assertEquals(correlationId, result.getCorrelationId());
+        assertEquals("PHYSICAL", result.getAddressType());
+        assertEquals(2, result.getAddresses().size());
+        assertEquals(1, result.getAddresses().get(0).getRecIndex());
+        assertEquals("ANPR", result.getAddresses().get(0).getRegistry());
+        assertEquals(2, result.getAddresses().get(1).getRecIndex());
+        assertEquals("REGISTRO_IMPRESE", result.getAddresses().get(1).getRegistry());
+    }
+
+    @Test
+    void testConvertToMultiRecipientCodeSqsDto() {
+        AddressQueryRequest addressQueryRequest1 = getAddressQueryRequest1();
+
+        List<AddressQueryRequest> addressQueryRequests = List.of(
+                addressQueryRequest1,
+                AddressQueryRequest.builder()
+                .correlationId("test-correlation-id")
+                .pnNationalRegistriesCxId("test-cx-id")
+                .taxId("test-tax-id-2")
+                .recIndex(1)
+                .recipientType(RecipientType.PG)
+                .domicileType(DomicileType.PHYSICAL)
+                .referenceRequestDate(Date.from(LocalDate.of(2023, 2, 16).atStartOfDay(ZoneId.systemDefault()).toInstant()))
+                .build());
+
+        MultiRecipientCodeSqsDto result = gatewayConverter.convertToMultiRecipientCodeSqsDto(addressQueryRequests);
+
+        assertNotNull(result);
+        assertEquals("test-correlation-id", result.getCorrelationId());
+        assertEquals("test-cx-id", result.getPnNationalRegistriesCxId());
+        assertEquals(Date.from(LocalDate.of(2023, 2, 16).atStartOfDay(ZoneId.systemDefault()).toInstant()), result.getReferenceRequestDate());
+        assertEquals(2, result.getInternalRecipientAdresses().size());
+        assertEquals(0, result.getInternalRecipientAdresses().get(0).getRecIndex());
+        assertEquals("test-tax-id", result.getInternalRecipientAdresses().get(0).getTaxId());
+        assertEquals("PHYSICAL", result.getInternalRecipientAdresses().get(0).getDomicileType());
+        assertEquals(1, result.getInternalRecipientAdresses().get(1).getRecIndex());
+        assertEquals("test-tax-id-2", result.getInternalRecipientAdresses().get(1).getTaxId());
+        assertEquals("PHYSICAL", result.getInternalRecipientAdresses().get(1).getDomicileType());
+    }
+
+    private static AddressQueryRequest getAddressQueryRequest1() {
+        return AddressQueryRequest.builder()
+                .correlationId("test-correlation-id")
+                .pnNationalRegistriesCxId("test-cx-id")
+                .taxId("test-tax-id")
+                .recIndex(0)
+                .recipientType(RecipientType.PF)
+                .domicileType(DomicileType.PHYSICAL)
+                .referenceRequestDate(Date.from(LocalDate.of(2023, 2, 16).atStartOfDay(ZoneId.systemDefault()).toInstant()))
+                .build();
+    }
+
+    // END METHODS TESTS FOR MULTI ADDRESSES
+
 }
