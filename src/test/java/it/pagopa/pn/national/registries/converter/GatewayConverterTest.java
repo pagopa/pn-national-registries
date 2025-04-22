@@ -10,12 +10,15 @@ import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.config.CachedSecretsManagerConsumer;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
+import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
+import it.pagopa.pn.national.registries.model.gateway.GatewayAddressResponse;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
@@ -35,9 +38,9 @@ import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 
 import java.nio.charset.StandardCharsets;
-import java.sql.Date;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Date;
 import java.util.List;
 
 import org.springframework.test.context.ContextConfiguration;
@@ -571,4 +574,209 @@ class GatewayConverterTest {
                         ((PnNationalRegistriesException) throwable).getStatusCode().value() == HttpStatus.NOT_FOUND.value())
                 .verify();
     }
+
+    // START TESTS FOR MULTI ADDRESSES
+
+    @Test
+    void testToAddressQueryRequests() {
+        Date now = new Date();
+        PhysicalAddressesRequestBodyDto requestBodyDto = new PhysicalAddressesRequestBodyDto();
+        requestBodyDto.setCorrelationId("correlationId");
+        requestBodyDto.setReferenceRequestDate(now);
+
+        RecipientAddressRequestBodyDto address1 = new RecipientAddressRequestBodyDto();
+        address1.setTaxId("taxId1");
+        address1.setRecipientType(RecipientAddressRequestBodyDto.RecipientTypeEnum.PF);
+        address1.setRecIndex(0);
+
+        RecipientAddressRequestBodyDto address2 = new RecipientAddressRequestBodyDto();
+        address2.setTaxId("taxId2");
+        address2.setRecipientType(RecipientAddressRequestBodyDto.RecipientTypeEnum.PG);
+        address2.setRecIndex(1);
+
+        requestBodyDto.setAddresses(List.of(address1, address2));
+
+        List<AddressQueryRequest> result = gatewayConverter.toAddressQueryRequests(requestBodyDto);
+
+        assertEquals(2, result.size());
+
+        AddressQueryRequest request1 = result.get(0);
+        assertEquals("correlationId", request1.getCorrelationId());
+        assertEquals(now, request1.getReferenceRequestDate());
+        assertEquals("taxId1", request1.getTaxId());
+        assertEquals(RecipientType.fromString(RecipientAddressRequestBodyDto.RecipientTypeEnum.PF.name()), request1.getRecipientType());
+        assertEquals(0, request1.getRecIndex());
+
+        AddressQueryRequest request2 = result.get(1);
+        assertEquals("correlationId", request2.getCorrelationId());
+        assertEquals(now, request2.getReferenceRequestDate());
+        assertEquals("taxId2", request2.getTaxId());
+        assertEquals(RecipientType.fromString(RecipientAddressRequestBodyDto.RecipientTypeEnum.PG.name()), request2.getRecipientType());
+        assertEquals(1, request2.getRecIndex());
+    }
+
+    @Test
+    void testConvertToGetAddressAnprMultiRequest() {
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("testCorrelationId")
+                .taxId("testTaxId")
+                .referenceRequestDate(Date.from(LocalDate.of(2023, 10, 1)
+                        .atStartOfDay(ZoneId.systemDefault()).toInstant()))
+                .build();
+
+        GetAddressANPRRequestBodyDto result = gatewayConverter.convertToGetAddressAnprRequest(addressQueryRequest);
+
+        assertEquals("testCorrelationId", result.getFilter().getRequestReason());
+        assertEquals("testTaxId", result.getFilter().getTaxId());
+        assertEquals("2023-10-01", result.getFilter().getReferenceRequestDate());
+    }
+
+    @Test
+    void testConvertAnprResponseToInternalRecipientAddress() {
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("testCorrelationId")
+                .recIndex(1)
+                .build();
+
+        ResidentialAddressDto residentialAddress = new ResidentialAddressDto();
+        residentialAddress.setAddress("Test Address");
+        residentialAddress.setZip("12345");
+        residentialAddress.setProvince("Test Province");
+        residentialAddress.setMunicipality("Test Municipality");
+
+        GetAddressANPROKDto response = new GetAddressANPROKDto();
+        response.setResidentialAddresses(List.of(residentialAddress));
+
+        GatewayAddressResponse.AddressInfo result = gatewayConverter.convertAnprResponseToInternalRecipientAddress(response, addressQueryRequest);
+
+        assertEquals("Test Address", result.getPhysicalAddress().getAddress());
+        assertEquals("12345", result.getPhysicalAddress().getZip());
+        assertEquals("Test Province", result.getPhysicalAddress().getProvince());
+        assertEquals("Test Municipality", result.getPhysicalAddress().getMunicipality());
+        assertEquals(1, result.getRecIndex());
+        assertEquals("ANPR", result.getRegistry());
+    }
+
+    @Test
+    void testConvertAnprResponseToInternalRecipientAddressWithNullResponse() {
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("testCorrelationId")
+                .recIndex(1)
+                .build();
+
+        GatewayAddressResponse.AddressInfo result = gatewayConverter.convertAnprResponseToInternalRecipientAddress(null, addressQueryRequest);
+
+        assertNull(result.getPhysicalAddress());
+        assertEquals(1, result.getRecIndex());
+        assertEquals("ANPR", result.getRegistry());
+    }
+
+    @Test
+    void testAnprNotFoundErrorToPhysicalAddressSQSMessage() {
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("testCorrelationId")
+                .recIndex(1)
+                .build();
+
+        GatewayAddressResponse.AddressInfo result = gatewayConverter.anprNotFoundErrorToPhysicalAddressSQSMessage(addressQueryRequest);
+
+        assertEquals(1, result.getRecIndex());
+        assertEquals("ANPR", result.getRegistry());
+    }
+
+    @Test
+    void testConvertToGetAddressRegistroImpreseMultiRequest() {
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .taxId("testTaxId")
+                .build();
+
+        GetAddressRegistroImpreseRequestBodyDto result = gatewayConverter.convertToGetAddressRegistroImpreseRequest(addressQueryRequest);
+
+        assertEquals("testTaxId", result.getFilter().getTaxId());
+    }
+
+    @Test
+    void testConvertRegImprResponseToInternalRecipientAddress() {
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("testCorrelationId")
+                .recIndex(1)
+                .build();
+
+        GetAddressRegistroImpreseOKDto response = getProfessionalAddress();
+
+        GatewayAddressResponse.AddressInfo result = gatewayConverter.convertRegImprResponseToInternalRecipientAddress(response, addressQueryRequest);
+
+        assertEquals("Test Address", result.getPhysicalAddress().getAddress());
+        assertEquals("12345", result.getPhysicalAddress().getZip());
+        assertEquals("Test Province", result.getPhysicalAddress().getProvince());
+        assertEquals("Test Municipality", result.getPhysicalAddress().getMunicipality());
+        assertEquals(1, result.getRecIndex());
+        assertEquals("REGISTRO_IMPRESE", result.getRegistry());
+    }
+
+    @Test
+    void testConvertRegImprResponseToInternalRecipientAddressWithNullResponse() {
+        AddressQueryRequest addressQueryRequest = AddressQueryRequest.builder()
+                .correlationId("testCorrelationId")
+                .recIndex(1)
+                .build();
+
+        GatewayAddressResponse.AddressInfo result = gatewayConverter.convertRegImprResponseToInternalRecipientAddress(null, addressQueryRequest);
+
+        assertNull(result.getPhysicalAddress());
+        assertEquals(1, result.getRecIndex());
+        assertEquals("REGISTRO_IMPRESE", result.getRegistry());
+    }
+
+    @Test
+    void testConvertToPhysicalAddressesResponseDto() {
+        String correlationId = "correlationId";
+
+        List<GatewayAddressResponse.AddressInfo> physicalAddress = getPhysicalAddress();
+
+        PhysicalAddressesResponseDto result = gatewayConverter.convertToPhysicalAddressesResponseDto(physicalAddress, correlationId);
+
+        assertNotNull(result);
+        assertEquals(correlationId, result.getCorrelationId());
+        assertNotNull(result.getAddresses());
+        assertEquals(1, result.getAddresses().size());
+
+        PhysicalAddressResponseDto responseDto = result.getAddresses().get(0);
+        assertNotNull(responseDto.getPhysicalAddress());
+        assertEquals("Test Address", responseDto.getPhysicalAddress().getAddress());
+        assertEquals("12345", responseDto.getPhysicalAddress().getZip());
+        assertEquals("Test Province", responseDto.getPhysicalAddress().getProvince());
+        assertEquals("Test Municipality", responseDto.getPhysicalAddress().getMunicipality());
+        assertEquals(1, responseDto.getRecIndex());
+        assertEquals("ANPR", responseDto.getRegistry());
+    }
+
+    private static GetAddressRegistroImpreseOKDto getProfessionalAddress() {
+        GetAddressRegistroImpreseOKProfessionalAddressDto professionalAddress = new GetAddressRegistroImpreseOKProfessionalAddressDto();
+        professionalAddress.setAddress("Test Address");
+        professionalAddress.setZip("12345");
+        professionalAddress.setProvince("Test Province");
+        professionalAddress.setMunicipality("Test Municipality");
+
+        GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
+        response.setProfessionalAddress(professionalAddress);
+        return response;
+    }
+
+    private static List<GatewayAddressResponse.AddressInfo> getPhysicalAddress() {
+        PhysicalAddress physicalAddress = new PhysicalAddress();
+        physicalAddress.setAddress("Test Address");
+        physicalAddress.setZip("12345");
+        physicalAddress.setProvince("Test Province");
+        physicalAddress.setMunicipality("Test Municipality");
+
+        GatewayAddressResponse.AddressInfo addressInfo = new GatewayAddressResponse.AddressInfo();
+        addressInfo.setPhysicalAddress(physicalAddress);
+        addressInfo.setRecIndex(1);
+        addressInfo.setRegistry("ANPR");
+
+        return List.of(addressInfo);
+    }
+
+    // END TESTS FOR MULTI ADDRESSES
 }
