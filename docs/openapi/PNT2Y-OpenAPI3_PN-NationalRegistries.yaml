@@ -1297,7 +1297,7 @@ components:
           description: >
             Se presente indica che si è verificato un errore durante l'esecuzione dell'operazione richiesta.
             Possibili errori:
-            - 'DOWNSTREAM_REQUEST_ERROR' Errore nei dati della richiesta (400)
+            - 'DOWNSTREAM_REQUEST_ERROR' Non è stato possibile comunicare con i servizi di downstream (400)
             - 'DOWNSTREAM_TOO_MANY_REQUESTS' Sovraccarico dei servizi di donwstream (429)
         errorStatus:
           type: integer
