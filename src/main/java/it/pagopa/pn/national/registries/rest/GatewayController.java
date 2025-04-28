@@ -3,6 +3,8 @@ package it.pagopa.pn.national.registries.rest;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AddressApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressesRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressesResponseDto;
 import it.pagopa.pn.national.registries.service.GatewayService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
@@ -40,6 +42,23 @@ public class GatewayController implements AddressApi {
     @Override
     public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, Mono<AddressRequestBodyDto> monoAddressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
         return monoAddressRequestBodyDto.flatMap(addressRequestBodyDto -> gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto))
+                .map(s -> ResponseEntity.ok().body(s))
+                .publishOn(scheduler);
+    }
+
+    /**
+     * POST /national-registries-private/physical-addresses : Questo servizio si occupa di smistare le richieste in ingresso al fine di fornire uno o più indirizzi fisici per la PF o la PG indicata
+     * Questo servizio si occupa di smistare le richieste in ingresso al fine di fornire uno o più indirizzi fisici per la PF o la PG indicata
+     *
+     * @param physicalAddressesRequestBodyDto  (required)
+     * @return OK (status code 200)
+     *         or Bad request (status code 400)
+     *         or Not Found (status code 404)
+     *         or Internal server error (status code 500)
+     */
+    @Override
+    public Mono<ResponseEntity<PhysicalAddressesResponseDto>> getPhysicalAddresses(Mono<PhysicalAddressesRequestBodyDto> physicalAddressesRequestBodyDto, final ServerWebExchange exchange) {
+        return  physicalAddressesRequestBodyDto.flatMap(gatewayService::retrievePhysicalAddresses)
                 .map(s -> ResponseEntity.ok().body(s))
                 .publishOn(scheduler);
     }
