@@ -2,13 +2,15 @@ package it.pagopa.pn.national.registries.converter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
-import it.pagopa.pn.national.registries.constant.DigitalAddressType;
+import it.pagopa.pn.national.registries.constant.*;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
+import it.pagopa.pn.national.registries.model.gateway.GatewayAddressResponse;
+import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
@@ -25,12 +27,13 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Pattern;
 
 @Slf4j
 public class GatewayConverter {
 
-    private static final Pattern ANPR_CF_NOT_FOUND = Pattern.compile("(\"codiceErroreAnomalia\")\\s*:\\s*\"(EN122)\"",
+    public static final Pattern ANPR_CF_NOT_FOUND = Pattern.compile("(\"codiceErroreAnomalia\")\\s*:\\s*\"(EN122)\"",
             Pattern.CASE_INSENSITIVE);
     private static final Pattern INAD_CF_NOT_FOUND = Pattern.compile("(\"detail\")\\s*:\\s*\"(CF non trovato)\"",
             Pattern.CASE_INSENSITIVE);
@@ -259,5 +262,114 @@ public class GatewayConverter {
         }
         return Mono.just(inadResponse);
     }
+
+    // START METHODS FOR MULTI ADDRESSES
+    protected List<AddressQueryRequest> toAddressQueryRequests(PhysicalAddressesRequestBodyDto requestBodyDto) {
+        return requestBodyDto.getAddresses().stream()
+                .map(addressRequest -> AddressQueryRequest.builder()
+                        .correlationId(requestBodyDto.getCorrelationId())
+                        .referenceRequestDate(requestBodyDto.getReferenceRequestDate())
+                        .taxId(addressRequest.getTaxId())
+                        .recipientType(RecipientType.fromString(addressRequest.getRecipientType().name()))
+                        .recIndex(addressRequest.getRecIndex())
+                        .domicileType(DomicileType.PHYSICAL)
+                        .build())
+                .toList();
+    }
+
+    protected GetAddressANPRRequestBodyDto convertToGetAddressAnprRequest(AddressQueryRequest addressQueryRequest) {
+        GetAddressANPRRequestBodyDto dto = new GetAddressANPRRequestBodyDto();
+        GetAddressANPRRequestBodyFilterDto filterDto = new GetAddressANPRRequestBodyFilterDto();
+        filterDto.setRequestReason(addressQueryRequest.getCorrelationId());
+        filterDto.setTaxId(addressQueryRequest.getTaxId());
+        filterDto.setReferenceRequestDate(DateTimeFormatter.ofPattern(DATE_PATTERN)
+                .withZone(ZoneId.systemDefault())
+                .format(addressQueryRequest.getReferenceRequestDate().toInstant()));
+
+        dto.setFilter(filterDto);
+        return dto;
+    }
+
+    protected GatewayAddressResponse.AddressInfo convertAnprResponseToInternalRecipientAddress(GetAddressANPROKDto response, AddressQueryRequest addressQueryRequest) {
+        GatewayAddressResponse.AddressInfo addressInfo = new GatewayAddressResponse.AddressInfo();
+        if (response != null && !CollectionUtils.isEmpty(response.getResidentialAddresses())) {
+            addressInfo.setPhysicalAddress(convertAnprToPhysicalAddress(response.getResidentialAddresses().get(0)));
+        } else {
+            log.info("correlationId: {} recIndex: {} - ANPR - indirizzi non presenti", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex());
+            // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo
+        }
+        addressInfo.setRecIndex(addressQueryRequest.getRecIndex());
+        addressInfo.setRegistry(GatewayDownstreamService.ANPR.name());
+        return addressInfo;
+    }
+
+    protected GatewayAddressResponse.AddressInfo anprNotFoundErrorToPhysicalAddressSQSMessage(AddressQueryRequest addressQueryRequest) {
+        GatewayAddressResponse.AddressInfo addressInfo = new GatewayAddressResponse.AddressInfo();
+        addressInfo.setRecIndex(addressQueryRequest.getRecIndex());
+        addressInfo.setRegistry(GatewayDownstreamService.ANPR.name());
+        return addressInfo;
+    }
+
+    protected GetAddressRegistroImpreseRequestBodyDto convertToGetAddressRegistroImpreseRequest(AddressQueryRequest addressQueryRequest) {
+        GetAddressRegistroImpreseRequestBodyDto dto = new GetAddressRegistroImpreseRequestBodyDto();
+        GetAddressRegistroImpreseRequestBodyFilterDto filterDto = new GetAddressRegistroImpreseRequestBodyFilterDto();
+
+        filterDto.setTaxId(addressQueryRequest.getTaxId());
+
+        dto.setFilter(filterDto);
+        return dto;
+    }
+
+    protected GatewayAddressResponse.AddressInfo convertRegImprResponseToInternalRecipientAddress(GetAddressRegistroImpreseOKDto response, AddressQueryRequest addressQueryRequest) {
+        GatewayAddressResponse.AddressInfo addressInfo = new GatewayAddressResponse.AddressInfo();
+        if (response != null && response.getProfessionalAddress() != null) {
+            addressInfo.setPhysicalAddress(convertRegImpToPhysicalAddress(response.getProfessionalAddress()));
+        } else {
+            log.info("correlationId: {} - InfoCamere sede legale - indirizzo non presente", addressQueryRequest.getCorrelationId());
+            // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo
+        }
+        addressInfo.setRecIndex(addressQueryRequest.getRecIndex());
+        addressInfo.setRegistry(GatewayDownstreamService.REGISTRO_IMPRESE.name());
+        return addressInfo;
+    }
+
+    protected PhysicalAddressesResponseDto convertToPhysicalAddressesResponseDto(List<GatewayAddressResponse.AddressInfo> addressResponse, String correlationId) {
+        PhysicalAddressesResponseDto response = new PhysicalAddressesResponseDto();
+        response.setCorrelationId(correlationId);
+        response.setAddresses(toPhysicalAddressResponseDto(addressResponse));
+        return response;
+    }
+
+    private List<PhysicalAddressResponseDto> toPhysicalAddressResponseDto(List<GatewayAddressResponse.AddressInfo> addressResponse) {
+        return addressResponse.stream()
+                .map(res -> {
+                    PhysicalAddressResponseDto addressResponseDto = new PhysicalAddressResponseDto();
+                    addressResponseDto.setPhysicalAddress(toPhysicalAddressDto(res.getPhysicalAddress()));
+                    addressResponseDto.setRecIndex(res.getRecIndex());
+                    addressResponseDto.setRegistry(res.getRegistry());
+                    addressResponseDto.setError(res.getError() != null ? res.getError().name() : null);
+                    addressResponseDto.setErrorStatus(res.getErrorStatus() != null ? res.getErrorStatus().value() : null);
+                    return  addressResponseDto;
+                })
+                .toList();
+    }
+
+    private PhysicalAddressDto toPhysicalAddressDto(PhysicalAddress physicalAddress) {
+        if(Objects.isNull(physicalAddress)) {
+            return null;
+        }
+
+        PhysicalAddressDto addressDto = new PhysicalAddressDto();
+        addressDto.setAddress(physicalAddress.getAddress());
+        addressDto.setAddressDetails(physicalAddress.getAddressDetails());
+        addressDto.setAt(physicalAddress.getAt());
+        addressDto.setZip(physicalAddress.getZip());
+        addressDto.setMunicipality(physicalAddress.getMunicipality());
+        addressDto.setMunicipalityDetails(physicalAddress.getMunicipalityDetails());
+        addressDto.setProvince(physicalAddress.getProvince());
+        addressDto.setForeignState(physicalAddress.getForeignState());
+        return addressDto;
+    }
+    // END METHODS FOR MULTI ADDRESSES
 
 }

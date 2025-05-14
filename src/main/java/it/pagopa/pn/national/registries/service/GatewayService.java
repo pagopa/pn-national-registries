@@ -1,7 +1,11 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.PnAuditLogBuilder;
+import it.pagopa.pn.commons.log.PnAuditLogEvent;
+import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
+import it.pagopa.pn.national.registries.constant.GatewayError;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -9,6 +13,9 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
+import it.pagopa.pn.national.registries.model.gateway.GatewayAddressResponse;
+import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
@@ -16,12 +23,16 @@ import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.util.context.Context;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.nio.charset.Charset;
 import java.util.Map;
+import java.util.function.Predicate;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_CX_ID_FLAG;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
@@ -36,10 +47,14 @@ public class GatewayService extends GatewayConverter {
     private final InfoCamereService infoCamereService;
     private final IpaService ipaService;
     private final SqsService sqsService;
+    private final FeatureEnabledUtils featureEnabledUtils;
+
     private final boolean pnNationalRegistriesCxIdFlag;
     private static final String CORRELATION_ID = "correlationId";
+    private static final String AUDIT_LOG_START_CALL_MESSAGE = "Start searching physical address in the registry: {} for the request with correlationId: {} and recIndex: {}";
+    private static final String AUDIT_LOG_END_SUCCESS_MESSAGE = "The registry {} has responded successfully for the request with correlationId: {} and recIndex: {}";
+    private static final String AUDIT_LOG_END_FAILURE_MESSAGE = "The registry {} has responded with an error for the request with correlationId: {} and recIndex: {}";
 
-    private final FeatureEnabledUtils featureEnabledUtils;
 
     public GatewayService(AnprService anprService,
                           InadService inadService,
@@ -242,5 +257,95 @@ public class GatewayService extends GatewayConverter {
                             sendMessageResponse));
         }
         return Mono.error(throwable);
+    }
+
+    public Mono<PhysicalAddressesResponseDto> retrievePhysicalAddresses(PhysicalAddressesRequestBodyDto request) {
+        log.info("Starting retrievePhysicalAddresses - request: {}", request);
+        if (CollectionUtils.isEmpty(request.getAddresses())) {
+            return Mono.error(new PnNationalRegistriesException("addresses required", HttpStatus.BAD_REQUEST.value(),
+                    HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class));
+        }
+
+        return Flux.fromIterable(toAddressQueryRequests(request))
+                .flatMap(this::retrievePhysicalAddresses)
+                .collectList()
+                .map(addresses -> convertToPhysicalAddressesResponseDto(addresses, request.getCorrelationId()));
+    }
+
+    private Mono<GatewayAddressResponse.AddressInfo> retrievePhysicalAddresses(AddressQueryRequest addressQueryRequest) {
+        return switch (addressQueryRequest.getRecipientType()) {
+            case PF -> retrievePhysicalAddressForPF(addressQueryRequest);
+            case PG -> retrievePhysicalAddressForPG(addressQueryRequest);
+        };
+    }
+
+    private Mono<GatewayAddressResponse.AddressInfo> retrievePhysicalAddressForPF(AddressQueryRequest addressQueryRequest) {
+        PnAuditLogEvent auditLogEvent = buildAndPrintRequestAuditLog(addressQueryRequest, GatewayDownstreamService.ANPR);
+
+        return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressQueryRequest))
+                .map(res -> convertAnprResponseToInternalRecipientAddress(res, addressQueryRequest))
+                .onErrorResume(isAnprAddressNotFound, e -> {
+                    log.info("correlationId: {} recIndex {} - ANPR - indirizzo non presente", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex());
+                    return Mono.just(anprNotFoundErrorToPhysicalAddressSQSMessage(addressQueryRequest));
+                })
+                .doOnNext(res -> auditLogEvent.generateSuccess(AUDIT_LOG_END_SUCCESS_MESSAGE, GatewayDownstreamService.ANPR, addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex()).log())
+                .doOnError(e -> auditLogEvent.generateFailure(AUDIT_LOG_END_FAILURE_MESSAGE, GatewayDownstreamService.ANPR, addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex(), e).log())
+                .onErrorResume(t -> handleException(t, addressQueryRequest, GatewayDownstreamService.ANPR));
+    }
+
+    private final Predicate<Throwable> isAnprAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
+            && exception.getStatusCode() == HttpStatus.NOT_FOUND
+            && StringUtils.hasText(exception.getResponseBodyAsString())
+            && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
+
+    private Mono<GatewayAddressResponse.AddressInfo> retrievePhysicalAddressForPG(AddressQueryRequest addressQueryRequest) {
+        PnAuditLogEvent auditLogEvent = buildAndPrintRequestAuditLog(addressQueryRequest, GatewayDownstreamService.REGISTRO_IMPRESE);
+        return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressQueryRequest))
+                .map(res -> convertRegImprResponseToInternalRecipientAddress(res, addressQueryRequest))
+                .doOnNext(res -> auditLogEvent.generateSuccess(AUDIT_LOG_END_SUCCESS_MESSAGE, GatewayDownstreamService.REGISTRO_IMPRESE, addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex()).log())
+                .doOnError(e -> auditLogEvent.generateFailure(AUDIT_LOG_END_FAILURE_MESSAGE, GatewayDownstreamService.REGISTRO_IMPRESE, addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex(), e).log())
+                .onErrorResume(t -> handleException(t, addressQueryRequest, GatewayDownstreamService.REGISTRO_IMPRESE));
+    }
+
+    private static PnAuditLogEvent buildAndPrintRequestAuditLog(
+            AddressQueryRequest addressQueryRequest,
+            GatewayDownstreamService registry
+    ) {
+        PnAuditLogBuilder auditLogBuilder = new PnAuditLogBuilder();
+        PnAuditLogEvent auditLogEvent = auditLogBuilder.before(
+                        PnAuditLogEventType.AUD_NT_VALIDATION_ADDRESS_SEARCH,
+                        AUDIT_LOG_START_CALL_MESSAGE,
+                        registry,
+                        addressQueryRequest.getCorrelationId(),
+                        addressQueryRequest.getRecIndex()
+                )
+                .build();
+
+        return auditLogEvent.log();
+    }
+
+    private Mono<GatewayAddressResponse.AddressInfo> handleException(Throwable throwable, AddressQueryRequest addressQueryRequest, GatewayDownstreamService gatewayDownstreamService) {
+        GatewayAddressResponse.AddressInfo addressInfo = new GatewayAddressResponse.AddressInfo();
+        addressInfo.setRecIndex(addressQueryRequest.getRecIndex());
+        addressInfo.setRegistry(gatewayDownstreamService.name());
+        addressInfo.setError(toAddressResponseError(throwable));
+        addressInfo.setErrorStatus(toAddressResponseErrorStatus(throwable));
+        return Mono.just(addressInfo);
+    }
+
+    private GatewayError toAddressResponseError(Throwable throwable) {
+        if(throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.TOO_MANY_REQUESTS) {
+            return GatewayError.DOWNSTREAM_TOO_MANY_REQUESTS;
+        }
+        return GatewayError.DOWNSTREAM_REQUEST_ERROR;
+    }
+
+    private HttpStatus toAddressResponseErrorStatus(Throwable throwable) {
+        if(throwable instanceof PnNationalRegistriesException exception) {
+            return exception.getStatusCode();
+        }
+
+        //Default case
+        return HttpStatus.INTERNAL_SERVER_ERROR;
     }
 }
