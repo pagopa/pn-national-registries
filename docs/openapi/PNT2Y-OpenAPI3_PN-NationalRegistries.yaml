@@ -1238,6 +1238,7 @@ components:
       required:
         - correlationId
         - addresses
+        - referenceRequestDate
       properties:
         correlationId:
           type: string
