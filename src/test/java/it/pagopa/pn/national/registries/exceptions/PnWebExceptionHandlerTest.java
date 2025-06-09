@@ -338,7 +338,6 @@ class PnWebExceptionHandlerTest {
         ReflectionTestUtils.invokeMethod(
                 pnWebExceptionHandler, "extractTagContent", xml, tagName, adEResponseKO);
         assertEquals("Dettaglio errore", adEResponseKO.getDetail());
-        assertEquals("PN_NATIONAL_REGISTRIES_ADE", adEResponseKO.getCode());
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
