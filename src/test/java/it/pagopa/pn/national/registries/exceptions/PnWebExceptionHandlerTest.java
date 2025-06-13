@@ -3,7 +3,9 @@ package it.pagopa.pn.national.registries.exceptions;
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.common.rest.error.v1.dto.ProblemError;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalErrorDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
+import it.pagopa.pn.national.registries.model.agenziaentrate.AdEResponseKO;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.ipa.IpaResponseKO;
@@ -23,6 +25,7 @@ import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.mock.http.server.reactive.MockServerHttpResponse;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import org.springframework.web.server.ServerWebExchange;
 import org.springframework.web.server.adapter.DefaultServerWebExchange;
@@ -33,6 +36,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -318,6 +322,42 @@ class PnWebExceptionHandlerTest {
         when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
+    }
+    @Test
+    void testHandle16() {
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
+        when(exception.getMessage()).thenReturn("Internal Server Error");
+        when(exception.getResponseBodyAsString()).thenReturn("{}");
+        Class<?> adEResponseKOClass = AdEResponseKO.class;
+        doReturn(adEResponseKOClass).when(exception).getClassName();
+        String xml = "<root><faultstring>Dettaglio errore</faultstring></root>";
+        String tagName = "faultstring";
+        AdEResponseKO adEResponseKO = new AdEResponseKO();
+        ReflectionTestUtils.invokeMethod(
+                pnWebExceptionHandler, "extractTagContent", xml, tagName, adEResponseKO);
+        assertEquals("Dettaglio errore", adEResponseKO.getDetail());
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
+        when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
+        when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
+    }
+
+    @Test
+    void testHandle17() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("ex.getMessage()", 500,
+                "ex.getStatusText()", headers, "{\"title\":\"code\",\"errors\":[]}".getBytes(),
+                Charset.defaultCharset(), ADELegalErrorDto.class);
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
+        when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
+        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
+        when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
+        Problem problem = new Problem();
+        problem.setStatus(500);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
     }
 }
