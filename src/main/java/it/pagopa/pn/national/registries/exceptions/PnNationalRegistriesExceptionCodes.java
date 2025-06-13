@@ -12,6 +12,7 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_CODE_ANPR = "PN_NATIONAL_REGISTRIES_ADDRESS_ANPR";
     // ADE - CheckCF
     public static final String ERROR_CODE_CHECK_CF = "PN_NATIONAL_REGISTRIES_CHECK_CF";
+    public static final String ERROR_CODE_ADE = "PN_NATIONAL_REGISTRIES_ADE";
     // INAD
     public static final String ERROR_CODE_INAD = "PN_NATIONAL_REGISTRIES_INAD";
     // INFOCAMERE
