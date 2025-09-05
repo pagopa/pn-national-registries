@@ -64,6 +64,10 @@ public class InfoCamereClient {
         this.sedeApi = sedeApi;
     }
 
+    private void logJwt(String token) {
+        log.debug("Using jwt = {}", token);
+    }
+
     public Mono<IniPecBatchResponse> callEServiceRequestId(IniPecBatchRequest request) {
         String requestJson = convertToJson(request);
         return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value())
@@ -76,6 +80,7 @@ public class InfoCamereClient {
 
     private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, "Retrieving correlationId [INFOCAMERE]");
+        this.logJwt(token);
 
         var apiClient = pecApi.getApiClient();
         apiClient.setBearerToken(token);
@@ -94,6 +99,7 @@ public class InfoCamereClient {
 
     private Mono<IniPecPollingResponse> callGetElencoPec(String correlationId, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, "Getting elencoPec InfoCamere for correlationId");
+        this.logJwt(token);
 
         ApiClient apiClient = pecApi.getApiClient();
         apiClient.setBearerToken(token);
@@ -112,6 +118,7 @@ public class InfoCamereClient {
 
     private Mono<AddressRegistroImprese> callGetLegalAddress(String taxId, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_REGISTRO_IMPRESE_ADDRESS);
+        this.logJwt(token);
 
         ApiClient apiClient = sedeApi.getApiClient();
         apiClient.setBearerToken(token);
@@ -130,6 +137,7 @@ public class InfoCamereClient {
 
     public Mono<InfoCamereLegalInstituionsResponse> callGetLegalInstitutions(String taxId, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS);
+        this.logJwt(token);
 
         ApiClient apiClient = legalRepresentativeApi.getApiClient();
         apiClient.setBearerToken(token);
@@ -148,6 +156,7 @@ public class InfoCamereClient {
 
     private Mono<InfoCamereVerification> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL);
+        this.logJwt(token);
 
         legalRepresentationApi.getApiClient().setBearerToken(token);
         return legalRepresentationApi.checkTaxIdForLegalRepresentation(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
