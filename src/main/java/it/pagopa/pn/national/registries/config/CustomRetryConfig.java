@@ -18,6 +18,7 @@ import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Objects;
+import java.util.function.Predicate;
 
 @Slf4j
 @Component
@@ -31,6 +32,10 @@ public class CustomRetryConfig {
     }
 
     public ExchangeFilterFunction buildRetryExchangeFilterFunction() {
+        return buildRetryExchangeFilterFunction(this::defaultRetryCondition);
+    }
+
+    public ExchangeFilterFunction buildRetryExchangeFilterFunction(Predicate<Throwable> retryCondition) {
         return (request, next) ->
                 next.exchange(request).flatMap((clientResponse) ->
                                 Mono.just(clientResponse).filter((response) ->
@@ -40,7 +45,7 @@ public class CustomRetryConfig {
                                         .thenReturn(clientResponse))
                         .retryWhen(Retry.backoff(this.retryMaxAttempts, Duration.ofMillis(25L))
                                 .jitter(0.75)
-                                .filter(this::isRetryableException)
+                                .filter(retryCondition)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> {
                                     Throwable lastExceptionInRetry = retrySignal.failure();
                                     log.warn("Retries exhausted {}, with last Exception: {}", retrySignal.totalRetries(), MaskTaxIdInPathUtils.maskTaxIdInPath(lastExceptionInRetry.getMessage()));
@@ -48,7 +53,7 @@ public class CustomRetryConfig {
                                 }));
     }
 
-    private boolean isRetryableException(Throwable throwable) {
+    private boolean defaultRetryCondition(Throwable throwable) {
         boolean retryable = throwable instanceof TimeoutException ||
                 throwable instanceof SocketException ||
                 throwable instanceof SocketTimeoutException ||

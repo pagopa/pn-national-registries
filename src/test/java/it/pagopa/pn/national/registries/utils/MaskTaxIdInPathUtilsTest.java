@@ -21,4 +21,12 @@ class MaskTaxIdInPathUtilsTest {
         String actual = MaskTaxIdInPathUtils.maskTaxIdInPath(message);
         assertEquals(expected, actual);
     }
+
+    @Test
+    void testMaskTaxIdInPathICListaLegaleRappr() {
+        String message = "/listaLegaleRappresentante/TESTCF?";
+        String expected = "/listaLegaleRappresentante/***?";
+        String actual = MaskTaxIdInPathUtils.maskTaxIdInPath(message);
+        assertEquals(expected, actual);
+    }
 }

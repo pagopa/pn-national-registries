@@ -35,7 +35,7 @@ class CustomRetryConfigTest {
     @BeforeEach
     void setUp() throws Exception {
         customRetryConfig = new CustomRetryConfig(3);
-        isRetryableExceptionMethod = CustomRetryConfig.class.getDeclaredMethod("isRetryableException", Throwable.class);
+        isRetryableExceptionMethod = CustomRetryConfig.class.getDeclaredMethod("defaultRetryCondition", Throwable.class);
         isRetryableExceptionMethod.setAccessible(true);
     }
 
