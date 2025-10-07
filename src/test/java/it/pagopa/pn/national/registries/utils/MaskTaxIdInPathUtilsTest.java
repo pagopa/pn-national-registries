@@ -1,23 +1,19 @@
 package it.pagopa.pn.national.registries.utils;
 
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MaskTaxIdInPathUtilsTest {
 
-    @Test
-    void testMaskTaxIdInPathInad() {
-        String message = "/extract/12345?";
-        String expected = "/extract/***?";
-        String actual = MaskTaxIdInPathUtils.maskTaxIdInPath(message);
-        assertEquals(expected, actual);
-    }
-
-    @Test
-    void testMaskTaxIdInPathICRegistroImprese() {
-        String message = "/sede/12345?";
-        String expected = "/sede/***?";
+    @ParameterizedTest
+    @CsvSource({
+            "/extract/12345?,/extract/***?",
+            "/sede/12345?,/sede/***?",
+            "/listaLegaleRappresentante/TESTCF?,/listaLegaleRappresentante/***?"
+    })
+    void testMaskTaxIdInPath(String message, String expected) {
         String actual = MaskTaxIdInPathUtils.maskTaxIdInPath(message);
         assertEquals(expected, actual);
     }
