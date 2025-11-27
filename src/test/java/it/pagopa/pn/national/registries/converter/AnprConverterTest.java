@@ -398,7 +398,7 @@ class AnprConverterTest {
 
         List<ResidentialAddressDto> residentialAddresses = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "Cf").getResidentialAddresses();
         assertEquals(1, residentialAddresses.size());
-        assertTrue(residentialAddresses.get(0).getAddress().contains("70/L"));
+        assertTrue(residentialAddresses.get(0).getAddress().contains("70/1L"));
     }
 
     @Test
