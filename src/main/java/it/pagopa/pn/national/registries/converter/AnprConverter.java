@@ -111,7 +111,7 @@ public class AnprConverter {
     }
 
     private String constructHouseNumber(String numeroCivico, String letteraNumeroCivico) {
-        if (StringUtils.hasText(numeroCivico) && letteraNumeroCivico.matches("\\d+")) {
+        if (StringUtils.hasText(numeroCivico) && StringUtils.hasText(letteraNumeroCivico)) {
             return numeroCivico + "/" + letteraNumeroCivico;
         }else {
             return numeroCivico + letteraNumeroCivico;
