@@ -98,7 +98,7 @@ class IniPecBatchRequestServiceTest {
                 .thenReturn(batchPolling);
 
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
-        verify(infoCamereClient, times(2)).callEServiceRequestId(any());
+        verify(infoCamereClient, times(1)).callEServiceRequestId(any());
         verify(batchRequestRepository, never()).update(any());
     }
 
