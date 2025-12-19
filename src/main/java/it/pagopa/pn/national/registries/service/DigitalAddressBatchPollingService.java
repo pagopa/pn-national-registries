@@ -23,7 +23,7 @@ import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -94,6 +94,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
+    @SchedulerLock(name = "batchPecPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.batch-pec-polling.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.batch-pec-polling.lock-at-least}")
     public void batchPecPolling() {
         log.trace("IniPEC - batchPecPolling start");
         Page<BatchPolling> page;
@@ -114,6 +116,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.recovery.delay}")
+    @SchedulerLock(name = "recoveryBatchPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.recovery-batch-polling.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.recovery-batch-polling.lock-at-least}")
     public void recoveryBatchPolling() {
         log.trace("IniPEC - recoveryBatchPolling start");
         batchPollingRepository.getBatchPollingToRecover()

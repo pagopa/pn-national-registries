@@ -12,6 +12,7 @@ import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -63,6 +64,8 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
+    @SchedulerLock(name="batchPecRequest", lockAtMostFor = "${pn.national-registries.inipec.batch.batch-pec-request.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.batch-pec-request.lock-at-least}")
     public void batchPecRequest() {
         log.trace("IniPEC - batchPecRequest start");
         Page<BatchRequest> page;
@@ -83,6 +86,8 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.request.recovery.delay}")
+    @SchedulerLock(name = "recoveryBatchRequest", lockAtMostFor = "${pn.national-registries.inipec.batch.recovery-batch-request.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.recovery-batch-request.lock-at-least}")
     public void recoveryBatchRequest() {
         log.trace("IniPEC - recoveryBatchRequest start");
         batchRequestRepository.getBatchRequestToRecovery()

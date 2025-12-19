@@ -8,6 +8,7 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,8 @@ public class IniPecBatchSqsService {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.sqs.recovery.delay}")
+    @SchedulerLock(name = "recoveryBatchSendToSqs", lockAtMostFor = "${pn.national-registries.inipec.batch.recovery-batch-send-to-sqs.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.recovery-batch-send-to-sqs.lock-at-least}")
     public void recoveryBatchSendToSqs() {
         log.trace("IniPEC - recoveryBatchSendToSqs start");
         Page<BatchRequest> page;

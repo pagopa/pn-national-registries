@@ -188,6 +188,14 @@ Parameters:
     Type: String
     Description: 'ARN of DynamoDB table BatchPolling'
 
+  ShedLockTableName:
+    Type: String
+    Description: 'Name of DynamoDB table used for implementing distributed locks'
+
+  ShedLockTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table ShedLock'
+
   PnCxIdValidationEnabled:
     Type: String
     Description: 'Validazione del pn-national-registries cx id'
@@ -491,6 +499,7 @@ Resources:
         ContainerEnvEntry42: !Sub 'SPRING_CODEC_MAXINMEMORYSIZE=${CodecMemorySize}'
         ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTART=${pfNewWorkflowStart}'
         ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTOP=${pfNewWorkflowStop}'
+        ContainerEnvEntry45: !Sub 'PN_NATIONALREGISTRIES_DAO_SHEDLOCKTABLENAME=${ShedLockTableName}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -537,6 +546,7 @@ Resources:
               - !Ref CounterTableArn
               - !Ref BatchRequestTableArn
               - !Ref BatchPollingTableArn
+              - !Ref ShedLockTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
           - Effect: Allow
