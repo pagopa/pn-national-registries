@@ -70,18 +70,15 @@ public class IniPecBatchRequestService extends GatewayConverter {
         log.trace("IniPEC - batchPecRequest start");
         Page<BatchRequest> page;
         Map<String, AttributeValue> lastEvaluatedKey = new HashMap<>();
-        do {
-            page = getBatchRequest(lastEvaluatedKey);
-            lastEvaluatedKey = page.lastEvaluatedKey();
-            if (!page.items().isEmpty()) {
-                String batchId = UUID.randomUUID().toString();
-                execBatchRequest(page.items(), batchId)
-                        .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + batchId))
-                        .block();
-            } else {
-                log.info("IniPEC - no batch request available");
-            }
-        } while (!CollectionUtils.isEmpty(lastEvaluatedKey));
+        page = getBatchRequest(lastEvaluatedKey);
+        if (!page.items().isEmpty()) {
+            String batchId = UUID.randomUUID().toString();
+            execBatchRequest(page.items(), batchId)
+                    .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + batchId))
+                    .block();
+        } else {
+            log.info("IniPEC - no batch request available");
+        }
         log.trace("IniPEC - batchPecRequest end");
     }
 
