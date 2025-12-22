@@ -206,6 +206,16 @@
             <version>2.3.0</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-spring</artifactId>
+            <version>4.42.0</version>
+        </dependency>
+        <dependency>
+            <groupId>net.javacrumbs.shedlock</groupId>
+            <artifactId>shedlock-provider-dynamodb2</artifactId>
+            <version>4.42.0</version>
+        </dependency>
     </dependencies>
 
     <build>
