@@ -91,7 +91,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     request.setStatus(BatchStatus.NOT_WORKED.getValue());
                     request.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
                 })
-                .flatMap(request -> batchRequestRepository.resetBatchRequestForRecovery(request)
+                .flatMap(request -> batchRequestRepository.update(request)
                         .doOnError(ConditionalCheckFailedException.class,
                                 e -> log.info("IniPEC - conditional check failed - skip recovery correlationId: {}", request.getCorrelationId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))

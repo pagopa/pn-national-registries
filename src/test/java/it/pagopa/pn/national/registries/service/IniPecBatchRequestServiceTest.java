@@ -230,9 +230,9 @@ class IniPecBatchRequestServiceTest {
 
         when(batchRequestRepository.getBatchRequestToRecovery())
                 .thenReturn(Mono.just(List.of(batchRequestToRecover1, batchRequestToRecover2)));
-        when(batchRequestRepository.resetBatchRequestForRecovery(same(batchRequestToRecover1)))
+        when(batchRequestRepository.update(same(batchRequestToRecover1)))
                 .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
-        when(batchRequestRepository.resetBatchRequestForRecovery(same(batchRequestToRecover2)))
+        when(batchRequestRepository.update(same(batchRequestToRecover2)))
                 .thenReturn(Mono.just(batchRequestToRecover2));
 
         testBatchPecRequest();

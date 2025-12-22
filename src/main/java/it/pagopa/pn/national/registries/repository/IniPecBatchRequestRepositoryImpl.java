@@ -139,26 +139,6 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     }
 
     @Override
-    public Mono<BatchRequest> resetBatchRequestForRecovery(BatchRequest batchRequest) {
-        Map<String, String> expressionNames = new HashMap<>();
-        expressionNames.put(LAST_RESERVED_ALIAS, COL_LAST_RESERVED);
-
-        Map<String, AttributeValue> expressionValues = new HashMap<>();
-        AttributeValue lastReserved = AttributeValue.builder()
-                .s(batchRequest.getLastReserved() != null ? batchRequest.getLastReserved().toString() : "")
-                .build();
-        expressionValues.put(LAST_RESERVED_PLACEHOLDER, lastReserved);
-
-        String expression = LAST_RESERVED_EQ + " OR attribute_not_exists(" + LAST_RESERVED_ALIAS + ")";
-        UpdateItemEnhancedRequest<BatchRequest> updateItemEnhancedRequest = UpdateItemEnhancedRequest.builder(BatchRequest.class)
-                .item(batchRequest)
-                .conditionExpression(expressionBuilder(expression, expressionValues, expressionNames))
-                .build();
-
-        return Mono.fromFuture(table.updateItem(updateItemEnhancedRequest));
-    }
-
-    @Override
     public Mono<List<BatchRequest>> getBatchRequestToRecovery() {
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put("#retry", COL_RETRY);

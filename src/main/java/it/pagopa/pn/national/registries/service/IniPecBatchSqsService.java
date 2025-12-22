@@ -61,7 +61,7 @@ public class IniPecBatchSqsService {
                 String reservationId = UUID.randomUUID().toString();
                 Flux.fromStream(page.items().stream())
                         .doOnNext(request -> request.setReservationId(null))
-                        .flatMap(request -> batchRequestRepository.resetBatchRequestForRecovery(request)
+                        .flatMap(request -> batchRequestRepository.update(request)
                                 .doOnError(ConditionalCheckFailedException.class,
                                         e -> log.info("IniPEC - conditional check failed - skip recovery correlationId: {}", request.getCorrelationId(), e))
                                 .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
