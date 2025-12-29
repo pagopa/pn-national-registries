@@ -22,6 +22,7 @@ import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -85,7 +86,12 @@ public class InfoCamereClient {
 
         var apiClient = pecApi.getApiClient();
         apiClient.setBearerToken(token);
-        return pecApi.callRichiestaElencoPec(InipecScopeEnum.PEC.value(), body, clientId)
+        return pecApi.callRichiestaElencoPecWithHttpInfo(InipecScopeEnum.PEC.value(), body, clientId)
+                .doOnNext(responseEntity -> {
+                    String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
+                    log.info("Received IniPecBatchResponse with tracking ID: {}", trackingId);
+                })
+                .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
     }
 
@@ -104,7 +110,12 @@ public class InfoCamereClient {
 
         ApiClient apiClient = pecApi.getApiClient();
         apiClient.setBearerToken(token);
-        return pecApi.callGetElencoPec(correlationId, InipecScopeEnum.PEC.value(), clientId)
+        return pecApi.callGetElencoPecWithHttpInfo(correlationId, InipecScopeEnum.PEC.value(), clientId)
+                .doOnNext(responseEntity -> {
+                    String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
+                    log.info("Received IniPecPollingResponse with tracking ID: {}", trackingId);
+                })
+                .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
     }
 
@@ -123,7 +134,12 @@ public class InfoCamereClient {
 
         ApiClient apiClient = sedeApi.getApiClient();
         apiClient.setBearerToken(token);
-        return sedeApi.getAddressByTaxId(taxId, InipecScopeEnum.SEDE.value(), clientId)
+        return sedeApi.getAddressByTaxIdWithHttpInfo(taxId, InipecScopeEnum.SEDE.value(), clientId)
+                .doOnNext(responseEntity -> {
+                    String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
+                    log.info("Received AddressRegistroImprese with tracking ID: {}", trackingId);
+                })
+                .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
     }
 
@@ -142,7 +158,12 @@ public class InfoCamereClient {
 
         ApiClient apiClient = legalRepresentativeApi.getApiClient();
         apiClient.setBearerToken(token);
-        return legalRepresentativeApi.getLegalRepresentativeListByTaxId(taxId, InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+        return legalRepresentativeApi.getLegalRepresentativeListByTaxIdWithHttpInfo(taxId, InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+                .doOnNext(responseEntity -> {
+                    String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
+                    log.info("Received InfoCamereLegalInstituionsResponse with tracking ID: {}", trackingId);
+                })
+                .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
     }
 
@@ -160,7 +181,12 @@ public class InfoCamereClient {
         this.logJwt(token);
 
         legalRepresentationApi.getApiClient().setBearerToken(token);
-        return legalRepresentationApi.checkTaxIdForLegalRepresentation(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+        return legalRepresentationApi.checkTaxIdForLegalRepresentationWithHttpInfo(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+                .doOnNext(responseEntity -> {
+                    String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
+                    log.info("Received InfoCamereVerification with tracking ID: {}", trackingId);
+                })
+                .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
     }
 
