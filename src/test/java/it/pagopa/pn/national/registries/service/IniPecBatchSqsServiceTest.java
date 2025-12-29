@@ -47,7 +47,7 @@ class IniPecBatchSqsServiceTest {
     void testRecoveryBatchSendToSqs() {
         when(batchRequestRepository.getBatchRequestToSend(anyMap(), anyInt()))
                 .thenReturn(Mono.just(Page.create(List.of(new BatchRequest(), new BatchRequest()))));
-        when(batchRequestRepository.resetBatchRequestForRecovery(any()))
+        when(batchRequestRepository.update(any()))
                 .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()))
                 .thenReturn(Mono.just(new BatchRequest()));
 
@@ -64,7 +64,7 @@ class IniPecBatchSqsServiceTest {
         iniPecBatchSqsService.recoveryBatchSendToSqs();
 
         verifyNoInteractions(sqsService);
-        verify(batchRequestRepository, never()).resetBatchRequestForRecovery(any());
+        verify(batchRequestRepository, never()).update(any());
     }
 
     @Test

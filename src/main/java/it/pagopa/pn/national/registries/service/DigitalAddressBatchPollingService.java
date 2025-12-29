@@ -131,7 +131,6 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                                 e -> log.info("IniPEC - conditional check failed - skip recovery pollingId {} and batchId {}", polling.getPollingId(), polling.getBatchId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .count()
-                .doOnNext(c -> batchPecPolling())
                 .subscribe(c -> log.info("IniPEC - executed batch recovery on {} polling", c),
                         e -> log.error("IniPEC - failed execution of batch polling recovery", e));
         log.trace("IniPEC - recoveryBatchPolling end");
