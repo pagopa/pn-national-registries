@@ -316,6 +316,11 @@ Parameters:
     Default: '-'
     Description: Cron for which you send the metric to CloudWatch
 
+  MetricFormatType:
+    Type: String
+    Description: 'Metric format type'
+    Default: 'EMF'
+
   # EFS parameters
   FargateEFSFileSystemID:
     Type: String
@@ -500,6 +505,7 @@ Resources:
         ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTART=${pfNewWorkflowStart}'
         ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTOP=${pfNewWorkflowStop}'
         ContainerEnvEntry45: !Sub 'PN_NATIONALREGISTRIES_DAO_SHEDLOCKTABLENAME=${ShedLockTableName}'
+        ContainerEnvEntry46: !Sub 'METRIC_FORMAT_TYPE=${MetricFormatType}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
