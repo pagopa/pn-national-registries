@@ -81,7 +81,7 @@ public class InfoCamereClient {
     }
 
     private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token) {
-        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, "Retrieving correlationId [INFOCAMERE]");
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INIPEC_BATCH);
         this.logJwt(token);
 
         var apiClient = pecApi.getApiClient();
@@ -89,7 +89,7 @@ public class InfoCamereClient {
         return pecApi.callRichiestaElencoPecWithHttpInfo(InipecScopeEnum.PEC.value(), body, clientId)
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
-                    log.info("Received IniPecBatchResponse with tracking ID: {}", trackingId);
+                    log.info("callRichiestaElencoPec - responded with tracking ID: {}", trackingId);
                 })
                 .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
@@ -105,7 +105,7 @@ public class InfoCamereClient {
     }
 
     private Mono<IniPecPollingResponse> callGetElencoPec(String correlationId, String token) {
-        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, "Getting elencoPec InfoCamere for correlationId");
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INIPEC_POLLING);
         this.logJwt(token);
 
         ApiClient apiClient = pecApi.getApiClient();
@@ -113,7 +113,7 @@ public class InfoCamereClient {
         return pecApi.callGetElencoPecWithHttpInfo(correlationId, InipecScopeEnum.PEC.value(), clientId)
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
-                    log.info("Received IniPecPollingResponse with tracking ID: {}", trackingId);
+                    log.info("callGetElencoPec - responded with tracking ID: {}", trackingId);
                 })
                 .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
@@ -137,7 +137,7 @@ public class InfoCamereClient {
         return sedeApi.getAddressByTaxIdWithHttpInfo(taxId, InipecScopeEnum.SEDE.value(), clientId)
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
-                    log.info("Received AddressRegistroImprese with tracking ID: {}", trackingId);
+                    log.info("callGetLegalAddress - responded with tracking ID: {}", trackingId);
                 })
                 .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
@@ -161,7 +161,7 @@ public class InfoCamereClient {
         return legalRepresentativeApi.getLegalRepresentativeListByTaxIdWithHttpInfo(taxId, InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
-                    log.info("Received InfoCamereLegalInstituionsResponse with tracking ID: {}", trackingId);
+                    log.info("callGetLegalInstitutions - responded with tracking ID: {}", trackingId);
                 })
                 .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
@@ -184,7 +184,7 @@ public class InfoCamereClient {
         return legalRepresentationApi.checkTaxIdForLegalRepresentationWithHttpInfo(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
-                    log.info("Received InfoCamereVerification with tracking ID: {}", trackingId);
+                    log.info("callCheckTaxId - responded with tracking ID: {}", trackingId);
                 })
                 .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
