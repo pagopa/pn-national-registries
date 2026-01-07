@@ -17,12 +17,15 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
+import it.pagopa.pn.national.registries.model.metrics.MetricName;
+import it.pagopa.pn.national.registries.model.metrics.MetricUnit;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
-import lombok.extern.slf4j.Slf4j;
+import it.pagopa.pn.national.registries.utils.MetricUtils;
+import lombok.CustomLog;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -37,6 +40,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -49,7 +53,7 @@ import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 import static it.pagopa.pn.national.registries.model.EService.*;
 
-@Slf4j
+@CustomLog
 @Service
 public class DigitalAddressBatchPollingService extends GatewayConverter {
 
@@ -166,9 +170,16 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private Mono<Void> handlePolling(BatchPolling polling) {
         return callIniPecEService(polling.getBatchId(), polling.getPollingId())
+                .doOnNext(res -> logBatchClosureDuration(polling))
                 .onErrorResume(t -> incrementAndCheckRetry(polling, t).then(Mono.error(t)))
                 .flatMap(response -> handleSuccessfulPolling(polling, response))
                 .onErrorResume(e -> Mono.empty());
+    }
+
+    private void logBatchClosureDuration(BatchPolling polling) {
+        long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
+        log.logMetric(MetricUtils.generateGeneralMetrics(MetricName.INIPEC_REQUEST_BATCH_CLOSURE_DURATION, (int) (batchClosureDurationMillis / 1000) , MetricUnit.SECONDS),
+                "IniPEC - Logging metric : " + MetricName.INIPEC_REQUEST_BATCH_CLOSURE_DURATION.getValue() + " for batchId: " + polling.getBatchId() + " - pollingId: " + polling.getPollingId() + " - duration in seconds: " + (batchClosureDurationMillis / 1000));
     }
 
     private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
@@ -231,6 +242,9 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     } else {
                         error = ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
                     }
+                    log.logMetric(
+                            MetricUtils.generateGeneralMetrics(MetricName.INIPEC_POLLING_ERROR, 1, MetricUnit.SECONDS),
+                            "IniPEC - Logging metric : " + MetricName.INIPEC_REQUEST_ERROR.getValue() + " for batchId: " + polling.getBatchId() + " - pollingId: " + polling.getPollingId() + " - error: " + error);
                     return updateBatchRequest(p, BatchStatus.ERROR, getSqsKo(error));
                 });
     }
