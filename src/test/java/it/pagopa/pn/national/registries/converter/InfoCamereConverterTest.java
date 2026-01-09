@@ -9,9 +9,9 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.CollectionUtils;
 
@@ -32,7 +32,7 @@ class InfoCamereConverterTest {
     @Autowired
     private InfoCamereConverter infoCamereConverter;
 
-    @MockBean
+    @MockitoBean
     private ObjectMapper objectMapper;
 
     @Test

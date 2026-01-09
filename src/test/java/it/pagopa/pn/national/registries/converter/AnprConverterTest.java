@@ -36,7 +36,7 @@ class AnprConverterTest {
     @Test
     void testconvertToGetAddressANPROK5() {
         RispostaE002OK responseE002OK = new RispostaE002OK();
-        assertNull(anprConverter.convertToGetAddressANPROK(responseE002OK, "Cf").getResidentialAddresses());
+        assertTrue(anprConverter.convertToGetAddressANPROK(responseE002OK, "Cf").getResidentialAddresses().isEmpty());
     }
 
     /**

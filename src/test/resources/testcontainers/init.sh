@@ -122,6 +122,28 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
 	\"dns\":\"fake.it\"}"\
 	--type String \
 
+aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
+    ssm put-parameter \
+    --name "MapTaxIdWhiteList" \
+    --type String \
+    --value "[
+                 {
+                     \"taxId\": \"PPPPLT80A01H501V\"
+                 },
+                 {
+                     \"taxId\": \"EEEEEE00E00E000B\"
+                 },
+                 {
+                     \"taxId\": \"EEEEEE00E00E000C\"
+                 },
+                 {
+                     \"taxId\": \"EEEEEE00E00E000D\"
+                 },
+                 {
+                     \"taxId\": \"FRMTTR76M06B715E\"
+                 }
+             ]"
+
 
 echo "### CREATE QUEUES FOR NATIONAL REGISTRIES ###"
 

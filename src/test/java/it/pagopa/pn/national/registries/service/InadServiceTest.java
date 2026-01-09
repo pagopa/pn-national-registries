@@ -57,20 +57,20 @@ class InadServiceTest {
 
         UsageInfo usageInfo1 = new UsageInfo();
         usageInfo1.setDateEndValidity(Date.from(LocalDate.EPOCH.atStartOfDay(ZoneOffset.UTC).toInstant()));
-        usageInfo1.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo1.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         ElementDigitalAddress elementDigitalAddressDto1 = new ElementDigitalAddress();
         elementDigitalAddressDto1.setDigitalAddress(DIGITAL_ADDRESS_1);
         elementDigitalAddressDto1.setUsageInfo(usageInfo1);
 
         UsageInfo usageInfo2 = new UsageInfo();
-        usageInfo2.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo2.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         usageInfo2.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         ElementDigitalAddress elementDigitalAddressDto2 = new ElementDigitalAddress();
         elementDigitalAddressDto2.setDigitalAddress(DIGITAL_ADDRESS_2);
         elementDigitalAddressDto2.setUsageInfo(usageInfo2);
 
         UsageInfo usageInfo3 = new UsageInfo();
-        usageInfo3.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo3.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         usageInfo3.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         ElementDigitalAddress elementDigitalAddressDto3 = new ElementDigitalAddress();
         elementDigitalAddressDto1.setPracticedProfession("practicedProfession");
@@ -105,13 +105,13 @@ class InadServiceTest {
 
         UsageInfo usageInfo1 = new UsageInfo();
         usageInfo1.setDateEndValidity(Date.from(LocalDate.EPOCH.atStartOfDay(ZoneOffset.UTC).toInstant()));
-        usageInfo1.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo1.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         ElementDigitalAddress elementDigitalAddressDto1 = new ElementDigitalAddress();
         elementDigitalAddressDto1.setDigitalAddress(DIGITAL_ADDRESS_1);
         elementDigitalAddressDto1.setUsageInfo(usageInfo1);
 
         UsageInfo usageInfo3 = new UsageInfo();
-        usageInfo3.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo3.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         usageInfo3.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         ElementDigitalAddress elementDigitalAddressDto3 = new ElementDigitalAddress();
         elementDigitalAddressDto1.setPracticedProfession("practicedProfession");
@@ -119,7 +119,7 @@ class InadServiceTest {
         elementDigitalAddressDto3.setUsageInfo(usageInfo3);
 
         UsageInfo usageInfo2 = new UsageInfo();
-        usageInfo2.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo2.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         usageInfo2.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         ElementDigitalAddress elementDigitalAddressDto2 = new ElementDigitalAddress();
         elementDigitalAddressDto2.setDigitalAddress(DIGITAL_ADDRESS_2);
@@ -148,7 +148,7 @@ class InadServiceTest {
                         .digitalAddress(DIGITAL_ADDRESS_2)
                         .usageInfo(new UsageInfoDto()
                                 .dateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()))
-                                .motivation(UsageInfoDto.MotivationEnum.UFFICIO)));
+                                .motivation(UsageInfoDto.MotivationEnum.CESSAZIONE_UFFICIO)));
 
 
         StepVerifier.create(inadService.callEService(req, PF, null))
@@ -165,21 +165,21 @@ class InadServiceTest {
 
         UsageInfo usageInfo1 = new UsageInfo();
         usageInfo1.setDateEndValidity(Date.from(LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant()));
-        usageInfo1.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo1.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         ElementDigitalAddress elementDigitalAddressDto1 = new ElementDigitalAddress();
         elementDigitalAddressDto1.setPracticedProfession("practicedProfession");
         elementDigitalAddressDto1.setDigitalAddress(DIGITAL_ADDRESS_1);
         elementDigitalAddressDto1.setUsageInfo(usageInfo1);
 
         UsageInfo usageInfo2 = new UsageInfo();
-        usageInfo2.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo2.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         usageInfo2.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         ElementDigitalAddress elementDigitalAddressDto2 = new ElementDigitalAddress();
         elementDigitalAddressDto2.setDigitalAddress(DIGITAL_ADDRESS_2);
         elementDigitalAddressDto2.setUsageInfo(usageInfo2);
 
         UsageInfo usageInfo3 = new UsageInfo();
-        usageInfo3.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo3.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         usageInfo3.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         ElementDigitalAddress elementDigitalAddressDto3 = new ElementDigitalAddress();
         elementDigitalAddressDto3.setPracticedProfession("practicedProfession");
@@ -218,7 +218,7 @@ class InadServiceTest {
 
         UsageInfo usageInfo3 = new UsageInfo();
         usageInfo3.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
-        usageInfo3.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo3.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         ElementDigitalAddress elementDigitalAddressDto3 = new ElementDigitalAddress();
         elementDigitalAddressDto3.setDigitalAddress(DIGITAL_ADDRESS_3);
         elementDigitalAddressDto3.setUsageInfo(usageInfo3);

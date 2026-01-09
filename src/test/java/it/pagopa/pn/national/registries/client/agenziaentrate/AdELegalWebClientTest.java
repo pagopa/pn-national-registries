@@ -8,7 +8,7 @@ import it.pagopa.pn.national.registries.model.TrustData;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
 
@@ -23,11 +23,11 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 class AdELegalWebClientTest {
-    @MockBean
+    @MockitoBean
     AdeLegalSecretConfig adeLegalSecretConfig;
-    @MockBean
+    @MockitoBean
     SecureWebClientUtils secureWebClientUtils;
-    @MockBean
+    @MockitoBean
     PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
 
