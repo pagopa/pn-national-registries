@@ -232,7 +232,7 @@ class InfoCamereConverterTest {
                 .mapToResponseOkByResponse(addressRegistroImpreseResponse);
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
-        assertEquals("  ", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
+        assertEquals("", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
     }
 
     @Test
@@ -254,7 +254,7 @@ class InfoCamereConverterTest {
                 .mapToResponseOkByResponse(addressRegistroImpreseResponse);
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
-        assertEquals("  ", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
+        assertEquals("", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
     }
 
     @Test
@@ -275,7 +275,7 @@ class InfoCamereConverterTest {
                 .mapToResponseOkByResponse(addressRegistroImpreseResponse);
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
-        assertEquals("Toponimo Via", actualMapToResponseOkResult.getProfessionalAddress().getAddress().trim());
+        assertEquals("Toponimo Via", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
     }
 
     @Test
