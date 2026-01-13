@@ -169,7 +169,9 @@ public class InfoCamereConverter {
     }
 
     private String createLegalAddress(LegalAddress address) {
-        return address.getToponimo() + " " + address.getVia() + " " + address.getnCivico();
+        return Optional.ofNullable(address.getToponimo()).orElse("") + " " +
+                Optional.ofNullable(address.getVia()).orElse("") + " " +
+                Optional.ofNullable(address.getnCivico()).orElse("");
     }
 
     private DigitalAddress toDigitalAddress(String address, DigitalAddressRecipientType recipient) {
