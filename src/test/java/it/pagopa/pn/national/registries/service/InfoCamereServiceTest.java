@@ -116,7 +116,7 @@ class InfoCamereServiceTest {
         addressRegistroImpreseResponse.setCode("err-sede");
         addressRegistroImpreseResponse.setDescription("description");
         addressRegistroImpreseResponse.setAppName("appName");
-        addressRegistroImpreseResponse.setTimestamp(OffsetDateTime.now());
+        addressRegistroImpreseResponse.setTimestamp(OffsetDateTime.now().toString());
 
         when(infoCamereClient.getLegalAddress(any())).thenReturn(Mono.just(addressRegistroImpreseResponse));
         when(infoCamereConverter.checkIfResponseIsInfoCamereError((AddressRegistroImprese)any())).thenReturn(true);
