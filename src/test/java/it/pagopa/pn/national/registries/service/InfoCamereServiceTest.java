@@ -163,12 +163,12 @@ class InfoCamereServiceTest {
 
         InfoCamereLegalRequestBodyDto body = new InfoCamereLegalRequestBodyDto();
         InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
-        dto.setTaxId("taxId");
+        dto.setTaxId("taxIdTest");
         dto.setVatNumber("vatNumber");
         body.setFilter(dto);
 
         InfoCamereLegalOKDto infoCamereLegalOKDto = new InfoCamereLegalOKDto();
-        infoCamereLegalOKDto.setTaxId("taxId");
+        infoCamereLegalOKDto.setTaxId("taxIdTest");
         infoCamereLegalOKDto.setVatNumber("vatNumber");
         infoCamereLegalOKDto.setVerificationResult(false);
 
