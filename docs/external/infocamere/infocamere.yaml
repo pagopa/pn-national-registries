@@ -414,7 +414,6 @@ components:
           type: string
         timestamp:
           type: string
-          format: date-time
     IniPecBatchResponse:
       type: object
       properties:
