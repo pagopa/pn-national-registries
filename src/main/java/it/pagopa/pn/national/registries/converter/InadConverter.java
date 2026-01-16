@@ -133,8 +133,8 @@ public class InadConverter {
             return null;
         }
         return switch (motivation) {
-            case UFFICIO -> UsageInfoDto.MotivationEnum.UFFICIO;
-            case VOLONTARIA -> UsageInfoDto.MotivationEnum.VOLONTARIA;
+            case CESSAZIONE_UFFICIO -> UsageInfoDto.MotivationEnum.CESSAZIONE_UFFICIO;
+            case CESSAZIONE_VOLONTARIA -> UsageInfoDto.MotivationEnum.CESSAZIONE_VOLONTARIA;
         };
     }
 

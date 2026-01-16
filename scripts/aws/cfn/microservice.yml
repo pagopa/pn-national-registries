@@ -492,7 +492,7 @@ Resources:
         ContainerEnvEntry30: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_TRUST_SECRET=${AdELegalTrustSecret}'
         ContainerEnvEntry31: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
         ContainerEnvEntry32: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
-        ContainerEnvEntry33: !Sub 'PN_NATIONAL_REGISTRY_TOPICS_GATEWAYEVENTS=${NationalRegistryGatewayInputsQueueName}'
+        ContainerEnvEntry33: !Sub 'METRIC_FORMAT_TYPE=${MetricFormatType}'
         ContainerEnvEntry34: !Sub 'PN_NATIONAL_REGISTRY_INPUT_QUEUE_NAME=${NationalRegistryGatewayInputsQueueName}'
         ContainerEnvEntry35: !Sub 'PN_NATIONAL_REGISTRY_INPUT_DLQ_QUEUE_NAME=${NationalRegistryGatewayInputsDLQName}'
         ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_HEALTH_CHECK_PATH=${HealthCheckPath}'
@@ -505,7 +505,6 @@ Resources:
         ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTART=${pfNewWorkflowStart}'
         ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTOP=${pfNewWorkflowStop}'
         ContainerEnvEntry45: !Sub 'PN_NATIONALREGISTRIES_DAO_SHEDLOCKTABLENAME=${ShedLockTableName}'
-        ContainerEnvEntry46: !Sub 'METRIC_FORMAT_TYPE=${MetricFormatType}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'

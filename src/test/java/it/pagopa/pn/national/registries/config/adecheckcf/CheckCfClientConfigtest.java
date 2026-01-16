@@ -10,7 +10,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -20,19 +20,18 @@ import javax.net.ssl.SSLException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 class CheckCfClientConfigtest {
 
-    @MockBean
-    static SecureWebClientUtils secureWebClientUtils;
-    @MockBean
-    static CheckCfSecretConfig checkCfSecretConfig;
-    @MockBean
-    static PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+    @MockitoBean
+    SecureWebClientUtils secureWebClientUtils;
+    @MockitoBean
+    CheckCfSecretConfig checkCfSecretConfig;
+    @MockitoBean
+    PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
     @Mock
     private WebClient.Builder webClientBuilder;
 

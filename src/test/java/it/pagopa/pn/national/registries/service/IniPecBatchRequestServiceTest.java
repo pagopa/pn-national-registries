@@ -3,7 +3,6 @@ package it.pagopa.pn.national.registries.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.verifyNoInteractions;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
@@ -24,9 +23,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -46,17 +45,17 @@ class IniPecBatchRequestServiceTest {
     @Autowired
     private IniPecBatchRequestService iniPecBatchRequestService;
 
-    @MockBean
+    @MockitoBean
     private IniPecBatchPollingRepository batchPollingRepository;
-    @MockBean
+    @MockitoBean
     private IniPecBatchRequestRepository batchRequestRepository;
-    @MockBean
+    @MockitoBean
     private InfoCamereClient infoCamereClient;
-    @MockBean
+    @MockitoBean
     private InfoCamereConverter infoCamereConverter;
-    @MockBean
+    @MockitoBean
     private IniPecBatchSqsService iniPecBatchSqsService;
-    @MockBean
+    @MockitoBean
     private ObjectMapper objectMapper;
 
     @Test

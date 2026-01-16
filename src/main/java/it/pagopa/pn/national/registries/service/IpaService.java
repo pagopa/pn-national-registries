@@ -57,8 +57,9 @@ public class IpaService {
                     if (ws23ResponseDto.getResult() != null &&
                             ws23ResponseDto.getResult().getNumItems() != null &&
                             ws23ResponseDto.getResult().getNumItems() > 1 &&
-                            ws23ResponseDto.getData() != null) {
-                        String codAmm = ws23ResponseDto.getData().get(0).getCodAmm();
+                            ws23ResponseDto.getData() != null &&
+                            !ws23ResponseDto.getData().isEmpty()) {
+                        String codAmm = ws23ResponseDto.getData().getFirst().getCodAmm();
                         return callWS05(codAmm, authId).map(ipaConverter::convertToIPAPecDtoFromWS05);
                     } else {
                         return Mono.just(ipaConverter.convertToIpaPecDtoFromWS23(ws23ResponseDto));

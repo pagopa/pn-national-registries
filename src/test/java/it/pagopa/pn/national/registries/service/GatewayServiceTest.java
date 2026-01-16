@@ -20,10 +20,10 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -47,24 +47,24 @@ import static org.mockito.Mockito.*;
 @ExtendWith(SpringExtension.class)
 class GatewayServiceTest {
 
-    @MockBean
+    @MockitoBean
     private AnprService anprService;
-    @MockBean
+    @MockitoBean
     private InadService inadService;
-    @MockBean
+    @MockitoBean
     private InfoCamereService infoCamereService;
-    @MockBean
+    @MockitoBean
     private SqsService sqsService;
-    @MockBean
+    @MockitoBean
     private IpaService ipaService;
 
     @Autowired
     private GatewayService gatewayService;
 
-    @MockBean
+    @MockitoBean
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private FeatureEnabledUtils featureEnabledUtils;
 
     private static final String CF = "CF";
