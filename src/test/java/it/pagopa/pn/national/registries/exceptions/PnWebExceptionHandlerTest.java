@@ -199,7 +199,7 @@ class PnWebExceptionHandlerTest {
         HttpHeaders headers = new HttpHeaders();
         byte[] responseBody = "AAAAAAAA".getBytes(StandardCharsets.UTF_8);
         when(exceptionHelper.handleException(org.mockito.Mockito.any()))
-                .thenThrow(new PnNationalRegistriesException("An error occurred", 1, "Status Text", headers, responseBody,
+                .thenThrow(new PnNationalRegistriesException("An error occurred", 400, "Status Text", headers, responseBody,
                         null, Object.class));
         DefaultServerWebExchange defaultServerWebExchange = mock(DefaultServerWebExchange.class);
         when(defaultServerWebExchange.getResponse()).thenReturn(new MockServerHttpResponse());

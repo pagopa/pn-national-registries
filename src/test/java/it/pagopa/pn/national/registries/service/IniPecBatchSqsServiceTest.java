@@ -6,9 +6,9 @@ import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -38,16 +38,16 @@ class IniPecBatchSqsServiceTest {
     @Autowired
     private IniPecBatchSqsService iniPecBatchSqsService;
 
-    @MockBean
+    @MockitoBean
     private IniPecBatchRequestRepository batchRequestRepository;
-    @MockBean
+    @MockitoBean
     private SqsService sqsService;
 
     @Test
     void testRecoveryBatchSendToSqs() {
         when(batchRequestRepository.getBatchRequestToSend(anyMap(), anyInt()))
                 .thenReturn(Mono.just(Page.create(List.of(new BatchRequest(), new BatchRequest()))));
-        when(batchRequestRepository.resetBatchRequestForRecovery(any()))
+        when(batchRequestRepository.update(any()))
                 .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()))
                 .thenReturn(Mono.just(new BatchRequest()));
 
@@ -64,7 +64,7 @@ class IniPecBatchSqsServiceTest {
         iniPecBatchSqsService.recoveryBatchSendToSqs();
 
         verifyNoInteractions(sqsService);
-        verify(batchRequestRepository, never()).resetBatchRequestForRecovery(any());
+        verify(batchRequestRepository, never()).update(any());
     }
 
     @Test

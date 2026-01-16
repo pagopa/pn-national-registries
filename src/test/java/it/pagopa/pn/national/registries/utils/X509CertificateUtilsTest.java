@@ -9,8 +9,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.services.ssm.SsmClient;
 
@@ -26,19 +26,19 @@ import static org.mockito.Mockito.when;
 @ContextConfiguration(classes = {X509CertificateUtils.class, SsmParameterConsumerActivation.class})
 @ExtendWith(SpringExtension.class)
 class X509CertificateUtilsTest {
-    @MockBean
+    @MockitoBean
     private AdeLegalSecretConfig adeLegalSecretConfig;
 
-    @MockBean
+    @MockitoBean
     private PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
-    @MockBean
+    @MockitoBean
     private SsmClient ssmClient;
 
     @Autowired
     private X509CertificateUtils x509CertificateUtils;
 
-    @MockBean
+    @MockitoBean
     private SsmParameterConsumerActivation ssmParameterConsumerActivation;
 
     /**

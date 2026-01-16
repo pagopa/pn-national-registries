@@ -10,8 +10,8 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import javax.net.ssl.SSLException;
@@ -28,10 +28,10 @@ import static org.mockito.Mockito.*;
 class SecureWebClientUtilsTest {
     @Autowired
     private SecureWebClientUtils secureWebClientUtils;
-    @MockBean
+    @MockitoBean
     private CheckCfSecretConfig checkCfSecretConfig;
 
-    @MockBean
+    @MockitoBean
     private X509CertificateUtils x509CertificateUtils;
 
 

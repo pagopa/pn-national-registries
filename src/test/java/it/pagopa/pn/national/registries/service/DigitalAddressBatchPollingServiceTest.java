@@ -26,9 +26,9 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -45,33 +45,33 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 @ExtendWith(SpringExtension.class)
 class DigitalAddressBatchPollingServiceTest {
 
-    @MockBean
+    @MockitoBean
     private IniPecBatchPollingRepository batchPollingRepository;
-    @MockBean
+    @MockitoBean
     private IniPecBatchRequestRepository batchRequestRepository;
-    @MockBean
+    @MockitoBean
     private InfoCamereClient infoCamereClient;
-    @MockBean
+    @MockitoBean
     private InfoCamereConverter infoCamereConverter;
-    @MockBean
+    @MockitoBean
     private IniPecBatchSqsService iniPecBatchSqsService;
 
-    @MockBean
+    @MockitoBean
     private FeatureEnabledUtils featureEnabledUtils;
 
-    @MockBean
+    @MockitoBean
     private InadService inadService;
 
-    @MockBean
+    @MockitoBean
     private IpaService ipaService;
 
     @Autowired
     private DigitalAddressBatchPollingService digitalAddressBatchPollingService;
 
-    @MockBean
+    @MockitoBean
     private ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     private IniPecBatchRequestService iniPecBatchRequestService;
 
     @Test

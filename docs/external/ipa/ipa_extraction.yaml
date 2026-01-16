@@ -66,6 +66,7 @@ components:
           type: string
           description: Tax ID
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         AUTH_ID:
           type: string
           description: Authorization ID
@@ -88,6 +89,7 @@ components:
           type: string
           description: Code of Amm
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         AUTH_ID:
           type: string
           description: Authorization ID
@@ -117,6 +119,7 @@ components:
           type: string
           description: Digital domicile
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         tipo:
           type: string
           description: Type
@@ -124,6 +127,7 @@ components:
           type: string
           description: Code of the entity
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         des_amm:
           type: string
           description: Name of the entity
@@ -134,6 +138,7 @@ components:
           type: string
           description: Code of Amm
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         acronimo:
           type: string
           description: Acronym
@@ -144,34 +149,42 @@ components:
           type: string
           description: Region
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         provincia:
           type: string
           description: Province
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         comune:
           type: string
           description: Municipality
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         cap:
           type: string
           description: Postal code
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         indirizzo:
           type: string
           description: Address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         titolo_resp:
           type: string
           description: Title of the responsible
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         nome_resp:
           type: string
           description: Name of the responsible
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         cogn_resp:
           type: string
           description: Surname of the responsible
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         sito_istituzionale:
           type: string
           description: Institutional site
@@ -182,22 +195,27 @@ components:
           type: string
           description: Primary email
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         mail2:
           type: string
           description: Secondary email
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         mail3:
           type: string
           description: Tertiary email
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         mail4:
           type: string
           description: Quaternary email
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         mail5:
           type: string
           description: Quinary email
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         tipologia:
           type: string
           description: Typology
@@ -211,3 +229,4 @@ components:
           type: string
           description: Fiscal code
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password

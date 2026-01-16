@@ -31,8 +31,9 @@ public class IpaConverter {
 
     public IPAPecDto convertToIpaPecDtoFromWS23(WS23ResponseDto ws23ResponseDto) {
         IPAPecDto ipaPecDto = new IPAPecDto();
-        if(Objects.nonNull(ws23ResponseDto.getData())){
-            DataWS23Dto dataWS23Dto = ws23ResponseDto.getData().get(0);
+        if (Objects.nonNull(ws23ResponseDto.getData()) &&
+                !ws23ResponseDto.getData().isEmpty()) {
+            DataWS23Dto dataWS23Dto = ws23ResponseDto.getData().getFirst();
             ipaPecDto.setCodEnte(dataWS23Dto.getCodAmm());
             ipaPecDto.setDenominazione(dataWS23Dto.getDesAmm());
             ipaPecDto.setTipo(dataWS23Dto.getTipo());

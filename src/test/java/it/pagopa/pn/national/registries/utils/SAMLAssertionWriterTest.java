@@ -3,8 +3,6 @@ package it.pagopa.pn.national.registries.utils;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
-import kotlin.jvm.internal.unsafe.MonitorKt;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -13,25 +11,19 @@ import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.opensaml.core.xml.NamespaceManager;
-import org.opensaml.core.xml.XMLObject;
-import org.opensaml.saml.common.SAMLVersion;
 import org.opensaml.saml.saml2.core.*;
 import org.opensaml.xmlsec.signature.*;
-import org.springframework.test.context.ContextConfiguration;
 
 import javax.security.auth.x500.X500Principal;
 import java.nio.charset.StandardCharsets;
 import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)

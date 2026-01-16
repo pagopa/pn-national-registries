@@ -95,7 +95,7 @@ class InfocamereClientConfigTest {
                 Arguments.of(new SocketTimeoutException("Socket timeout"), "SocketTimeoutException"),
                 Arguments.of(new SSLHandshakeException("SSL handshake failed"), "SSLHandshakeException"),
                 Arguments.of(new UnknownHostException("Unknown host"), "UnknownHostException"),
-                Arguments.of(new WebClientRequestException(new RuntimeException(), HttpMethod.GET, URI.create("http://test.com"), headers), "WebClientRequestException"),
+                Arguments.of(new WebClientRequestException(new RuntimeException("error"), HttpMethod.GET, URI.create("http://test.com"), headers), "WebClientRequestException"),
                 Arguments.of(WebClientResponseException.create(429, "Too Many Requests", headers, body, StandardCharsets.UTF_8), "TooManyRequests"),
                 Arguments.of(WebClientResponseException.create(504, "Gateway Timeout", headers, body, StandardCharsets.UTF_8), "GatewayTimeout"),
                 Arguments.of(WebClientResponseException.create(502, "Bad Gateway", headers, body, StandardCharsets.UTF_8), "BadGateway"),

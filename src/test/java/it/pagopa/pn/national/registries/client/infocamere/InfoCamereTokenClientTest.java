@@ -8,16 +8,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
@@ -30,10 +29,10 @@ class InfoCamereTokenClientTest {
     @Autowired
     private InfoCamereTokenClient infoCamereTokenClient;
 
-    @MockBean
+    @MockitoBean
     private InfoCamereJwsGenerator infoCamereJwsGenerator;
 
-    @MockBean
+    @MockitoBean
     AuthenticationApi authenticationApi;
 
     final String clientId = "tezt_clientId";
@@ -55,7 +54,7 @@ class InfoCamereTokenClientTest {
     void testGetToken2(){
         HttpHeaders headers = new HttpHeaders();
         when(infoCamereJwsGenerator.createAuthRest(any()))
-                .thenThrow(new WebClientResponseException(1, "Status Text", headers, "AAAAAAAA".getBytes(StandardCharsets.UTF_8), null));
+                .thenThrow(new WebClientResponseException(400, "Status Text", headers, "AAAAAAAA".getBytes(StandardCharsets.UTF_8), null));
         assertThrows(WebClientResponseException.class, () -> infoCamereTokenClient.getToken("Scope"));
         verify(infoCamereJwsGenerator).createAuthRest(any());
     }

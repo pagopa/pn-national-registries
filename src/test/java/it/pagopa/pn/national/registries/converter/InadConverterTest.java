@@ -50,7 +50,7 @@ class InadConverterTest {
         List<ElementDigitalAddress> list = new ArrayList<>();
         ElementDigitalAddress dto = new ElementDigitalAddress();
         UsageInfo usageInfo = new UsageInfo();
-        usageInfo.setMotivation(MotivationTermination.VOLONTARIA);
+        usageInfo.setMotivation(MotivationTermination.CESSAZIONE_VOLONTARIA);
         usageInfo.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         dto.setUsageInfo(usageInfo);
         dto.setDigitalAddress("digitalAddress");
@@ -69,13 +69,13 @@ class InadConverterTest {
 
         UsageInfo usageInfo1 = new UsageInfo();
         usageInfo1.setDateEndValidity(Date.from(LocalDate.EPOCH.atStartOfDay(ZoneOffset.UTC).toInstant()));
-        usageInfo1.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo1.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         ElementDigitalAddress elementDigitalAddress1 = new ElementDigitalAddress();
         elementDigitalAddress1.setDigitalAddress("da1");
         elementDigitalAddress1.setUsageInfo(usageInfo1);
 
         UsageInfo usageInfo2 = new UsageInfo();
-        usageInfo2.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo2.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         usageInfo2.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         ElementDigitalAddress elementDigitalAddress2 = new ElementDigitalAddress();
         elementDigitalAddress2.setDigitalAddress("da2");
@@ -83,7 +83,7 @@ class InadConverterTest {
 
         UsageInfo usageInfo3 = new UsageInfo();
         usageInfo3.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
-        usageInfo3.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo3.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         ElementDigitalAddress elementDigitalAddress3 = new ElementDigitalAddress();
         elementDigitalAddress3.setDigitalAddress("da3");
         elementDigitalAddress3.setPracticedProfession("practicedProfession");
@@ -109,7 +109,7 @@ class InadConverterTest {
         elementDigitalAddress.setCodiceFiscale("MNZVMH95B09L084U");
         ElementDigitalAddress address = new ElementDigitalAddress();
         UsageInfo usageInfo = new UsageInfo();
-        usageInfo.setMotivation(MotivationTermination.UFFICIO);
+        usageInfo.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         usageInfo.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         address.setUsageInfo(usageInfo);
         address.setDigitalAddress("digital Address");

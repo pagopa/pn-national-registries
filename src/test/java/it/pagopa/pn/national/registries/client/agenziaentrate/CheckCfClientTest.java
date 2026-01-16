@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-
 import it.pagopa.pn.national.registries.config.adecheckcf.CheckCfSecretConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.VerificheApi;
@@ -17,9 +16,9 @@ import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretServic
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -37,22 +36,22 @@ import static org.mockito.Mockito.when;
 @ExtendWith(SpringExtension.class)
 class CheckCfClientTest {
 
-    @MockBean
+    @MockitoBean
     AccessTokenExpiringMap accessTokenExpiringMap;
 
-    @MockBean
+    @MockitoBean
     WebClient webClient;
 
-    @MockBean
+    @MockitoBean
     VerificheApi verificheApi;
 
-    @MockBean
+    @MockitoBean
     ObjectMapper objectMapper;
 
-    @MockBean
+    @MockitoBean
     CheckCfSecretConfig checkCfSecretConfig;
 
-    @MockBean
+    @MockitoBean
     PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
     @Test

@@ -342,7 +342,7 @@ public class GatewayService extends GatewayConverter {
 
     private HttpStatus toAddressResponseErrorStatus(Throwable throwable) {
         if(throwable instanceof PnNationalRegistriesException exception) {
-            return exception.getStatusCode();
+            return HttpStatus.valueOf(exception.getStatusCode().value());
         }
 
         //Default case

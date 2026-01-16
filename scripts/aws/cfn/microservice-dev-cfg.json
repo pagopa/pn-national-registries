@@ -45,6 +45,7 @@
     "WireTapLogActivation": "false",
     "MountEfs": "false",
     "pfNewWorkflowStart": "2099-07-14T20:00:00Z",
-    "pfNewWorkflowStop": "2099-07-14T23:59:59Z"
+    "pfNewWorkflowStop": "2099-07-14T23:59:59Z",
+    "MetricFormatType": "EMF"
   }
 }
