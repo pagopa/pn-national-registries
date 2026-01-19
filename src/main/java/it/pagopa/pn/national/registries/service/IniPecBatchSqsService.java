@@ -51,8 +51,8 @@ public class IniPecBatchSqsService {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.sqs.recovery.delay}")
-    @SchedulerLock(name = "recoveryBatchSendToSqs", lockAtMostFor = "${pn.national-registries.inipec.batch.recovery-batch-send-to-sqs.lock-at-most}",
-            lockAtLeastFor = "${pn.national-registries.inipec.batch.recovery-batch-send-to-sqs.lock-at-least}")
+    @SchedulerLock(name = "recoveryBatchSendToSqs", lockAtMostFor = "${pn.national-registries.inipec.batch.sqs.recovery.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.sqs.recovery.lock-at-least}")
     public void recoveryBatchSendToSqs() {
         log.trace("IniPEC - recoveryBatchSendToSqs start");
         Page<BatchRequest> page;

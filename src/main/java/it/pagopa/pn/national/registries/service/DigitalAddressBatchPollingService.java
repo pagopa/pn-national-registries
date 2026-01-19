@@ -98,8 +98,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
-    @SchedulerLock(name = "batchPecPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.batch-pec-polling.lock-at-most}",
-            lockAtLeastFor = "${pn.national-registries.inipec.batch.batch-pec-polling.lock-at-least}")
+    @SchedulerLock(name = "batchPecPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.polling.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.polling.lock-at-least}")
     public void batchPecPolling() {
         log.trace("IniPEC - batchPecPolling start");
         Page<BatchPolling> page;
@@ -120,8 +120,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.recovery.delay}")
-    @SchedulerLock(name = "recoveryBatchPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.recovery-batch-polling.lock-at-most}",
-            lockAtLeastFor = "${pn.national-registries.inipec.batch.recovery-batch-polling.lock-at-least}")
+    @SchedulerLock(name = "recoveryBatchPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.polling.recovery.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.polling.recovery.lock-at-least}")
     public void recoveryBatchPolling() {
         log.trace("IniPEC - recoveryBatchPolling start");
         batchPollingRepository.getBatchPollingToRecover()

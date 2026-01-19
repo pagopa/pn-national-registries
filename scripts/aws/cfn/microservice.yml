@@ -208,12 +208,32 @@ Parameters:
   PnNationalRegistriesInipecBatchRequestDelay:
     Type: Number
     Description: 'IniPEC batch request delay'
-    Default: 30000
+    Default: 5000
+
+  PnNationalRegistriesInipecBatchRequestLockAtMost:
+    Type: Number
+    Description: 'IniPEC batch request lock at most'
+    Default: 27000
+
+  PnNationalRegistriesInipecBatchRequestLockAtLeast:
+    Type: Number
+    Description: 'IniPEC batch request lock at least'
+    Default: 22000
 
   PnNationalRegistriesInipecBatchRequestRecoveryDelay:
     Type: Number
     Description: 'IniPEC batch request recovery delay'
     Default: 30000
+
+  PnNationalRegistriesInipecBatchRequestRecoveryLockAtMost:
+    Type: Number
+    Description: 'IniPEC batch request recovery lock at most'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchRequestRecoveryLockAtLeast:
+    Type: Number
+    Description: 'IniPEC batch request recovery lock at least'
+    Default: 1000
 
   PnNationalRegistriesInipecBatchRequestRecoveryAfter:
     Type: Number
@@ -230,10 +250,30 @@ Parameters:
     Description: 'IniPEC batch polling delay'
     Default: 30000
 
+  PnNationalRegistriesInipecBatchPollingLockAtMost:
+    Type: Number
+    Description: 'IniPEC batch polling lock at most'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchPollingLockAtLeast:
+    Type: Number
+    Description: 'IniPEC batch polling lock at least'
+    Default: 1000
+
   PnNationalRegistriesInipecBatchPollingRecoveryDelay:
     Type: Number
     Description: 'IniPEC batch polling recovery delay'
     Default: 30000
+
+  PnNationalRegistriesInipecBatchPollingRecoveryLockAtMost:
+    Type: Number
+    Description: 'IniPEC batch polling recovery lock at most'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchPollingRecoveryLockAtLeast:
+    Type: Number
+    Description: 'IniPEC batch polling recovery lock at least'
+    Default: 1000
 
   PnNationalRegistriesInipecBatchPollingRecoveryAfter:
     Type: Number
@@ -259,6 +299,16 @@ Parameters:
     Type: Number
     Description: 'IniPEC batch SQS recovery delay'
     Default: 30000
+
+  PnNationalRegistriesInipecBatchSqsRecoveryLockAtMost:
+    Type: Number
+    Description: 'IniPEC batch SQS recovery lock at most'
+    Default: 30000
+
+  PnNationalRegistriesInipecBatchSqsRecoveryLockAtLeast:
+    Type: Number
+    Description: 'IniPEC batch SQS recovery lock at least'
+    Default: 1000
 
   EcsLogGroup:
     Type: String
@@ -505,7 +555,16 @@ Resources:
         ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTART=${pfNewWorkflowStart}'
         ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTOP=${pfNewWorkflowStop}'
         ContainerEnvEntry45: !Sub 'PN_NATIONALREGISTRIES_DAO_SHEDLOCKTABLENAME=${ShedLockTableName}'
-
+        ContainerEnvEntry46: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchRequestLockAtMost}'
+        ContainerEnvEntry47: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchRequestLockAtLeast}'
+        ContainerEnvEntry48: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchPollingLockAtMost}'
+        ContainerEnvEntry49: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchPollingLockAtLeast}'
+        ContainerEnvEntry50: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchRequestRecoveryLockAtMost}'
+        ContainerEnvEntry51: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchRequestRecoveryLockAtLeast}'
+        ContainerEnvEntry52: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchPollingRecoveryLockAtMost}'
+        ContainerEnvEntry53: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchPollingRecoveryLockAtLeast}'
+        ContainerEnvEntry54: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchSqsRecoveryLockAtMost}'
+        ContainerEnvEntry55: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchSqsRecoveryLockAtLeast}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
