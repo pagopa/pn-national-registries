@@ -25,11 +25,11 @@ class MetricUtilsTest {
     @Test
     void generateGeneralMetricSetsAllFieldsCorrectlyWithoutUnit() {
         List<Dimension> dimensions = List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, "test"));
-        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.BATCH_SIZE, 42, dimensions);
+        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.SENT_BATCH_SIZE, 42, dimensions);
 
         assertEquals("national-registries-inipec", metric.getNamespace());
         assertEquals(1, metric.getMetrics().size());
-        assertEquals(MetricName.BATCH_SIZE.getValue(), metric.getMetrics().getFirst().getName());
+        assertEquals(MetricName.SENT_BATCH_SIZE.getValue(), metric.getMetrics().getFirst().getName());
         assertEquals(42, metric.getMetrics().getFirst().getValue());
         assertEquals(dimensions, metric.getDimensions());
         assertNull(metric.getUnit());
@@ -38,7 +38,7 @@ class MetricUtilsTest {
     @Test
     void generateGeneralMetricSetsUnitWhenProvided() {
         List<Dimension> dimensions = List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, "test"));
-        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.BATCH_SIZE, 10, dimensions, MetricUnit.SECONDS);
+        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.SENT_BATCH_SIZE, 10, dimensions, MetricUnit.SECONDS);
 
         assertEquals(MetricUnit.SECONDS.getValue(), metric.getUnit());
     }
@@ -46,17 +46,17 @@ class MetricUtilsTest {
     @Test
     void generateGeneralMetricsReturnsListWithSingleGeneralMetric() {
         List<Dimension> dimensions = List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, "test"));
-        List<GeneralMetric> metrics = MetricUtils.generateGeneralMetrics(MetricName.BATCH_SIZE, 5, dimensions);
+        List<GeneralMetric> metrics = MetricUtils.generateGeneralMetrics(MetricName.SENT_BATCH_SIZE, 5, dimensions);
 
         assertEquals(1, metrics.size());
-        assertEquals(MetricName.BATCH_SIZE.getValue(), metrics.getFirst().getMetrics().getFirst().getName());
+        assertEquals(MetricName.SENT_BATCH_SIZE.getValue(), metrics.getFirst().getMetrics().getFirst().getName());
         assertNull(metrics.getFirst().getUnit());
     }
 
     @Test
     void generateGeneralMetricsWithUnitReturnsListWithUnitSet() {
         List<Dimension> dimensions = List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, "test"));
-        List<GeneralMetric> metrics = MetricUtils.generateGeneralMetrics(MetricName.BATCH_SIZE, 5, dimensions, MetricUnit.SECONDS);
+        List<GeneralMetric> metrics = MetricUtils.generateGeneralMetrics(MetricName.SENT_BATCH_SIZE, 5, dimensions, MetricUnit.SECONDS);
 
         assertEquals(1, metrics.size());
         assertEquals(MetricUnit.SECONDS.getValue(), metrics.getFirst().getUnit());
@@ -64,7 +64,7 @@ class MetricUtilsTest {
 
     @Test
     void generateGeneralMetricWithEmptyDimensionsDoesNotFail() {
-        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.BATCH_SIZE, 1, List.of());
+        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.SENT_BATCH_SIZE, 1, List.of());
         assertNotNull(metric);
         assertTrue(metric.getDimensions().isEmpty());
     }

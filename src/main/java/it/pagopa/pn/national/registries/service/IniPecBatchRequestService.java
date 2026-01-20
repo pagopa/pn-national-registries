@@ -3,7 +3,6 @@ package it.pagopa.pn.national.registries.service;
 import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
-import it.pagopa.pn.national.registries.constant.ExternalServiceConstant;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -147,9 +146,9 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     private static void logBatchRequestMetrics(String batchId, IniPecBatchRequest iniPecBatchRequest) {
-        String logMessage = "IniPEC - Logging metrics : " + MetricName.BATCH_SIZE.getValue() + " - " + MetricName.EXTERNAL_SERVICE_INVOCATION.getValue() + " for batchId: " + batchId + " - called EService and batch size is: " + iniPecBatchRequest.getElencoCf().size();
+        String logMessage = "IniPEC - Logging metrics : " + MetricName.SENT_BATCH_SIZE.getValue() + " - " + MetricName.INIPEC_REQUEST_INVOCATION.getValue() + " for batchId: " + batchId + " - called EService and batch size is: " + iniPecBatchRequest.getElencoCf().size();
         GeneralMetric batchSizeMetric = MetricUtils.generateGeneralMetric(
-                MetricName.BATCH_SIZE,
+                MetricName.SENT_BATCH_SIZE,
                 iniPecBatchRequest.getElencoCf().size(),
                 List.of(
                         MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_REQUEST.name())
@@ -157,11 +156,10 @@ public class IniPecBatchRequestService extends GatewayConverter {
         );
 
         GeneralMetric invocationsMetric = MetricUtils.generateGeneralMetric(
-                MetricName.EXTERNAL_SERVICE_INVOCATION,
+                MetricName.INIPEC_REQUEST_INVOCATION,
                 1,
                 List.of(
-                        MetricUtils.generateDimension(DimensionName.SERVICE_NAME, ExternalServiceConstant.INIPEC_SERVICE),
-                        MetricUtils.generateDimension(DimensionName.SERVICE_OPERATION, ExternalServiceConstant.INIPEC_REQUEST_API)
+                        MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_REQUEST.name())
                 )
         );
 

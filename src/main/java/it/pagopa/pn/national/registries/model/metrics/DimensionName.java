@@ -4,9 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum DimensionName {
-    BATCH_TYPE("BatchType"),
-    SERVICE_NAME("ServiceName"),
-    SERVICE_OPERATION("ServiceOperation");
+    BATCH_TYPE("BatchType");
 
     private final String value;
 
