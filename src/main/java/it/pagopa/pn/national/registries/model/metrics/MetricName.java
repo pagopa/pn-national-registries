@@ -4,11 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum MetricName {
-    INIPEC_REQUEST_INVOCATIONS("InipecRequestInvocations"),
-    INIPEC_REQUEST_BATCH_CLOSURE_DURATION("InipecRequestBatchClosureDuration"),
-    INIPEC_REQUEST_BATCH_SIZE("InipecRequestBatchSize"),
-    INIPEC_REQUEST_ERROR("InipecRequestError"),
-    INIPEC_POLLING_ERROR("InipecPollingError");
+    EXTERNAL_SERVICE_INVOCATION("EXTERNAL_SERVICE_INVOCATION"),
+    BATCH_CLOSURE_DURATION("BATCH_CLOSURE_DURATION"),
+    BATCH_SIZE("BATCH_SIZE"),
+    BATCH_ERROR("BATCH_RECORD_ERROR");
 
     private final String value;
 

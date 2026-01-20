@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
@@ -13,10 +14,12 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
+import it.pagopa.pn.national.registries.model.BatchType;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
+import it.pagopa.pn.national.registries.model.metrics.DimensionName;
 import it.pagopa.pn.national.registries.model.metrics.MetricName;
 import it.pagopa.pn.national.registries.model.metrics.MetricUnit;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
@@ -178,8 +181,17 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private void logBatchClosureDuration(BatchPolling polling) {
         long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
-        log.logMetric(MetricUtils.generateGeneralMetrics(MetricName.INIPEC_REQUEST_BATCH_CLOSURE_DURATION, (int) (batchClosureDurationMillis / 1000) , MetricUnit.SECONDS),
-                "IniPEC - Logging metric : " + MetricName.INIPEC_REQUEST_BATCH_CLOSURE_DURATION.getValue() + " for batchId: " + polling.getBatchId() + " - pollingId: " + polling.getPollingId() + " - duration in seconds: " + (batchClosureDurationMillis / 1000));
+        List<GeneralMetric> batchClosureDuration = MetricUtils.generateGeneralMetrics(
+                MetricName.BATCH_CLOSURE_DURATION,
+                (int) (batchClosureDurationMillis / 1000),
+                List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_POLLING.name())),
+                MetricUnit.SECONDS
+        );
+        String logMessage = "IniPEC - Logging metric : " + MetricName.BATCH_CLOSURE_DURATION.getValue() +
+                " for batchId: " + polling.getBatchId() +
+                " - pollingId: " + polling.getPollingId() +
+                " - duration in seconds: " + (batchClosureDurationMillis / 1000);
+        log.logMetric(batchClosureDuration, logMessage);
     }
 
     private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
@@ -243,8 +255,12 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                         error = ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
                     }
                     log.logMetric(
-                            MetricUtils.generateGeneralMetrics(MetricName.INIPEC_POLLING_ERROR, 1, MetricUnit.SECONDS),
-                            "IniPEC - Logging metric : " + MetricName.INIPEC_REQUEST_ERROR.getValue() + " for batchId: " + polling.getBatchId() + " - pollingId: " + polling.getPollingId() + " - error: " + error);
+                            MetricUtils.generateGeneralMetrics(
+                                    MetricName.BATCH_ERROR,
+                                    1,
+                                    List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_POLLING.name()))
+                            ),
+                            "IniPEC - Logging metric : " + MetricName.BATCH_ERROR.getValue() + " for batchId: " + polling.getBatchId() + " - pollingId: " + polling.getPollingId() + " - error: " + error);
                     return updateBatchRequest(p, BatchStatus.ERROR, getSqsKo(error));
                 });
     }
