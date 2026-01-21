@@ -214,6 +214,71 @@ class InfoCamereConverterTest {
     }
 
     @Test
+    void testMapToResponseWith_Toponimo_Via_nCivico_Null() {
+        LegalAddress legalAddress = new LegalAddress();
+        legalAddress.setVia(null);
+        legalAddress.setComune("Municipality");
+        legalAddress.setCap("Postal Code");
+        legalAddress.setProvincia("Province");
+        legalAddress.setnCivico(null);
+        legalAddress.setToponimo(null);
+
+        AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
+        addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
+        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
+        addressRegistroImpreseResponse.setCf("taxId");
+
+        GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
+                .mapToResponseOkByResponse(addressRegistroImpreseResponse);
+
+        assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
+        assertEquals("", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
+    }
+
+    @Test
+    void testMapToResponseWith_Toponimo_Via_nCivico_VoidString() {
+        LegalAddress legalAddress = new LegalAddress();
+        legalAddress.setVia("");
+        legalAddress.setComune("Municipality");
+        legalAddress.setCap("Postal Code");
+        legalAddress.setProvincia("Province");
+        legalAddress.setnCivico("");
+        legalAddress.setToponimo("");
+
+        AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
+        addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
+        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
+        addressRegistroImpreseResponse.setCf("taxId");
+
+        GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
+                .mapToResponseOkByResponse(addressRegistroImpreseResponse);
+
+        assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
+        assertEquals("", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
+    }
+
+    @Test
+    void testMapToResponseWithout_nCivico() {
+        LegalAddress legalAddress = new LegalAddress();
+        legalAddress.setVia("Via");
+        legalAddress.setComune("Municipality");
+        legalAddress.setCap("Postal Code");
+        legalAddress.setProvincia("Province");
+        legalAddress.setToponimo("Toponimo");
+
+        AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
+        addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
+        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
+        addressRegistroImpreseResponse.setCf("taxId");
+
+        GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
+                .mapToResponseOkByResponse(addressRegistroImpreseResponse);
+
+        assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
+        assertEquals("Toponimo Via", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
+    }
+
+    @Test
     void testInfoCamereResponseToDto() {
         InfoCamereVerification infoCamereVerificationResponse = new InfoCamereVerification();
         infoCamereVerificationResponse.setEsitoVerifica("OK");

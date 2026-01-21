@@ -196,7 +196,7 @@ paths:
                   code: 500
   /sede/{cf}:
     post:
-      summary: Get address by tax ID
+      summary: Consente di ottenere l’indirizzo della sede legale dell’impresa al momento della consultazione
       operationId: getAddressByTaxId
       tags:
         - Sede
@@ -224,39 +224,56 @@ paths:
         - bearerAuth: [ ]
       responses:
         '200':
-          description: Successful response
+          description: Controllo eseguito
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddressRegistroImprese'
-        '401':
-          description: Unauthorized
+        '400':
+          description: Richiesta non valida
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  code:
-                    type: string
+                $ref: '#/components/schemas/ErrorResponse'
+                example:
+                  message: Richiesta non valida
+                  code: 400
+        '401':
+          description: Utente non abilitato al servizio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
                 example:
                   message: Unauthorized
                   code: 401
+        '404':
+          description: Servizio non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                example:
+                  message: Servizio non trovato
+                  code: 404
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  code:
-                    type: string
+                $ref: '#/components/schemas/ErrorResponse'
                 example:
                   message: Internal server error
                   code: 500
+        '503':
+          description: Servizio non disponibile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                example:
+                  message: Servizio non disponibile
+                  code: 503
   /listaLegaleRappresentante/{cfPersona}:
     get:
       summary: Get legal representative list by tax ID
@@ -393,6 +410,17 @@ paths:
                   code: 500
 components:
   schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        appName:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
     IniPecBatchResponse:
       type: object
       properties:
@@ -487,6 +515,11 @@ components:
         pec: "pec1@example.com"
 
     AddressRegistroImprese:
+      oneOf:
+        - $ref: '#/components/schemas/ServizioSedeImpresaResponse'
+        - $ref: '#/components/schemas/ErrorResponse'
+
+    ServizioSedeImpresaResponse:
       type: object
       properties:
         dataOraEstrazione:
@@ -499,18 +532,6 @@ components:
           format: password
         indirizzoLocalizzazione:
           $ref: '#/components/schemas/LegalAddress'
-        code:
-          type: string
-        appName:
-          type: string
-        description:
-          type: string
-        timestamp:
-          type: string
-      required:
-        - dataOraEstrazione
-        - cf
-        - indirizzoLocalizzazione
       example:
         dataOraEstrazione: "2024-05-21T12:30:00Z"
         cf: "ABCDEF1234567890"
@@ -560,12 +581,6 @@ components:
           description: The postal code of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
           format: password
-      required:
-        - denominazione
-        - via
-        - comune
-        - provincia
-        - cap
       example:
         denominazione: "Company Name"
         via: "Via Roma"
