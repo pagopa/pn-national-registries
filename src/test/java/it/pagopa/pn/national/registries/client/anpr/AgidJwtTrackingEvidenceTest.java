@@ -11,7 +11,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.services.kms.KmsClient;
 
@@ -24,13 +24,13 @@ import static org.mockito.Mockito.when;
 @ExtendWith(SpringExtension.class)
 class AgidJwtTrackingEvidenceTest {
 
-    @MockBean
+    @MockitoBean
     AnprSecretConfig anprSecretConfig;
 
-    @MockBean
+    @MockitoBean
     KmsClient kmsClient;
 
-    @MockBean
+    @MockitoBean
     PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
     @Test

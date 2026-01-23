@@ -15,14 +15,14 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.R
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
+import jakarta.annotation.PostConstruct;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
-import javax.annotation.PostConstruct;
-import javax.xml.bind.DatatypeConverter;
+import jakarta.xml.bind.DatatypeConverter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

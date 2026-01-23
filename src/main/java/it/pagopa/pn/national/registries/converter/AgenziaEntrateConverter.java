@@ -37,9 +37,9 @@ public class AgenziaEntrateConverter {
 
     public CheckTaxIdOKDto.ErrorCodeEnum decodeError(String message) {
         return switch (message) {
-            case CODICE_FISCALE_VALIDO_NON_UTILIZZABILE -> CheckTaxIdOKDto.ErrorCodeEnum.ERR01;
-            case CODICE_FISCALE_NON_VALIDO_AGGIORNATO_IN_ALTRO -> CheckTaxIdOKDto.ErrorCodeEnum.ERR02;
-            case CODICE_FISCALE_NON_VALIDO -> CheckTaxIdOKDto.ErrorCodeEnum.ERR03;
+            case CODICE_FISCALE_VALIDO_NON_UTILIZZABILE -> CheckTaxIdOKDto.ErrorCodeEnum.B001_CHECK_TAX_ID_ERR01;
+            case CODICE_FISCALE_NON_VALIDO_AGGIORNATO_IN_ALTRO -> CheckTaxIdOKDto.ErrorCodeEnum.B001_CHECK_TAX_ID_ERR02;
+            case CODICE_FISCALE_NON_VALIDO -> CheckTaxIdOKDto.ErrorCodeEnum.B001_CHECK_TAX_ID_ERR03;
             default -> null;
         };
     }

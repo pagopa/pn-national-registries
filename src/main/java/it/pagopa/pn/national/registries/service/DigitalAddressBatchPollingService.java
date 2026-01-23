@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
@@ -13,17 +14,22 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
+import it.pagopa.pn.national.registries.model.BatchType;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
+import it.pagopa.pn.national.registries.model.metrics.DimensionName;
+import it.pagopa.pn.national.registries.model.metrics.MetricName;
+import it.pagopa.pn.national.registries.model.metrics.MetricUnit;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
-import lombok.extern.slf4j.Slf4j;
-import org.jetbrains.annotations.NotNull;
+import it.pagopa.pn.national.registries.utils.MetricUtils;
+import lombok.CustomLog;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -37,6 +43,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -49,7 +56,7 @@ import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 import static it.pagopa.pn.national.registries.model.EService.*;
 
-@Slf4j
+@CustomLog
 @Service
 public class DigitalAddressBatchPollingService extends GatewayConverter {
 
@@ -94,6 +101,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
+    @SchedulerLock(name = "batchPecPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.polling.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.polling.lock-at-least}")
     public void batchPecPolling() {
         log.trace("IniPEC - batchPecPolling start");
         Page<BatchPolling> page;
@@ -114,6 +123,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.recovery.delay}")
+    @SchedulerLock(name = "recoveryBatchPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.polling.recovery.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.polling.recovery.lock-at-least}")
     public void recoveryBatchPolling() {
         log.trace("IniPEC - recoveryBatchPolling start");
         batchPollingRepository.getBatchPollingToRecover()
@@ -127,7 +138,6 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                                 e -> log.info("IniPEC - conditional check failed - skip recovery pollingId {} and batchId {}", polling.getPollingId(), polling.getBatchId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .count()
-                .doOnNext(c -> batchPecPolling())
                 .subscribe(c -> log.info("IniPEC - executed batch recovery on {} polling", c),
                         e -> log.error("IniPEC - failed execution of batch polling recovery", e));
         log.trace("IniPEC - recoveryBatchPolling end");
@@ -163,9 +173,25 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private Mono<Void> handlePolling(BatchPolling polling) {
         return callIniPecEService(polling.getBatchId(), polling.getPollingId())
+                .doOnNext(res -> logBatchClosureDuration(polling))
                 .onErrorResume(t -> incrementAndCheckRetry(polling, t).then(Mono.error(t)))
                 .flatMap(response -> handleSuccessfulPolling(polling, response))
                 .onErrorResume(e -> Mono.empty());
+    }
+
+    private void logBatchClosureDuration(BatchPolling polling) {
+        long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
+        List<GeneralMetric> batchClosureDuration = MetricUtils.generateGeneralMetrics(
+                MetricName.BATCH_CLOSURE_DURATION,
+                (int) (batchClosureDurationMillis / 1000),
+                List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_POLLING.name())),
+                MetricUnit.SECONDS
+        );
+        String logMessage = "IniPEC - Logging metric : " + MetricName.BATCH_CLOSURE_DURATION.getValue() +
+                " for batchId: " + polling.getBatchId() +
+                " - pollingId: " + polling.getPollingId() +
+                " - duration in seconds: " + (batchClosureDurationMillis / 1000);
+        log.logMetric(batchClosureDuration, logMessage);
     }
 
     private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
@@ -228,6 +254,13 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     } else {
                         error = ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
                     }
+                    log.logMetric(
+                            MetricUtils.generateGeneralMetrics(
+                                    MetricName.BATCH_ERROR,
+                                    1,
+                                    List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_POLLING.name()))
+                            ),
+                            "IniPEC - Logging metric : " + MetricName.BATCH_ERROR.getValue() + " for batchId: " + polling.getBatchId() + " - pollingId: " + polling.getPollingId() + " - error: " + error);
                     return updateBatchRequest(p, BatchStatus.ERROR, getSqsKo(error));
                 });
     }

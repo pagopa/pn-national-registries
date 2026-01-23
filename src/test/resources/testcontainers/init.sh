@@ -122,6 +122,28 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
 	\"dns\":\"fake.it\"}"\
 	--type String \
 
+aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
+    ssm put-parameter \
+    --name "MapTaxIdWhiteList" \
+    --type String \
+    --value "[
+                 {
+                     \"taxId\": \"PPPPLT80A01H501V\"
+                 },
+                 {
+                     \"taxId\": \"EEEEEE00E00E000B\"
+                 },
+                 {
+                     \"taxId\": \"EEEEEE00E00E000C\"
+                 },
+                 {
+                     \"taxId\": \"EEEEEE00E00E000D\"
+                 },
+                 {
+                     \"taxId\": \"FRMTTR76M06B715E\"
+                 }
+             ]"
+
 
 echo "### CREATE QUEUES FOR NATIONAL REGISTRIES ###"
 
@@ -233,5 +255,17 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
             "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
         }
     ]'
+
+echo "### CREATE PN-NATIONALREGISTRIES-SHEDLOCK TABLE ###"
+
+aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
+    dynamodb create-table \
+    --table-name pn-nationalRegistries-ShedLock \
+    --attribute-definitions \
+        AttributeName=_id,AttributeType=S \
+    --key-schema \
+        AttributeName=_id,KeyType=HASH \
+    --provisioned-throughput \
+        ReadCapacityUnits=10,WriteCapacityUnits=5
 
 echo "Initialization terminated"

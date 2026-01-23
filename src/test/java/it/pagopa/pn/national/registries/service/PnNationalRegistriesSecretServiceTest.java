@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -28,10 +28,10 @@ class PnNationalRegistriesSecretServiceTest {
     @Autowired
     private PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
-    @MockBean
+    @MockitoBean
     private SecretsManagerClient secretsManagerClient;
 
-    @MockBean
+    @MockitoBean
     private CachedSecretsManagerConsumer cachedSecretsManagerConsumer;
 
     @Test

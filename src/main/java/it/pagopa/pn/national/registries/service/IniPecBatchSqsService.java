@@ -8,6 +8,7 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import lombok.extern.slf4j.Slf4j;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -50,6 +51,8 @@ public class IniPecBatchSqsService {
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.sqs.recovery.delay}")
+    @SchedulerLock(name = "recoveryBatchSendToSqs", lockAtMostFor = "${pn.national-registries.inipec.batch.sqs.recovery.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.sqs.recovery.lock-at-least}")
     public void recoveryBatchSendToSqs() {
         log.trace("IniPEC - recoveryBatchSendToSqs start");
         Page<BatchRequest> page;
@@ -61,7 +64,7 @@ public class IniPecBatchSqsService {
                 String reservationId = UUID.randomUUID().toString();
                 Flux.fromStream(page.items().stream())
                         .doOnNext(request -> request.setReservationId(null))
-                        .flatMap(request -> batchRequestRepository.resetBatchRequestForRecovery(request)
+                        .flatMap(request -> batchRequestRepository.update(request)
                                 .doOnError(ConditionalCheckFailedException.class,
                                         e -> log.info("IniPEC - conditional check failed - skip recovery correlationId: {}", request.getCorrelationId(), e))
                                 .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))

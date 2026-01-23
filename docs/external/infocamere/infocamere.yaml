@@ -25,6 +25,7 @@ paths:
               type: string
               description: JSON Web Signature (JWS) token
               x-field-extra-annotation: "@lombok.ToString.Exclude"
+              format: password
               example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       responses:
         '200':
@@ -36,6 +37,7 @@ paths:
                 description: Authentication token
                 example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
                 x-field-extra-annotation: "@lombok.ToString.Exclude"
+                format: password
         '401':
           description: Unauthorized
           content:
@@ -89,6 +91,7 @@ paths:
             schema:
               type: string
               x-field-extra-annotation: "@lombok.ToString.Exclude"
+              format: password
               description: Request body for PEC list
               example: |
                 {
@@ -203,8 +206,9 @@ paths:
           required: true
           schema:
             type: string
+            x-field-extra-annotation: "@lombok.ToString.Exclude"
+            format: password
           description: Tax ID for which to retrieve the address
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         - name: client_id
           in: query
           required: false
@@ -282,8 +286,9 @@ paths:
           required: true
           schema:
             type: string
+            x-field-extra-annotation: "@lombok.ToString.Exclude"
+            format: password
           description: Tax ID of the person
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         - name: client_id
           in: query
           required: false
@@ -344,8 +349,9 @@ paths:
           required: true
           schema:
             type: string
+            x-field-extra-annotation: "@lombok.ToString.Exclude"
+            format: password
           description: Tax ID of the person
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         - name: client_id
           in: query
           required: false
@@ -357,8 +363,9 @@ paths:
           required: true
           schema:
             type: string
+            x-field-extra-annotation: "@lombok.ToString.Exclude"
+            format: password
           description: VAT number of the company
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         - name: scope
           in: header
           required: true
@@ -475,10 +482,12 @@ components:
           type: string
           description: Codice Fiscale (Tax ID)
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         pecImpresa:
           type: string
           description: PEC address of the company
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         pecProfessionista:
           type: array
           description: List of PEC addresses of professionals
@@ -499,6 +508,7 @@ components:
           type: string
           description: PEC address of the professional
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
       required:
         - pec
       example:
@@ -519,6 +529,7 @@ components:
           type: string
           description: Tax ID (Codice Fiscale)
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         indirizzoLocalizzazione:
           $ref: '#/components/schemas/LegalAddress'
       example:
@@ -539,30 +550,37 @@ components:
           type: string
           description: The name of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         via:
           type: string
           description: The street of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         comune:
           type: string
           description: The municipality of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         provincia:
           type: string
           description: The province of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         toponimo:
           type: string
           description: The toponym of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         nCivico:
           type: string
           description: The street number of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         cap:
           type: string
           description: The postal code of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
       example:
         denominazione: "Company Name"
         via: "Via Roma"
@@ -582,6 +600,7 @@ components:
           type: string
           description: Legal tax ID (Codice Fiscale) of the person
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         elencoImpreseRappresentate:
           type: array
           description: List of represented businesses
@@ -614,6 +633,7 @@ components:
           type: string
           description: Business tax ID (Codice Fiscale) of the institution
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         denominazione:
           type: string
           description: The name of the institution
@@ -635,10 +655,12 @@ components:
           type: string
           description: Tax ID (Codice Fiscale) of the person
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         cfImpresa:
           type: string
           description: VAT number (Partita IVA) of the company
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         esitoVerifica:
           type: string
           description: The result of the verification

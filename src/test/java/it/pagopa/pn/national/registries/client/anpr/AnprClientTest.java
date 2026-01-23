@@ -19,10 +19,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -37,28 +37,28 @@ import static org.mockito.Mockito.*;
 @ExtendWith(SpringExtension.class)
 class AnprClientTest {
 
-    @MockBean
+    @MockitoBean
     AccessTokenExpiringMap accessTokenExpiringMap;
 
-    @MockBean
+    @MockitoBean
     WebClient webClient;
 
-    @MockBean
+    @MockitoBean
     AgidJwtSignature agidJwtSignature;
     
-    @MockBean
+    @MockitoBean
     AgidJwtTrackingEvidence agidJwtTrackingEvidence;
 
-    @MockBean
+    @MockitoBean
     E002ServiceApi e002ServiceApi;
 
     @Mock
     ApiClient apiClient;
 
-    @MockBean
+    @MockitoBean
     AnprSecretConfig anprSecretConfig;
 
-    @MockBean
+    @MockitoBean
     PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
     @Test

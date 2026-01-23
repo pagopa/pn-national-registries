@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
@@ -8,16 +9,20 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
+import it.pagopa.pn.national.registries.model.BatchType;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
+import it.pagopa.pn.national.registries.model.metrics.DimensionName;
+import it.pagopa.pn.national.registries.model.metrics.MetricName;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-import lombok.extern.slf4j.Slf4j;
+import it.pagopa.pn.national.registries.utils.MetricUtils;
+import lombok.CustomLog;
+import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -34,7 +39,7 @@ import java.util.UUID;
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 
 @Service
-@Slf4j
+@CustomLog
 public class IniPecBatchRequestService extends GatewayConverter {
 
     private final InfoCamereConverter infoCamereConverter;
@@ -63,26 +68,27 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
+    @SchedulerLock(name = "batchPecRequest", lockAtMostFor = "${pn.national-registries.inipec.batch.request.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.request.lock-at-least}")
     public void batchPecRequest() {
         log.trace("IniPEC - batchPecRequest start");
         Page<BatchRequest> page;
         Map<String, AttributeValue> lastEvaluatedKey = new HashMap<>();
-        do {
-            page = getBatchRequest(lastEvaluatedKey);
-            lastEvaluatedKey = page.lastEvaluatedKey();
-            if (!page.items().isEmpty()) {
-                String batchId = UUID.randomUUID().toString();
-                execBatchRequest(page.items(), batchId)
-                        .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + batchId))
-                        .block();
-            } else {
-                log.info("IniPEC - no batch request available");
-            }
-        } while (!CollectionUtils.isEmpty(lastEvaluatedKey));
+        page = getBatchRequest(lastEvaluatedKey);
+        if (!page.items().isEmpty()) {
+            String batchId = UUID.randomUUID().toString();
+            execBatchRequest(page.items(), batchId)
+                    .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + batchId))
+                    .block();
+        } else {
+            log.info("IniPEC - no batch request available");
+        }
         log.trace("IniPEC - batchPecRequest end");
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.request.recovery.delay}")
+    @SchedulerLock(name = "recoveryBatchRequest", lockAtMostFor = "${pn.national-registries.inipec.batch.request.recovery.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.request.recovery.lock-at-least}")
     public void recoveryBatchRequest() {
         log.trace("IniPEC - recoveryBatchRequest start");
         batchRequestRepository.getBatchRequestToRecovery()
@@ -91,12 +97,11 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     request.setStatus(BatchStatus.NOT_WORKED.getValue());
                     request.setBatchId(BatchStatus.NO_BATCH_ID.getValue());
                 })
-                .flatMap(request -> batchRequestRepository.resetBatchRequestForRecovery(request)
+                .flatMap(request -> batchRequestRepository.update(request)
                         .doOnError(ConditionalCheckFailedException.class,
                                 e -> log.info("IniPEC - conditional check failed - skip recovery correlationId: {}", request.getCorrelationId(), e))
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .count()
-                .doOnNext(c -> batchPecRequest())
                 .subscribe(c -> log.info("IniPEC - executed batch recovery on {} requests", c),
                         e -> log.error("IniPEC - failed execution of batch request recovery", e));
         log.trace("IniPEC - recoveryBatchRequest end");
@@ -130,14 +135,35 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     IniPecBatchRequest iniPecBatchRequest = createIniPecRequest(requests);
                     log.info("IniPEC - batchId {} - calling with {} cf", batchId, iniPecBatchRequest.getElencoCf().size());
                     return callEService(iniPecBatchRequest, batchId)
+                            .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest))
                             .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId).then(Mono.error(t)))
                             .flatMap(response -> createPolling(response, batchId))
                             .thenReturn(requests);
                 })
-                .doOnNext(requests -> log.info("IniPEC - batchId {} - called EService and batch size is: {}", batchId, requests.size()))
                 .doOnError(e -> log.error("IniPEC - batchId {} - failed to execute batch", batchId, e))
                 .onErrorResume(e -> Mono.empty())
                 .then();
+    }
+
+    private static void logBatchRequestMetrics(String batchId, IniPecBatchRequest iniPecBatchRequest) {
+        String logMessage = "IniPEC - Logging metrics : " + MetricName.SENT_BATCH_SIZE.getValue() + " - " + MetricName.INIPEC_REQUEST_INVOCATION.getValue() + " for batchId: " + batchId + " - called EService and batch size is: " + iniPecBatchRequest.getElencoCf().size();
+        GeneralMetric batchSizeMetric = MetricUtils.generateGeneralMetric(
+                MetricName.SENT_BATCH_SIZE,
+                iniPecBatchRequest.getElencoCf().size(),
+                List.of(
+                        MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_REQUEST.name())
+                )
+        );
+
+        GeneralMetric invocationsMetric = MetricUtils.generateGeneralMetric(
+                MetricName.INIPEC_REQUEST_INVOCATION,
+                1,
+                List.of(
+                        MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_REQUEST.name())
+                )
+        );
+
+        log.logMetric(List.of(batchSizeMetric, invocationsMetric), logMessage);
     }
 
     private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
@@ -170,15 +196,15 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     private Mono<Void> setBatchRequestStatusToWorking(String batchId) {
-            return batchRequestRepository.getBatchRequestByBatchIdAndStatus(batchId, BatchStatus.TAKEN_CHARGE)
-                    .doOnNext(requests -> log.debug("IniPEC - batchId {} - updating {} requests in status {}", batchId, requests.size(), BatchStatus.WORKING))
-                    .flatMapIterable(requests -> requests)
-                    .doOnNext(request -> request.setStatus(BatchStatus.WORKING.getValue()))
-                    .flatMap(batchRequestRepository::update)
-                    .doOnNext(r -> log.debug("IniPEC - correlationId {} - set status in {}", r.getCorrelationId(), r.getStatus()))
-                    .doOnError(e -> log.warn("IniPEC - batchId {} - failed to set request in status {}", batchId, BatchStatus.WORKING, e))
-                    .collectList()
-                    .then();
+        return batchRequestRepository.getBatchRequestByBatchIdAndStatus(batchId, BatchStatus.TAKEN_CHARGE)
+                .doOnNext(requests -> log.debug("IniPEC - batchId {} - updating {} requests in status {}", batchId, requests.size(), BatchStatus.WORKING))
+                .flatMapIterable(requests -> requests)
+                .doOnNext(request -> request.setStatus(BatchStatus.WORKING.getValue()))
+                .flatMap(batchRequestRepository::update)
+                .doOnNext(r -> log.debug("IniPEC - correlationId {} - set status in {}", r.getCorrelationId(), r.getStatus()))
+                .doOnError(e -> log.warn("IniPEC - batchId {} - failed to set request in status {}", batchId, BatchStatus.WORKING, e))
+                .collectList()
+                .then();
     }
 
     private Mono<Void> incrementAndCheckRetry(List<BatchRequest> requests, Throwable throwable, String batchId) {
@@ -201,6 +227,12 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .filter(l -> !l.isEmpty())
                 .flatMap(l -> {
                     log.debug("IniPEC - there is at least one request in ERROR - call batch to send to SQS");
+                    log.logMetric(MetricUtils.generateGeneralMetrics(
+                            MetricName.BATCH_ERROR,
+                            l.size(),
+                            List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_REQUEST.name()))
+                        ),
+                    "IniPEC - Logging metric : " + MetricName.BATCH_ERROR.getValue() + " for batchId: " + batchId + " - set ERROR status on " + l.size() + " requests");
                     return iniPecBatchSqsService.sendListToDlqQueue(l);
                 });
     }

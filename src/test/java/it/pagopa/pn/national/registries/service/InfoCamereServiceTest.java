@@ -14,9 +14,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -38,14 +38,14 @@ class InfoCamereServiceTest {
     @Autowired
     InfoCamereService infoCamereService;
 
-    @MockBean
+    @MockitoBean
     InfoCamereConverter infoCamereConverter;
-    @MockBean
+    @MockitoBean
     InfoCamereClient infoCamereClient;
-    @MockBean
+    @MockitoBean
     IniPecBatchRequestRepository batchRequestRepository;
 
-    @MockBean
+    @MockitoBean
     ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
