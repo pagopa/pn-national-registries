@@ -10,6 +10,8 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import java.util.Date;
+
 
 @RestController
 @lombok.CustomLog
@@ -40,7 +42,7 @@ public class InfoCamereController implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(Mono<GetDigitalAddressIniPECRequestBodyDto> getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
-        return getDigitalAddressIniPECRequestBodyDto.flatMap(requestBody -> infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, requestBody, null))
+        return getDigitalAddressIniPECRequestBodyDto.flatMap(requestBody -> infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, requestBody, new Date()))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }
