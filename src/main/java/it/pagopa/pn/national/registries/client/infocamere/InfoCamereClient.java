@@ -115,6 +115,7 @@ public class InfoCamereClient {
 
         ApiClient apiClient = sedeApi.getApiClient();
         apiClient.setBearerToken(token);
+
         return sedeApi.getAddressByTaxId(taxId, InipecScopeEnum.SEDE.value(), clientId)
                 .doOnError(handleErrorCall());
     }

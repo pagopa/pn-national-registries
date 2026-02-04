@@ -485,7 +485,7 @@ components:
         cf:
           type: string
           description: Tax ID (Codice Fiscale)
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
+
         indirizzoLocalizzazione:
           $ref: '#/components/schemas/LegalAddress'
         code:
@@ -517,31 +517,24 @@ components:
         denominazione:
           type: string
           description: The name of the address
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         via:
           type: string
           description: The street of the address
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         comune:
           type: string
           description: The municipality of the address
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         provincia:
           type: string
           description: The province of the address
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         toponimo:
           type: string
           description: The toponym of the address
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         nCivico:
           type: string
           description: The street number of the address
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         cap:
           type: string
           description: The postal code of the address
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
       required:
         - denominazione
         - via
