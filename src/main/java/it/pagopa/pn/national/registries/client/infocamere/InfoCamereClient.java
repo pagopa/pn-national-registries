@@ -116,7 +116,13 @@ public class InfoCamereClient {
         ApiClient apiClient = sedeApi.getApiClient();
         apiClient.setBearerToken(token);
 
-        return sedeApi.getAddressByTaxId(taxId, InipecScopeEnum.SEDE.value(), clientId)
+        return sedeApi.
+
+                getAddressByTaxIdWithHttpInfo(taxId, InipecScopeEnum.SEDE.value(), clientId)
+                .doOnNext(responseEntity -> {
+                    String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
+                    log.info("callGetLegalAddress - responded with tracking ID: {}", trackingId);
+                })
                 .doOnError(handleErrorCall());
     }
 
