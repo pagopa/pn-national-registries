@@ -21,6 +21,7 @@ import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
 import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -123,6 +124,7 @@ public class InfoCamereClient {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
                     log.info("callGetLegalAddress - responded with tracking ID: {}", trackingId);
                 })
+                .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
     }
 
