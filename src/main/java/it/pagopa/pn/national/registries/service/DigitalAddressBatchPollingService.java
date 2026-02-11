@@ -181,16 +181,17 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private void logBatchClosureDuration(BatchPolling polling) {
         long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
+        int batchClosureDurationSeconds = (int) (batchClosureDurationMillis / 1000);
         List<GeneralMetric> batchClosureDuration = MetricUtils.generateGeneralMetrics(
                 MetricName.BATCH_CLOSURE_DURATION,
-                (int) (batchClosureDurationMillis / 1000),
+                batchClosureDurationSeconds,
                 List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_POLLING.name())),
                 MetricUnit.SECONDS
         );
         String logMessage = "IniPEC - Logging metric : " + MetricName.BATCH_CLOSURE_DURATION.getValue() +
                 " for batchId: " + polling.getBatchId() +
                 " - pollingId: " + polling.getPollingId() +
-                " - duration in seconds: " + (batchClosureDurationMillis / 1000);
+                " - duration in seconds: " + batchClosureDurationSeconds;
         log.logMetric(batchClosureDuration, logMessage);
     }
 

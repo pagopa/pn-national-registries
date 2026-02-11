@@ -135,7 +135,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     IniPecBatchRequest iniPecBatchRequest = createIniPecRequest(requests);
                     log.info("IniPEC - batchId {} - calling with {} cf", batchId, iniPecBatchRequest.getElencoCf().size());
                     return callEService(iniPecBatchRequest, batchId)
-                            .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest))
+                            .doOnEach(sig -> logBatchRequestMetrics(batchId, iniPecBatchRequest))
                             .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId).then(Mono.error(t)))
                             .flatMap(response -> createPolling(response, batchId))
                             .thenReturn(requests);
@@ -229,7 +229,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     log.debug("IniPEC - there is at least one request in ERROR - call batch to send to SQS");
                     log.logMetric(MetricUtils.generateGeneralMetrics(
                             MetricName.BATCH_ERROR,
-                            l.size(),
+                            1,
                             List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_REQUEST.name()))
                         ),
                     "IniPEC - Logging metric : " + MetricName.BATCH_ERROR.getValue() + " for batchId: " + batchId + " - set ERROR status on " + l.size() + " requests");
