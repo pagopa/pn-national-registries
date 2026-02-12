@@ -486,6 +486,17 @@ Parameters:
     Type: String
     Description: 'DLQ ARN for NationalRegistryGatewayInputs'
 
+  # Bucket params for Lambda functions
+  MicroserviceBucketName:
+    Type: String
+    Default: ""
+    Description: "Name of the bucket where the microservice files are copied during deploy"
+
+  MicroserviceBucketBaseKey:
+    Type: String
+    Default: ""
+    Description: "Base key of the microservice in the s3 bucket"
+
 Resources:
 
   # PN-National-Registry microservice
@@ -850,6 +861,75 @@ Resources:
             Type: PLAINTEXT
             Value: !Sub ${AdESSL}-next
 
+  AcmCertRenewalLambdaRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${ProjectName}-acm-cert-renewal-role
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: AcmCertRenewalPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: !Sub arn:aws:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/*
+              - Effect: Allow
+                Action:
+                  - acm:RequestCertificate
+                  - acm:DescribeCertificate
+                  - acm:ListCertificates
+                  - acm:ImportCertificate
+                  - acm:GetCertificate
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - secretsmanager:GetSecretValue
+                  - secretsmanager:CreateSecret
+                  - secretsmanager:UpdateSecret
+                  - secretsmanager:DescribeSecret
+                  - secretsmanager:PutSecretValue
+                Resource:
+                  # ADE
+                  - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AdESSLSecret}-aws-*'
+                  - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${AdESSLSecret}-next-aws-*'
+                  # Infocamere
+                  - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}/infocamere-cert-aws-*'
+                  - !Sub 'arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretAndSSMPrefix}/infocamere-cert-next-aws-*'
+              - Effect: Allow
+                Action:
+                  - ssm:PutParameter
+                  - ssm:GetParameter
+                  - ssm:GetParameters
+                Resource:
+                  # ADE
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AdESSL}-aws'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${AdESSL}-next-aws'
+                  # Infocamere
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${InfoCamereAuth}-aws'
+                  - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter${InfoCamereAuth}-next-aws'
+
+  AcmCertRenewalLambda:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${ProjectName}-acm-cert-renewal
+      Handler: acm-renew.lambda_handler
+      Runtime: python3.14
+      Role: !GetAtt AcmCertRenewalLambdaRole.Arn
+      Timeout: 300
+      Code:
+        S3Bucket: !Ref MicroserviceBucketName
+        S3Key: !Sub "${MicroserviceBucketBaseKey}/functions_zip/acm-cert-renewal.zip"
+
   CertificateRenewalCodeBuildRole:
     Type: AWS::IAM::Role
     Properties:
@@ -919,6 +999,38 @@ Resources:
             Fn::GetAtt: 
               - "AdeCertRenewalCodebuildProject"
               - "Arn"
+
+  AcmCertRenewalDailyRule:
+    Type: AWS::Events::Rule
+    Properties:
+      Description: !Sub "${ProjectName}-acm-cert-renewal-daily-check"
+      ScheduleExpression: "cron(0 10 * * ? *)"
+      State: "ENABLED"
+      Targets:
+        - Arn: !GetAtt AcmCertRenewalLambda.Arn
+          Id: "RenewalAde"
+          Input: !Sub |
+            {
+              "fqdn": "${AdeFQDN}",
+              "secret_id": "${AdESSLSecret}",
+              "parameter_name": "${AdESSL}"
+            }
+        - Arn: !GetAtt AcmCertRenewalLambda.Arn
+          Id: "RenewalInfocamere"
+          Input: !Sub |
+            {
+              "fqdn": "${InfocamereFQDN}",
+              "secret_id": "${SecretAndSSMPrefix}/infocamere-cert",
+              "parameter_name": "${InfoCamereAuth}"
+            }
+
+  AcmCertRenewalLambdaPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref AcmCertRenewalLambda
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt AcmCertRenewalDailyRule.Arn
 
   NationalRegistriesCertDLQQueuePolicy:
     Type: AWS::SQS::QueuePolicy
