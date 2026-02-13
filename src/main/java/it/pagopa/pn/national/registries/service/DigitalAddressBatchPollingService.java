@@ -175,18 +175,19 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private Mono<Void> handlePolling(BatchPolling polling) {
         return callIniPecEService(polling.getBatchId(), polling.getPollingId())
-                .doOnEach(sig -> logBatchPollingRequest(sig, polling))
+                .doOnNext(res -> logBatchPollingRequest(polling, null))
+                .doOnError(t -> logBatchPollingRequest(polling, t))
                 .doOnNext(res -> logBatchClosureDuration(polling))
                 .onErrorResume(t -> incrementAndCheckRetry(polling, t).then(Mono.error(t)))
                 .flatMap(response -> handleSuccessfulPolling(polling, response))
                 .onErrorResume(e -> Mono.empty());
     }
 
-    private void logBatchPollingRequest(Signal<IniPecPollingResponse> signal, BatchPolling polling) {
+    private void logBatchPollingRequest(BatchPolling polling, Throwable throwable) {
         String logMessage = "IniPEC - Polling EService - Logging metrics : " + MetricName.BATCH_POLLING_INVOCATION.getValue() + " for pollingId: " + polling.getPollingId();
         ServiceResponseStatus status;
-        if (signal.isOnError()) {
-            if (isPollingResponseNotReady(signal.getThrowable())) {
+        if (throwable != null) {
+            if (isPollingResponseNotReady(throwable)) {
                 status = ServiceResponseStatus.IN_PROGRESS;
             } else {
                 status = ServiceResponseStatus.FAILURE;

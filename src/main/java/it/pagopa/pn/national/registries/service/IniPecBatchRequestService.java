@@ -137,7 +137,8 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     IniPecBatchRequest iniPecBatchRequest = createIniPecRequest(requests);
                     log.info("IniPEC - batchId {} - calling with {} cf", batchId, iniPecBatchRequest.getElencoCf().size());
                     return callEService(iniPecBatchRequest, batchId)
-                            .doOnEach(sig -> logBatchRequestMetrics(sig, batchId, iniPecBatchRequest))
+                            .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest, false))
+                            .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest, true))
                             .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId).then(Mono.error(t)))
                             .flatMap(response -> createPolling(response, batchId))
                             .thenReturn(requests);
@@ -147,9 +148,9 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .then();
     }
 
-    private static void logBatchRequestMetrics(Signal<IniPecBatchResponse> signal, String batchId, IniPecBatchRequest iniPecBatchRequest) {
+    private static void logBatchRequestMetrics(String batchId, IniPecBatchRequest iniPecBatchRequest, boolean isError) {
         String logMessage = "IniPEC - Logging metrics : " + MetricName.SENT_BATCH_SIZE.getValue() + " - " + MetricName.BATCH_REQUEST_INVOCATION.getValue() + " for batchId: " + batchId + " - called EService and batch size is: " + iniPecBatchRequest.getElencoCf().size();
-        ServiceResponseStatus status = signal.isOnError() ? ServiceResponseStatus.FAILURE : ServiceResponseStatus.OK;
+        ServiceResponseStatus status = isError ? ServiceResponseStatus.FAILURE : ServiceResponseStatus.OK;
         GeneralMetric batchSizeMetric = MetricUtils.generateGeneralMetric(
                 MetricName.SENT_BATCH_SIZE,
                 iniPecBatchRequest.getElencoCf().size(),
