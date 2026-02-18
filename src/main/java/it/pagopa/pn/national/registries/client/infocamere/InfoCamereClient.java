@@ -196,6 +196,7 @@ public class InfoCamereClient {
 
     private @NotNull Consumer<Throwable> handleErrorCall() {
         return throwable -> {
+            log.info("Error {} during call to InfoCamere: {}", throwable.getClass().getSimpleName(),  throwable.getMessage());
             String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
                     .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
                     .orElse("Unknown error");

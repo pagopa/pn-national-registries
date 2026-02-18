@@ -88,6 +88,9 @@ public class InfocamereClientConfig extends CommonBaseClient {
                 throwable instanceof WebClientResponseException.ServiceUnavailable
                 ;
         if(retryable) {
+            log.info("Exception: {}", throwable.getClass().getSimpleName());
+            log.info("Message: {}", throwable.getMessage());
+            log.info("Stacktrace: ", throwable);
             log.warn("Exception caught by retry: {}", MaskTaxIdInPathUtils.maskTaxIdInPath(Objects.requireNonNull(throwable.getMessage())));
         }
         return retryable;
