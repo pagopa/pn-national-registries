@@ -17,7 +17,7 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.time.Duration;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.function.Predicate;
 
 @Slf4j
@@ -48,7 +48,10 @@ public class CustomRetryConfig {
                                 .filter(retryCondition)
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> {
                                     Throwable lastExceptionInRetry = retrySignal.failure();
-                                    log.warn("Retries exhausted {}, with last Exception: {}", retrySignal.totalRetries(), MaskTaxIdInPathUtils.maskTaxIdInPath(lastExceptionInRetry.getMessage()));
+                                    String maskedErrorMessage = Optional.ofNullable(lastExceptionInRetry.getMessage())
+                                            .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
+                                            .orElse("Unknown error");
+                                    log.warn("Retries exhausted {}, with last Exception: {}", retrySignal.totalRetries(), maskedErrorMessage);
                                     return lastExceptionInRetry;
                                 }));
     }
@@ -66,7 +69,10 @@ public class CustomRetryConfig {
                 throwable instanceof WebClientResponseException.ServiceUnavailable
                 ;
         if(retryable) {
-            log.warn("Exception caught by retry: {}", MaskTaxIdInPathUtils.maskTaxIdInPath(Objects.requireNonNull(throwable.getMessage())));
+            String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
+                    .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
+                    .orElse("Unknown error");
+            log.warn("Exception caught by retry: {}", maskedErrorMessage);
         }
         return retryable;
     }

@@ -91,7 +91,7 @@ public class InfocamereClientConfig extends CommonBaseClient {
             String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
                     .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
                     .orElse("Unknown error");
-            log.warn("Exception {} caught by retry: {}", throwable.getClass().getName(), MaskTaxIdInPathUtils.maskTaxIdInPath(maskedErrorMessage));
+            log.warn("Exception {} caught by retry: {}", throwable.getClass().getName(), maskedErrorMessage);
         }
         return retryable;
     }
