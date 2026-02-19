@@ -196,6 +196,7 @@ public class InfoCamereClient {
 
     private @NotNull Consumer<Throwable> handleErrorCall() {
         return throwable -> {
+            log.debug("Error {} during call to InfoCamere: {}", throwable.getClass().getSimpleName(),  throwable.getMessage());
             String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
                     .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
                     .orElse("Unknown error");
@@ -207,6 +208,7 @@ public class InfoCamereClient {
                         e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                         Charset.defaultCharset(), InfocamereResponseKO.class);
             } else {
+                log.debug("Unhandled exception during call to InfoCamere", throwable);
                 log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage);
             }
         };

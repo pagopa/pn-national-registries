@@ -19,7 +19,7 @@ import javax.net.ssl.SSLHandshakeException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.util.Objects;
+import java.util.Optional;
 
 @Configuration
 @Slf4j
@@ -88,7 +88,10 @@ public class InfocamereClientConfig extends CommonBaseClient {
                 throwable instanceof WebClientResponseException.ServiceUnavailable
                 ;
         if(retryable) {
-            log.warn("Exception caught by retry: {}", MaskTaxIdInPathUtils.maskTaxIdInPath(Objects.requireNonNull(throwable.getMessage())));
+            String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
+                    .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
+                    .orElse("Unknown error");
+            log.warn("Exception {} caught by retry: {}", throwable.getClass().getName(), MaskTaxIdInPathUtils.maskTaxIdInPath(maskedErrorMessage));
         }
         return retryable;
     }
