@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
 
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RispostaE002OK;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
 import lombok.extern.slf4j.Slf4j;
@@ -104,7 +104,10 @@ public class AnprConverter {
             return Optional.ofNullable(indirizzo.getToponimo().getSpecie()).orElse("") + " "
                     + indirizzo.getToponimo().getDenominazioneToponimo() + " "
                     + constructHouseNumber(Optional.ofNullable(indirizzo.getNumeroCivico().getNumero()).orElse(""),
-                    Optional.ofNullable(indirizzo.getNumeroCivico().getLettera()).orElse(""));
+                    Optional.ofNullable(indirizzo.getNumeroCivico().getLettera()).orElse("")) + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getMetrico()).map(elem -> "M " + elem).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getProgSNC()).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getEsponente1()).orElse("");
         } else {
             return "";
         }
