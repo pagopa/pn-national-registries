@@ -688,6 +688,7 @@ class AnprConverterTest {
         tipoCivicoInterno.setScalaEsterna("PAL 8C");
 
         TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
+        tipoNumeroCivico.setColore("1");
         tipoNumeroCivico.setCivicoInterno(tipoCivicoInterno);
 
         TipoIndirizzo indirizzo = new TipoIndirizzo();
@@ -719,13 +720,14 @@ class AnprConverterTest {
         assertNotNull(response);
         assertNotNull(response.getResidentialAddresses());
         assertNotNull(response.getResidentialAddresses().getFirst().getAddressDetail());
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("Corte 2"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("Scala 9"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("INT 1 A"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("INT 5 B"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("R"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains(" 2"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains(" 9"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains(" 1 A"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains(" 5 B"));
         assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("PAL 8C"));
         assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("11"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("NUI 50"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("Isolato 8"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains(" 50"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains(" 8"));
     }
 }

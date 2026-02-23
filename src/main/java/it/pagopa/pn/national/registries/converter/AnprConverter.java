@@ -4,6 +4,7 @@ package it.pagopa.pn.national.registries.converter;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
+import it.pagopa.pn.national.registries.model.anpr.AddressColorEnum;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -63,7 +64,7 @@ public class AnprConverter {
 
     private void mapToResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo, ResidentialAddressDto innerDto) {
         if(indirizzo.getNumeroCivico()!=null && indirizzo.getNumeroCivico().getCivicoInterno()!=null){
-            innerDto.setAddressDetail(createAddressDetail(indirizzo, innerDto));
+            innerDto.setAddressDetail(createAddressDetail(indirizzo));
         }
         innerDto.setAddress(createAddressString(indirizzo));
         innerDto.setZip(indirizzo.getCap());
@@ -75,22 +76,26 @@ public class AnprConverter {
         }
     }
 
-    private String createAddressDetail(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo, ResidentialAddressDto innerDto) {
+    private String createAddressDetail(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo) {
         String addressDetail = "";
-        if(!Objects.isNull(indirizzo.getNumeroCivico()) && !Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())){
-            addressDetail += Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getCorte()).map(element -> "Corte " + element).orElse("") + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScala()).map(element -> "Scala " + element).orElse("") + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getInterno1()).map(element -> "INT " + element).orElse("") + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getEspInterno1()).orElse("") + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getInterno2()).map(element -> "INT " + element).orElse("") + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getEspInterno2()).orElse("") + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScalaEsterna()).orElse("") + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getSecondario()).orElse("") + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getPiano()).map(element -> "Piano " + element).orElse("") + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getNui()).map(element -> "NUI " + element).orElse("") + " "
-                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getIsolato()).map(element -> "Isolato " + element).orElse("");
+        if(!Objects.isNull(indirizzo.getNumeroCivico())){
+            addressDetail += Optional.ofNullable(indirizzo.getNumeroCivico().getColore()).map(AddressColorEnum::getCodeFromValue).orElse("") + " ";
+            if (!Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())) {
+                addressDetail += Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScala()).orElse("") + " "
+                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getCorte()).orElse("") + " "
+                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getInterno1()).orElse("") + " "
+                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getEspInterno1()).orElse("") + " "
+                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getInterno2()).orElse("") + " "
+                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getEspInterno2()).orElse("") + " "
+                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScalaEsterna()).orElse("") + " "
+                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getSecondario()).orElse("") + " "
+                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getPiano()).orElse("") + " "
+                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getNui()).orElse("") + " "
+                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getIsolato()).orElse("");
+
+            }
         }
-        return addressDetail;
+        return addressDetail.strip();
     }
 
     private void mapToForeignResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoLocalitaEstera1 localitaEstera, ResidentialAddressDto innerDto) {
