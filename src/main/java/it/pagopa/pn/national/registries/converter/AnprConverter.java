@@ -13,6 +13,7 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Slf4j
@@ -62,7 +63,7 @@ public class AnprConverter {
 
     private void mapToResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo, ResidentialAddressDto innerDto) {
         if(indirizzo.getNumeroCivico()!=null && indirizzo.getNumeroCivico().getCivicoInterno()!=null){
-            innerDto.setAddressDetail(indirizzo.getNumeroCivico().getCivicoInterno().getScala());
+            innerDto.setAddressDetail(createAddressDetail(indirizzo, innerDto));
         }
         innerDto.setAddress(createAddressString(indirizzo));
         innerDto.setZip(indirizzo.getCap());
@@ -72,6 +73,24 @@ public class AnprConverter {
             innerDto.setMunicipality(indirizzo.getComune().getNomeComune());
             innerDto.setProvince(indirizzo.getComune().getSiglaProvinciaIstat());
         }
+    }
+
+    private String createAddressDetail(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo, ResidentialAddressDto innerDto) {
+        String addressDetail = "";
+        if(!Objects.isNull(indirizzo.getNumeroCivico()) && !Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())){
+            addressDetail += Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getCorte()).map(element -> "Corte " + element).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScala()).map(element -> "Scala " + element).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getInterno1()).map(element -> "INT " + element).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getEspInterno1()).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getInterno2()).map(element -> "INT " + element).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getEspInterno2()).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScalaEsterna()).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getSecondario()).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getPiano()).map(element -> "Piano " + element).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getNui()).map(element -> "NUI " + element).orElse("") + " "
+                    + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getIsolato()).map(element -> "Isolato " + element).orElse("");
+        }
+        return addressDetail;
     }
 
     private void mapToForeignResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoLocalitaEstera1 localitaEstera, ResidentialAddressDto innerDto) {
