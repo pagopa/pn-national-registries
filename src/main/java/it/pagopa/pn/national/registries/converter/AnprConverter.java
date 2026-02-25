@@ -22,6 +22,7 @@ import java.util.Optional;
 public class AnprConverter {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final int MAX_LEN = 44;
 
     public GetAddressANPROKDto convertToGetAddressANPROK(RispostaE002OK rispostaE002OK, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
@@ -77,25 +78,43 @@ public class AnprConverter {
     }
 
     private String createAddressDetail(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo) {
-        String addressDetail = "";
-        if(!Objects.isNull(indirizzo.getNumeroCivico())){
-            addressDetail += Optional.ofNullable(indirizzo.getNumeroCivico().getColore()).map(AddressColorEnum::getCodeFromValue).orElse("") + " ";
-            if (!Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())) {
-                addressDetail += Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScala()).orElse("") + " "
-                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getCorte()).orElse("") + " "
-                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getInterno1()).orElse("") + " "
-                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getEspInterno1()).orElse("") + " "
-                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getInterno2()).orElse("") + " "
-                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getEspInterno2()).orElse("") + " "
-                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScalaEsterna()).orElse("") + " "
-                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getSecondario()).orElse("") + " "
-                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getPiano()).orElse("") + " "
-                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getNui()).orElse("") + " "
-                        + Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getIsolato()).orElse("");
+        StringBuilder sb = new StringBuilder();
 
-            }
+        if (Objects.isNull(indirizzo.getNumeroCivico()) || Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())) {
+            return "";
         }
-        return addressDetail.strip();
+
+        var civicoInterno = indirizzo.getNumeroCivico().getCivicoInterno();
+
+        //colore
+        appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getColore())
+                .map(AddressColorEnum::getCodeFromValue)
+                .orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getScala()).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getCorte()).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getScalaEsterna()).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getSecondario()).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getPiano()).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getNui()).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(civicoInterno.getIsolato()).orElse(""));
+
+        return sb.toString();
+    }
+
+    private void appendIfFits(StringBuilder sb, String value) {
+        String token = Optional.ofNullable(value).map(String::strip).orElse("");
+        if (token.isEmpty()) return;
+
+        //Serve per calcolare lo spazio necessario ad aggiungere il token, considerando anche lo spazio se sb non è vuoto
+        int extra = token.length() + (sb.isEmpty() ? 0 : 1);
+        if (sb.length() + extra > AnprConverter.MAX_LEN) return;
+
+        if (!sb.isEmpty()) sb.append(' ');
+        sb.append(token);
     }
 
     private void mapToForeignResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoLocalitaEstera1 localitaEstera, ResidentialAddressDto innerDto) {

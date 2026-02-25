@@ -730,4 +730,56 @@ class AnprConverterTest {
         assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains(" 50"));
         assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains(" 8"));
     }
+
+    @Test
+    void testCreateAddressDetailDoesNotExceed44Chars() {
+        TipoCivicoInterno civicoInterno = new TipoCivicoInterno();
+        civicoInterno.setScala("  SCALA-1234567890   ");
+        civicoInterno.setCorte("CORTE-ABCDEFGHIJ");
+        civicoInterno.setInterno1("INTERNO1-XYZ");
+        civicoInterno.setEspInterno1("ESP1");
+        civicoInterno.setInterno2("INTERNO2");
+        civicoInterno.setEspInterno2("ESP2");
+        civicoInterno.setScalaEsterna("SCALAESTERNA");
+        civicoInterno.setSecondario("SECONDARIO");
+        civicoInterno.setPiano("PIANO");
+        civicoInterno.setNui("NUI");
+        civicoInterno.setIsolato("ISOLATO");
+
+        TipoNumeroCivico numeroCivico = new TipoNumeroCivico();
+        numeroCivico.setColore("1");
+        numeroCivico.setCivicoInterno(civicoInterno);
+
+        TipoIndirizzo indirizzo = new TipoIndirizzo();
+        indirizzo.setNumeroCivico(numeroCivico);
+
+        TipoResidenza residenza = new TipoResidenza();
+        residenza.setTipoIndirizzo("t1");
+        residenza.setDataDecorrenzaResidenza("2022-11-01");
+        residenza.setIndirizzo(indirizzo);
+
+        TipoCodiceFiscale cf = new TipoCodiceFiscale();
+        cf.setCodFiscale("COD_FISCALE_1");
+
+        TipoGeneralita generalita = new TipoGeneralita();
+        generalita.setCodiceFiscale(cf);
+
+        TipoDatiSoggettiEnte soggetto = new TipoDatiSoggettiEnte();
+        soggetto.setGeneralita(generalita);
+        soggetto.setResidenza(List.of(residenza));
+
+        TipoListaSoggetti lista = new TipoListaSoggetti();
+        lista.setDatiSoggetto(List.of(soggetto));
+
+        RispostaE002OK risposta = new RispostaE002OK();
+        risposta.setListaSoggetti(lista);
+
+        // Act
+        GetAddressANPROKDto out = anprConverter.convertToGetAddressANPROK(risposta, "COD_FISCALE_1");
+        String detail = out.getResidentialAddresses().getFirst().getAddressDetail();
+
+        // Assert
+        assertNotNull(detail);
+        assertTrue(detail.length() <= 44);
+    }
 }
