@@ -8,6 +8,7 @@ import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.config.CachedSecretsManagerConsumer;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
@@ -316,7 +317,7 @@ class GatewayConverterTest {
                 "correlationId: {} - IPA - WS23 - domicili digitali non presenti");
 
         ValidateTaxIdUtils validateTaxIdUtils = mock(ValidateTaxIdUtils.class);
-        AnprService anprService = new AnprService(new AnprConverter(), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
+        AnprService anprService = new AnprService(new AnprConverter(mock(NationalRegistriesConfig.class)), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
 
         DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient2 = mock(DynamoDbEnhancedAsyncClient.class);
         when(dynamoDbEnhancedAsyncClient2.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(

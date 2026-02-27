@@ -1,10 +1,13 @@
 package it.pagopa.pn.national.registries.converter;
 
 
+import it.pagopa.pn.national.registries.config.AddressModeEnum;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
 import it.pagopa.pn.national.registries.model.anpr.AddressColorEnum;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -19,10 +22,12 @@ import java.util.Optional;
 
 @Slf4j
 @Component
+@AllArgsConstructor
 public class AnprConverter {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private static final int MAX_LEN = 44;
+    private NationalRegistriesConfig configs;
 
     public GetAddressANPROKDto convertToGetAddressANPROK(RispostaE002OK rispostaE002OK, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
@@ -83,25 +88,29 @@ public class AnprConverter {
         if (Objects.isNull(indirizzo.getNumeroCivico()) || Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())) {
             return "";
         }
-
         var civicoInterno = indirizzo.getNumeroCivico().getCivicoInterno();
 
-        //colore
-        appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getColore())
-                .map(AddressColorEnum::getCodeFromValue)
-                .orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getScala()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getCorte()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getScalaEsterna()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getSecondario()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getPiano()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getNui()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getIsolato()).orElse(""));
+        if (AddressModeEnum.OLD.name().equals(configs.getAddressCompositionMode())) {
+            return Optional.ofNullable(civicoInterno.getScala()).orElse("");
+        } else if (AddressModeEnum.FULL.name().equals(configs.getAddressCompositionMode())) {
+            //colore
+            appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getColore())
+                    .map(AddressColorEnum::getCodeFromValue)
+                    .orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getCorte()).map(elem -> " c." + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScala()).map(elem -> " s." + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScalaEsterna()).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getIsolato()).map(elem -> " i." + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " int." + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " int." + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getSecondario()).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getPiano()).map(elem -> " p." + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getNui()).orElse(""));
 
+            return sb.toString().strip();
+        }
         return sb.toString();
     }
 
