@@ -207,6 +207,7 @@ public class InfoCamereClient {
                         e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                         Charset.defaultCharset(), InfocamereResponseKO.class);
             } else {
+                log.debug("Unhandled exception during call to InfoCamere", throwable);
                 log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage, throwable);
             }
         };
