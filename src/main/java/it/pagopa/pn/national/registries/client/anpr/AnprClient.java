@@ -86,7 +86,7 @@ public class AnprClient {
         var bearerAuth = tokenEntry.getTokenValue();
         return e002ServiceApi.e002(request, bearerToken, agidJWTSignature, agidTrackingEvidence, bearerAuth, digest)
                 .doOnError(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, throwable.getMessage());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, throwable.getMessage(), throwable);
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                         log.info("GovWay-Transaction-ID: {}", e.getHeaders().getFirst("GovWay-Transaction-ID"));
                         throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
