@@ -4,7 +4,6 @@ import lombok.Getter;
 
 @Getter
 public enum DimensionName {
-    BATCH_TYPE("BatchType"),
     STATUS("Status");
 
     private final String value;

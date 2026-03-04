@@ -24,6 +24,10 @@ public class MetricUtils {
         return dimension;
     }
 
+    public static GeneralMetric generateGeneralMetric(MetricName metricName, int metricValue) {
+        return generateGeneralMetric(metricName, metricValue, null, null);
+    }
+
     public static GeneralMetric generateGeneralMetric(MetricName metricName, int metricValue, List<Dimension> dimensions) {
         return generateGeneralMetric(metricName, metricValue, dimensions, null);
     }
@@ -41,14 +45,5 @@ public class MetricUtils {
 
         return generalMetric;
     }
-
-    public static List<GeneralMetric> generateGeneralMetrics(MetricName metricName, int metricValue, List<Dimension> dimensions) {
-        return List.of(generateGeneralMetric(metricName, metricValue, dimensions, null));
-    }
-
-    public static List<GeneralMetric> generateGeneralMetrics(MetricName metricName, int metricValue, List<Dimension> dimensions, MetricUnit unit) {
-        return List.of(generateGeneralMetric(metricName, metricValue, dimensions, unit));
-    }
-
 
 }
