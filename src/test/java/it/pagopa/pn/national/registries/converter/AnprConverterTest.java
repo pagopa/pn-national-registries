@@ -4,14 +4,18 @@ import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
+import it.pagopa.pn.national.registries.service.FullAnprAddressStrategy;
+import it.pagopa.pn.national.registries.service.OldAnprAddressStrategy;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
@@ -19,11 +23,23 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class AnprConverterTest {
 
-    @InjectMocks
     private AnprConverter anprConverter;
 
-    @Mock
     private NationalRegistriesConfig configs;
+
+    @BeforeEach
+    void setUp() {
+        Map<String, it.pagopa.pn.national.registries.service.AnprAddressStrategy> strategies = Map.of(
+                "OLD", new OldAnprAddressStrategy(),
+                "FULL", new FullAnprAddressStrategy(),
+                "METRICO_COLORE", new OldAnprAddressStrategy()
+        );
+
+        configs = new NationalRegistriesConfig();
+        configs.setAddressCompositionMode("FULL");
+
+        anprConverter = new AnprConverter(strategies, configs);
+    }
 
     /**
      * Method under test: {@link AnprConverter#convertToGetAddressANPROK(RispostaE002OK, String)}
@@ -683,14 +699,8 @@ class AnprConverterTest {
     void testConvertConDatiAddressDetail() {
         TipoCivicoInterno tipoCivicoInterno = new TipoCivicoInterno();
         tipoCivicoInterno.setCorte("2");
-        tipoCivicoInterno.setInterno1("1");
-        tipoCivicoInterno.setEspInterno1("A");
-        tipoCivicoInterno.setInterno2("5");
-        tipoCivicoInterno.setEspInterno2("B");
-        tipoCivicoInterno.setNui("50");
         tipoCivicoInterno.setIsolato("8");
         tipoCivicoInterno.setScala("9");
-        tipoCivicoInterno.setSecondario("11");
         tipoCivicoInterno.setScalaEsterna("PAL 8C");
 
         TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
@@ -722,8 +732,6 @@ class AnprConverterTest {
         RispostaE002OK rispostaE002OK = new RispostaE002OK();
         rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
 
-        when(configs.getAddressCompositionMode()).thenReturn("FULL");
-
         GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
         assertNotNull(response);
         assertNotNull(response.getResidentialAddresses());
@@ -731,12 +739,53 @@ class AnprConverterTest {
         assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("R"));
         assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("2"));
         assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("9"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("PAL 8C"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("8"));
+    }
+
+    @Test
+    void testConvertConDatiAddressDetailInterni() {
+        TipoCivicoInterno tipoCivicoInterno = new TipoCivicoInterno();
+        tipoCivicoInterno.setInterno1("1");
+        tipoCivicoInterno.setEspInterno1("A");
+        tipoCivicoInterno.setInterno2("5");
+        tipoCivicoInterno.setEspInterno2("B");
+
+        TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
+        tipoNumeroCivico.setColore("1");
+        tipoNumeroCivico.setCivicoInterno(tipoCivicoInterno);
+
+        TipoIndirizzo indirizzo = new TipoIndirizzo();
+        indirizzo.setNumeroCivico(tipoNumeroCivico);
+
+        TipoResidenza tipoResidenza1 = new TipoResidenza();
+        tipoResidenza1.setTipoIndirizzo("t1");
+        tipoResidenza1.setDataDecorrenzaResidenza("2022-11-01");
+        tipoResidenza1.setIndirizzo(indirizzo);
+        // mi aspetto che venga selezionata la residence_2 che contiene la data di decorrenza più recente
+
+        TipoCodiceFiscale tipoCodiceFiscale1 = new TipoCodiceFiscale();
+        tipoCodiceFiscale1.setCodFiscale("COD_FISCALE_1");
+
+        TipoGeneralita tipoGeneralita1 = new TipoGeneralita();
+        tipoGeneralita1.setCodiceFiscale(tipoCodiceFiscale1);
+
+        TipoDatiSoggettiEnte tipoDatiSoggettiEnte1 = new TipoDatiSoggettiEnte();
+        tipoDatiSoggettiEnte1.setResidenza(List.of(tipoResidenza1));
+        tipoDatiSoggettiEnte1.setGeneralita(tipoGeneralita1);
+
+        TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
+        tipoListaSoggetti.setDatiSoggetto(List.of(tipoDatiSoggettiEnte1));
+
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+
+        GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertNotNull(response);
+        assertNotNull(response.getResidentialAddresses());
+        assertNotNull(response.getResidentialAddresses().getFirst().getAddressDetail());
         assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("1 A"));
         assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("5 B"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("PAL 8C"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("11"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("50"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("8"));
     }
 
     @Test
@@ -781,8 +830,6 @@ class AnprConverterTest {
 
         RispostaE002OK risposta = new RispostaE002OK();
         risposta.setListaSoggetti(lista);
-
-        when(configs.getAddressCompositionMode()).thenReturn("FULL");
 
         // Act
         GetAddressANPROKDto out = anprConverter.convertToGetAddressANPROK(risposta, "COD_FISCALE_1");

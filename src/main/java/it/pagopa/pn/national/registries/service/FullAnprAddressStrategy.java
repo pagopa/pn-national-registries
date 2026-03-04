@@ -38,7 +38,7 @@ public class FullAnprAddressStrategy extends UtilsAnprAddressStrategy implements
             appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " Interno " + elem).orElse(""));
             appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
         } else if (!Objects.isNull(civicoInterno.getInterno2())) {
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " Interno." + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " Interno " + elem).orElse(""));
             appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
         }
 
