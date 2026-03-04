@@ -21,6 +21,6 @@ public class OldAnprAddressStrategy implements AnprAddressStrategy {
 
     @Override
     public String getStrategyName() {
-        return "OLD";
+        return AddressModeEnum.OLD.name();
     }
 }

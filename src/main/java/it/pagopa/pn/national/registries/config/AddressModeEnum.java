@@ -2,5 +2,6 @@ package it.pagopa.pn.national.registries.config;
 
 public enum AddressModeEnum {
     OLD,
-    FULL
+    FULL,
+    METRICO_COLORE
 }

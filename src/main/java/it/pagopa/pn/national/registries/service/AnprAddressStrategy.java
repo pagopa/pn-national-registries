@@ -3,7 +3,7 @@ package it.pagopa.pn.national.registries.service;
 import java.util.Optional;
 
 public interface AnprAddressStrategy {
-    static final int MAX_LEN = 44;
+    int MAX_LEN = 44;
 
     String createAddressDetail(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo);
     String getStrategyName();

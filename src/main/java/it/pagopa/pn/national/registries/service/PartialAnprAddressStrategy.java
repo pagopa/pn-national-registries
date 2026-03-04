@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.config.AddressModeEnum;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo;
 import it.pagopa.pn.national.registries.model.anpr.AddressColorEnum;
 import lombok.extern.slf4j.Slf4j;
@@ -29,6 +30,6 @@ public class PartialAnprAddressStrategy implements AnprAddressStrategy {
 
     @Override
     public String getStrategyName() {
-        return "METRICO_COLORE";
+        return AddressModeEnum.METRICO_COLORE.name();
     }
 }
