@@ -16,8 +16,10 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
+import it.pagopa.pn.national.registries.model.StatusDimension;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
+import it.pagopa.pn.national.registries.model.metrics.DimensionName;
 import it.pagopa.pn.national.registries.model.metrics.MetricName;
 import it.pagopa.pn.national.registries.model.metrics.MetricUnit;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
@@ -265,23 +267,23 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnSuccess(unused -> this.logBatchEndingMetrics(polling, status));
     }
 
-    private void logBatchEndingMetrics(BatchPolling polling, BatchStatus status) {
-        List<GeneralMetric> batchEndingMetrics = new ArrayList<>(2);
+    private void logBatchEndingMetrics(BatchPolling polling, BatchStatus batchStatus) {
+        StatusDimension status = batchStatus == BatchStatus.ERROR ? StatusDimension.FAILURE : StatusDimension.OK;
+        long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
+        int batchClosureDurationSeconds = (int) (batchClosureDurationMillis / 1000);
 
-        batchEndingMetrics.add(MetricUtils.generateGeneralMetric(
-                MetricName.BATCH,
-                1
-        ));
-
-        if(status != BatchStatus.ERROR) {
-            long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
-            int batchClosureDurationSeconds = (int) (batchClosureDurationMillis / 1000);
-            batchEndingMetrics.add(MetricUtils.generateGeneralMetric(
-                    MetricName.BATCH_CLOSURE_DURATION,
-                    batchClosureDurationSeconds,
-                    MetricUnit.SECONDS
-            ));
-        }
+        List<GeneralMetric> batchEndingMetrics = List.of(
+                MetricUtils.generateGeneralMetric(
+                        MetricName.BATCH,
+                        1
+                ),
+                MetricUtils.generateGeneralMetric(
+                        MetricName.BATCH_CLOSURE_DURATION,
+                        batchClosureDurationSeconds,
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name())),
+                        MetricUnit.SECONDS
+                )
+        );
 
         log.logMetric(batchEndingMetrics, "IniPEC - Logging batch ending metrics for batchId: " + polling.getBatchId() + " with status: " + status);
     }

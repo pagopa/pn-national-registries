@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.utils;
 import it.pagopa.pn.commons.log.dto.metrics.Dimension;
 import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.commons.log.dto.metrics.Metric;
+import it.pagopa.pn.national.registries.model.metrics.DimensionName;
 import it.pagopa.pn.national.registries.model.metrics.MetricName;
 import it.pagopa.pn.national.registries.model.metrics.MetricUnit;
 
@@ -16,12 +17,19 @@ public class MetricUtils {
     private MetricUtils() {
     }
 
+    public static Dimension generateDimension(DimensionName name, String value) {
+        Dimension dimension = new Dimension();
+        dimension.setName(name.getValue());
+        dimension.setValue(value);
+        return dimension;
+    }
+
     public static GeneralMetric generateGeneralMetric(MetricName metricName, int metricValue) {
         return generateGeneralMetric(metricName, metricValue, null, null);
     }
 
-    public static GeneralMetric generateGeneralMetric(MetricName metricName, int metricValue, MetricUnit unit) {
-        return generateGeneralMetric(metricName, metricValue, null, unit);
+    public static GeneralMetric generateGeneralMetric(MetricName metricName, int metricValue, List<Dimension> dimensions) {
+        return generateGeneralMetric(metricName, metricValue, dimensions, null);
     }
 
     public static GeneralMetric generateGeneralMetric(MetricName metricName, int metricValue, List<Dimension> dimensions, MetricUnit unit) {
