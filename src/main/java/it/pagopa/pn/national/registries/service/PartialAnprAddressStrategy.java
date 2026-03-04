@@ -11,7 +11,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class PartialAnprAddressStrategy implements AnprAddressStrategy {
+public class PartialAnprAddressStrategy extends UtilsAnprAddressStrategy implements AnprAddressStrategy {
 
     @Override
     public String createAddressDetail(TipoIndirizzo indirizzo) {
