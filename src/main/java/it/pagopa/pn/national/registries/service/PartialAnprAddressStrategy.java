@@ -70,6 +70,6 @@ public class PartialAnprAddressStrategy extends UtilsAnprAddressStrategy impleme
 
     @Override
     public String getStrategyName() {
-        return AddressModeEnum.ADDRESS_COMPLETE.name();
+        return AddressModeEnum.MINIMAL.name();
     }
 }

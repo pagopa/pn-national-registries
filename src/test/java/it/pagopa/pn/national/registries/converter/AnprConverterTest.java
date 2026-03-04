@@ -30,7 +30,7 @@ class AnprConverterTest {
         Map<String, it.pagopa.pn.national.registries.service.AnprAddressStrategy> strategies = Map.of(
                 AddressModeEnum.OLD.name(), new OldAnprAddressStrategy(),
                 AddressModeEnum.FULL.name(), new FullAnprAddressStrategy(),
-                AddressModeEnum.ADDRESS_COMPLETE.name(), new OldAnprAddressStrategy()
+                AddressModeEnum.MINIMAL.name(), new OldAnprAddressStrategy()
         );
 
         configs = new NationalRegistriesConfig();

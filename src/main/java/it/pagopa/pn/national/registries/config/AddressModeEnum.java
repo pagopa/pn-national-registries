@@ -3,5 +3,5 @@ package it.pagopa.pn.national.registries.config;
 public enum AddressModeEnum {
     OLD,
     FULL,
-    ADDRESS_COMPLETE
+    MINIMAL
 }
