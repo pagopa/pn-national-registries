@@ -1,5 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
+import org.springframework.util.StringUtils;
+
 import java.util.Optional;
 
 public abstract class UtilsAnprAddressStrategy {
@@ -15,5 +17,13 @@ public abstract class UtilsAnprAddressStrategy {
 
         if (!sb.isEmpty()) sb.append(' ');
         sb.append(token);
+    }
+
+    public String constructHouseNumber(String numeroCivico, String letteraNumeroCivico) {
+        if (StringUtils.hasText(numeroCivico) && StringUtils.hasText(letteraNumeroCivico)) {
+            return numeroCivico + "/" + letteraNumeroCivico;
+        }else {
+            return numeroCivico + letteraNumeroCivico;
+        }
     }
 }

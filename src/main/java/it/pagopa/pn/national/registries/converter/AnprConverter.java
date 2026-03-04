@@ -78,7 +78,7 @@ public class AnprConverter {
         if(indirizzo.getNumeroCivico()!=null && indirizzo.getNumeroCivico().getCivicoInterno()!=null){
             innerDto.setAddressDetail(strategy.createAddressDetail(indirizzo));
         }
-        innerDto.setAddress(createAddressString(indirizzo));
+        innerDto.setAddress(strategy.createAddress(indirizzo));
         innerDto.setZip(indirizzo.getCap());
         innerDto.setMunicipalityDetails(indirizzo.getFrazione());
 
@@ -126,25 +126,6 @@ public class AnprConverter {
             stringBuilder.append(toponimo.getNumeroCivico());
         }
         return stringBuilder.toString();
-    }
-
-    private String createAddressString(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo) {
-        if (indirizzo.getToponimo() != null && indirizzo.getNumeroCivico() != null) {
-            return Optional.ofNullable(indirizzo.getToponimo().getSpecie()).orElse("") + " "
-                    + indirizzo.getToponimo().getDenominazioneToponimo() + " "
-                    + constructHouseNumber(Optional.ofNullable(indirizzo.getNumeroCivico().getNumero()).orElse(""),
-                    Optional.ofNullable(indirizzo.getNumeroCivico().getLettera()).orElse(""));
-        } else {
-            return "";
-        }
-    }
-
-    private String constructHouseNumber(String numeroCivico, String letteraNumeroCivico) {
-        if (StringUtils.hasText(numeroCivico) && StringUtils.hasText(letteraNumeroCivico)) {
-            return numeroCivico + "/" + letteraNumeroCivico;
-        }else {
-            return numeroCivico + letteraNumeroCivico;
-        }
     }
 
     private LocalDate parseStringToDate(String str) {
