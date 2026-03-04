@@ -1,11 +1,13 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
@@ -18,6 +20,9 @@ class AnprConverterTest {
 
     @InjectMocks
     private AnprConverter anprConverter;
+
+    @Mock
+    private NationalRegistriesConfig configs;
 
     /**
      * Method under test: {@link AnprConverter#convertToGetAddressANPROK(RispostaE002OK, String)}

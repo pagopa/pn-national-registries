@@ -486,6 +486,11 @@ Parameters:
     Type: String
     Description: 'DLQ ARN for NationalRegistryGatewayInputs'
 
+  AddressCompositionMode:
+    Type: String
+    Description: "Mode for address and addressDetail, it can be OLD or FULL"
+    Default: "OLD"
+
 Resources:
 
   # PN-National-Registry microservice
@@ -569,6 +574,7 @@ Resources:
         ContainerEnvEntry53: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchPollingRecoveryLockAtLeast}'
         ContainerEnvEntry54: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchSqsRecoveryLockAtMost}'
         ContainerEnvEntry55: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchSqsRecoveryLockAtLeast}'
+        ContainerEnvEntry56: !Sub 'PN_NATIONALREGISTRIES_ADDRESSCOMPOSITIONMODE=${AddressCompositionMode}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName

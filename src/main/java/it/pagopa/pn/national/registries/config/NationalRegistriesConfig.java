@@ -18,6 +18,8 @@ public class NationalRegistriesConfig {
 
     private Dao dao;
 
+    private String addressCompositionMode;
+
     @Data
     public static class Dao {
         private String shedlockTableName;

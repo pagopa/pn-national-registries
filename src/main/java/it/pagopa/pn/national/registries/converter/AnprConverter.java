@@ -1,27 +1,36 @@
 package it.pagopa.pn.national.registries.converter;
 
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RispostaE002OK;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
+import it.pagopa.pn.national.registries.service.AnprAddressStrategy;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
+@AllArgsConstructor
 public class AnprConverter {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final int MAX_LEN = 44;
+    private final Map<String, AnprAddressStrategy> strategies;
+    private NationalRegistriesConfig configs;
+
+    @Autowired
+    public AnprConverter(List<AnprAddressStrategy> strategyList) {
+        strategies = strategyList.stream().collect(Collectors.toMap(AnprAddressStrategy::getStrategyName, strategy -> strategy));
+    }
 
     public GetAddressANPROKDto convertToGetAddressANPROK(RispostaE002OK rispostaE002OK, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
@@ -63,10 +72,11 @@ public class AnprConverter {
     }
 
     private void mapToResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo, ResidentialAddressDto innerDto) {
+        AnprAddressStrategy strategy = strategies.get(configs.getAddressCompositionMode());
         if(indirizzo.getNumeroCivico()!=null && indirizzo.getNumeroCivico().getCivicoInterno()!=null){
             innerDto.setAddressDetail(indirizzo.getNumeroCivico().getCivicoInterno().getScala());
         }
-        innerDto.setAddress(createAddressString(indirizzo));
+        innerDto.setAddress(strategy.createAddress(indirizzo));
         innerDto.setZip(indirizzo.getCap());
         innerDto.setMunicipalityDetails(indirizzo.getFrazione());
 
@@ -74,18 +84,6 @@ public class AnprConverter {
             innerDto.setMunicipality(indirizzo.getComune().getNomeComune());
             innerDto.setProvince(indirizzo.getComune().getSiglaProvinciaIstat());
         }
-    }
-
-    private void appendIfFits(StringBuilder sb, String value) {
-        String token = Optional.ofNullable(value).map(String::strip).orElse("");
-        if (token.isEmpty()) return;
-
-        //Serve per calcolare lo spazio necessario ad aggiungere il token, considerando anche lo spazio se sb non è vuoto
-        int extra = token.length() + (sb.isEmpty() ? 0 : 1);
-        if (sb.length() + extra > AnprConverter.MAX_LEN) return;
-
-        if (!sb.isEmpty()) sb.append(' ');
-        sb.append(token);
     }
 
     private void mapToForeignResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoLocalitaEstera1 localitaEstera, ResidentialAddressDto innerDto) {
@@ -111,52 +109,6 @@ public class AnprConverter {
             stringBuilder.append(toponimo.getNumeroCivico());
         }
         return stringBuilder.toString();
-    }
-
-    private String createAddressString(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo) {
-        if (indirizzo.getToponimo() == null || indirizzo.getNumeroCivico() == null) {
-            return "";
-        }
-
-        StringBuilder sb = new StringBuilder();
-
-        var toponimo = indirizzo.getToponimo();
-        var numeroCivico = indirizzo.getNumeroCivico();
-
-        appendIfFits(sb, Optional.ofNullable(toponimo.getSpecie()).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(toponimo.getDenominazioneToponimo()).orElse(""));
-
-        if (!Objects.isNull(numeroCivico.getMetrico()) && StringUtils.hasText(numeroCivico.getMetrico()) && Integer.parseInt(numeroCivico.getMetrico()) > 0) {
-            appendIfFits(sb, "KM " + numeroCivico.getMetrico());
-            return sb.toString();
-        }
-
-        if (!Objects.isNull(numeroCivico.getProgSNC()) && StringUtils.hasText(numeroCivico.getProgSNC()) && Integer.parseInt(numeroCivico.getProgSNC()) > 0) {
-            String houseNumber = constructHouseNumber(
-                    Optional.ofNullable(numeroCivico.getNumero()).orElse(""),
-                    Optional.ofNullable(numeroCivico.getLettera()).orElse("")
-            );
-            appendIfFits(sb, houseNumber);
-            appendIfFits(sb, "SNC");
-            return sb.toString();
-        }
-
-        String houseNumber = constructHouseNumber(
-                Optional.ofNullable(numeroCivico.getNumero()).orElse(""),
-                Optional.ofNullable(numeroCivico.getLettera()).orElse("")
-        );
-        appendIfFits(sb, houseNumber);
-        appendIfFits(sb, Optional.ofNullable(numeroCivico.getEsponente1()).orElse(""));
-
-        return sb.toString();
-    }
-
-    private String constructHouseNumber(String numeroCivico, String letteraNumeroCivico) {
-        if (StringUtils.hasText(numeroCivico) && StringUtils.hasText(letteraNumeroCivico)) {
-            return numeroCivico + "/" + letteraNumeroCivico;
-        }else {
-            return numeroCivico + letteraNumeroCivico;
-        }
     }
 
     private LocalDate parseStringToDate(String str) {
