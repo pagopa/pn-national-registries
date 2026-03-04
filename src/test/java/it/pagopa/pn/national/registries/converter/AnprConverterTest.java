@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.config.AddressModeEnum;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
@@ -29,14 +30,14 @@ class AnprConverterTest {
 
     @BeforeEach
     void setUp() {
-        Map<String, AnprAddressStrategy> strategies = Map.of(
-                "OLD", new OldAnprAddressStrategy(),
-                "FULL", new FullAnprAddressStrategy(),
-                "METRICO_COLORE", new OldAnprAddressStrategy()
+        Map<String, it.pagopa.pn.national.registries.service.AnprAddressStrategy> strategies = Map.of(
+                AddressModeEnum.OLD.name(), new OldAnprAddressStrategy(),
+                AddressModeEnum.FULL.name(), new FullAnprAddressStrategy(),
+                AddressModeEnum.ADDRESS_COMPLETE.name(), new OldAnprAddressStrategy()
         );
 
         configs = new NationalRegistriesConfig();
-        configs.setAddressCompositionMode("FULL");
+        configs.setAddressCompositionMode(AddressModeEnum.FULL.name());
 
         anprConverter = new AnprConverter(strategies, configs);
     }

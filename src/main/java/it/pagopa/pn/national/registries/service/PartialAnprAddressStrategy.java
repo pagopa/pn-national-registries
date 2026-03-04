@@ -32,7 +32,7 @@ public class PartialAnprAddressStrategy extends UtilsAnprAddressStrategy impleme
             return sb.toString();
         }
 
-        if (!Objects.isNull(numeroCivico.getProgSNC()) && StringUtils.hasText(numeroCivico.getProgSNC()) && NumberUtils.isDigits(numeroCivico.getMetrico()) && Integer.parseInt(numeroCivico.getProgSNC()) > 0) {
+        if (!Objects.isNull(numeroCivico.getProgSNC()) && StringUtils.hasText(numeroCivico.getProgSNC()) && NumberUtils.isDigits(numeroCivico.getProgSNC()) && Integer.parseInt(numeroCivico.getProgSNC()) > 0) {
             String houseNumber = constructHouseNumber(
                     Optional.ofNullable(numeroCivico.getNumero()).orElse(""),
                     Optional.ofNullable(numeroCivico.getLettera()).orElse("")
@@ -53,6 +53,6 @@ public class PartialAnprAddressStrategy extends UtilsAnprAddressStrategy impleme
 
     @Override
     public String getStrategyName() {
-        return AddressModeEnum.METRICO_COLORE.name();
+        return AddressModeEnum.ADDRESS_COMPLETE.name();
     }
 }

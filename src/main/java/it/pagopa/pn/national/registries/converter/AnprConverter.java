@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
 
+import it.pagopa.pn.national.registries.config.AddressModeEnum;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RispostaE002OK;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
@@ -72,7 +73,8 @@ public class AnprConverter {
     }
 
     private void mapToResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo, ResidentialAddressDto innerDto) {
-        AnprAddressStrategy strategy = strategies.get(configs.getAddressCompositionMode());
+        AnprAddressStrategy strategy = getAnprAddressStrategy();
+
         if(indirizzo.getNumeroCivico()!=null && indirizzo.getNumeroCivico().getCivicoInterno()!=null){
             innerDto.setAddressDetail(indirizzo.getNumeroCivico().getCivicoInterno().getScala());
         }
@@ -84,6 +86,21 @@ public class AnprConverter {
             innerDto.setMunicipality(indirizzo.getComune().getNomeComune());
             innerDto.setProvince(indirizzo.getComune().getSiglaProvinciaIstat());
         }
+    }
+
+    private AnprAddressStrategy getAnprAddressStrategy() {
+        AnprAddressStrategy strategy;
+        try {
+            strategy = strategies.get(configs.getAddressCompositionMode());
+            if (Objects.isNull(strategy)) {
+                log.error("Mode not recognised, defaulting to {}", AddressModeEnum.OLD.name());
+                strategy = strategies.get(AddressModeEnum.OLD.name());
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage());
+            strategy = strategies.get(AddressModeEnum.OLD.name());
+        }
+        return strategy;
     }
 
     private void mapToForeignResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoLocalitaEstera1 localitaEstera, ResidentialAddressDto innerDto) {

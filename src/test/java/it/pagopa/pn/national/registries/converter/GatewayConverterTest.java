@@ -36,14 +36,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -55,6 +47,13 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
+
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL;
 import static org.junit.jupiter.api.Assertions.*;
@@ -320,7 +319,7 @@ class GatewayConverterTest {
 
         ValidateTaxIdUtils validateTaxIdUtils = mock(ValidateTaxIdUtils.class);
 
-        AnprService anprService = new AnprService(new AnprConverter(Map.of(AddressModeEnum.OLD.name(), new OldAnprAddressStrategy(), AddressModeEnum.FULL.name(), new FullAnprAddressStrategy(), AddressModeEnum.METRICO_COLORE.name(), new OldAnprAddressStrategy()), mock(NationalRegistriesConfig.class)), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
+        AnprService anprService = new AnprService(new AnprConverter(Map.of(AddressModeEnum.OLD.name(), new OldAnprAddressStrategy(), AddressModeEnum.FULL.name(), new FullAnprAddressStrategy(), AddressModeEnum.ADDRESS_COMPLETE.name(), new OldAnprAddressStrategy()), mock(NationalRegistriesConfig.class)), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
 
         DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient2 = mock(DynamoDbEnhancedAsyncClient.class);
         when(dynamoDbEnhancedAsyncClient2.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(
