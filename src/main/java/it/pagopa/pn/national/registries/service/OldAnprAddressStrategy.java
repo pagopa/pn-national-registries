@@ -9,7 +9,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class OldAnprAddressStrategy implements AnprAddressStrategy {
+public class OldAnprAddressStrategy extends UtilsAnprAddressStrategy implements AnprAddressStrategy {
 
     @Override
     public String createAddress(TipoIndirizzo indirizzo) {
