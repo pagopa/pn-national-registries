@@ -7,18 +7,18 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
 import it.pagopa.pn.national.registries.model.anpr.AddressColorEnum;
+import it.pagopa.pn.national.registries.service.AnprAddressStrategy;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -26,8 +26,13 @@ import java.util.Optional;
 public class AnprConverter {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-    private static final int MAX_LEN = 44;
+    private final Map<String, AnprAddressStrategy> strategies;
     private NationalRegistriesConfig configs;
+
+    @Autowired
+    public AnprConverter(List<AnprAddressStrategy> strategyList) {
+        strategies = strategyList.stream().collect(Collectors.toMap(AnprAddressStrategy::getStrategyName, strategy -> strategy));
+    }
 
     public GetAddressANPROKDto convertToGetAddressANPROK(RispostaE002OK rispostaE002OK, String cf) {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
@@ -69,8 +74,9 @@ public class AnprConverter {
     }
 
     private void mapToResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo, ResidentialAddressDto innerDto) {
+        AnprAddressStrategy strategy = strategies.get(configs.getAddressCompositionMode());
         if(indirizzo.getNumeroCivico()!=null && indirizzo.getNumeroCivico().getCivicoInterno()!=null){
-            innerDto.setAddressDetail(createAddressDetail(indirizzo));
+            innerDto.setAddressDetail(strategy.createAddressDetail(indirizzo));
         }
         innerDto.setAddress(createAddressString(indirizzo));
         innerDto.setZip(indirizzo.getCap());
@@ -80,56 +86,6 @@ public class AnprConverter {
             innerDto.setMunicipality(indirizzo.getComune().getNomeComune());
             innerDto.setProvince(indirizzo.getComune().getSiglaProvinciaIstat());
         }
-    }
-
-    private String createAddressDetail(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo) {
-        StringBuilder sb = new StringBuilder();
-
-        if (Objects.isNull(indirizzo.getNumeroCivico()) || Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())) {
-            return "";
-        }
-        var civicoInterno = indirizzo.getNumeroCivico().getCivicoInterno();
-
-        if (AddressModeEnum.OLD.name().equals(configs.getAddressCompositionMode())) {
-            return Optional.ofNullable(civicoInterno.getScala()).orElse("");
-        } else if (AddressModeEnum.FULL.name().equals(configs.getAddressCompositionMode())) {
-            //colore
-            appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getColore())
-                    .map(AddressColorEnum::getCodeFromValue)
-                    .orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getCorte()).map(elem -> " Corte " + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScala()).map(elem -> " Scala " + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScalaEsterna()).map(elem -> " Scala est. " + elem).orElse(""));
-
-            if (!Objects.isNull(civicoInterno.getInterno1()) && !Objects.isNull(civicoInterno.getInterno2())) {
-                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " Primo interno " + elem).orElse(""));
-                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
-                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " Secondo interno " + elem).orElse(""));
-                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
-            } else if (!Objects.isNull(civicoInterno.getInterno1())) {
-                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " Interno " + elem).orElse(""));
-                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
-            } else if (!Objects.isNull(civicoInterno.getInterno2())) {
-                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " Interno." + elem).orElse(""));
-                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
-            }
-
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getIsolato()).map(elem -> " Isolato " + elem).orElse(""));
-            return sb.toString().strip();
-        }
-        return sb.toString();
-    }
-
-    private void appendIfFits(StringBuilder sb, String value) {
-        String token = Optional.ofNullable(value).map(String::strip).orElse("");
-        if (token.isEmpty()) return;
-
-        //Serve per calcolare lo spazio necessario ad aggiungere il token, considerando anche lo spazio se sb non è vuoto
-        int extra = token.length() + (sb.isEmpty() ? 0 : 1);
-        if (sb.length() + extra > AnprConverter.MAX_LEN) return;
-
-        if (!sb.isEmpty()) sb.append(' ');
-        sb.append(token);
     }
 
     private void mapToForeignResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoLocalitaEstera1 localitaEstera, ResidentialAddressDto innerDto) {
