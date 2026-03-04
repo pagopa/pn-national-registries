@@ -126,14 +126,26 @@ public class AnprConverter {
         appendIfFits(sb, Optional.ofNullable(toponimo.getSpecie()).orElse(""));
         appendIfFits(sb, Optional.ofNullable(toponimo.getDenominazioneToponimo()).orElse(""));
 
+        if (!Objects.isNull(numeroCivico.getMetrico()) && StringUtils.hasText(numeroCivico.getMetrico()) && Integer.parseInt(numeroCivico.getMetrico()) > 0) {
+            appendIfFits(sb, "KM " + numeroCivico.getMetrico());
+            return sb.toString();
+        }
+
+        if (!Objects.isNull(numeroCivico.getProgSNC()) && StringUtils.hasText(numeroCivico.getProgSNC()) && Integer.parseInt(numeroCivico.getProgSNC()) > 0) {
+            String houseNumber = constructHouseNumber(
+                    Optional.ofNullable(numeroCivico.getNumero()).orElse(""),
+                    Optional.ofNullable(numeroCivico.getLettera()).orElse("")
+            );
+            appendIfFits(sb, houseNumber);
+            appendIfFits(sb, "SNC");
+            return sb.toString();
+        }
+
         String houseNumber = constructHouseNumber(
                 Optional.ofNullable(numeroCivico.getNumero()).orElse(""),
                 Optional.ofNullable(numeroCivico.getLettera()).orElse("")
         );
         appendIfFits(sb, houseNumber);
-
-        appendIfFits(sb, Optional.ofNullable(numeroCivico.getMetrico()).map(elem -> "M " + elem).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(numeroCivico.getProgSNC()).orElse(""));
         appendIfFits(sb, Optional.ofNullable(numeroCivico.getEsponente1()).orElse(""));
 
         return sb.toString();
