@@ -97,18 +97,24 @@ public class AnprConverter {
             appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getColore())
                     .map(AddressColorEnum::getCodeFromValue)
                     .orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getCorte()).map(elem -> " c." + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScala()).map(elem -> " s." + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScalaEsterna()).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getIsolato()).map(elem -> " i." + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " int." + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " int." + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getSecondario()).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getPiano()).map(elem -> " p." + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getNui()).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getCorte()).map(elem -> " Corte " + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScala()).map(elem -> " Scala " + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScalaEsterna()).map(elem -> " Scala est. " + elem).orElse(""));
 
+            if (!Objects.isNull(civicoInterno.getInterno1()) && !Objects.isNull(civicoInterno.getInterno2())) {
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " Primo interno " + elem).orElse(""));
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " Secondo interno " + elem).orElse(""));
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
+            } else if (!Objects.isNull(civicoInterno.getInterno1())) {
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " Interno " + elem).orElse(""));
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
+            } else if (!Objects.isNull(civicoInterno.getInterno2())) {
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " Interno." + elem).orElse(""));
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
+            }
+
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getIsolato()).map(elem -> " Isolato " + elem).orElse(""));
             return sb.toString().strip();
         }
         return sb.toString();
