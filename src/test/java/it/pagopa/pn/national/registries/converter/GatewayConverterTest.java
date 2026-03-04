@@ -321,7 +321,7 @@ class GatewayConverterTest {
 
         ValidateTaxIdUtils validateTaxIdUtils = mock(ValidateTaxIdUtils.class);
 
-        AnprService anprService = new AnprService(new AnprConverter(Map.of(AddressModeEnum.OLD.name(), new OldAnprAddressStrategy(), AddressModeEnum.FULL.name(), new FullAnprAddressStrategy(), AddressModeEnum.METRICO_COLORE.name(), new OldAnprAddressStrategy()), mock(NationalRegistriesConfig.class)), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
+        AnprService anprService = new AnprService(new AnprConverter(Map.of(AddressModeEnum.OLD.name(), new OldAnprAddressStrategy(), AddressModeEnum.FULL.name(), new FullAnprAddressStrategy(), AddressModeEnum.ADDRESS_COMPLETE.name(), new OldAnprAddressStrategy()), mock(NationalRegistriesConfig.class)), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
 
         DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient2 = mock(DynamoDbEnhancedAsyncClient.class);
         when(dynamoDbEnhancedAsyncClient2.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(

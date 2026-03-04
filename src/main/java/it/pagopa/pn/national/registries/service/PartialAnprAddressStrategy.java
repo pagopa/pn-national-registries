@@ -30,6 +30,6 @@ public class PartialAnprAddressStrategy extends UtilsAnprAddressStrategy impleme
 
     @Override
     public String getStrategyName() {
-        return AddressModeEnum.METRICO_COLORE.name();
+        return AddressModeEnum.ADDRESS_COMPLETE.name();
     }
 }

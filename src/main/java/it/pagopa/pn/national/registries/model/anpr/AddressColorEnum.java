@@ -6,9 +6,9 @@ import java.util.Arrays;
 
 @Getter
 public enum AddressColorEnum {
-    ROSSO("1", "R"),
-    NERO("2", "N"),
-    BLU("3", "B"),
+    ROSSO("1", "ROSSO"),
+    NERO("2", "NERO"),
+    BLU("3", "BLU"),
     RESIDENZIALE("4", "Res."),
     NON_RESIDENZIALE("5", "Non res.");
 
