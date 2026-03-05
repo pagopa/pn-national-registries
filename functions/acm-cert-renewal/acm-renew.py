@@ -13,7 +13,7 @@ def get_cert_expiry(acm, cert_arn):
         response = acm.describe_certificate(CertificateArn=cert_arn)
         return response['Certificate']['NotAfter']
     except Exception as e:
-        logger.error(f"Error describing certificate {cert_arn}: {e}")
+        logger.error(f"ERROR: Error describing certificate: {str(e)}")
         return None
 
 def lambda_handler(event, context):
@@ -36,7 +36,7 @@ def lambda_handler(event, context):
 
     # --- MANUAL SWAP LOGIC ---
     if action == 'swap':
-        logger.info(f"Starting manual swap: promoting {next_aws_secret} to {current_aws_secret}")
+        logger.info("Starting manual swap: promoting NEXT secret to CURRENT")
         try:
             next_secret_val = secrets.get_secret_value(SecretId=next_aws_secret)
             secret_data = json.loads(next_secret_val['SecretString'])
@@ -49,7 +49,7 @@ def lambda_handler(event, context):
                 SecretId=current_aws_secret,
                 SecretString=json.dumps(secret_data)
             )
-            logger.info(f"Successfully promoted secret content to {current_aws_secret}")
+            logger.info("Successfully promoted secret content to CURRENT")
 
             # 2. Update the 'actual' SSM parameter
             if current_aws_param:
@@ -64,7 +64,7 @@ def lambda_handler(event, context):
                     Type='String',
                     Overwrite=True
                 )
-                logger.info(f"Successfully updated active SSM parameter: {current_aws_param}")
+                logger.info("Successfully updated active SSM parameter")
             
             return {
                 "status": "SWAP_SUCCESS",
@@ -72,7 +72,7 @@ def lambda_handler(event, context):
                 "promoted_to": current_aws_secret
             }
         except Exception as e:
-            logger.error(f"Error during swap: {e}")
+            logger.error(f"ERROR: Error during swap: {e}")
             return {"error": f"Swap failed: {str(e)}"}
 
     # --- RENEWAL / GENERATION LOGIC ---
@@ -95,7 +95,7 @@ def lambda_handler(event, context):
                 if expiry_date:
                     now = datetime.now(timezone.utc)
                     remaining_time = expiry_date - now
-                    logger.info(f"Current certificate {cert_arn} expires on {expiry_date}. Remaining: {remaining_time}")
+                    logger.info(f"Current certificate expires on {expiry_date}. Remaining: {remaining_time}")
                     
                     if remaining_time > timedelta(days=days_before_expiry):
                         logger.info(f"Current certificate is still valid for more than {days_before_expiry} days. Skipping.")
@@ -105,11 +105,11 @@ def lambda_handler(event, context):
                             "certificate_arn": cert_arn
                         }
                     else:
-                        logger.info("Current certificate expiring soon. Will generate renewal in -next slot.")
+                        logger.info("Current certificate expiring soon. Will generate renewal in NEXT slot.")
                         target_secret_id = next_aws_secret
                         target_parameter_name = next_aws_param
         except secrets.exceptions.ResourceNotFoundException:
-            logger.info(f"Target {current_aws_secret} not found. Proceeding with initial generation.")
+            logger.info("Target secret not found. Proceeding with initial generation.")
             target_secret_id = current_aws_secret
             target_parameter_name = current_aws_param
         except Exception as e:
@@ -117,7 +117,7 @@ def lambda_handler(event, context):
             target_secret_id = next_aws_secret
             target_parameter_name = next_aws_param
 
-    logger.info(f"Generating ACM certificate for {fqdn} and storing in {target_secret_id}")
+    logger.info(f"Generating ACM certificate for {fqdn}")
     
     # 1. Generate Private Key
     subprocess.run(["openssl", "genrsa", "-out", "/tmp/private.key", "2048"], check=True)
@@ -140,7 +140,7 @@ def lambda_handler(event, context):
         PrivateKey=private_key
     )
     cert_arn = response['CertificateArn']
-    logger.info(f"Imported certificate into ACM: {cert_arn}")
+    logger.info("Imported certificate into ACM")
     
     # 4. Store in Secrets Manager
     secret_content = {
@@ -176,7 +176,7 @@ def lambda_handler(event, context):
             Type='String',
             Overwrite=True
         )
-        logger.info(f"Updated SSM parameter: {target_parameter_name}")
+        logger.info("Updated SSM parameter")
     
     return {
         "status": "SUCCESS",
