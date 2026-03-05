@@ -864,7 +864,7 @@ Resources:
   AcmCertRenewalLambdaRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub ${ProjectName}-acm-cert-renewal-role
+      RoleName: !Sub ${ProjectName}-acm-cert-renewal-lambda-role
       AssumeRolePolicyDocument:
         Version: "2012-10-17"
         Statement:
