@@ -13,7 +13,7 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class PartialAnprAddressStrategy extends UtilsAnprAddressStrategy implements AnprAddressStrategy {
+public class MinimalAnprAddressStrategy extends UtilsAnprAddressStrategy implements AnprAddressStrategy {
 
     @Override
     public String createAddress(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo) {
@@ -64,7 +64,7 @@ public class PartialAnprAddressStrategy extends UtilsAnprAddressStrategy impleme
         appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getColore())
                 .map(AddressColorEnum::getCodeFromValue)
                 .orElse(""));
-        appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScala()).map(elem -> " Scala " + elem).orElse(""));
+        appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScala()).filter(StringUtils::hasText).map(elem -> " Scala " + elem).orElse(""));
         return sb.toString().strip();
     }
 

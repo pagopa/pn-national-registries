@@ -7,7 +7,6 @@ import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
-import it.pagopa.pn.national.registries.config.AddressModeEnum;
 import it.pagopa.pn.national.registries.config.CachedSecretsManagerConsumer;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
@@ -41,9 +40,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -56,13 +53,6 @@ import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
 import software.amazon.awssdk.services.sqs.SqsClient;
-
-import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
 
 import static it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL;
 import static org.junit.jupiter.api.Assertions.*;
@@ -328,7 +318,7 @@ class GatewayConverterTest {
 
         ValidateTaxIdUtils validateTaxIdUtils = mock(ValidateTaxIdUtils.class);
 
-        AnprService anprService = new AnprService(new AnprConverter(List.of(new OldAnprAddressStrategy(), new FullAnprAddressStrategy(), new PartialAnprAddressStrategy()), mock(NationalRegistriesConfig.class)), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
+        AnprService anprService = new AnprService(new AnprConverter(List.of(new OldAnprAddressStrategy(), new FullAnprAddressStrategy(), new MinimalAnprAddressStrategy()), mock(NationalRegistriesConfig.class)), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
 
         DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient2 = mock(DynamoDbEnhancedAsyncClient.class);
         when(dynamoDbEnhancedAsyncClient2.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(

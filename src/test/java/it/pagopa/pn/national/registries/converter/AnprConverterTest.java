@@ -8,7 +8,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.Resident
 import it.pagopa.pn.national.registries.service.AnprAddressStrategy;
 import it.pagopa.pn.national.registries.service.FullAnprAddressStrategy;
 import it.pagopa.pn.national.registries.service.OldAnprAddressStrategy;
-import it.pagopa.pn.national.registries.service.PartialAnprAddressStrategy;
+import it.pagopa.pn.national.registries.service.MinimalAnprAddressStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -16,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -32,7 +31,7 @@ class AnprConverterTest {
         List<AnprAddressStrategy> strategyList = List.of(
                 new OldAnprAddressStrategy(),
                 new FullAnprAddressStrategy(),
-                new PartialAnprAddressStrategy()
+                new MinimalAnprAddressStrategy()
         );
 
         configs = new NationalRegistriesConfig();
