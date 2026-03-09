@@ -5,8 +5,10 @@ import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ResidentialAddressDto;
+import it.pagopa.pn.national.registries.service.AnprAddressStrategy;
 import it.pagopa.pn.national.registries.service.FullAnprAddressStrategy;
 import it.pagopa.pn.national.registries.service.OldAnprAddressStrategy;
+import it.pagopa.pn.national.registries.service.PartialAnprAddressStrategy;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,16 +29,16 @@ class AnprConverterTest {
 
     @BeforeEach
     void setUp() {
-        Map<String, it.pagopa.pn.national.registries.service.AnprAddressStrategy> strategies = Map.of(
-                AddressModeEnum.OLD.name(), new OldAnprAddressStrategy(),
-                AddressModeEnum.FULL.name(), new FullAnprAddressStrategy(),
-                AddressModeEnum.MINIMAL.name(), new OldAnprAddressStrategy()
+        List<AnprAddressStrategy> strategyList = List.of(
+                new OldAnprAddressStrategy(),
+                new FullAnprAddressStrategy(),
+                new PartialAnprAddressStrategy()
         );
 
         configs = new NationalRegistriesConfig();
         configs.setAddressCompositionMode(AddressModeEnum.FULL.name());
 
-        anprConverter = new AnprConverter(strategies, configs);
+        anprConverter = new AnprConverter(strategyList, configs);
     }
 
     /**
