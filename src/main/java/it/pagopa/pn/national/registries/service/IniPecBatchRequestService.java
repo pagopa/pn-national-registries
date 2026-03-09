@@ -154,7 +154,8 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 ),
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH_SIZE,
-                        iniPecBatchRequest.getElencoCf().size()
+                        iniPecBatchRequest.getElencoCf().size(),
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
                 )
         );
 

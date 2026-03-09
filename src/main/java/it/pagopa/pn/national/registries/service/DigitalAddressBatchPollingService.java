@@ -275,7 +275,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         List<GeneralMetric> batchEndingMetrics = List.of(
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH,
-                        1
+                        1,
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
                 ),
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH_CLOSURE_DURATION,
