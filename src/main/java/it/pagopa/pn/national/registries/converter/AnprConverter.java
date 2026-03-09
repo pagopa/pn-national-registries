@@ -21,7 +21,6 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Component
-@AllArgsConstructor
 public class AnprConverter {
 
     private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
@@ -29,7 +28,8 @@ public class AnprConverter {
     private NationalRegistriesConfig configs;
 
     @Autowired
-    public AnprConverter(List<AnprAddressStrategy> strategyList) {
+    public AnprConverter(List<AnprAddressStrategy> strategyList, NationalRegistriesConfig configs) {
+        this.configs = configs;
         strategies = strategyList.stream().collect(Collectors.toMap(AnprAddressStrategy::getStrategyName, strategy -> strategy));
     }
 
