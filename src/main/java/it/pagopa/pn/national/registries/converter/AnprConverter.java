@@ -77,9 +77,7 @@ public class AnprConverter {
     private void mapToResidence(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo, ResidentialAddressDto innerDto) {
         AnprAddressStrategy strategy = getAnprAddressStrategy();
 
-        if(indirizzo.getNumeroCivico()!=null && indirizzo.getNumeroCivico().getCivicoInterno()!=null){
-            innerDto.setAddressDetail(strategy.createAddressDetail(indirizzo));
-        }
+        innerDto.setAddressDetail(strategy.createAddressDetail(indirizzo));
         innerDto.setAddress(strategy.createAddress(indirizzo));
         innerDto.setZip(indirizzo.getCap());
         innerDto.setMunicipalityDetails(indirizzo.getFrazione());
