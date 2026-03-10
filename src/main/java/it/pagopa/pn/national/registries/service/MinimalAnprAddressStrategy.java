@@ -57,14 +57,18 @@ public class MinimalAnprAddressStrategy extends UtilsAnprAddressStrategy impleme
     public String createAddressDetail(TipoIndirizzo indirizzo) {
         StringBuilder sb = new StringBuilder();
 
-        if (Objects.isNull(indirizzo.getNumeroCivico()) || Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())) {
+        if (Objects.isNull(indirizzo.getNumeroCivico())) {
             return "";
         }
 
-        appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getColore())
-                .map(AddressColorEnum::getCodeFromValue)
-                .orElse(""));
-        appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScala()).filter(StringUtils::hasText).map(elem -> " Scala " + elem).orElse(""));
+        if(!Objects.isNull(indirizzo.getNumeroCivico().getColore())) {
+            appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getColore())
+                    .map(AddressColorEnum::getCodeFromValue)
+                    .orElse(""));
+        }
+        if(!Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())) {
+            appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScala()).filter(StringUtils::hasText).map(elem -> " Scala " + elem).orElse(""));
+        }
         return sb.toString().strip();
     }
 

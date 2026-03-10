@@ -58,32 +58,39 @@ public class FullAnprAddressStrategy extends UtilsAnprAddressStrategy implements
     public String createAddressDetail(TipoIndirizzo indirizzo) {
         StringBuilder sb = new StringBuilder();
 
-        if (Objects.isNull(indirizzo.getNumeroCivico()) || Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())) {
+        if (Objects.isNull(indirizzo.getNumeroCivico())) {
             return "";
         }
-        var civicoInterno = indirizzo.getNumeroCivico().getCivicoInterno();
 
-        appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getColore())
-                .map(AddressColorEnum::getCodeFromValue)
-                .orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getCorte()).filter(StringUtils::hasText).map(elem -> " Corte " + elem).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getScala()).filter(StringUtils::hasText).map(elem -> " Scala " + elem).orElse(""));
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getScalaEsterna()).filter(StringUtils::hasText).map(elem -> " Scala est. " + elem).orElse(""));
-
-        if ((!Objects.isNull(civicoInterno.getInterno1()) && StringUtils.hasText(civicoInterno.getInterno1())) && (!Objects.isNull(civicoInterno.getInterno2()) && StringUtils.hasText(civicoInterno.getInterno2()))) {
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " Primo interno " + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " Secondo interno " + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
-        } else if (!Objects.isNull(civicoInterno.getInterno1()) && StringUtils.hasText(civicoInterno.getInterno1())) {
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " Interno " + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
-        } else if (!Objects.isNull(civicoInterno.getInterno2()) && StringUtils.hasText(civicoInterno.getInterno2())) {
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " Interno " + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
+        if(!Objects.isNull(indirizzo.getNumeroCivico().getColore())) {
+            appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getColore())
+                    .map(AddressColorEnum::getCodeFromValue)
+                    .orElse(""));
         }
 
-        appendIfFits(sb, Optional.ofNullable(civicoInterno.getIsolato()).filter(StringUtils::hasText).map(elem -> " Isolato " + elem).orElse(""));
+        if(!Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())) {
+            var civicoInterno = indirizzo.getNumeroCivico().getCivicoInterno();
+
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getCorte()).filter(StringUtils::hasText).map(elem -> " Corte " + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScala()).filter(StringUtils::hasText).map(elem -> " Scala " + elem).orElse(""));
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScalaEsterna()).filter(StringUtils::hasText).map(elem -> " Scala est. " + elem).orElse(""));
+
+            if ((!Objects.isNull(civicoInterno.getInterno1()) && StringUtils.hasText(civicoInterno.getInterno1())) && (!Objects.isNull(civicoInterno.getInterno2()) && StringUtils.hasText(civicoInterno.getInterno2()))) {
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " Primo interno " + elem).orElse(""));
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " Secondo interno " + elem).orElse(""));
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
+            } else if (!Objects.isNull(civicoInterno.getInterno1()) && StringUtils.hasText(civicoInterno.getInterno1())) {
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno1()).map(elem -> " Interno " + elem).orElse(""));
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno1()).orElse(""));
+            } else if (!Objects.isNull(civicoInterno.getInterno2()) && StringUtils.hasText(civicoInterno.getInterno2())) {
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getInterno2()).map(elem -> " Interno " + elem).orElse(""));
+                appendIfFits(sb, Optional.ofNullable(civicoInterno.getEspInterno2()).orElse(""));
+            }
+
+            appendIfFits(sb, Optional.ofNullable(civicoInterno.getIsolato()).filter(StringUtils::hasText).map(elem -> " Isolato " + elem).orElse(""));
+        }
+
         return sb.toString().strip();
     }
 
