@@ -14,10 +14,9 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
-import it.pagopa.pn.national.registries.model.BatchType;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
-import it.pagopa.pn.national.registries.model.ServiceResponseStatus;
+import it.pagopa.pn.national.registries.model.StatusDimension;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.metrics.DimensionName;
@@ -39,7 +38,6 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Signal;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
@@ -175,52 +173,9 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private Mono<Void> handlePolling(BatchPolling polling) {
         return callIniPecEService(polling.getBatchId(), polling.getPollingId())
-                .doOnNext(res -> logBatchPollingRequest(polling, null))
-                .doOnError(t -> logBatchPollingRequest(polling, t))
-                .doOnNext(res -> logBatchClosureDuration(polling))
                 .onErrorResume(t -> incrementAndCheckRetry(polling, t).then(Mono.error(t)))
                 .flatMap(response -> handleSuccessfulPolling(polling, response))
                 .onErrorResume(e -> Mono.empty());
-    }
-
-    private void logBatchPollingRequest(BatchPolling polling, Throwable throwable) {
-        String logMessage = "IniPEC - Polling EService - Logging metrics : " + MetricName.BATCH_POLLING_INVOCATION.getValue() + " for pollingId: " + polling.getPollingId();
-        ServiceResponseStatus status;
-        if (throwable != null) {
-            if (isPollingResponseNotReady(throwable)) {
-                status = ServiceResponseStatus.IN_PROGRESS;
-            } else {
-                status = ServiceResponseStatus.FAILURE;
-            }
-        } else {
-            status = ServiceResponseStatus.OK;
-        }
-
-        GeneralMetric invocationsMetric = MetricUtils.generateGeneralMetric(
-                MetricName.BATCH_POLLING_INVOCATION,
-                1,
-                List.of(
-                        MetricUtils.generateDimension(DimensionName.STATUS, status.name())
-                )
-        );
-
-        log.logMetric(List.of(invocationsMetric), logMessage);
-    }
-
-    private void logBatchClosureDuration(BatchPolling polling) {
-        long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
-        int batchClosureDurationSeconds = (int) (batchClosureDurationMillis / 1000);
-        List<GeneralMetric> batchClosureDuration = MetricUtils.generateGeneralMetrics(
-                MetricName.BATCH_CLOSURE_DURATION,
-                batchClosureDurationSeconds,
-                List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_POLLING.name())),
-                MetricUnit.SECONDS
-        );
-        String logMessage = "IniPEC - Logging metric : " + MetricName.BATCH_CLOSURE_DURATION.getValue() +
-                " for batchId: " + polling.getBatchId() +
-                " - pollingId: " + polling.getPollingId() +
-                " - duration in seconds: " + batchClosureDurationSeconds;
-        log.logMetric(batchClosureDuration, logMessage);
     }
 
     private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
@@ -283,13 +238,6 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     } else {
                         error = ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
                     }
-                    log.logMetric(
-                            MetricUtils.generateGeneralMetrics(
-                                    MetricName.BATCH_KO,
-                                    1,
-                                    List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_POLLING.name()))
-                            ),
-                            "IniPEC - Logging metric : " + MetricName.BATCH_KO.getValue() + " for batchId: " + polling.getBatchId() + " - pollingId: " + polling.getPollingId() + " - error: " + error);
                     return updateBatchRequest(p, BatchStatus.ERROR, getSqsKo(error));
                 });
     }
@@ -315,7 +263,30 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to set request in status {}", polling.getBatchId(), status, e))
                 .collectList()
                 .filter(l -> !l.isEmpty())
-                .flatMap(iniPecBatchSqsService::batchSendToSqs);
+                .flatMap(iniPecBatchSqsService::batchSendToSqs)
+                .doOnSuccess(unused -> this.logBatchEndingMetrics(polling, status));
+    }
+
+    private void logBatchEndingMetrics(BatchPolling polling, BatchStatus batchStatus) {
+        StatusDimension status = batchStatus == BatchStatus.ERROR ? StatusDimension.FAILURE : StatusDimension.OK;
+        long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
+        int batchClosureDurationSeconds = (int) (batchClosureDurationMillis / 1000);
+
+        List<GeneralMetric> batchEndingMetrics = List.of(
+                MetricUtils.generateGeneralMetric(
+                        MetricName.BATCH,
+                        1,
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
+                ),
+                MetricUtils.generateGeneralMetric(
+                        MetricName.BATCH_CLOSURE_DURATION,
+                        batchClosureDurationSeconds,
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name())),
+                        MetricUnit.SECONDS
+                )
+        );
+
+        log.logMetric(batchEndingMetrics, "IniPEC - Logging batch ending metrics for batchId: " + polling.getBatchId() + " with status: " + status);
     }
 
     private Mono<BatchRequest> oldWorkFlow(BatchStatus status, BatchRequest request, CodeSqsDto sqsDto) {

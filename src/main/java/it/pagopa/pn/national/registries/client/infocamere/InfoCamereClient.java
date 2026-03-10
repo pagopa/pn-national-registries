@@ -202,13 +202,13 @@ public class InfoCamereClient {
             if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                 log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                 String exceptionMessage = MaskTaxIdInPathUtils.maskTaxIdInPath(CommonBaseClient.elabExceptionMessage(e));
-                log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, exceptionMessage);
+                log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, exceptionMessage, throwable);
                 throw new PnNationalRegistriesException(maskedErrorMessage, e.getStatusCode().value(),
                         e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                         Charset.defaultCharset(), InfocamereResponseKO.class);
             } else {
                 log.debug("Unhandled exception during call to InfoCamere", throwable);
-                log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage);
+                log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage, throwable);
             }
         };
     }

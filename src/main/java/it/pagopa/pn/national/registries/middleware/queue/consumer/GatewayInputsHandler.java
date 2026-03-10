@@ -28,7 +28,7 @@ public class GatewayInputsHandler {
         var monoResult = gatewayService.handleMessage(message.getPayload())
                 .doOnNext(addressOKDto -> log.logEndingProcess(HANDLER_PROCESS))
                 .doOnError(e -> {
-                    log.logEndingProcess(HANDLER_PROCESS, false, e.getMessage());
+                    log.logEndingProcess(HANDLER_PROCESS, false, e.getMessage(), e);
                     HandleEventUtils.handleException(message.getHeaders(), e);
                 });
 

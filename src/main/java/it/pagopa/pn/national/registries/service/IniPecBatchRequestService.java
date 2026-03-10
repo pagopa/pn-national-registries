@@ -9,8 +9,7 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
-import it.pagopa.pn.national.registries.model.BatchType;
-import it.pagopa.pn.national.registries.model.ServiceResponseStatus;
+import it.pagopa.pn.national.registries.model.StatusDimension;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.metrics.DimensionName;
 import it.pagopa.pn.national.registries.model.metrics.MetricName;
@@ -26,17 +25,13 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import reactor.core.publisher.Signal;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 
@@ -149,25 +144,22 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     private static void logBatchRequestMetrics(String batchId, IniPecBatchRequest iniPecBatchRequest, boolean isError) {
-        String logMessage = "IniPEC - Logging metrics : " + MetricName.SENT_BATCH_SIZE.getValue() + " - " + MetricName.BATCH_REQUEST_INVOCATION.getValue() + " for batchId: " + batchId + " - called EService and batch size is: " + iniPecBatchRequest.getElencoCf().size();
-        ServiceResponseStatus status = isError ? ServiceResponseStatus.FAILURE : ServiceResponseStatus.OK;
-        GeneralMetric batchSizeMetric = MetricUtils.generateGeneralMetric(
-                MetricName.SENT_BATCH_SIZE,
-                iniPecBatchRequest.getElencoCf().size(),
-                List.of(
-                        MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_REQUEST.name())
+        StatusDimension status = isError ? StatusDimension.FAILURE : StatusDimension.OK;
+        String logMessage = "IniPEC - Logging batch request metrics for batchId: " + batchId + " - called EService and batch size is: " + iniPecBatchRequest.getElencoCf().size() + " with status: " + status;
+        List<GeneralMetric> requestMetrics = List.of(
+                MetricUtils.generateGeneralMetric(
+                        MetricName.BATCH_REQUEST_CREATION,
+                        1,
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
+                ),
+                MetricUtils.generateGeneralMetric(
+                        MetricName.BATCH_SIZE,
+                        iniPecBatchRequest.getElencoCf().size(),
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
                 )
         );
 
-        GeneralMetric invocationsMetric = MetricUtils.generateGeneralMetric(
-                MetricName.BATCH_REQUEST_INVOCATION,
-                1,
-                List.of(
-                        MetricUtils.generateDimension(DimensionName.STATUS, status.name())
-                )
-        );
-
-        log.logMetric(List.of(batchSizeMetric, invocationsMetric), logMessage);
+        log.logMetric(requestMetrics, logMessage);
     }
 
     private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
@@ -231,12 +223,6 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .filter(l -> !l.isEmpty())
                 .flatMap(l -> {
                     log.debug("IniPEC - there is at least one request in ERROR - call batch to send to SQS");
-                    log.logMetric(MetricUtils.generateGeneralMetrics(
-                            MetricName.BATCH_KO,
-                            l.size(),
-                            List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, BatchType.INIPEC_REQUEST.name()))
-                        ),
-                    "IniPEC - Logging metric : " + MetricName.BATCH_KO.getValue() + " for batchId: " + batchId + " - set ERROR status on " + l.size() + " requests");
                     return iniPecBatchSqsService.sendListToDlqQueue(l);
                 });
     }

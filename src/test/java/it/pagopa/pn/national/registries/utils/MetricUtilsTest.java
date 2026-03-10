@@ -15,57 +15,70 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MetricUtilsTest {
-    @Test
-    void generateDimensionReturnsCorrectDimension() {
-        Dimension dimension = MetricUtils.generateDimension(DimensionName.BATCH_TYPE, "value1");
-        assertEquals(DimensionName.BATCH_TYPE.getValue(), dimension.getName());
-        assertEquals("value1", dimension.getValue());
-    }
 
     @Test
-    void generateGeneralMetricSetsAllFieldsCorrectlyWithoutUnit() {
-        List<Dimension> dimensions = List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, "test"));
-        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.SENT_BATCH_SIZE, 42, dimensions);
+    void generateGeneralMetricWithOnlyMetricNameAndMetricValueSetsAllFieldsCorrectly() {
+        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.BATCH_SIZE, 42);
 
         assertEquals("national-registries-inipec", metric.getNamespace());
         assertEquals(1, metric.getMetrics().size());
-        assertEquals(MetricName.SENT_BATCH_SIZE.getValue(), metric.getMetrics().getFirst().getName());
+        assertEquals(MetricName.BATCH_SIZE.getValue(), metric.getMetrics().getFirst().getName());
         assertEquals(42, metric.getMetrics().getFirst().getValue());
-        assertEquals(dimensions, metric.getDimensions());
         assertNull(metric.getUnit());
     }
 
     @Test
     void generateGeneralMetricSetsUnitWhenProvided() {
-        List<Dimension> dimensions = List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, "test"));
-        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.SENT_BATCH_SIZE, 10, dimensions, MetricUnit.SECONDS);
+        GeneralMetric metric = MetricUtils.generateGeneralMetric(
+                MetricName.BATCH_CLOSURE_DURATION,
+                10,
+                List.of(MetricUtils.generateDimension(DimensionName.STATUS, "OK")),
+                MetricUnit.SECONDS
+        );
 
         assertEquals(MetricUnit.SECONDS.getValue(), metric.getUnit());
     }
 
     @Test
-    void generateGeneralMetricsReturnsListWithSingleGeneralMetric() {
-        List<Dimension> dimensions = List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, "test"));
-        List<GeneralMetric> metrics = MetricUtils.generateGeneralMetrics(MetricName.SENT_BATCH_SIZE, 5, dimensions);
+    void generateDimensionMapsNameAndValue() {
+        Dimension dimension = MetricUtils.generateDimension(DimensionName.STATUS, "OK");
 
-        assertEquals(1, metrics.size());
-        assertEquals(MetricName.SENT_BATCH_SIZE.getValue(), metrics.getFirst().getMetrics().getFirst().getName());
-        assertNull(metrics.getFirst().getUnit());
+        assertEquals(DimensionName.STATUS.getValue(), dimension.getName());
+        assertEquals("OK", dimension.getValue());
     }
 
     @Test
-    void generateGeneralMetricsWithUnitReturnsListWithUnitSet() {
-        List<Dimension> dimensions = List.of(MetricUtils.generateDimension(DimensionName.BATCH_TYPE, "test"));
-        List<GeneralMetric> metrics = MetricUtils.generateGeneralMetrics(MetricName.SENT_BATCH_SIZE, 5, dimensions, MetricUnit.SECONDS);
+    void generateGeneralMetricWithDimensionsSetsTimestampAndDimensions() {
+        Dimension dimension = MetricUtils.generateDimension(DimensionName.STATUS, "OK");
+        List<Dimension> dimensions = List.of(dimension);
+        long before = System.currentTimeMillis();
 
-        assertEquals(1, metrics.size());
-        assertEquals(MetricUnit.SECONDS.getValue(), metrics.getFirst().getUnit());
+        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.BATCH_SIZE, 3, dimensions);
+
+        long after = System.currentTimeMillis();
+        assertEquals("national-registries-inipec", metric.getNamespace());
+        assertEquals(dimensions, metric.getDimensions());
+        assertTrue(metric.getTimestamp() >= before && metric.getTimestamp() <= after);
     }
 
     @Test
-    void generateGeneralMetricWithEmptyDimensionsDoesNotFail() {
-        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.SENT_BATCH_SIZE, 1, List.of());
-        assertNotNull(metric);
-        assertTrue(metric.getDimensions().isEmpty());
+    void generateGeneralMetricWithNullDimensionsKeepsDimensionsNull() {
+        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.BATCH_SIZE, 3, null);
+
+        assertNull(metric.getDimensions());
+    }
+
+    @Test
+    void generateGeneralMetricWithUnitAndDimensionsSetsUnitAndMetrics() {
+        Dimension dimension = MetricUtils.generateDimension(DimensionName.STATUS, "OK");
+        List<Dimension> dimensions = List.of(dimension);
+
+        GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.BATCH_CLOSURE_DURATION, 10, dimensions, MetricUnit.SECONDS);
+
+        assertEquals(MetricUnit.SECONDS.getValue(), metric.getUnit());
+        assertNotNull(metric.getMetrics());
+        assertEquals(1, metric.getMetrics().size());
+        assertEquals(MetricName.BATCH_CLOSURE_DURATION.getValue(), metric.getMetrics().getFirst().getName());
+        assertEquals(10, metric.getMetrics().getFirst().getValue());
     }
 }
