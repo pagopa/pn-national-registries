@@ -30,6 +30,19 @@ public class MinimalAnprAddressStrategy extends UtilsAnprAddressStrategy impleme
         appendIfFits(sb, Optional.ofNullable(toponimo.getDenominazioneToponimo()).orElse(""));
 
         if (!Objects.isNull(numeroCivico.getMetrico()) && StringUtils.hasText(numeroCivico.getMetrico()) && NumberUtils.isDigits(numeroCivico.getMetrico()) && Integer.parseInt(numeroCivico.getMetrico()) > 0) {
+
+            if ((!Objects.isNull(numeroCivico.getNumero()) && StringUtils.hasText(numeroCivico.getNumero()))) {
+                String houseNumber = constructHouseNumber(
+                        Optional.ofNullable(numeroCivico.getNumero()).orElse(""),
+                        Optional.ofNullable(numeroCivico.getLettera()).orElse("")
+                );
+                appendIfFits(sb, houseNumber);
+                log.error("Metric with civic number is not supported, metric: {}, civic number: {}, letter: {}, progSNC: {}, esponente1: {}",
+                        indirizzo.getNumeroCivico().getMetrico(), indirizzo.getNumeroCivico().getNumero(),
+                        indirizzo.getNumeroCivico().getLettera(), indirizzo.getNumeroCivico().getProgSNC(),
+                        indirizzo.getNumeroCivico().getEsponente1());
+            }
+
             appendIfFits(sb, "KM " + numeroCivico.getMetrico());
             return sb.toString();
         }
