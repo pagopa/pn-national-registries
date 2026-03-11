@@ -1061,4 +1061,55 @@ class AnprConverterTest {
         assertTrue(response.getResidentialAddresses().getFirst().getAddress().contains("22/B"));
         assertFalse(response.getResidentialAddresses().getFirst().getAddress().contains("23441"));
     }
+
+    @Test
+    void testConvertMinimalConMetricoECivico() {
+        configs.setAddressCompositionMode("MINIMAL");
+        TipoCivicoInterno tipoCivicoInterno = new TipoCivicoInterno();
+        tipoCivicoInterno.setIsolato("8");
+        tipoCivicoInterno.setScala("9");
+
+        TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
+        tipoNumeroCivico.setNumero("22");
+        tipoNumeroCivico.setLettera("B");
+        tipoNumeroCivico.setMetrico("100");
+        tipoNumeroCivico.setCivicoInterno(tipoCivicoInterno);
+
+        TipoToponimo tipoToponimo = new TipoToponimo();
+        tipoToponimo.setSpecie("specie");
+        tipoToponimo.setDenominazioneToponimo("denominazione Toponimo");
+
+        TipoIndirizzo indirizzo = new TipoIndirizzo();
+        indirizzo.setNumeroCivico(tipoNumeroCivico);
+        indirizzo.setToponimo(tipoToponimo);
+
+        TipoResidenza tipoResidenza1 = new TipoResidenza();
+        tipoResidenza1.setTipoIndirizzo("t1");
+        tipoResidenza1.setDataDecorrenzaResidenza("2022-11-01");
+        tipoResidenza1.setIndirizzo(indirizzo);
+        // mi aspetto che venga selezionata la residence_2 che contiene la data di decorrenza più recente
+
+        TipoCodiceFiscale tipoCodiceFiscale1 = new TipoCodiceFiscale();
+        tipoCodiceFiscale1.setCodFiscale("COD_FISCALE_1");
+
+        TipoGeneralita tipoGeneralita1 = new TipoGeneralita();
+        tipoGeneralita1.setCodiceFiscale(tipoCodiceFiscale1);
+
+        TipoDatiSoggettiEnte tipoDatiSoggettiEnte1 = new TipoDatiSoggettiEnte();
+        tipoDatiSoggettiEnte1.setResidenza(List.of(tipoResidenza1));
+        tipoDatiSoggettiEnte1.setGeneralita(tipoGeneralita1);
+
+        TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
+        tipoListaSoggetti.setDatiSoggetto(List.of(tipoDatiSoggettiEnte1));
+
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+
+        GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertNotNull(response);
+        assertTrue(response.getResidentialAddresses().getFirst().getAddress().contains("KM 100"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddress().contains("22/B"));
+        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("Scala 9"));
+        assertFalse(response.getResidentialAddresses().getFirst().getAddressDetail().contains("Isolato 8"));
+    }
 }
