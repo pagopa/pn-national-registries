@@ -2,15 +2,16 @@ package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
-
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
-import software.amazon.awssdk.services.sqs.SqsClient;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
 import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse;
 import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
 import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
+
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -20,12 +21,13 @@ class SqsServiceTest {
 
     @Test
     void testPushToOutputQueue() {
-        SqsClient amazonSQS = mock(SqsClient.class);
-        GetQueueUrlResponse getQueueUrlResponse = GetQueueUrlResponse.builder().queueUrl("queueUrl").build();
+        SqsAsyncClient amazonSQS = mock(SqsAsyncClient.class);
+        CompletableFuture<GetQueueUrlResponse> getQueueUrlResponse = CompletableFuture.completedFuture(GetQueueUrlResponse.builder().queueUrl("queueUrl").build());
         SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
+        CompletableFuture<SendMessageResponse> sendMessageResponseCompletableFuture = CompletableFuture.completedFuture(sendMessageResponse);
 
-        when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
-        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponse);
+        when(amazonSQS.getQueueUrl(any(GetQueueUrlRequest.class))).thenReturn(getQueueUrlResponse);
+        when(amazonSQS.sendMessage(any(SendMessageRequest.class))).thenReturn(sendMessageResponseCompletableFuture);
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
 
@@ -39,12 +41,13 @@ class SqsServiceTest {
     }
     @Test
     void testPushToInputQueue() {
-        SqsClient amazonSQS = mock(SqsClient.class);
-        GetQueueUrlResponse getQueueUrlResponse = GetQueueUrlResponse.builder().queueUrl("queueUrl").build();
+        SqsAsyncClient amazonSQS = mock(SqsAsyncClient.class);
+        CompletableFuture<GetQueueUrlResponse> getQueueUrlResponse = CompletableFuture.completedFuture(GetQueueUrlResponse.builder().queueUrl("queueUrl").build());
         SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
+        CompletableFuture<SendMessageResponse> sendMessageResponseCompletableFuture = CompletableFuture.completedFuture(sendMessageResponse);
 
         when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
-        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponse);
+        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponseCompletableFuture);
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
 
@@ -59,12 +62,13 @@ class SqsServiceTest {
 
     @Test
     void testPushToInputDlqQueue() {
-        SqsClient amazonSQS = mock(SqsClient.class);
-        GetQueueUrlResponse getQueueUrlResponse = GetQueueUrlResponse.builder().queueUrl("queueUrl").build();
+        SqsAsyncClient amazonSQS = mock(SqsAsyncClient.class);
+        CompletableFuture<GetQueueUrlResponse> getQueueUrlResponse = CompletableFuture.completedFuture(GetQueueUrlResponse.builder().queueUrl("queueUrl").build());
         SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
+        CompletableFuture<SendMessageResponse> sendMessageResponseCompletableFuture = CompletableFuture.completedFuture(sendMessageResponse);
 
         when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
-        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponse);
+        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponseCompletableFuture);
 
         ObjectMapper objectMapper = mock(ObjectMapper.class);
 

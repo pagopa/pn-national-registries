@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.service;
 
-import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.converter.AnprConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -16,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.utils.StringUtils;
 
 import java.nio.charset.Charset;
 
@@ -44,7 +44,7 @@ public class AnprService {
         String cf = request.getFilter().getTaxId();
         validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_ANPR_ADDRESS, false);
 
-        if (StringUtils.isNullOrEmpty(request.getFilter().getReferenceRequestDate())) {
+        if (StringUtils.isEmpty(request.getFilter().getReferenceRequestDate())) {
             throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null,
                     Charset.defaultCharset(), AnprResponseKO.class);

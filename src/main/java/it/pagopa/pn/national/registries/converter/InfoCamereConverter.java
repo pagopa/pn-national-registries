@@ -1,7 +1,5 @@
 package it.pagopa.pn.national.registries.converter;
 
-import com.amazonaws.util.CollectionUtils;
-import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
@@ -14,6 +12,8 @@ import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.utils.CollectionUtils;
+import software.amazon.awssdk.utils.StringUtils;
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -37,7 +37,7 @@ public class InfoCamereConverter {
     }
 
     private void checkCorrelationIdAndSetInResponse(String correlationId, GetDigitalAddressIniPECOKDto response) {
-        if (!StringUtils.isNullOrEmpty(correlationId)) {
+        if (!StringUtils.isEmpty(correlationId)) {
             response.setCorrelationId(correlationId);
         }
     }
@@ -157,7 +157,7 @@ public class InfoCamereConverter {
 
     private List<DigitalAddress> convertToDigitalAddress(Pec pec) {
         List<DigitalAddress> digitalAddress = new ArrayList<>();
-        if (!StringUtils.isNullOrEmpty(pec.getPecImpresa())) {
+        if (!StringUtils.isEmpty(pec.getPecImpresa())) {
             digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
         }
         if (pec.getPecProfessionista() != null) {
