@@ -10,8 +10,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.services.sqs.SqsClient;
-import software.amazon.awssdk.services.sqs.model.*;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
+import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
+import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
+import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
+import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,7 +29,7 @@ public class SqsService {
     private static final String PUSHING_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}";
     private static final String INSERTING_MSG_WITHOUT_DATA = "Inserted data in SQS {}";
 
-    private final SqsClient sqsClient;
+    private final SqsAsyncClient sqsClient;
     private final ObjectMapper mapper;
     private final String outputQueueName;
     private final String inputQueueName;
@@ -35,7 +38,7 @@ public class SqsService {
     public SqsService(@Value("${pn.national.registries.sqs.output.queue.name}") String outputQueueName,
                       @Value("${pn.national.registries.sqs.input.queue.name}") String inputQueueName,
                       @Value("${pn.national.registries.sqs.input.dlq.queue.name}") String inputDlqQueueName,
-                      SqsClient sqsClient,
+                      SqsAsyncClient sqsClient,
                       ObjectMapper mapper) {
         this.sqsClient = sqsClient;
         this.mapper = mapper;
@@ -63,18 +66,15 @@ public class SqsService {
     }
 
     public Mono<SendMessageResponse> push(String msg, String pnNationalRegistriesCxId, String queueName, String eventType) {
-        GetQueueUrlRequest getQueueRequest = GetQueueUrlRequest.builder()
-                .queueName(queueName)
-                .build();
-        String queueUrl = sqsClient.getQueueUrl(getQueueRequest).queueUrl();
-
-        SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
-                .queueUrl(queueUrl)
-                .messageAttributes(buildMessageAttributeMap(pnNationalRegistriesCxId, eventType))
-                .messageBody(msg)
-                .build();
-
-        return Mono.just(sqsClient.sendMessage(sendMsgRequest));
+        return Mono.fromFuture(() -> sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()))
+                .flatMap(getQueueUrlResponse -> {
+                    SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
+                            .queueUrl(getQueueUrlResponse.queueUrl())
+                            .messageAttributes(buildMessageAttributeMap(pnNationalRegistriesCxId, eventType))
+                            .messageBody(msg)
+                            .build();
+                    return Mono.fromFuture(() -> sqsClient.sendMessage(sendMsgRequest));
+                });
     }
 
     private Map<String, MessageAttributeValue> buildMessageAttributeMap(String pnNationalRegistriesCxId, String eventType) {
