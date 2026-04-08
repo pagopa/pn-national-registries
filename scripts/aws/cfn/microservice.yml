@@ -488,7 +488,7 @@ Parameters:
 
   AddressCompositionMode:
     Type: String
-    Description: "Mode for address and addressDetail, it can be OLD, FULL or MINIMAL"
+    Description: "Mode for address and addressDetail, it can be OLD, FULL, OLD_MINIMAL, MINIMAL"
     Default: "OLD"
 
 Resources:

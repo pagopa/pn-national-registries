@@ -13,10 +13,10 @@ import java.util.Optional;
 
 @Service
 @Slf4j
-public class MinimalAnprAddressStrategy extends UtilsAnprAddressStrategy implements AnprAddressStrategy {
+public class OldMinimalAnprAddressStrategy extends UtilsAnprAddressStrategy implements AnprAddressStrategy {
 
     @Override
-    public String createAddress(TipoIndirizzo indirizzo) {
+    public String createAddress(it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo indirizzo) {
         if (indirizzo.getToponimo() == null || indirizzo.getNumeroCivico() == null) {
             return "";
         }
@@ -79,20 +79,14 @@ public class MinimalAnprAddressStrategy extends UtilsAnprAddressStrategy impleme
                     .map(AddressColorEnum::getCodeFromValue)
                     .orElse(""));
         }
-
         if(!Objects.isNull(indirizzo.getNumeroCivico().getCivicoInterno())) {
-            var civicoInterno = indirizzo.getNumeroCivico().getCivicoInterno();
-
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScala()).filter(StringUtils::hasText).map(elem -> " Scala " + elem).orElse(""));
-            appendIfFits(sb, Optional.ofNullable(civicoInterno.getScalaEsterna()).filter(StringUtils::hasText).map(elem -> " Scala est. " + elem).orElse(""));
-
+            appendIfFits(sb, Optional.ofNullable(indirizzo.getNumeroCivico().getCivicoInterno().getScala()).filter(StringUtils::hasText).map(elem -> " Scala " + elem).orElse(""));
         }
-
         return sb.toString().strip();
     }
 
     @Override
     public String getStrategyName() {
-        return AddressModeEnum.MINIMAL.name();
+        return AddressModeEnum.OLD_MINIMAL.name();
     }
 }
