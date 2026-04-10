@@ -74,16 +74,16 @@ public class GatewayService extends GatewayConverter {
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto request) {
         checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
         String correlationId = request.getFilter().getCorrelationId();
-        sqsService.pushToInputQueue(InternalCodeSqsDto.builder()
-                .taxId(request.getFilter().getTaxId())
-                .correlationId(request.getFilter().getCorrelationId())
-                .recipientType(recipientType)
-                .domicileType(request.getFilter().getDomicileType().getValue())
-                .referenceRequestDate(request.getFilter().getReferenceRequestDate())
-                .pnNationalRegistriesCxId(pnNationalRegistriesCxId)
-                .build(), pnNationalRegistriesCxId);
 
-        return Mono.just(mapToAddressesOKDto(correlationId));
+        return sqsService.pushToInputQueue(InternalCodeSqsDto.builder()
+                    .taxId(request.getFilter().getTaxId())
+                    .correlationId(request.getFilter().getCorrelationId())
+                    .recipientType(recipientType)
+                    .domicileType(request.getFilter().getDomicileType().getValue())
+                    .referenceRequestDate(request.getFilter().getReferenceRequestDate())
+                    .pnNationalRegistriesCxId(pnNationalRegistriesCxId)
+                    .build(), pnNationalRegistriesCxId)
+                .thenReturn(mapToAddressesOKDto(correlationId));
     }
 
     public Mono<AddressOKDto> handleMessage(PnAddressGatewayEvent.Payload payload) {
