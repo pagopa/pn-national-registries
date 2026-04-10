@@ -139,7 +139,7 @@ class GatewayServiceTest {
         when(anprService.getAddressANPR(any()))
                 .thenReturn(Mono.just(getAddressANPROKDto));
 
-        when(sqsService.pushToOutputQueue(any(), any()))
+        when(sqsService.pushToInputQueue(any(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
@@ -150,6 +150,8 @@ class GatewayServiceTest {
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PF", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+
+        verify(sqsService, times(1)).pushToInputQueue(any(), any());
     }
 
     @Test
