@@ -7,6 +7,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.*;
 import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -94,5 +95,18 @@ public class InfocamereClientConfig extends CommonBaseClient {
             log.warn("Exception {} caught by retry: {}", throwable.getClass().getName(), maskedErrorMessage);
         }
         return retryable;
+    }
+
+    // Override dei metodi per iniettare i valori specifici di timeout per le API di Infocamere
+    @Override
+    @Autowired
+    public void setConnectionTimeoutMillis(@Value("${pn.national.registries.infocamere.connection-timeout-millis}") int connectionTimeoutMillis) {
+        super.setConnectionTimeoutMillis(connectionTimeoutMillis);
+    }
+
+    @Override
+    @Autowired
+    public void setReadTimeoutMillis(@Value("${pn.national.registries.infocamere.read-timeout-millis}") int readTimeoutMillis) {
+        super.setReadTimeoutMillis(readTimeoutMillis);
     }
 }

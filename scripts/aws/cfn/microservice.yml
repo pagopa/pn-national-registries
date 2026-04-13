@@ -491,6 +491,16 @@ Parameters:
     Description: "Mode for address and addressDetail, it can be OLD, FULL, OLD_MINIMAL, MINIMAL"
     Default: "OLD"
 
+  InfoCamereConnectionTimeoutMillis:
+    Type: Number
+    Description: 'ConnectionTimeout in millis for InfoCamere api'
+    Default: 3000 # pn-commons default value
+
+  InfoCamereReadTimeoutMillis:
+    Type: Number
+    Description: 'ReadTimeout in millis for InfoCamere api'
+    Default: 8000 # pn-commons default value
+
 Resources:
 
   # PN-National-Registry microservice
@@ -575,6 +585,8 @@ Resources:
         ContainerEnvEntry54: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchSqsRecoveryLockAtMost}'
         ContainerEnvEntry55: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchSqsRecoveryLockAtLeast}'
         ContainerEnvEntry56: !Sub 'PN_NATIONALREGISTRIES_ADDRESSCOMPOSITIONMODE=${AddressCompositionMode}'
+        ContainerEnvEntry57: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CONNECTION_TIMEOUT_MILLIS=${InfoCamereConnectionTimeoutMillis}'
+        ContainerEnvEntry58: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_READ_TIMEOUT_MILLIS=${InfoCamereReadTimeoutMillis}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
