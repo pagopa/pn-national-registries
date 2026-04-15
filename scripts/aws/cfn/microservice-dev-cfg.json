@@ -58,6 +58,6 @@
     "pfNewWorkflowStop": "2099-07-14T23:59:59Z",
     "MetricFormatType": "",
     "AddressCompositionMode": "MINIMAL",
-    "InfoCamereReadTimeoutMillis": "15000"
+    "IniPecReadTimeoutMillis": "15000"
   }
 }
