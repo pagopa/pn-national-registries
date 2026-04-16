@@ -76,7 +76,7 @@ public class IniPecClientConfig extends CommonBaseClient {
         }
 
         // Se shouldRetryOnTimeout è false, consideriamo retryable solo i WebClientRequestException che non sono causati da read timeout
-        return throwable instanceof WebClientRequestException && (throwable.getCause() == null || !(throwable.getCause() instanceof io.netty.handler.timeout.ReadTimeoutException));
+        return throwable instanceof WebClientRequestException && !(throwable.getCause() instanceof io.netty.handler.timeout.ReadTimeoutException);
     }
 
     // Override dei metodi per iniettare i valori specifici di timeout per le API di PEC di Infocamere

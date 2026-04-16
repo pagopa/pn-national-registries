@@ -32,7 +32,7 @@ public class CustomRetryConfig {
     }
 
     public ExchangeFilterFunction buildRetryExchangeFilterFunction() {
-        return buildRetryExchangeFilterFunction(this.defaultRetryCondition, this.retryMaxAttempts);
+        return buildRetryExchangeFilterFunction(defaultRetryCondition, this.retryMaxAttempts);
     }
 
     public ExchangeFilterFunction buildRetryExchangeFilterFunction(Predicate<Throwable> retryCondition) {
@@ -69,7 +69,7 @@ public class CustomRetryConfig {
                                 }));
     }
 
-    public Predicate<Throwable> defaultRetryCondition =
+    public static final Predicate<Throwable> defaultRetryCondition =
             throwable ->  throwable instanceof TimeoutException ||
                 throwable instanceof SocketException ||
                 throwable instanceof SocketTimeoutException ||

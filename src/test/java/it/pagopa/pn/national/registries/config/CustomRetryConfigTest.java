@@ -29,7 +29,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.times;
 
 @ExtendWith(MockitoExtension.class)
 class CustomRetryConfigTest {
@@ -68,14 +67,14 @@ class CustomRetryConfigTest {
 
     @Test
     void buildRetryExchangeFilterFunction_withCustomCondition() {
-        Predicate<Throwable> customCondition = throwable -> throwable instanceof IOException;
+        Predicate<Throwable> customCondition = IOException.class::isInstance;
         ExchangeFilterFunction filterFunction = customRetryConfig.buildRetryExchangeFilterFunction(customCondition);
         assertThat(filterFunction).isNotNull();
     }
 
     @Test
     void buildRetryExchangeFilterFunction_withCustomConditionAndMaxAttempts() {
-        Predicate<Throwable> customCondition = throwable -> throwable instanceof IOException;
+        Predicate<Throwable> customCondition = IOException.class::isInstance;
         ExchangeFilterFunction filterFunction = customRetryConfig.buildRetryExchangeFilterFunction(customCondition, 5);
         assertThat(filterFunction).isNotNull();
     }
@@ -112,7 +111,7 @@ class CustomRetryConfigTest {
     @ParameterizedTest(name = "Should retry on {1}")
     @MethodSource("retryableExceptionsProvider")
     void testRetryCondition_ShouldRetryOnRetryableExceptions(Throwable exception, String exceptionName) {
-        Predicate<Throwable> condition = customRetryConfig.defaultRetryCondition;
+        Predicate<Throwable> condition = CustomRetryConfig.defaultRetryCondition;
         assertTrue(condition.test(exception), "Expected to retry on " + exceptionName);
     }
 
@@ -135,7 +134,7 @@ class CustomRetryConfigTest {
     @ParameterizedTest(name = "Should not retry on {1}")
     @MethodSource("nonRetryableExceptionsProvider")
     void testRetryCondition_ShouldNotRetryOnNonRetryableExceptions(Throwable exception, String exceptionName) {
-        Predicate<Throwable> condition = customRetryConfig.defaultRetryCondition;
+        Predicate<Throwable> condition = CustomRetryConfig.defaultRetryCondition;
         assertFalse(condition.test(exception), "Expected not to retry on " + exceptionName);
     }
 }
