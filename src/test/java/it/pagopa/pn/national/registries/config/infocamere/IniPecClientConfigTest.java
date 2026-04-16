@@ -30,7 +30,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
-class PecClientConfigTest {
+class IniPecClientConfigTest {
     private static final String BASE_PATH = "basePath";
     private static final int MAX_RETRY_ATTEMPTS = 3;
     @Mock
@@ -50,14 +50,14 @@ class PecClientConfigTest {
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
     }
 
-    private PecClientConfig buildPecClientConfig(boolean shouldRetryOnTimeout) {
-        return new PecClientConfig(customRetryConfig, webClientBuilder, MAX_RETRY_ATTEMPTS, shouldRetryOnTimeout);
+    private IniPecClientConfig buildPecClientConfig(boolean shouldRetryOnTimeout) {
+        return new IniPecClientConfig(customRetryConfig, webClientBuilder, MAX_RETRY_ATTEMPTS, shouldRetryOnTimeout);
     }
 
     @Test
     void testPecApi() {
-        PecClientConfig pecClientConfig = buildPecClientConfig(true);
-        PecApi pecApi = pecClientConfig.pecApi(BASE_PATH);
+        IniPecClientConfig iniPecClientConfig = buildPecClientConfig(true);
+        PecApi pecApi = iniPecClientConfig.pecApi(BASE_PATH);
         assertEquals(BASE_PATH, pecApi.getApiClient().getBasePath());
     }
 
@@ -96,20 +96,20 @@ class PecClientConfigTest {
     @ParameterizedTest(name = "Should retry on {1}")
     @MethodSource("retryableExceptionsProvider")
     void testRetryCondition_ShouldRetryOnRetryableExceptions(Throwable exception, String exceptionName) {
-        PecClientConfig pecClientConfig = buildPecClientConfig(true);
-        assertTrue(pecClientConfig.retryCondition(exception), "Expected to retry on " + exceptionName);
+        IniPecClientConfig iniPecClientConfig = buildPecClientConfig(true);
+        assertTrue(iniPecClientConfig.retryCondition(exception), "Expected to retry on " + exceptionName);
     }
 
     @ParameterizedTest(name = "Should not retry on {1}")
     @MethodSource("nonRetryableExceptionsProvider")
     void testRetryCondition_ShouldNotRetryOnNonRetryableExceptions(Throwable exception, String exceptionName) {
-        PecClientConfig pecClientConfig = buildPecClientConfig(true);
-        assertFalse(pecClientConfig.retryCondition(exception), "Expected not to retry on " + exceptionName);
+        IniPecClientConfig iniPecClientConfig = buildPecClientConfig(true);
+        assertFalse(iniPecClientConfig.retryCondition(exception), "Expected not to retry on " + exceptionName);
     }
 
     @Test
     void testRetryCondition_ShouldNotRetryOnTimeoutWhenShouldRetryOnTimeoutIsFalse() {
-        PecClientConfig config = buildPecClientConfig(false);
+        IniPecClientConfig config = buildPecClientConfig(false);
 
         HttpHeaders headers = new HttpHeaders();
         WebClientRequestException ex = new WebClientRequestException(
@@ -120,7 +120,7 @@ class PecClientConfigTest {
 
     @Test
     void testRetryCondition_ShouldRetryOnWebClientRequestExceptionWhenShouldRetryOnTimeoutIsTrue() {
-        PecClientConfig config = buildPecClientConfig(true);
+        IniPecClientConfig config = buildPecClientConfig(true);
 
         HttpHeaders headers = new HttpHeaders();
         WebClientRequestException ex = new WebClientRequestException(

@@ -69,7 +69,7 @@ public class CustomRetryConfig {
                                 }));
     }
 
-    private Predicate<Throwable> defaultRetryCondition =
+    public Predicate<Throwable> defaultRetryCondition =
             throwable ->  throwable instanceof TimeoutException ||
                 throwable instanceof SocketException ||
                 throwable instanceof SocketTimeoutException ||

@@ -22,13 +22,13 @@ import java.net.UnknownHostException;
 
 @Configuration
 @Slf4j
-public class PecClientConfig extends CommonBaseClient {
+public class IniPecClientConfig extends CommonBaseClient {
     private final CustomRetryConfig customRetryConfig;
     private final WebClient pecWebClient;
     private final int maxRetryAttempts;
     private final boolean shouldRetryOnTimeout;
 
-    public PecClientConfig(
+    public IniPecClientConfig(
             CustomRetryConfig customRetryConfig,
             WebClient.Builder builder,
             @Value("${pn.national.registries.infocamere.pec.retry.max-attempts}") int maxRetryAttempts,
