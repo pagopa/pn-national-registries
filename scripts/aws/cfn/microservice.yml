@@ -667,6 +667,7 @@ Resources:
         WAFName: !Sub '${ProjectName}-national-registries-pnpg'
         IntendedUsage: PNPG
         APIGatewayARNs: !GetAtt NationalRegistryApiGateway.Outputs.APIGatewayARN
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
 
   CertificateRenewalManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
