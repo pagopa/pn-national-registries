@@ -491,6 +491,26 @@ Parameters:
     Description: "Mode for address and addressDetail, it can be OLD, FULL, OLD_MINIMAL, MINIMAL"
     Default: "OLD"
 
+  IniPecConnectionTimeoutMillis:
+    Type: Number
+    Description: 'ConnectionTimeout in millis for InfoCamere PEC api'
+    Default: 3000 # pn-commons default value
+
+  IniPecReadTimeoutMillis:
+    Type: Number
+    Description: 'ReadTimeout in millis for InfoCamere PEC api'
+    Default: 8000 # pn-commons default value
+    
+  IniPecMaxRetryAttempts:
+    Type: Number
+    Description: 'Max retry attempts for InfoCamere PEC api'
+    Default: 3 # pn-commons default value
+    
+  IniPecRetryOnTimeout:
+    Type: String
+    Description: 'Whether retry on timeout errors for InfoCamere PEC api'
+    Default: false
+
 Resources:
 
   # PN-National-Registry microservice
@@ -575,6 +595,10 @@ Resources:
         ContainerEnvEntry54: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchSqsRecoveryLockAtMost}'
         ContainerEnvEntry55: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchSqsRecoveryLockAtLeast}'
         ContainerEnvEntry56: !Sub 'PN_NATIONALREGISTRIES_ADDRESSCOMPOSITIONMODE=${AddressCompositionMode}'
+        ContainerEnvEntry57: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_CONNECTION_TIMEOUT_MILLIS=${IniPecConnectionTimeoutMillis}'
+        ContainerEnvEntry58: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_READ_TIMEOUT_MILLIS=${IniPecReadTimeoutMillis}'
+        ContainerEnvEntry59: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_RETRY_ATTEMPTS=${IniPecMaxRetryAttempts}'
+        ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName

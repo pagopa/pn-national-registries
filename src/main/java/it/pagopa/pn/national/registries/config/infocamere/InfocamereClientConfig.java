@@ -4,8 +4,10 @@ import io.netty.handler.timeout.TimeoutException;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.ApiClient;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.*;
-import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.AuthenticationApi;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.LegalRepresentationApi;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.LegalRepresentativeApi;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.SedeApi;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -19,7 +21,6 @@ import javax.net.ssl.SSLHandshakeException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
-import java.util.Optional;
 
 @Configuration
 @Slf4j
@@ -49,13 +50,6 @@ public class InfocamereClientConfig extends CommonBaseClient {
     }
 
     @Bean
-    PecApi pecApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(infocamereWebClient);
-        apiClient.setBasePath(basePath);
-        return new PecApi(apiClient);
-    }
-
-    @Bean
     SedeApi sedeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
         var apiClient = new ApiClient(infocamereWebClient);
         apiClient.setBasePath(basePath);
@@ -74,8 +68,8 @@ public class InfocamereClientConfig extends CommonBaseClient {
         return customRetryConfig.buildRetryExchangeFilterFunction(this::retryCondition);
     }
 
-    private boolean retryCondition(Throwable throwable) {
-        boolean retryable = throwable instanceof TimeoutException ||
+    public boolean retryCondition(Throwable throwable) {
+        return throwable instanceof TimeoutException ||
                 throwable instanceof SocketException ||
                 throwable instanceof SocketTimeoutException ||
                 throwable instanceof SSLHandshakeException ||
@@ -87,12 +81,5 @@ public class InfocamereClientConfig extends CommonBaseClient {
                 throwable instanceof WebClientResponseException.InternalServerError ||
                 throwable instanceof WebClientResponseException.ServiceUnavailable
                 ;
-        if(retryable) {
-            String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
-                    .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
-                    .orElse("Unknown error");
-            log.warn("Exception {} caught by retry: {}", throwable.getClass().getName(), maskedErrorMessage);
-        }
-        return retryable;
     }
 }
