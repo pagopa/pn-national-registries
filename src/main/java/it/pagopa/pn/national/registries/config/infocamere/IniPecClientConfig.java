@@ -31,8 +31,8 @@ public class IniPecClientConfig extends CommonBaseClient {
     public IniPecClientConfig(
             CustomRetryConfig customRetryConfig,
             WebClient.Builder builder,
-            @Value("${pn.national.registries.infocamere.pec.retry.max-attempts}") int maxRetryAttempts,
-            @Value("${pn.national.registries.infocamere.pec.retry.on-timeout}") boolean shouldRetryOnTimeout
+            @Value("${pn.national.registries.inipec.retry.max-attempts}") int maxRetryAttempts,
+            @Value("${pn.national.registries.inipec.retry.on-timeout}") boolean shouldRetryOnTimeout
 
     ) {
         this.maxRetryAttempts = maxRetryAttempts;
@@ -82,13 +82,13 @@ public class IniPecClientConfig extends CommonBaseClient {
     // Override dei metodi per iniettare i valori specifici di timeout per le API di PEC di Infocamere
     @Override
     @Autowired
-    public void setConnectionTimeoutMillis(@Value("${pn.national.registries.infocamere.pec.connection-timeout-millis}") int connectionTimeoutMillis) {
+    public void setConnectionTimeoutMillis(@Value("${pn.national.registries.inipec.connection-timeout-millis}") int connectionTimeoutMillis) {
         super.setConnectionTimeoutMillis(connectionTimeoutMillis);
     }
 
     @Override
     @Autowired
-    public void setReadTimeoutMillis(@Value("${pn.national.registries.infocamere.pec.read-timeout-millis}") int readTimeoutMillis) {
+    public void setReadTimeoutMillis(@Value("${pn.national.registries.inipec.read-timeout-millis}") int readTimeoutMillis) {
         super.setReadTimeoutMillis(readTimeoutMillis);
     }
 }

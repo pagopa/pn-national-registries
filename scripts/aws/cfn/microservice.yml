@@ -508,8 +508,8 @@ Parameters:
     
   IniPecRetryOnTimeout:
     Type: String
-    Description: 'Whether retry on timeout for InfoCamere PEC api'
-    Default: false # pn-commons default value
+    Description: 'Whether retry on timeout errors for InfoCamere PEC api'
+    Default: false
 
 Resources:
 
