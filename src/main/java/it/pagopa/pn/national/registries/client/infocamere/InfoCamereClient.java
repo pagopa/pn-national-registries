@@ -73,7 +73,7 @@ public class InfoCamereClient {
     public Mono<IniPecBatchResponse> callEServiceRequestId(IniPecBatchRequest request) {
         String requestJson = convertToJson(request);
         return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value())
-                .flatMap(token -> callRichiestaElencoPec(requestJson, token.getTokenValue()))
+                .flatMap(token -> callRichiestaElencoPec(requestJson, token.getBearerToken()))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
@@ -97,7 +97,7 @@ public class InfoCamereClient {
 
     public Mono<IniPecPollingResponse> callEServiceRequestPec(String correlationId) {
         return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value())
-                .flatMap(token -> callGetElencoPec(correlationId, token.getTokenValue()))
+                .flatMap(token -> callGetElencoPec(correlationId, token.getBearerToken()))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
@@ -121,7 +121,7 @@ public class InfoCamereClient {
 
     public Mono<AddressRegistroImprese> getLegalAddress(String taxId) {
         return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.SEDE.value())
-                .flatMap(token -> callGetLegalAddress(taxId, token.getTokenValue()))
+                .flatMap(token -> callGetLegalAddress(taxId, token.getBearerToken()))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED))
@@ -145,7 +145,7 @@ public class InfoCamereClient {
 
     public Mono<InfoCamereLegalInstituionsResponse> getLegalInstitutions(CheckTaxIdRequestBodyFilterDto filter) {
         return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value())
-                .flatMap(token -> callGetLegalInstitutions(filter.getTaxId(), token.getTokenValue()))
+                .flatMap(token -> callGetLegalInstitutions(filter.getTaxId(), token.getBearerToken()))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
@@ -169,7 +169,7 @@ public class InfoCamereClient {
 
     public Mono<InfoCamereVerification> checkTaxIdAndVatNumberInfoCamere(InfoCamereLegalRequestBodyFilterDto filterDto) {
         return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value())
-                .flatMap(token -> callCheckTaxId(filterDto, token.getTokenValue()))
+                .flatMap(token -> callCheckTaxId(filterDto, token.getBearerToken()))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))

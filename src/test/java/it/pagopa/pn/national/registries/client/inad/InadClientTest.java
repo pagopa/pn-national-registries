@@ -8,7 +8,6 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
@@ -57,10 +56,9 @@ class InadClientTest {
         response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
 
         when(apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(anyString(), anyString())).thenReturn(Mono.just(response));
 
@@ -80,7 +78,7 @@ class InadClientTest {
         String test = "test";
         WebClientResponseException webClientResponseException = new WebClientResponseException(test, HttpStatus.NOT_FOUND.value(), test, headers, testByteArray, Charset.defaultCharset());
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.error(webClientResponseException));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), any(), anyBoolean())).thenReturn(Mono.error(webClientResponseException));
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
         when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
@@ -97,8 +95,7 @@ class InadClientTest {
         response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
@@ -106,7 +103,7 @@ class InadClientTest {
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.BAD_REQUEST.value(), "statusText", HttpHeaders.EMPTY, null, null);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
         when(apiEstrazioniPuntualiApi.getApiClient()).thenReturn(mock(ApiClient.class));
         when(apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(any(),any())).thenReturn(Mono.error(webClientResponseException));
@@ -124,8 +121,7 @@ class InadClientTest {
         response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
@@ -133,7 +129,7 @@ class InadClientTest {
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(value);
         when(apiEstrazioniPuntualiApi.getApiClient()).thenReturn(mock(ApiClient.class));
         when(apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(any(),any())).thenThrow(webClientResponseException);

@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
+import java.util.Objects;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_ANPR_ADDRESS;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
@@ -68,23 +69,24 @@ public class AnprClient {
         String auditAudience = createDigestFromAuditJws(agidTrackingEvidence);
         PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPdndSecretName());
         pdndSecretValue.setAuditDigest(auditAudience);
-        return accessTokenExpiringMap.getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, true)
-                .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry, agidTrackingEvidence))
+        return accessTokenExpiringMap.getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, agidTrackingEvidence, true)
+                .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_ANPR_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
                 );
     }
 
-    private Mono<RispostaE002OK> callAnpr(RichiestaE002 request, AccessTokenCacheEntry tokenEntry, String agidTrackingEvidence) {
+    private Mono<RispostaE002OK> callAnpr(RichiestaE002 request, AccessTokenCacheEntry tokenEntry) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.ANPR, PROCESS_SERVICE_ANPR_ADDRESS);
         String s = convertToJson(request);
         String digest = createDigestFromPayload(s);
         log.debug("digest: {}", digest);
-        var bearerToken = "Bearer " + tokenEntry.getTokenValue();
+        var bearerToken = "Bearer " + tokenEntry.getBearerToken();
         var agidJWTSignature = agidJwtSignature.createAgidJwt(digest);
-        var bearerAuth = tokenEntry.getTokenValue();
-        return e002ServiceApi.e002(request, bearerToken, agidJWTSignature, agidTrackingEvidence, bearerAuth, digest)
+        var bearerAuth = tokenEntry.getBearerToken();
+        var auditToken = tokenEntry.getAuditToken();
+        return e002ServiceApi.e002(request, bearerToken, agidJWTSignature, auditToken, bearerAuth, digest)
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, throwable.getMessage(), throwable);
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {

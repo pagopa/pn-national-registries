@@ -11,7 +11,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.R
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RispostaE002OK;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoCriteriRicercaE002;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoListaSoggetti;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
@@ -93,15 +92,14 @@ class AnprClientTest {
         rispostaE002OKDto.setListaSoggetti(new TipoListaSoggetti());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
 
         when(e002ServiceApi.getApiClient()).thenReturn(apiClient);
@@ -135,15 +133,14 @@ class AnprClientTest {
         richiestaE002.setCriteriRicerca(dto);
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(e002ServiceApi.getApiClient()).thenReturn(apiClient);
@@ -178,15 +175,14 @@ class AnprClientTest {
         richiestaE002.setCriteriRicerca(dto);
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
         WebClient.RequestHeadersSpec requestHeadersSpec = mock(WebClient.RequestHeadersSpec.class);
         WebClient.ResponseSpec responseSpec = mock(WebClient.ResponseSpec.class);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(e002ServiceApi.getApiClient()).thenReturn(apiClient);
@@ -220,8 +216,7 @@ class AnprClientTest {
         richiestaE002.setCriteriRicerca(dto);
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         WebClient.RequestBodyUriSpec requestBodyUriSpec = mock(WebClient.RequestBodyUriSpec.class);
         WebClient.RequestBodySpec requestBodySpec = mock(WebClient.RequestBodySpec.class);
@@ -231,7 +226,7 @@ class AnprClientTest {
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.BAD_REQUEST.value(), "statusText", HttpHeaders.EMPTY, null, null);
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(agidJwtTrackingEvidence.createAgidJwt()).thenReturn("testJws");
         when(webClient.post()).thenReturn(requestBodyUriSpec);
         when(e002ServiceApi.getApiClient()).thenReturn(apiClient);

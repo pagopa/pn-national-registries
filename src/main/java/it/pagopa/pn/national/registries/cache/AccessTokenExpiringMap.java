@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.TokenProvider;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpiringMap;
+import org.jetbrains.annotations.Nullable;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -37,20 +38,20 @@ public class AccessTokenExpiringMap {
         this.infoCamereDeadline = infoCamereDeadline;
     }
 
-    public Mono<AccessTokenCacheEntry> getPDNDToken(String purposeId, PdndSecretValue pdndSecretValue, boolean isAnpr) {
+    public Mono<AccessTokenCacheEntry> getPDNDToken(String purposeId, PdndSecretValue pdndSecretValue, @Nullable String auditToken, boolean isAnpr) {
         if (isAnpr || expiringMap.isEmpty() || !expiringMap.containsKey(purposeId)) {
-            return requireNewPDNDAccessToken(purposeId, pdndSecretValue);
+            return requireNewPDNDAccessToken(purposeId, pdndSecretValue, auditToken);
         }
         try {
             long expiration = expiringMap.getExpectedExpiration(purposeId);
             if (expiration <= pdndDeadline) {
-                return requireNewPDNDAccessToken(purposeId, pdndSecretValue);
+                return requireNewPDNDAccessToken(purposeId, pdndSecretValue, auditToken);
             } else {
                 log.info("Existing Access Token Required with purposeId: {}", purposeId);
                 return Mono.just(expiringMap.get(purposeId));
             }
         } catch (NoSuchElementException e) {
-            return requireNewPDNDAccessToken(purposeId, pdndSecretValue);
+            return requireNewPDNDAccessToken(purposeId, pdndSecretValue, auditToken);
         }
     }
 
@@ -71,12 +72,13 @@ public class AccessTokenExpiringMap {
         }
     }
 
-    private Mono<AccessTokenCacheEntry> requireNewPDNDAccessToken(String purposeId, PdndSecretValue pdndSecretValue) {
+    private Mono<AccessTokenCacheEntry> requireNewPDNDAccessToken(String purposeId, PdndSecretValue pdndSecretValue, @Nullable String auditToken) {
         log.info("New PDND Access Token Required with purposeId: {}", purposeId);
         return tokenProvider.getTokenPdnd(pdndSecretValue)
                 .map(dto -> {
                     AccessTokenCacheEntry entry = new AccessTokenCacheEntry(purposeId);
                     entry.setClientCredentials(dto);
+                    entry.setAuditToken(auditToken);
                     expiringMap.put(purposeId, entry);
                     expiringMap.setExpiration(purposeId, dto.getExpiresIn(), TimeUnit.SECONDS);
                     log.debug("New PDND Access Token with purposeId {} expires in {}s", purposeId, dto.getExpiresIn());
