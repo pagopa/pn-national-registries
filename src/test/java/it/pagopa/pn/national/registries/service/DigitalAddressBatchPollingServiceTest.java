@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
@@ -55,7 +56,8 @@ class DigitalAddressBatchPollingServiceTest {
     private InfoCamereConverter infoCamereConverter;
     @MockitoBean
     private IniPecBatchSqsService iniPecBatchSqsService;
-
+    @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
     @MockitoBean
     private FeatureEnabledUtils featureEnabledUtils;
 

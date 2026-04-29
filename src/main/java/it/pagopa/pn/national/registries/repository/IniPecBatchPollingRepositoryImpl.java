@@ -1,14 +1,17 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.*;
-import software.amazon.awssdk.enhanced.dynamodb.model.*;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.LocalDateTime;
@@ -24,20 +27,12 @@ import static it.pagopa.pn.national.registries.constant.BatchPollingConstant.*;
 public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepository {
 
     private final DynamoDbAsyncTable<BatchPolling> table;
-
-    private final int maxRetry;
-    private final int retryAfter;
-
-    private final int inProgressMaxRetry;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     public IniPecBatchPollingRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
-                                            @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
-                                            @Value("${pn.national-registries.inipec.batch.polling.recovery.after}") int retryAfter,
-                                            @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry) {
-        this.table = dynamoDbEnhancedAsyncClient.table("pn-batchPolling", TableSchema.fromClass(BatchPolling.class));
-        this.maxRetry = maxRetry;
-        this.retryAfter = retryAfter;
-        this.inProgressMaxRetry = inProgressMaxRetry;
+                                            NationalRegistriesConfig nationalRegistriesConfig) {
+        this.table = dynamoDbEnhancedAsyncClient.table(nationalRegistriesConfig.getDao().getBatchPollingTableName(), TableSchema.fromClass(BatchPolling.class));
+        this.nationalRegistriesConfig = nationalRegistriesConfig;
     }
 
     @Override
@@ -125,10 +120,10 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
         expressionNames.put("#lastReserved", COL_LAST_RESERVED);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(maxRetry)).build());
-        expressionValues.put(":retryInProgress", AttributeValue.builder().n(Integer.toString(inProgressMaxRetry)).build());
+        expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(nationalRegistriesConfig.getInfoCamere().getInipec().getBatchPollingMaxRetry())).build());
+        expressionValues.put(":retryInProgress", AttributeValue.builder().n(Integer.toString(nationalRegistriesConfig.getInfoCamere().getInipec().getBatchPollingInProgressMaxRetry())).build());
         expressionValues.put(":lastReserved", AttributeValue.builder()
-                .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(retryAfter).toString())
+                .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(nationalRegistriesConfig.getInfoCamere().getInipec().getBatchPollingRecoveryAfter()).toString())
                 .build());
 
         String expression = "#retry < :retry AND #retryInProgress < :retryInProgress AND (:lastReserved > #lastReserved OR attribute_not_exists(#lastReserved))";

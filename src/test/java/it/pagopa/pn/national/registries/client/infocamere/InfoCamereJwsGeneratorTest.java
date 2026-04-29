@@ -1,10 +1,14 @@
 package it.pagopa.pn.national.registries.client.infocamere;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
 import it.pagopa.pn.national.registries.model.SSLData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -20,22 +24,25 @@ import java.util.Optional;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {InfoCamereJwsGenerator.class, String.class})
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class InfoCamereJwsGeneratorTest {
 
-    @Autowired
+    @InjectMocks
     private InfoCamereJwsGenerator authRest;
 
-    @MockitoBean
+    @Mock
     private KmsClient kmsClient;
 
-    @MockitoBean
+    @Mock
     private SsmParameterConsumerActivation ssmParameterConsumerActivation;
+
+    @Mock
+    private NationalRegistriesConfig nationalRegistriesConfig;
 
     @Test
     void testCreateAuthRest() {
-        InfoCamereJwsGenerator authRest = new InfoCamereJwsGenerator(kmsClient, ssmParameterConsumerActivation, "aud", "clientID", "infoCamereAuthRestSecret");
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         String scope = "test_scope";
         SSLData sslData = new SSLData();
         sslData.setCert("TestCert");

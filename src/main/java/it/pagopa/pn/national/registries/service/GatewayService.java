@@ -4,23 +4,24 @@ import it.pagopa.pn.commons.log.PnAuditLogBuilder;
 import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.GatewayError;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
-import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayAddressResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -40,6 +41,7 @@ import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 
 @Service
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class GatewayService extends GatewayConverter {
 
     private final AnprService anprService;
@@ -48,28 +50,13 @@ public class GatewayService extends GatewayConverter {
     private final IpaService ipaService;
     private final SqsService sqsService;
     private final FeatureEnabledUtils featureEnabledUtils;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    private final boolean pnNationalRegistriesCxIdFlag;
     private static final String CORRELATION_ID = "correlationId";
     private static final String AUDIT_LOG_START_CALL_MESSAGE = "Start searching physical address in the registry: {} for the request with correlationId: {} and recIndex: {}";
     private static final String AUDIT_LOG_END_SUCCESS_MESSAGE = "The registry {} has responded successfully for the request with correlationId: {} and recIndex: {}";
     private static final String AUDIT_LOG_END_FAILURE_MESSAGE = "The registry {} has responded with an error for the request with correlationId: {} and recIndex: {}";
 
-
-    public GatewayService(AnprService anprService,
-                          InadService inadService,
-                          InfoCamereService infoCamereService,
-                          IpaService ipaService, SqsService sqsService,
-                          FeatureEnabledUtils featureEnabledUtils,
-                          @Value("${pn.national.registries.val.cx.id.enabled}") boolean pnNationalRegistriesCxIdFlag) {
-        this.anprService = anprService;
-        this.inadService = inadService;
-        this.infoCamereService = infoCamereService;
-        this.ipaService = ipaService;
-        this.sqsService = sqsService;
-        this.pnNationalRegistriesCxIdFlag = pnNationalRegistriesCxIdFlag;
-        this.featureEnabledUtils = featureEnabledUtils;
-    }
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto request) {
         checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
@@ -233,7 +220,7 @@ public class GatewayService extends GatewayConverter {
 
     private void checkFlagPnNationalRegistriesCxId(String pnNationalRegistriesCxId) {
         log.logChecking(PROCESS_CHECKING_CX_ID_FLAG);
-        if (pnNationalRegistriesCxIdFlag && pnNationalRegistriesCxId == null) {
+        if (nationalRegistriesConfig.isValCxIdEnabled() && pnNationalRegistriesCxId == null) {
             log.logCheckingOutcome(PROCESS_CHECKING_CX_ID_FLAG, false, "pnNationalRegistriesCxId required");
             throw new PnNationalRegistriesException("pnNationalRegistriesCxId required", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);

@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.LegalRepresentationApi;
@@ -18,10 +19,13 @@ import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -37,41 +41,41 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class InfoCamereClientTest {
 
     @Mock
     LegalRepresentationApi legalRepresentationApi;
+
     @Mock
     LegalRepresentativeApi legalRepresentativeApi;
+
     @Mock
     PecApi pecApi;
+
     @Mock
     SedeApi sedeApi;
 
     @Mock
     AccessTokenExpiringMap accessTokenExpiringMap;
+
     @Mock
     ObjectMapper mapper;
 
-    final String clientId = "tezt_clientId";
+    @InjectMocks
+    private InfoCamereClient infoCamereClient;
+
+    @Mock
+    NationalRegistriesConfig nationalRegistriesConfig;
+
+    ApiClient apiClient;
 
     @BeforeEach
-    public void setup() {
-        ApiClient apiClient = mock(ApiClient.class);
-        legalRepresentationApi = mock(LegalRepresentationApi.class);
-        legalRepresentativeApi = mock(LegalRepresentativeApi.class);
-        pecApi = mock(PecApi.class);
-        sedeApi = mock(SedeApi.class);
-
-        doNothing().when(apiClient).setBearerToken(anyString());
-        when(apiClient.addDefaultHeader(anyString(), anyString())).thenReturn(apiClient);
-
-        when(legalRepresentationApi.getApiClient()).thenReturn(apiClient);
-        when(legalRepresentativeApi.getApiClient()).thenReturn(apiClient);
-        when(pecApi.getApiClient()).thenReturn(apiClient);
-        when(sedeApi.getApiClient()).thenReturn(apiClient);
+    void setUp() {
+        apiClient = new ApiClient();
+        apiClient.setBasePath("basePath");
     }
+
 
     public WebClientResponseException buildException() {
         HttpHeaders headers = mock(HttpHeaders.class);
@@ -89,8 +93,8 @@ class InfoCamereClientTest {
 
     @Test
     void testGetLegalInstitutions() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
-
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
         checkTaxIdRequestBodyFilterDto.setTaxId("taxId");
 
@@ -100,7 +104,7 @@ class InfoCamereClientTest {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
-
+        when(legalRepresentativeApi.getApiClient()).thenReturn(apiClient);
         when(legalRepresentativeApi.getLegalRepresentativeListByTaxIdWithHttpInfo(any(), any(), any()))
                 .thenReturn(Mono.just(ResponseEntity.ok(infoCamereLegalInstituionsResponse)));
 
@@ -113,15 +117,8 @@ class InfoCamereClientTest {
 
     @Test
     void testCallEServiceRequestId() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(
-                clientId,
-                accessTokenExpiringMap,
-                mapper,
-                legalRepresentationApi,
-                legalRepresentativeApi,
-                pecApi,
-                sedeApi);
-
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
         iniPecCf.setCf("taxId");
         IniPecBatchRequest request = new IniPecBatchRequest();
@@ -141,7 +138,7 @@ class InfoCamereClientTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
-
+        when(pecApi.getApiClient()).thenReturn(apiClient);
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(pecApi.callRichiestaElencoPecWithHttpInfo(any(), any(), any())).thenReturn(Mono.just(ResponseEntity.ok(iniPecBatchResponse)));
 
@@ -150,8 +147,8 @@ class InfoCamereClientTest {
 
     @Test
     void testCallEServiceRequestIdWebException() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
-
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
 
@@ -168,7 +165,7 @@ class InfoCamereClientTest {
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }
-
+        when(pecApi.getApiClient()).thenReturn(apiClient);
         WebClientResponseException ex = buildException();
         when(pecApi.callRichiestaElencoPecWithHttpInfo(any(), any(), any()))
                 .thenReturn(Mono.error(ex));
@@ -180,8 +177,8 @@ class InfoCamereClientTest {
 
     @Test
     void testCallEServiceRequestPec() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
-
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
 
@@ -189,21 +186,21 @@ class InfoCamereClientTest {
         String request = "correlationId";
         IniPecPollingResponse response = new IniPecPollingResponse();
         response.setIdentificativoRichiesta("correlationId");
-
+        when(pecApi.getApiClient()).thenReturn(apiClient);
         when(pecApi.callGetElencoPecWithHttpInfo(any(), any(), any())).thenReturn(Mono.just(ResponseEntity.ok(response)));
         StepVerifier.create(infoCamereClient.callEServiceRequestPec(request)).expectNext(response).verifyComplete();
     }
 
     @Test
     void testCallEServiceRequestPecWebException() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
-
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
         String request = "correlationId";
-
+        when(pecApi.getApiClient()).thenReturn(apiClient);
         WebClientResponseException ex = buildException();
         when(pecApi.callGetElencoPecWithHttpInfo(any(), any(), any())).thenReturn(Mono.error(ex));
 
@@ -214,8 +211,8 @@ class InfoCamereClientTest {
 
     @Test
     void testGetLegalAddress() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
-
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         String request = "taxId";
         AddressRegistroImprese response = new AddressRegistroImprese();
         response.setIndirizzoLocalizzazione(new LegalAddress());
@@ -224,7 +221,7 @@ class InfoCamereClientTest {
         String jws = "jws";
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials(jws);
-
+        when(sedeApi.getApiClient()).thenReturn(apiClient);
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(sedeApi.getAddressByTaxIdWithHttpInfo(anyString(), any(), any())).thenReturn(Mono.just(ResponseEntity.ok(response)));
 
@@ -235,13 +232,13 @@ class InfoCamereClientTest {
 
     @Test
     void testGetLegalAddressWebException() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
-
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         String request = "taxId";
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
-
+        when(sedeApi.getApiClient()).thenReturn(apiClient);
         WebClientResponseException ex = buildException();
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(sedeApi.getAddressByTaxIdWithHttpInfo(anyString(), any(), any())).thenReturn(Mono.error(ex));
@@ -252,8 +249,6 @@ class InfoCamereClientTest {
     }
     @Test
     void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
-
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
         assertTrue(infoCamereClient.shouldRetry(webClientResponseException));
@@ -261,14 +256,13 @@ class InfoCamereClientTest {
 
     @Test
     void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
-
         assertFalse(infoCamereClient.shouldRetry(new Exception()));
     }
 
     @Test
     void testCheckTaxIdAndVatNumberInfoCamere() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
 
         InfoCamereLegalRequestBodyFilterDto filterDto = new InfoCamereLegalRequestBodyFilterDto();
         filterDto.setVatNumber("vatNumber");
@@ -279,7 +273,7 @@ class InfoCamereClientTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
-
+        when(legalRepresentationApi.getApiClient()).thenReturn(apiClient);
         when(accessTokenExpiringMap.getInfoCamereToken(any()))
                 .thenReturn(Mono.just(accessTokenCacheEntry));
         when(legalRepresentationApi.checkTaxIdForLegalRepresentationWithHttpInfo(anyString(), anyString(), any(), any()))
@@ -292,7 +286,8 @@ class InfoCamereClientTest {
 
     @Test
     void testCheckTaxIdAndVatNumberInfoCamereWebClient() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
 
         InfoCamereLegalRequestBodyFilterDto filterDto = new InfoCamereLegalRequestBodyFilterDto();
         filterDto.setTaxId("taxId");
@@ -300,7 +295,7 @@ class InfoCamereClientTest {
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("scope");
         accessTokenCacheEntry.setClientCredentials("jws");
-
+        when(legalRepresentationApi.getApiClient()).thenReturn(apiClient);
         WebClientResponseException ex = buildException();
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(legalRepresentationApi.checkTaxIdForLegalRepresentationWithHttpInfo(anyString(), anyString(), any(), any()))
@@ -313,9 +308,10 @@ class InfoCamereClientTest {
 
     @Test
     void testCallEServiceRequestIdExceptionOnRetry() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         WebClientResponseException ex = buildExceptionUnauthorized();
-
+        when(pecApi.getApiClient()).thenReturn(apiClient);
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
         when(pecApi.callRichiestaElencoPecWithHttpInfo(any(), any(), any())).thenReturn(Mono.error(ex));
 
@@ -326,9 +322,10 @@ class InfoCamereClientTest {
 
     @Test
     void testCallEServiceRequestPecExceptionOnRetry() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         WebClientResponseException ex = buildExceptionUnauthorized();
-
+        when(pecApi.getApiClient()).thenReturn(apiClient);
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
         when(pecApi.callGetElencoPecWithHttpInfo(any(), any(), any())).thenReturn(Mono.error(ex));
 
@@ -339,9 +336,10 @@ class InfoCamereClientTest {
 
     @Test
     void testGetLegalAddressExceptionOnRetry() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         WebClientResponseException ex = buildExceptionUnauthorized();
-
+        when(sedeApi.getApiClient()).thenReturn(apiClient);
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
         when(sedeApi.getAddressByTaxIdWithHttpInfo(any(), any(), any())).thenReturn(Mono.error(ex));
 
@@ -352,11 +350,12 @@ class InfoCamereClientTest {
 
     @Test
     void testGetLegalInstitutionsExceptionOnRetry() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         WebClientResponseException ex = buildExceptionUnauthorized();
         CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
         checkTaxIdRequestBodyFilterDto.setTaxId("taxId");
-
+        when(legalRepresentativeApi.getApiClient()).thenReturn(apiClient);
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
         when(legalRepresentativeApi.getLegalRepresentativeListByTaxIdWithHttpInfo(any(), any(), any())).thenReturn(Mono.error(ex));
 
@@ -367,12 +366,13 @@ class InfoCamereClientTest {
 
     @Test
     void testCheckTaxIdAndVatNumberInfoCamereExceptionOnRetry() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         WebClientResponseException ex = buildExceptionUnauthorized();
         InfoCamereLegalRequestBodyFilterDto filterDto = new InfoCamereLegalRequestBodyFilterDto();
         filterDto.setVatNumber("vatNumber");
         filterDto.setTaxId("taxId");
-
+        when(legalRepresentationApi.getApiClient()).thenReturn(apiClient);
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));
         when(legalRepresentationApi.checkTaxIdForLegalRepresentationWithHttpInfo(any(), any(), any(), any())).thenReturn(Mono.error(ex));
 
@@ -383,7 +383,6 @@ class InfoCamereClientTest {
 
     @Test
     void convertToJsonException() {
-        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
         IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
         iniPecCf.setCf("taxId");
         IniPecBatchRequest request = new IniPecBatchRequest();

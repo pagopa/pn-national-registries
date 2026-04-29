@@ -1,10 +1,14 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.core.async.SdkPublisher;
@@ -32,17 +36,31 @@ class IniPecBatchPollingRepositoryImplTest {
     private DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
     @Mock
     private DynamoDbAsyncTable<Object> dynamoDbAsyncTable;
+    @Mock
+    private NationalRegistriesConfig nationalRegistriesConfig;
 
-    private static final int RETRY = 3;
+    private IniPecBatchPollingRepositoryImpl batchPollingRepository;
+    private NationalRegistriesConfig.InfoCamere infoCamere;
 
-    private static final int RETRY_IN_PROGRESS = 24;
-    private static final int AFTER = 60;
+
+    @BeforeEach
+    void setUp() {
+        NationalRegistriesConfig.Dao daoConfig = new NationalRegistriesConfig.Dao();
+        daoConfig.setBatchPollingTableName("testTable");
+        infoCamere = new NationalRegistriesConfig.InfoCamere();
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchPollingMaxRetry(3);
+        inipec.setBatchPollingInProgressMaxRetry(10);
+        inipec.setBatchPollingRecoveryAfter(3600);
+        infoCamere.setInipec(inipec);
+        when(nationalRegistriesConfig.getDao()).thenReturn(daoConfig);
+        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
+                .thenReturn(dynamoDbAsyncTable);
+        batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, nationalRegistriesConfig);
+    }
 
     @Test
     void testUpdate() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
 
@@ -56,9 +74,6 @@ class IniPecBatchPollingRepositoryImplTest {
 
     @Test
     void testCreate() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
         CompletableFuture<Void> completableFuture = new CompletableFuture<>();
@@ -73,9 +88,6 @@ class IniPecBatchPollingRepositoryImplTest {
 
     @Test
     void testGetBatchPollingWithoutReservationIdAndStatusNotWorked() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository iniPecBatchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         Map<String, AttributeValue> lastKey = new HashMap<>();
         lastKey.put("chiave", AttributeValue.builder().s("valore").build());
@@ -87,15 +99,12 @@ class IniPecBatchPollingRepositoryImplTest {
         when(index.query((QueryEnhancedRequest) any()))
                 .thenReturn(sdkPublisher);
 
-        StepVerifier.create(iniPecBatchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(lastKey, 1))
+        StepVerifier.create(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(lastKey, 1))
                 .expectNextCount(0);
     }
 
     @Test
     void testSetNewReservationIdToBatchPolling() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
 
@@ -109,9 +118,6 @@ class IniPecBatchPollingRepositoryImplTest {
 
     @Test
     void testResetBatchRequestForRecovery1() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setLastReserved(LocalDateTime.now());
@@ -126,9 +132,6 @@ class IniPecBatchPollingRepositoryImplTest {
 
     @Test
     void testResetBatchRequestForRecovery2() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
 
         BatchPolling batchPolling = new BatchPolling();
 
@@ -142,9 +145,7 @@ class IniPecBatchPollingRepositoryImplTest {
 
     @Test
     void testGetBatchPollingToRecover() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchPollingRepository batchPollingRepository = new IniPecBatchPollingRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, RETRY_IN_PROGRESS);
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamere);
 
         BatchPolling batchPolling = new BatchPolling();
 

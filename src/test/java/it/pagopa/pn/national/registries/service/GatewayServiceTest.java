@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.GatewayError;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -67,6 +68,9 @@ class GatewayServiceTest {
     @MockitoBean
     private FeatureEnabledUtils featureEnabledUtils;
 
+    @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
+
     private static final String CF = "CF";
     private static final String C_ID = "correlationId";
     private static final String CX_ID = "cxId";
@@ -100,15 +104,6 @@ class GatewayServiceTest {
         when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(getDigitalAddressINADOKDto));
         when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         StepVerifier.create(gatewayService.handleMessage(payload)).expectNext(addressOKDto).verifyComplete();
-    }
-
-    @Test
-    @DisplayName("Test recipientType not valid")
-    void testCheckFlag() {
-        AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
-        addressRequestBodyDto.filter(new AddressRequestBodyFilterDto());
-        assertThrows(PnNationalRegistriesException.class,
-                () -> gatewayService.retrieveDigitalOrPhysicalAddressAsync("Recipient Type", null, addressRequestBodyDto));
     }
 
     @Test

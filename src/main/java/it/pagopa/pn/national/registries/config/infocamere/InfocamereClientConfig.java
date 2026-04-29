@@ -3,13 +3,13 @@ package it.pagopa.pn.national.registries.config.infocamere;
 import io.netty.handler.timeout.TimeoutException;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.AuthenticationApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.LegalRepresentationApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.LegalRepresentativeApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.SedeApi;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
@@ -28,14 +28,16 @@ public class InfocamereClientConfig extends CommonBaseClient {
 
     private final CustomRetryConfig customRetryConfig;
     private final WebClient infocamereWebClient;
+    private final String basePath;
 
-    public InfocamereClientConfig(CustomRetryConfig customRetryConfig, WebClient.Builder builder) {
+    public InfocamereClientConfig(CustomRetryConfig customRetryConfig, WebClient.Builder builder, NationalRegistriesConfig nationalRegistriesConfig) {
         this.customRetryConfig = customRetryConfig;
         this.infocamereWebClient = initWebClient(builder);
+        this.basePath = nationalRegistriesConfig.getInfoCamere().getBaseUrl();
     }
 
     @Bean
-    AuthenticationApi authenticationApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
+    AuthenticationApi authenticationApi() {
         var apiClient = new ApiClient(infocamereWebClient);
         apiClient.setBasePath(basePath);
         return new AuthenticationApi(apiClient);
@@ -43,21 +45,21 @@ public class InfocamereClientConfig extends CommonBaseClient {
 
 
     @Bean
-    LegalRepresentationApi legalRepresentationApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
+    LegalRepresentationApi legalRepresentationApi() {
         var apiClient = new ApiClient(infocamereWebClient);
         apiClient.setBasePath(basePath);
         return new LegalRepresentationApi(apiClient);
     }
 
     @Bean
-    SedeApi sedeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
+    SedeApi sedeApi() {
         var apiClient = new ApiClient(infocamereWebClient);
         apiClient.setBasePath(basePath);
         return new SedeApi(apiClient);
     }
 
     @Bean
-    LegalRepresentativeApi legalRepresentativeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
+    LegalRepresentativeApi legalRepresentativeApi() {
         var apiClient = new ApiClient(infocamereWebClient);
         apiClient.setBasePath(basePath);
         return new LegalRepresentativeApi(apiClient);

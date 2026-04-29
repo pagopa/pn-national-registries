@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.entity.CounterModel;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
@@ -14,12 +14,10 @@ import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 public class CounterRepositoryImpl implements CounterRepository {
 
     private final DynamoDbAsyncTable<CounterModel> table;
-
     private final String tableName;
 
-    public CounterRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
-                                 @Value("${pn.national.registries.anpr.table}") String tableName) {
-        this.tableName = tableName;
+    public CounterRepositoryImpl(NationalRegistriesConfig nationalRegistriesConfig, DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient) {
+        this.tableName = nationalRegistriesConfig.getAnpr().getTable();
         this.table = dynamoDbEnhancedAsyncClient.table(tableName, TableSchema.fromClass(CounterModel.class));
     }
 

@@ -1,15 +1,16 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -31,17 +32,31 @@ import static org.mockito.Mockito.*;
         "pn.national.registries.inipec.batchrequest.pk.separator=~"
 
         })
-@ContextConfiguration(classes = IniPecBatchSqsService.class)
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class IniPecBatchSqsServiceTest {
 
-    @Autowired
+    @InjectMocks
     private IniPecBatchSqsService iniPecBatchSqsService;
 
-    @MockitoBean
-    private IniPecBatchRequestRepository batchRequestRepository;
-    @MockitoBean
-    private SqsService sqsService;
+    @Mock
+    IniPecBatchRequestRepository batchRequestRepository;
+
+    @Mock
+    NationalRegistriesConfig nationalRegistriesConfig;
+
+    @Mock
+    SqsService sqsService;
+
+    NationalRegistriesConfig.InfoCamere infoCamereConfig;
+
+    @BeforeEach
+    void setup() {
+        infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        NationalRegistriesConfig.Inipec inipecConfig = new NationalRegistriesConfig.Inipec();
+        inipecConfig.setBatchRequestPkSeparator("~");
+        infoCamereConfig.setInipec(inipecConfig);
+    }
+
 
     @Test
     void testRecoveryBatchSendToSqs() {
@@ -129,6 +144,8 @@ class IniPecBatchSqsServiceTest {
 
     @Test
     void redriveToDLQqueue() {
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
+
         BatchRequest request = new BatchRequest();
         request.setCorrelationId("correlationId");
         request.setReferenceRequestDate(LocalDateTime.now());
@@ -139,6 +156,8 @@ class IniPecBatchSqsServiceTest {
 
     @Test
     void redriveToqueue() {
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
+
         BatchRequest request = new BatchRequest();
         request.setCorrelationId("correlationId");
         request.setReferenceRequestDate(LocalDateTime.now());

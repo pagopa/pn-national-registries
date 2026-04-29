@@ -2,26 +2,27 @@ package it.pagopa.pn.national.registries.cache;
 
 import com.auth0.jwt.JWT;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.TokenProvider;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.jodah.expiringmap.ExpiringMap;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.TimeUnit;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_INFOCAMERE_TOKEN_DURATION;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INFOCAMERE_TOKEN_DURATION;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class AccessTokenExpiringMap {
 
-    private final Integer pdndDeadline;
-    private final Integer infoCamereDeadline;
-
+    private final NationalRegistriesConfig nationalRegistriesConfig;
     private final TokenProvider tokenProvider;
 
     protected ExpiringMap<String, AccessTokenCacheEntry> expiringMap = ExpiringMap.builder()
@@ -29,13 +30,6 @@ public class AccessTokenExpiringMap {
             .variableExpiration()
             .build();
 
-    public AccessTokenExpiringMap(TokenProvider tokenProvider,
-                                  @Value("${pn.national-registries.pdnd.token.deadline}") Integer pdndDeadline,
-                                  @Value("${pn.national.registries.infocamere.token.deadline}") Integer infoCamereDeadline) {
-        this.tokenProvider = tokenProvider;
-        this.pdndDeadline = pdndDeadline;
-        this.infoCamereDeadline = infoCamereDeadline;
-    }
 
     public Mono<AccessTokenCacheEntry> getPDNDToken(String purposeId, PdndSecretValue pdndSecretValue, boolean isAnpr) {
         if (isAnpr || expiringMap.isEmpty() || !expiringMap.containsKey(purposeId)) {
@@ -43,7 +37,7 @@ public class AccessTokenExpiringMap {
         }
         try {
             long expiration = expiringMap.getExpectedExpiration(purposeId);
-            if (expiration <= pdndDeadline) {
+            if (expiration <= nationalRegistriesConfig.getPdnd().getTokenDeadline()) {
                 return requireNewPDNDAccessToken(purposeId, pdndSecretValue);
             } else {
                 log.info("Existing Access Token Required with purposeId: {}", purposeId);
@@ -60,7 +54,7 @@ public class AccessTokenExpiringMap {
         }
         try {
             long expiration = expiringMap.getExpectedExpiration(scope);
-            if (expiration <= infoCamereDeadline) {
+            if (expiration <= nationalRegistriesConfig.getInfoCamere().getTokenDeadline()) {
                 return requireNewInfoCamereAccessToken(scope);
             } else {
                 log.info("Existing InfoCamere Access Token Required with scope: {}", scope);

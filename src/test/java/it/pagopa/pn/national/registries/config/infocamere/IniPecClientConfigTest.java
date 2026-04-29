@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.config.infocamere;
 
 import io.netty.handler.timeout.ReadTimeoutException;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.PecApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -9,9 +10,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
@@ -29,35 +33,43 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class IniPecClientConfigTest {
+
     private static final String BASE_PATH = "basePath";
-    private static final int MAX_RETRY_ATTEMPTS = 3;
+
     @Mock
     private WebClient.Builder webClientBuilder;
     @Mock
     private WebClient webClient;
     @Mock
+    NationalRegistriesConfig nationalRegistriesConfig;
+    @Mock
     private CustomRetryConfig customRetryConfig;
+
+    NationalRegistriesConfig.InfoCamere infoCamere;
+
+    private IniPecClientConfig iniPecClientConfig;
 
     @BeforeEach
     void setUp() {
         when(webClientBuilder.build()).thenReturn(webClient);
-        when(webClientBuilder.defaultHeader(any(), any())).thenReturn(webClientBuilder);
-        when(webClientBuilder.baseUrl(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-    }
-
-    private IniPecClientConfig buildPecClientConfig(boolean shouldRetryOnTimeout) {
-        return new IniPecClientConfig(customRetryConfig, webClientBuilder, MAX_RETRY_ATTEMPTS, shouldRetryOnTimeout);
+        infoCamere = new NationalRegistriesConfig.InfoCamere();
+        infoCamere.setBaseUrl(BASE_PATH);
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setMaxRetryAttempts(3);
+        inipec.setRetryOnTimeout(true);
+        infoCamere.setInipec(inipec);
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamere);
+        iniPecClientConfig = new IniPecClientConfig(customRetryConfig, webClientBuilder, nationalRegistriesConfig);
     }
 
     @Test
     void testPecApi() {
-        IniPecClientConfig iniPecClientConfig = buildPecClientConfig(true);
-        PecApi pecApi = iniPecClientConfig.pecApi(BASE_PATH);
+        PecApi pecApi = iniPecClientConfig.pecApi();
         assertEquals(BASE_PATH, pecApi.getApiClient().getBasePath());
     }
 
@@ -96,37 +108,34 @@ class IniPecClientConfigTest {
     @ParameterizedTest(name = "Should retry on {1}")
     @MethodSource("retryableExceptionsProvider")
     void testRetryCondition_ShouldRetryOnRetryableExceptions(Throwable exception, String exceptionName) {
-        IniPecClientConfig iniPecClientConfig = buildPecClientConfig(true);
         assertTrue(iniPecClientConfig.retryCondition(exception), "Expected to retry on " + exceptionName);
     }
 
     @ParameterizedTest(name = "Should not retry on {1}")
     @MethodSource("nonRetryableExceptionsProvider")
     void testRetryCondition_ShouldNotRetryOnNonRetryableExceptions(Throwable exception, String exceptionName) {
-        IniPecClientConfig iniPecClientConfig = buildPecClientConfig(true);
         assertFalse(iniPecClientConfig.retryCondition(exception), "Expected not to retry on " + exceptionName);
     }
 
     @Test
     void testRetryCondition_ShouldNotRetryOnTimeoutWhenShouldRetryOnTimeoutIsFalse() {
-        IniPecClientConfig config = buildPecClientConfig(false);
+        infoCamere.getInipec().setRetryOnTimeout(false);
+
 
         HttpHeaders headers = new HttpHeaders();
         WebClientRequestException ex = new WebClientRequestException(
                 ReadTimeoutException.INSTANCE, HttpMethod.GET, URI.create("http://localhost"), headers);
 
-        assertFalse(config.retryCondition(ex), "Expected not to retry on WebClientRequestException caused by ReadTimeoutException when shouldRetryOnTimeout is false");
+        assertFalse(iniPecClientConfig.retryCondition(ex), "Expected not to retry on WebClientRequestException caused by ReadTimeoutException when shouldRetryOnTimeout is false");
     }
 
     @Test
     void testRetryCondition_ShouldRetryOnWebClientRequestExceptionWhenShouldRetryOnTimeoutIsTrue() {
-        IniPecClientConfig config = buildPecClientConfig(true);
-
         HttpHeaders headers = new HttpHeaders();
         WebClientRequestException ex = new WebClientRequestException(
                 ReadTimeoutException.INSTANCE, HttpMethod.GET, URI.create("http://localhost"), headers);
 
-        assertTrue(config.retryCondition(ex), "Expected to retry on WebClientRequestException caused by ReadTimeoutException when shouldRetryOnTimeout is true");
+        assertTrue(iniPecClientConfig.retryCondition(ex), "Expected to retry on WebClientRequestException caused by ReadTimeoutException when shouldRetryOnTimeout is true");
     }
 
 

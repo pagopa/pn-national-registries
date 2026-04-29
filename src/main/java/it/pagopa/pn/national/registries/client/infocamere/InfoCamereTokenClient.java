@@ -2,10 +2,11 @@ package it.pagopa.pn.national.registries.client.infocamere;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.AuthenticationApi;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -19,29 +20,21 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 
 @lombok.CustomLog
 @Component
+@RequiredArgsConstructor
 public class InfoCamereTokenClient {
 
     private final InfoCamereJwsGenerator infoCamereJwsGenerator;
-    private final String clientId;
-
+    private final NationalRegistriesConfig nationalRegistriesConfig;
     private final AuthenticationApi authenticationApi;
 
     private static final String TRAKING_ID = "X-Tracking-trackingId";
 
 
-    protected InfoCamereTokenClient(@Value("${pn.national.registries.infocamere.client-id}") String clientId,
-                                    InfoCamereJwsGenerator infoCamereJwsGenerator,
-                                    AuthenticationApi authenticationApi) {
-        this.clientId = clientId;
-        this.infoCamereJwsGenerator = infoCamereJwsGenerator;
-        this.authenticationApi = authenticationApi;
-    }
-
     public Mono<String> getToken(String scope) {
         String jws = infoCamereJwsGenerator.createAuthRest(scope);
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_GET_TOKEN);
 
-        return authenticationApi.getToken(jws, clientId)
+        return authenticationApi.getToken(jws, nationalRegistriesConfig.getInfoCamere().getClientId())
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage(), throwable);
                     if (isUnauthorized(throwable)) {

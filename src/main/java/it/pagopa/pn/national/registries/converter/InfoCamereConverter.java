@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
@@ -9,7 +10,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.utils.CollectionUtils;
@@ -20,15 +21,10 @@ import java.time.ZoneOffset;
 import java.util.*;
 
 @Component
+@RequiredArgsConstructor
 public class InfoCamereConverter {
-    private final long iniPecTtl;
-    private final String batchRequestPkSeparator;
-    
-    public InfoCamereConverter(@Value("${pn.national.registries.inipec.ttl}") long iniPecTtl,
-                               @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator) {
-        this.iniPecTtl = iniPecTtl;
-        this.batchRequestPkSeparator = batchRequestPkSeparator;
-    }
+
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     public GetDigitalAddressIniPECOKDto convertToGetAddressIniPecOKDto(BatchRequest requestCorrelation) {
         GetDigitalAddressIniPECOKDto response = new GetDigitalAddressIniPECOKDto();
@@ -51,13 +47,13 @@ public class InfoCamereConverter {
         batchPolling.setRetry(0);
         batchPolling.setInProgressRetry(0);
         batchPolling.setCreatedAt(now);
-        batchPolling.setTtl(now.plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
+        batchPolling.setTtl(now.plusSeconds(nationalRegistriesConfig.getInfoCamere().getInipec().getTtl()).toEpochSecond(ZoneOffset.UTC));
         return batchPolling;
     }
 
     public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0]);
+        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(nationalRegistriesConfig.getInfoCamere().getInipec().getBatchRequestPkSeparator())[0]);
         List<Pec> pecs = iniPecPollingResponse.getElencoPec();
         pecs.stream()
                 .filter(p -> p.getCf().equalsIgnoreCase(batchRequest.getCf()))
@@ -70,7 +66,7 @@ public class InfoCamereConverter {
 
     public CodeSqsDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(request.getCorrelationId().split(batchRequestPkSeparator)[0]);
+        codeSqsDto.setCorrelationId(request.getCorrelationId().split(nationalRegistriesConfig.getInfoCamere().getInipec().getBatchRequestPkSeparator())[0]);
         if (error != null) {
             codeSqsDto.setError(error);
         } else {

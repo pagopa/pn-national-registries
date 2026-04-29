@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
@@ -19,6 +20,7 @@ import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 
 import java.util.*;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,7 +58,20 @@ class IniPecBatchRequestServiceTest {
     @MockitoBean
     private IniPecBatchSqsService iniPecBatchSqsService;
     @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
+    @MockitoBean
     private ObjectMapper objectMapper;
+
+    NationalRegistriesConfig.InfoCamere infoCamere;
+
+    @BeforeEach
+    void setUp() {
+        infoCamere = new NationalRegistriesConfig.InfoCamere();
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setMaxBatchRequestSize(10);
+        inipec.setBatchRequestMaxRetry(3);
+        infoCamere.setInipec(inipec);
+    }
 
     @Test
     void testBatchPecRequest() {
@@ -83,7 +98,7 @@ class IniPecBatchRequestServiceTest {
                 .thenReturn(Mono.just(batchRequest1));
         when(batchRequestRepository.setNewBatchIdToBatchRequest(same(batchRequest2)))
                 .thenReturn(Mono.just(batchRequest2));
-
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamere);
         when(batchPollingRepository.create(batchPolling))
                 .thenReturn(Mono.just(batchPolling));
 
@@ -104,6 +119,7 @@ class IniPecBatchRequestServiceTest {
     @Test
     @DisplayName("Test failure of getBatchRequest with no batch id")
     void testBatchPecRequestDynamoFailure() {
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamere);
         when(batchRequestRepository.getBatchRequestByNotBatchId(anyMap(), anyInt()))
                 .thenReturn(Mono.empty());
         assertThrows(DigitalAddressException.class, () -> iniPecBatchRequestService.batchPecRequest());
@@ -111,6 +127,7 @@ class IniPecBatchRequestServiceTest {
 
     @Test
     void testBatchPecRequestEmpty() {
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamere);
         when(batchRequestRepository.getBatchRequestByNotBatchId(anyMap(), anyInt()))
                 .thenReturn(Mono.just(Page.create(Collections.emptyList())));
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
@@ -121,6 +138,7 @@ class IniPecBatchRequestServiceTest {
     @Test
     @DisplayName("Test conditional check failure")
     void testBatchPecRequestConditionalCheckFailure() {
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamere);
         BatchRequest batchRequest = new BatchRequest();
         when(batchRequestRepository.getBatchRequestByNotBatchId(anyMap(), anyInt()))
                 .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
@@ -133,6 +151,7 @@ class IniPecBatchRequestServiceTest {
     @Test
     @DisplayName("Test one conditional check failure and one success")
     void testBatchPecRequestConditionalCheckFailureAndOneOk() {
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamere);
         BatchRequest batchRequest1 = new BatchRequest();
         batchRequest1.setCf("cf1");
         BatchRequest batchRequest2 = new BatchRequest();
@@ -164,6 +183,7 @@ class IniPecBatchRequestServiceTest {
     @Test
     @DisplayName("Test failure of E Service")
     void testBatchPecRequestEServiceFailure() {
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamere);
         BatchRequest batchRequest = new BatchRequest();
 
         when(batchRequestRepository.getBatchRequestByNotBatchId(anyMap(), anyInt()))
@@ -192,6 +212,7 @@ class IniPecBatchRequestServiceTest {
     @Test
     @DisplayName("Test failure of E Service and retry exhausted")
     void testBatchPecRequestEServiceFailureRetryExhausted() {
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamere);
         BatchRequest batchRequest = new BatchRequest();
 
         when(batchRequestRepository.getBatchRequestByNotBatchId(anyMap(), anyInt()))
@@ -224,6 +245,7 @@ class IniPecBatchRequestServiceTest {
 
     @Test
     void testRecoveryBatchRequest() {
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamere);
         BatchRequest batchRequestToRecover1 = new BatchRequest();
         BatchRequest batchRequestToRecover2 = new BatchRequest();
 

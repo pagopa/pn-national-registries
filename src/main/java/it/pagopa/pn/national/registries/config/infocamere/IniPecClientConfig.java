@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.config.infocamere;
 import io.netty.handler.timeout.TimeoutException;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.PecApi;
 import lombok.extern.slf4j.Slf4j;
@@ -25,32 +26,28 @@ import java.net.UnknownHostException;
 public class IniPecClientConfig extends CommonBaseClient {
     private final CustomRetryConfig customRetryConfig;
     private final WebClient pecWebClient;
-    private final int maxRetryAttempts;
-    private final boolean shouldRetryOnTimeout;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     public IniPecClientConfig(
             CustomRetryConfig customRetryConfig,
             WebClient.Builder builder,
-            @Value("${pn.national.registries.inipec.retry.max-attempts}") int maxRetryAttempts,
-            @Value("${pn.national.registries.inipec.retry.on-timeout}") boolean shouldRetryOnTimeout
-
+            NationalRegistriesConfig nationalRegistriesConfig
     ) {
-        this.maxRetryAttempts = maxRetryAttempts;
-        this.shouldRetryOnTimeout = shouldRetryOnTimeout;
+        this.nationalRegistriesConfig = nationalRegistriesConfig;
         this.customRetryConfig = customRetryConfig;
         this.pecWebClient = initWebClient(builder);
     }
 
     @Bean
-    PecApi pecApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
+    PecApi pecApi() {
         var apiClient = new ApiClient(pecWebClient);
-        apiClient.setBasePath(basePath);
+        apiClient.setBasePath(nationalRegistriesConfig.getInfoCamere().getBaseUrl());
         return new PecApi(apiClient);
     }
 
     @Override
     protected ExchangeFilterFunction buildRetryExchangeFilterFunction() {
-        return customRetryConfig.buildRetryExchangeFilterFunction(this::retryCondition, this.maxRetryAttempts);
+        return customRetryConfig.buildRetryExchangeFilterFunction(this::retryCondition, nationalRegistriesConfig.getInfoCamere().getInipec().getMaxRetryAttempts());
     }
 
     public boolean retryCondition(Throwable throwable) {
@@ -70,7 +67,7 @@ public class IniPecClientConfig extends CommonBaseClient {
     }
 
     private boolean handleWebClientRequestException(Throwable throwable) {
-        if(this.shouldRetryOnTimeout) {
+        if(nationalRegistriesConfig.getInfoCamere().getInipec().isRetryOnTimeout()) {
             // Se shouldRetryOnTimeout è true, consideriamo retryable qualsiasi WebClientRequestException, inclusi quelli causati da read timeout
             return throwable instanceof WebClientRequestException;
         }

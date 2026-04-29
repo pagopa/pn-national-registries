@@ -3,10 +3,11 @@ package it.pagopa.pn.national.registries.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
@@ -24,6 +25,7 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class SqsService {
 
     private static final String PUSHING_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}";
@@ -31,38 +33,25 @@ public class SqsService {
 
     private final SqsAsyncClient sqsClient;
     private final ObjectMapper mapper;
-    private final String outputQueueName;
-    private final String inputQueueName;
-    private final String inputDlqQueueName;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    public SqsService(@Value("${pn.national.registries.sqs.output.queue.name}") String outputQueueName,
-                      @Value("${pn.national.registries.sqs.input.queue.name}") String inputQueueName,
-                      @Value("${pn.national.registries.sqs.input.dlq.queue.name}") String inputDlqQueueName,
-                      SqsAsyncClient sqsClient,
-                      ObjectMapper mapper) {
-        this.sqsClient = sqsClient;
-        this.mapper = mapper;
-        this.outputQueueName = outputQueueName;
-        this.inputQueueName = inputQueueName;
-        this.inputDlqQueueName = inputDlqQueueName;
-    }
 
     public Mono<SendMessageResponse> pushToOutputQueue(CodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
-        log.info(INSERTING_MSG_WITHOUT_DATA, outputQueueName);
-        return push(toJson(msg), pnNationalRegistriesCxId, outputQueueName, "NR_GATEWAY_RESPONSE");
+        log.info(INSERTING_MSG_WITHOUT_DATA, nationalRegistriesConfig.getOutputQueueName());
+        return push(toJson(msg), pnNationalRegistriesCxId, nationalRegistriesConfig.getOutputQueueName(), "NR_GATEWAY_RESPONSE");
     }
 
     public Mono<SendMessageResponse> pushToInputQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
-        log.info(INSERTING_MSG_WITHOUT_DATA, inputQueueName);
-        return push(toJson(msg), pnNationalRegistriesCxId, inputQueueName, "NR_GATEWAY_INPUT");
+        log.info(INSERTING_MSG_WITHOUT_DATA, nationalRegistriesConfig.getInputQueueName());
+        return push(toJson(msg), pnNationalRegistriesCxId, nationalRegistriesConfig.getInputQueueName(), "NR_GATEWAY_INPUT");
     }
 
     public Mono<SendMessageResponse> pushToInputDlqQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
         log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
-        log.info(INSERTING_MSG_WITHOUT_DATA, inputDlqQueueName);
-        return push(toJson(msg), pnNationalRegistriesCxId, inputDlqQueueName, "NR_GATEWAY_INPUT");
+        log.info(INSERTING_MSG_WITHOUT_DATA, nationalRegistriesConfig.getInputDlqQueueName());
+        return push(toJson(msg), pnNationalRegistriesCxId, nationalRegistriesConfig.getInputDlqQueueName(), "NR_GATEWAY_INPUT");
     }
 
     public Mono<SendMessageResponse> push(String msg, String pnNationalRegistriesCxId, String queueName, String eventType) {

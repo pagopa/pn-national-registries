@@ -6,6 +6,7 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.ApiClient;
@@ -19,8 +20,8 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCame
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -37,34 +38,17 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 
 @Component
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class InfoCamereClient {
     private final AccessTokenExpiringMap accessTokenExpiringMap;
-    private final String clientId;
     private final ObjectMapper mapper;
-    private static final String TRAKING_ID = "X-Tracking-trackingId";
-
     private final LegalRepresentationApi legalRepresentationApi;
     private final LegalRepresentativeApi legalRepresentativeApi;
     private final PecApi pecApi;
     private final SedeApi sedeApi;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    protected InfoCamereClient(@Value("${pn.national.registries.infocamere.client-id}") String clientId,
-                               AccessTokenExpiringMap accessTokenExpiringMap,
-                               ObjectMapper mapper,
-                               LegalRepresentationApi legalRepresentationApi,
-                               LegalRepresentativeApi legalRepresentativeApi,
-                               PecApi pecApi,
-                               SedeApi sedeApi
-    ) {
-        this.clientId = clientId;
-        this.accessTokenExpiringMap = accessTokenExpiringMap;
-        this.mapper = mapper;
-
-        this.legalRepresentationApi = legalRepresentationApi;
-        this.legalRepresentativeApi = legalRepresentativeApi;
-        this.pecApi = pecApi;
-        this.sedeApi = sedeApi;
-    }
+    private static final String TRAKING_ID = "X-Tracking-trackingId";
 
     private void logJwt(String token) {
         log.debug("Using jwt = {}", token);
@@ -86,7 +70,7 @@ public class InfoCamereClient {
 
         var apiClient = pecApi.getApiClient();
         apiClient.setBearerToken(token);
-        return pecApi.callRichiestaElencoPecWithHttpInfo(InipecScopeEnum.PEC.value(), body, clientId)
+        return pecApi.callRichiestaElencoPecWithHttpInfo(InipecScopeEnum.PEC.value(), body, nationalRegistriesConfig.getInfoCamere().getClientId())
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
                     log.info("callRichiestaElencoPec - responded with tracking ID: {}", trackingId);
@@ -110,7 +94,7 @@ public class InfoCamereClient {
 
         ApiClient apiClient = pecApi.getApiClient();
         apiClient.setBearerToken(token);
-        return pecApi.callGetElencoPecWithHttpInfo(correlationId, InipecScopeEnum.PEC.value(), clientId)
+        return pecApi.callGetElencoPecWithHttpInfo(correlationId, InipecScopeEnum.PEC.value(), nationalRegistriesConfig.getInfoCamere().getClientId())
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
                     log.info("callGetElencoPec - responded with tracking ID: {}", trackingId);
@@ -134,7 +118,7 @@ public class InfoCamereClient {
 
         ApiClient apiClient = sedeApi.getApiClient();
         apiClient.setBearerToken(token);
-        return sedeApi.getAddressByTaxIdWithHttpInfo(taxId, InipecScopeEnum.SEDE.value(), clientId)
+        return sedeApi.getAddressByTaxIdWithHttpInfo(taxId, InipecScopeEnum.SEDE.value(), nationalRegistriesConfig.getInfoCamere().getClientId())
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
                     log.info("callGetLegalAddress - responded with tracking ID: {}", trackingId);
@@ -158,7 +142,7 @@ public class InfoCamereClient {
 
         ApiClient apiClient = legalRepresentativeApi.getApiClient();
         apiClient.setBearerToken(token);
-        return legalRepresentativeApi.getLegalRepresentativeListByTaxIdWithHttpInfo(taxId, InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+        return legalRepresentativeApi.getLegalRepresentativeListByTaxIdWithHttpInfo(taxId, InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), nationalRegistriesConfig.getInfoCamere().getClientId())
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
                     log.info("callGetLegalInstitutions - responded with tracking ID: {}", trackingId);
@@ -181,7 +165,7 @@ public class InfoCamereClient {
         this.logJwt(token);
 
         legalRepresentationApi.getApiClient().setBearerToken(token);
-        return legalRepresentationApi.checkTaxIdForLegalRepresentationWithHttpInfo(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+        return legalRepresentationApi.checkTaxIdForLegalRepresentationWithHttpInfo(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), nationalRegistriesConfig.getInfoCamere().getClientId())
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
                     log.info("callCheckTaxId - responded with tracking ID: {}", trackingId);

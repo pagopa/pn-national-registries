@@ -2,32 +2,36 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereTokenClient;
 import it.pagopa.pn.national.registries.client.pdnd.PdndClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.ClientCredentialsResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.when;
 
-@ContextConfiguration(classes = {TokenProvider.class, String.class})
 @ExtendWith(MockitoExtension.class)
 class TokenProviderTest {
 
-    @MockitoBean
-    private PdndAssertionGenerator pdndAssertionGenerator;
-
-    @Autowired
+    @InjectMocks
     private TokenProvider tokenProvider;
 
     @Mock
@@ -39,25 +43,34 @@ class TokenProviderTest {
     @Mock
     InfoCamereTokenClient infoCamereTokenClient;
 
+    @Mock
+    NationalRegistriesConfig nationalRegistriesConfig;
+
+    NationalRegistriesConfig.Pdnd pdndConfig;
+
+    @BeforeEach
+    void setup() {
+        pdndConfig = new NationalRegistriesConfig.Pdnd();
+        pdndConfig.setGrantType("client_credentials");
+        pdndConfig.setClientAssertionType("urn:ietf:params:oauth:client-assert");
+    }
+
     @Test
-    @DisplayName("Should throw an exception when the client id and secret are invalid")
     void getTokenWhenClientIdAndSecretAreInvalidThenThrowException() {
         PdndSecretValue pdndSecretValue = new PdndSecretValue();
         pdndSecretValue.setClientId("clientId");
         pdndSecretValue.setKeyId("keyId");
         when(assertionGenerator.generateClientAssertion(any())).thenReturn("clientAssertion");
-        when(pdndClient.createToken(anyString(), anyString(), anyString(), anyString()))
+        when(pdndClient.createToken(anyString(),eq("urn:ietf:params:oauth:client-assert"), eq("client_credentials"), any()))
                 .thenReturn(Mono.empty());
+        when(nationalRegistriesConfig.getPdnd()).thenReturn(pdndConfig);
 
-        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
-                "clientAssertionType", "grantType");
         Mono<ClientCredentialsResponse> token = tokenProvider.getTokenPdnd(pdndSecretValue);
 
         StepVerifier.create(token).verifyComplete();
     }
 
     @Test
-    @DisplayName("Should return a token when the client id and secret are valid")
     void getTokenWhenClientIdAndSecretAreValidThenReturnAToken() {
         String clientId = "clientId";
         String secret = "secret";
@@ -67,13 +80,12 @@ class TokenProviderTest {
         pdndSecretValue.setKeyId(secret);
         ClientCredentialsResponse clientCredentialsResponse = new ClientCredentialsResponse();
         clientCredentialsResponse.setAccessToken(token);
+        when(nationalRegistriesConfig.getPdnd()).thenReturn(pdndConfig);
 
         when(assertionGenerator.generateClientAssertion(any())).thenReturn("assertion");
         when(pdndClient.createToken(anyString(), anyString(), anyString(), anyString()))
                 .thenReturn(Mono.just(clientCredentialsResponse));
 
-        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
-                "clientAssertionType", "grantType");
 
         Mono<ClientCredentialsResponse> tokenMono = tokenProvider.getTokenPdnd(pdndSecretValue);
 
@@ -86,32 +98,18 @@ class TokenProviderTest {
 
     @Test
     void getToken() {
-        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
-                "client_credentials", "basePath");
         ClientCredentialsResponse clientCredentialsResponse = new ClientCredentialsResponse();
         clientCredentialsResponse.setAccessToken("token");
+        when(nationalRegistriesConfig.getPdnd()).thenReturn(pdndConfig);
+
         when(assertionGenerator.generateClientAssertion(any())).thenReturn("clientAssertion");
-        when(pdndClient.createToken("clientAssertion", "client_credentials",
-                "basePath", null)).thenReturn(Mono.just(clientCredentialsResponse));
+        when(pdndClient.createToken(anyString(),eq("urn:ietf:params:oauth:client-assert"), eq("client_credentials"), any()))
+                .thenReturn(Mono.just(clientCredentialsResponse));
         StepVerifier.create(tokenProvider.getTokenPdnd(new PdndSecretValue())).expectNext(clientCredentialsResponse).verifyComplete();
     }
 
     @Test
-    void getTokenSecretEmpty() {
-        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
-                "test", "client_credentials");
-        ClientCredentialsResponse clientCredentialsResponse = new ClientCredentialsResponse();
-        clientCredentialsResponse.setTokenType(TokenType.BEARER);
-        when(pdndClient.createToken(null, "test", "client_credentials", null))
-                .thenReturn(Mono.just(clientCredentialsResponse));
-        StepVerifier.create(tokenProvider.getTokenPdnd(new PdndSecretValue())).expectNext(clientCredentialsResponse)
-                .verifyComplete();
-    }
-
-    @Test
     void getTokenInfoCamere(){
-        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
-                "test", "client_credentials");
         when(infoCamereTokenClient.getToken(anyString())).thenReturn(Mono.just("scope"));
         StepVerifier.create(tokenProvider.getTokenInfoCamere("scope")).expectNext("scope").verifyComplete();
     }

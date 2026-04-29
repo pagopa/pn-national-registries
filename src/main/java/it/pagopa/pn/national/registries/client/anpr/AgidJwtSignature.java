@@ -3,12 +3,13 @@ package it.pagopa.pn.national.registries.client.anpr;
 import com.auth0.jwt.HeaderParams;
 import com.auth0.jwt.RegisteredClaims;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.utils.ClientUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.kms.KmsClient;
@@ -26,25 +27,19 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class AgidJwtSignature {
 
-    private final AnprSecretConfig anprSecretConfig;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
     private final KmsClient kmsClient;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
-
-    public AgidJwtSignature(AnprSecretConfig anprSecretConfig,
-                            KmsClient kmsClient,
-                            PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
-        this.anprSecretConfig = anprSecretConfig;
-        this.kmsClient = kmsClient;
-        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
-    }
 
     public String createAgidJwt(String digest) {
         log.info("START - AgidJwtSignature.createAgidJwt");
         long startTime = System.currentTimeMillis();
+        NationalRegistriesConfig.Anpr anpr = nationalRegistriesConfig.getAnpr();
         try {
-            PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPdndSecretName());
+            PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anpr.getPdndClientSecret());
 
             TokenHeader th = new TokenHeader(pdndSecretValue.getJwtConfig());
             TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig(), null);

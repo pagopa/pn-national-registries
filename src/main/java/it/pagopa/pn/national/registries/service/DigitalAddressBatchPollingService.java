@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
@@ -29,8 +30,8 @@ import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import it.pagopa.pn.national.registries.utils.MetricUtils;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -58,6 +59,7 @@ import static it.pagopa.pn.national.registries.model.EService.*;
 
 @CustomLog
 @Service
+@RequiredArgsConstructor
 public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private final InfoCamereConverter infoCamereConverter;
@@ -66,39 +68,13 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final InfoCamereClient infoCamereClient;
     private final IniPecBatchSqsService iniPecBatchSqsService;
     private final InadService inadService;
-
     private final FeatureEnabledUtils featureEnableUtils;
-
-    private final int maxRetry;
-    private final int inProgressMaxRetry;
-    private final String batchRequestPkSeparator;
-
     private final IpaService ipaService;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
     private static final Pattern PEC_REQUEST_IN_PROGRESS_PATTERN = Pattern.compile(".*(List PEC in progress).*");
 
-    public DigitalAddressBatchPollingService(InfoCamereConverter infoCamereConverter,
-                                             IniPecBatchRequestRepository batchRequestRepository,
-                                             IniPecBatchPollingRepository batchPollingRepository,
-                                             InfoCamereClient infoCamereClient,
-                                             IniPecBatchSqsService iniPecBatchSqsService,
-                                             InadService inadService,
-                                             FeatureEnabledUtils featureEnableUtils, @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
-                                             @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry,
-                                             @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator, IpaService ipaService) {
-        this.infoCamereConverter = infoCamereConverter;
-        this.batchRequestRepository = batchRequestRepository;
-        this.batchPollingRepository = batchPollingRepository;
-        this.infoCamereClient = infoCamereClient;
-        this.iniPecBatchSqsService = iniPecBatchSqsService;
-        this.inadService = inadService;
-        this.featureEnableUtils = featureEnableUtils;
-        this.maxRetry = maxRetry;
-        this.inProgressMaxRetry = inProgressMaxRetry;
-        this.batchRequestPkSeparator = batchRequestPkSeparator;
-        this.ipaService = ipaService;
-    }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
     @SchedulerLock(name = "batchPecPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.polling.lock-at-most}",
@@ -222,7 +198,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         }else{
             polling.setRetry(polling.getRetry() != null ? polling.getRetry() + 1 : 1);
         }
-        if (maxRetry <= Optional.ofNullable(polling.getRetry()).orElse(0) || inProgressMaxRetry <= Optional.ofNullable(polling.getInProgressRetry()).orElse(0) ||
+        if (nationalRegistriesConfig.getInfoCamere().getInipec().getBatchPollingMaxRetry() <= Optional.ofNullable(polling.getRetry()).orElse(0) || nationalRegistriesConfig.getInfoCamere().getInipec().getBatchPollingInProgressMaxRetry() <= Optional.ofNullable(polling.getInProgressRetry()).orElse(0) ||
                 (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
             polling.setStatus(BatchStatus.ERROR.getValue());
             log.debug("IniPEC - batchId {} - polling {} status in {} (retry: {})", polling.getBatchId(), polling.getPollingId(), polling.getStatus(), polling.getRetry());
@@ -334,7 +310,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                         log.info("START retrieve digital address for [{}] on [{}] - Step {} - nextSource: [{}]", request.getCorrelationId(), INAD, INAD.getStepNumber(), INAD.getNextStep());
                         return callInadEservice(request);
                     }else{
-                        String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
+                        String correlationId = request.getCorrelationId().split(nationalRegistriesConfig.getInfoCamere().getInipec().getBatchRequestPkSeparator())[0];
                         request.setMessage(convertCodeSqsDtoToString(ipaToSqsDto(correlationId, response)));
                         request.setStatus(BatchStatus.WORKED.getValue());
                         request.setEservice(IPA.name());
@@ -356,7 +332,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private Mono<Void> callInadEservice(BatchRequest request) {
 
         RecipientType recipientType = InadConverter.retrieveRecipientType(request);
-        String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
+        String correlationId = request.getCorrelationId().split(nationalRegistriesConfig.getInfoCamere().getInipec().getBatchRequestPkSeparator())[0];
         return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType, request.getReferenceRequestDate().toInstant(ZoneOffset.UTC))
                 .flatMap(this::emailValidation)
                 .doOnNext(inadResponse -> {

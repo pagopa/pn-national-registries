@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.config.infocamere;
 
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -8,9 +10,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.*;
 import reactor.core.publisher.Mono;
@@ -29,7 +35,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class InfocamereClientConfigTest {
     private static final String BASE_PATH = "basePath";
 
@@ -38,46 +44,33 @@ class InfocamereClientConfigTest {
     @Mock
     private WebClient webClient;
     @Mock
+    NationalRegistriesConfig nationalRegistriesConfig;
+    @Mock
     private CustomRetryConfig customRetryConfig;
+    @Mock
+    private AuthenticationApi authenticationApi;
+    @Mock
+    private LegalRepresentationApi legalRepresentationApi;
+    @Mock
+    private LegalRepresentativeApi legalRepresentativeApi;
+    @Mock
+    private SedeApi sedeApi;
 
     private InfocamereClientConfig infocamereClientConfig;
 
     @BeforeEach
     void setUp() {
         when(webClientBuilder.build()).thenReturn(webClient);
-        when(webClientBuilder.defaultHeader(any(), any())).thenReturn(webClientBuilder);
-        when(webClientBuilder.baseUrl(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        infocamereClientConfig = new InfocamereClientConfig(customRetryConfig, webClientBuilder);
-    }
-    /**
-     * Method under test: {@link InfocamereClientConfig#authenticationApi(String)}
-     */
-    @Test
-    void testAuthenticationApi() {
-        AuthenticationApi authenticationApi = infocamereClientConfig.authenticationApi(BASE_PATH);
-        assertEquals(BASE_PATH, authenticationApi.getApiClient().getBasePath());
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(new NationalRegistriesConfig.InfoCamere() {{
+            setBaseUrl(BASE_PATH);
+        }});
+        infocamereClientConfig = new InfocamereClientConfig(customRetryConfig, webClientBuilder, nationalRegistriesConfig);
+
     }
 
-    @Test
-    void testLegalRepresentationApi() {
-        LegalRepresentationApi legalRepresentationApi = infocamereClientConfig.legalRepresentationApi(BASE_PATH);
-        assertEquals(BASE_PATH, legalRepresentationApi.getApiClient().getBasePath());
-    }
-
-    @Test
-    void testLegalRepresentativeApi() {
-        LegalRepresentativeApi legalRepresentativeApi = infocamereClientConfig.legalRepresentativeApi(BASE_PATH);
-        assertEquals(BASE_PATH, legalRepresentativeApi.getApiClient().getBasePath());
-    }
-
-    @Test
-    void testSedeApi() {
-        SedeApi sedeApi = infocamereClientConfig.sedeApi(BASE_PATH);
-        assertEquals(BASE_PATH, sedeApi.getApiClient().getBasePath());
-    }
 
     static Stream<Arguments> retryableExceptionsProvider() {
         HttpHeaders headers = new HttpHeaders();

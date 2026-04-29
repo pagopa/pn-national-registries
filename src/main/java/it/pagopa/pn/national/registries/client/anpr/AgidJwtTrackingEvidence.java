@@ -4,12 +4,13 @@ import com.auth0.jwt.HeaderParams;
 import com.auth0.jwt.RegisteredClaims;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.utils.ClientUtils;
-import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
@@ -31,29 +32,24 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class AgidJwtTrackingEvidence {
 
     static final Pattern patternRoot = Pattern.compile(".*Root=(.*);P.*");
     static final Pattern patternTraceId = Pattern.compile("traceId:(.*)");
-    private final AnprSecretConfig anprSecretConfig;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
     private final KmsClient kmsClient;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
     private static final int MAX_SIZE_NUMBER = 13;
     private static final int MAX_BOUND_NUMBER = 10;
 
-    public AgidJwtTrackingEvidence(AnprSecretConfig anprSecretConfig,
-                                   KmsClient kmsClient,
-                                   PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
-        this.anprSecretConfig = anprSecretConfig;
-        this.kmsClient = kmsClient;
-        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
-    }
 
     public String createAgidJwt() {
         log.info("START - AgidJwtTrackingEvidence.createAgidJwt");
         long startTime = System.currentTimeMillis();
+        NationalRegistriesConfig.Anpr anpr = nationalRegistriesConfig.getAnpr();
         try {
-            PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPdndSecretName());
+            PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anpr.getPdndClientSecret());
 
             TokenHeader th = new TokenHeader(pdndSecretValue.getJwtConfig());
             TokenPayload tp = new TokenPayload(pdndSecretValue.getJwtConfig(), null);
@@ -94,7 +90,7 @@ public class AgidJwtTrackingEvidence {
         map.put("purposeId",tp.getPurposeId());
         map.put("dnonce", generateRandomDnonce());
         map.put("userID", traceId);
-        map.put("userLocation",anprSecretConfig.getEnvironmentType());
+        map.put("userLocation",nationalRegistriesConfig.getEnvironmentType());
         map.put("LoA","LoA3");
         map.put(RegisteredClaims.ISSUED_AT, tp.getIat());
         map.put(RegisteredClaims.EXPIRES_AT, tp.getExp());

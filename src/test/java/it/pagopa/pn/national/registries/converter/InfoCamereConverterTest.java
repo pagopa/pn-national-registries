@@ -1,11 +1,13 @@
 package it.pagopa.pn.national.registries.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +22,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.ttl=0",
@@ -33,7 +36,20 @@ class InfoCamereConverterTest {
     private InfoCamereConverter infoCamereConverter;
 
     @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
+
+    @MockitoBean
     private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setUp() {
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        NationalRegistriesConfig.Inipec inipecConfig = new NationalRegistriesConfig.Inipec();
+        inipecConfig.setBatchRequestPkSeparator("~");
+        inipecConfig.setTtl(60);
+        infoCamereConfig.setInipec(inipecConfig);
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
+    }
 
     @Test
     void testConvertToGetAddressIniPecOKDto() {

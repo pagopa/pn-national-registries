@@ -4,10 +4,11 @@ import com.auth0.jwt.HeaderParams;
 import com.auth0.jwt.RegisteredClaims;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
 import it.pagopa.pn.national.registries.model.SSLData;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kms.KmsClient;
@@ -22,17 +23,17 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_INFOCAMERE;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INFOCAMERE;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class InfoCamereJwsGenerator {
 
-    private final String aud;
-    private final String clientId;
     private final KmsClient kmsClient;
-    private final String infoCamereAuthRestSecret;
     private final SsmParameterConsumerActivation ssmParameterConsumerActivation;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
     private static final Pattern myRegex = Pattern.compile("=+$");
     private static final Pattern certRegex = Pattern.compile("(?<=-----BEGIN CERTIFICATE-----)[\\s\\S]*?(?=-----END CERTIFICATE-----)");
     private static final int SECONDS_TO_ADD_TO_EXPIRE = 360;
@@ -43,24 +44,11 @@ public class InfoCamereJwsGenerator {
     private static final Pattern PATTERN_CARRIAGE_RETURN = Pattern.compile(REGEX_CARRIAGE_RETURN);
 
 
-
-    public InfoCamereJwsGenerator(KmsClient kmsClient,
-                                  SsmParameterConsumerActivation ssmParameterConsumerActivation,
-                                  @Value("${pn.national.registries.infocamere.base-path}") String aud,
-                                  @Value("${pn.national.registries.infocamere.client-id}") String clientId,
-                                  @Value("${pn.national.registries.ssm.infocamere.auth-rest}") String infoCamereAuthRestSecret) {
-        this.aud = aud;
-        this.clientId = clientId;
-        this.kmsClient = kmsClient;
-        this.ssmParameterConsumerActivation = ssmParameterConsumerActivation;
-        this.infoCamereAuthRestSecret = infoCamereAuthRestSecret;
-    }
-
     public String createAuthRest(String scope) {
         log.info("start to createAuthRest");
         long startTime = System.currentTimeMillis();
         try {
-            Optional<SSLData> optSslData = ssmParameterConsumerActivation.getParameterValue(infoCamereAuthRestSecret, SSLData.class);
+            Optional<SSLData> optSslData = ssmParameterConsumerActivation.getParameterValue(nationalRegistriesConfig.getInfoCamere().getAuth(), SSLData.class);
             if (optSslData.isEmpty()) {
                 throw new PnInternalException(ERROR_MESSAGE_INFOCAMERE, ERROR_CODE_INFOCAMERE);
             }
@@ -114,10 +102,10 @@ public class InfoCamereJwsGenerator {
         long nowSeconds = System.currentTimeMillis() / 1000L;
         long expireSeconds = nowSeconds + SECONDS_TO_ADD_TO_EXPIRE;
 
-        map.put(RegisteredClaims.AUDIENCE, aud);
+        map.put(RegisteredClaims.AUDIENCE, nationalRegistriesConfig.getInfoCamere().getBaseUrl());
         map.put(RegisteredClaims.EXPIRES_AT, expireSeconds);
-        map.put(RegisteredClaims.ISSUER, clientId);
-        map.put(RegisteredClaims.SUBJECT, clientId);
+        map.put(RegisteredClaims.ISSUER, nationalRegistriesConfig.getInfoCamere().getClientId());
+        map.put(RegisteredClaims.SUBJECT, nationalRegistriesConfig.getInfoCamere().getClientId());
         map.put(RegisteredClaims.JWT_ID, UUID.randomUUID().toString());
         map.put("scope", scope);
 

@@ -1,16 +1,20 @@
 package it.pagopa.pn.national.registries.client.anpr;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
-import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.SSLData;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import software.amazon.awssdk.services.kms.KmsClient;
@@ -21,17 +25,26 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class AgidJwtTrackingEvidenceTest {
 
-    @MockitoBean
-    AnprSecretConfig anprSecretConfig;
+    @InjectMocks
+    AgidJwtTrackingEvidence agidJwtTrackingEvidence;
 
-    @MockitoBean
+    @Mock
+    NationalRegistriesConfig nationalRegistriesConfig;
+
+    @Mock
     KmsClient kmsClient;
 
-    @MockitoBean
+    @Mock
     PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+
+    @BeforeEach
+    void setup(){
+        NationalRegistriesConfig.Anpr anprConfig = new NationalRegistriesConfig.Anpr();
+        when(nationalRegistriesConfig.getAnpr()).thenReturn(anprConfig);
+    }
 
     @Test
     void testCreateAgidJWT() {
@@ -49,8 +62,6 @@ class AgidJwtTrackingEvidenceTest {
         pdndSecretValue.setEserviceAudience("sservice");
 
         when(pnNationalRegistriesSecretService.getPdndSecretValue(any())).thenReturn(pdndSecretValue);
-
-        AgidJwtTrackingEvidence agidJwtTrackingEvidence = new AgidJwtTrackingEvidence(anprSecretConfig, kmsClient, pnNationalRegistriesSecretService);
 
         SSLData sslData = new SSLData();
         sslData.setCert("TestCert");
@@ -80,9 +91,6 @@ class AgidJwtTrackingEvidenceTest {
 
         try (MockedStatic<MDCUtils> utilities = Mockito.mockStatic(MDCUtils.class)) {
             utilities.when(MDCUtils::retrieveMDCContextMap).thenReturn(mdcMap);
-
-
-            AgidJwtTrackingEvidence agidJwtTrackingEvidence = new AgidJwtTrackingEvidence(anprSecretConfig, kmsClient, pnNationalRegistriesSecretService);
 
             SSLData sslData = new SSLData();
             sslData.setCert("TestCert");
@@ -114,8 +122,6 @@ class AgidJwtTrackingEvidenceTest {
         try (MockedStatic<MDCUtils> utilities = Mockito.mockStatic(MDCUtils.class)) {
             utilities.when(MDCUtils::retrieveMDCContextMap).thenReturn(mdcMap);
 
-
-            AgidJwtTrackingEvidence agidJwtTrackingEvidence = new AgidJwtTrackingEvidence(anprSecretConfig, kmsClient, pnNationalRegistriesSecretService);
 
             SSLData sslData = new SSLData();
             sslData.setCert("TestCert");

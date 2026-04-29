@@ -6,6 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
@@ -33,12 +35,11 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class CustomRetryConfigTest {
 
+    @InjectMocks
     private CustomRetryConfig customRetryConfig;
 
-    @BeforeEach
-    void setUp() {
-        customRetryConfig = new CustomRetryConfig(3);
-    }
+    @Mock
+    NationalRegistriesConfig nationalRegistriesConfig;
 
     @Test
     void testBuildRetryExchangeFilterFunction() {
@@ -77,17 +78,6 @@ class CustomRetryConfigTest {
         Predicate<Throwable> customCondition = IOException.class::isInstance;
         ExchangeFilterFunction filterFunction = customRetryConfig.buildRetryExchangeFilterFunction(customCondition, 5);
         assertThat(filterFunction).isNotNull();
-    }
-
-    @Test
-    void getRetryMaxAttempts_returnsConfiguredValue() {
-        assertThat(customRetryConfig.getRetryMaxAttempts()).isEqualTo(3);
-    }
-
-    @Test
-    void constructor_setsRetryMaxAttempts() {
-        CustomRetryConfig config = new CustomRetryConfig(5);
-        assertThat(config.getRetryMaxAttempts()).isEqualTo(5);
     }
 
     static Stream<Arguments> retryableExceptionsProvider() {

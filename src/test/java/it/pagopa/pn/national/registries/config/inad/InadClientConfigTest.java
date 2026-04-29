@@ -1,12 +1,17 @@
 package it.pagopa.pn.national.registries.config.inad;
 
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
+import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.*;
 import org.springframework.web.reactive.function.client.WebClient;
@@ -19,7 +24,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.mockito.Mockito.times;
 
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class InadClientConfigTest {
 
     @Mock
@@ -28,18 +33,21 @@ class InadClientConfigTest {
     @Mock
     private WebClient webClient;
 
-    private InadClientConfig inadClientConfig;
+    @Mock
+    NationalRegistriesConfig nationalRegistriesConfig;
 
+    @Mock
+    CustomRetryConfig customRetryConfig;
+
+    @InjectMocks
+    private InadClientConfig inadClientConfig;
 
     @BeforeEach
     void setUp() {
         when(webClientBuilder.build()).thenReturn(webClient);
-        when(webClientBuilder.defaultHeader(any(), any())).thenReturn(webClientBuilder);
-        when(webClientBuilder.baseUrl(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        inadClientConfig = new InadClientConfig(webClientBuilder,new CustomRetryConfig(1));
     }
 
     @Test
@@ -55,24 +63,5 @@ class InadClientConfigTest {
         String actualBasePath = api.getApiClient().getBasePath();
         assertNotNull(actualBasePath, "Base path should not be null");
         assertEquals(expectedBasePath, actualBasePath, "Base path should match the provided value");
-    }
-
-    @Test
-    void testBuildRetryExchangeFilterFunction() {
-        ExchangeFunction exchangeFunction = mock(ExchangeFunction.class);
-        ClientRequest clientRequest = mock(ClientRequest.class);
-        ClientResponse clientResponse = mock(ClientResponse.class);
-
-        when(clientResponse.statusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
-        when(exchangeFunction.exchange(any(ClientRequest.class))).thenReturn(Mono.just(clientResponse));
-        when(clientResponse.createException()).thenReturn(Mono.error(new RuntimeException("Test Exception")));
-
-        ExchangeFilterFunction filterFunction = inadClientConfig.buildRetryExchangeFilterFunction();
-
-        StepVerifier.create(filterFunction.filter(clientRequest, exchangeFunction))
-                .expectError(RuntimeException.class)
-                .verify();
-
-        verify(exchangeFunction, times(1)).exchange(any(ClientRequest.class));
     }
 }

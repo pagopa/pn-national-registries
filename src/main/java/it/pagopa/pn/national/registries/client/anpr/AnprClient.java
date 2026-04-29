@@ -7,7 +7,7 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
 import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
-import it.pagopa.pn.national.registries.config.anpr.AnprSecretConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.api.E002ServiceApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RichiestaE002;
@@ -16,13 +16,14 @@ import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import jakarta.annotation.PostConstruct;
+import jakarta.xml.bind.DatatypeConverter;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
-import jakarta.xml.bind.DatatypeConverter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -34,29 +35,16 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 
 @Component
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class AnprClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
     private final AgidJwtSignature agidJwtSignature;
     private final E002ServiceApi e002ServiceApi;
     private final AgidJwtTrackingEvidence agidJwtTrackingEvidence;
-    private final AnprSecretConfig anprSecretConfig;
-
+    private final NationalRegistriesConfig nationalRegistriesConfig;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
-    protected AnprClient(AccessTokenExpiringMap accessTokenExpiringMap,
-                         AgidJwtSignature agidJwtSignature,
-                         E002ServiceApi e002ServiceApi,
-                         AgidJwtTrackingEvidence agidJwtTrackingEvidence,
-                         AnprSecretConfig anprSecretConfig,
-                         PnNationalRegistriesSecretService pnNationalRegistriesSecretService) {
-        this.accessTokenExpiringMap = accessTokenExpiringMap;
-        this.agidJwtSignature = agidJwtSignature;
-        this.e002ServiceApi = e002ServiceApi;
-        this.agidJwtTrackingEvidence = agidJwtTrackingEvidence;
-        this.anprSecretConfig = anprSecretConfig;
-        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
-    }
 
     @PostConstruct
     public void init() {
@@ -66,7 +54,7 @@ public class AnprClient {
     public Mono<RispostaE002OK> callEService(RichiestaE002 requestDto) {
         String agidTrackingEvidence = agidJwtTrackingEvidence.createAgidJwt();
         String auditAudience = createDigestFromAuditJws(agidTrackingEvidence);
-        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(anprSecretConfig.getPdndSecretName());
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(nationalRegistriesConfig.getAnpr().getPdndClientSecret());
         pdndSecretValue.setAuditDigest(auditAudience);
         return accessTokenExpiringMap.getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, true)
                 .flatMap(tokenEntry -> callAnpr(requestDto, tokenEntry, agidTrackingEvidence))

@@ -3,13 +3,7 @@ package it.pagopa.pn.national.registries.converter;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.utils.dynamodb.async.DynamoDbAsyncTableDecorator;
-import it.pagopa.pn.national.registries.client.anpr.AnprClient;
-import it.pagopa.pn.national.registries.client.inad.InadClient;
-import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
-import it.pagopa.pn.national.registries.client.ipa.IpaClient;
-import it.pagopa.pn.national.registries.config.CachedSecretsManagerConsumer;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
-import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -24,28 +18,23 @@ import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
-import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
-import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
-import it.pagopa.pn.national.registries.service.*;
+import it.pagopa.pn.national.registries.service.GatewayService;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
-import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
-import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
-import software.amazon.awssdk.services.secretsmanager.SecretsManagerClient;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
@@ -60,19 +49,19 @@ import static org.mockito.Mockito.*;
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.ttl=0"
 })
-@ContextConfiguration(classes = GatewayConverter.class)
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class GatewayConverterTest {
 
     private static final String C_ID = "correlationId";
     private static final String CF = "CF";
 
-    @Autowired
+    @InjectMocks
     private GatewayConverter gatewayConverter;
-    @MockitoBean
+
+    @Mock
     private ObjectMapper objectMapper;
 
-    @MockitoBean
+    @Mock
     private FeatureEnabledUtils featureEnabledUtils;
 
 
@@ -297,54 +286,10 @@ class GatewayConverterTest {
         List<DigitalAddress> digitalAddress = actualIpaToSqsDtoResult.getDigitalAddress();
         assertEquals(1, digitalAddress.size());
         assertEquals("foo", actualIpaToSqsDtoResult.getCorrelationId());
-        DigitalAddress getResult = digitalAddress.get(0);
+        DigitalAddress getResult = digitalAddress.getFirst();
         assertEquals("foo", getResult.getAddress());
         assertEquals(IpaConverter.ADDRESS_TYPE, getResult.getType());
         assertEquals("IMPRESA", getResult.getRecipient());
-    }
-
-    /**
-     * Method under test: {@link GatewayConverter#ipaToSqsDto(String, IPAPecDto)}
-     */
-    @Test
-    void testIpaToSqsDto4() {
-        DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient = mock(DynamoDbEnhancedAsyncClient.class);
-        when(dynamoDbEnhancedAsyncClient.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(
-                new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(
-                        new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(mock(DynamoDbAsyncTable.class)))))));
-        CounterRepositoryImpl counterRepository = new CounterRepositoryImpl(dynamoDbEnhancedAsyncClient,
-                "correlationId: {} - IPA - WS23 - domicili digitali non presenti");
-
-        ValidateTaxIdUtils validateTaxIdUtils = mock(ValidateTaxIdUtils.class);
-
-        AnprService anprService = new AnprService(new AnprConverter(List.of(new OldAnprAddressStrategy(), new FullAnprAddressStrategy(), new OldMinimalAnprAddressStrategy()), mock(NationalRegistriesConfig.class)), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
-
-        DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient2 = mock(DynamoDbEnhancedAsyncClient.class);
-        when(dynamoDbEnhancedAsyncClient2.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(
-                new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(
-                        new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(mock(DynamoDbAsyncTable.class)))))));
-        IniPecBatchRequestRepositoryImpl iniPecBatchRequestRepository = new IniPecBatchRequestRepositoryImpl(
-                dynamoDbEnhancedAsyncClient2, 3, 2);
-
-        InfoCamereClient infoCamereClient = mock(InfoCamereClient.class);
-        InfoCamereService infoCamereService = new InfoCamereService(infoCamereClient,
-                new InfoCamereConverter(2L, "~"), iniPecBatchRequestRepository, 2L, "~", validateTaxIdUtils);
-
-        InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils, featureEnabledUtils);
-        PnNationalRegistriesSecretService pnNationalRegistriesSecretService = new PnNationalRegistriesSecretService(new CachedSecretsManagerConsumer(mock(SecretsManagerClient.class)));
-        IpaSecretConfig ipaSecretConfig = new IpaSecretConfig("ipaSecret");
-        IpaService ipaService = new IpaService(new IpaConverter(), mock(IpaClient.class), validateTaxIdUtils, pnNationalRegistriesSecretService, ipaSecretConfig);
-
-        SqsAsyncClient sqsClient = mock(SqsAsyncClient.class);
-        GatewayService gatewayService = new GatewayService(anprService, inadService, infoCamereService, ipaService,
-                new SqsService("outputQueue", "inputQueue", "inputDlqQueue", sqsClient,
-                        new ObjectMapper()), featureEnabledUtils,
-                true);
-        CodeSqsDto actualIpaToSqsDtoResult = gatewayService.ipaToSqsDto("42", new IPAPecDto());
-        assertEquals(DIGITAL.name(), actualIpaToSqsDtoResult.getAddressType());
-        assertEquals("42", actualIpaToSqsDtoResult.getCorrelationId());
-        verify(dynamoDbEnhancedAsyncClient).table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any());
-        verify(dynamoDbEnhancedAsyncClient2).table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any());
     }
 
 
@@ -488,15 +433,6 @@ class GatewayConverterTest {
         assertEquals(C_ID, iniPecRequestBodyDto.getFilter().getCorrelationId());
     }
 
-/*    @Test
-    void testConvertToGetIpaPecRequest(){
-        AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
-        AddressRequestBodyFilterDto addressRequestBodyFilterDto = new AddressRequestBodyFilterDto();
-        addressRequestBodyFilterDto.setTaxId("taxId");
-        addressRequestBodyDto.setFilter(addressRequestBodyFilterDto);
-        assertNotNull(gatewayConverter.convertToGetIpaPecRequest(addressRequestBodyDto));
-    }*/
-
     @Test
     void testConvertToGetDigitalAddressInadRequest2(){
         BatchRequest batchRequest = new BatchRequest();
@@ -597,7 +533,7 @@ class GatewayConverterTest {
 
         assertEquals(2, result.size());
 
-        AddressQueryRequest request1 = result.get(0);
+        AddressQueryRequest request1 = result.getFirst();
         assertEquals("correlationId", request1.getCorrelationId());
         assertEquals(now, request1.getReferenceRequestDate());
         assertEquals("taxId1", request1.getTaxId());
@@ -623,6 +559,7 @@ class GatewayConverterTest {
 
         GetAddressANPRRequestBodyDto result = gatewayConverter.convertToGetAddressAnprRequest(addressQueryRequest);
 
+        assertNotNull(result.getFilter());
         assertEquals("testCorrelationId", result.getFilter().getRequestReason());
         assertEquals("testTaxId", result.getFilter().getTaxId());
         assertEquals("2023-10-01", result.getFilter().getReferenceRequestDate());
@@ -689,6 +626,7 @@ class GatewayConverterTest {
 
         GetAddressRegistroImpreseRequestBodyDto result = gatewayConverter.convertToGetAddressRegistroImpreseRequest(addressQueryRequest);
 
+        assertNotNull(result.getFilter());
         assertEquals("testTaxId", result.getFilter().getTaxId());
     }
 
@@ -738,7 +676,7 @@ class GatewayConverterTest {
         assertNotNull(result.getAddresses());
         assertEquals(1, result.getAddresses().size());
 
-        PhysicalAddressResponseDto responseDto = result.getAddresses().get(0);
+        PhysicalAddressResponseDto responseDto = result.getAddresses().getFirst();
         assertNotNull(responseDto.getPhysicalAddress());
         assertEquals("Test Address", responseDto.getPhysicalAddress().getAddress());
         assertEquals("12345", responseDto.getPhysicalAddress().getZip());

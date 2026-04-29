@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.AddressRegistroImprese;
@@ -11,13 +12,13 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -31,25 +32,41 @@ import static org.mockito.Mockito.when;
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.ttl=0"
 })
-@ContextConfiguration(classes = {InfoCamereService.class})
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class InfoCamereServiceTest {
 
-    @Autowired
+    @InjectMocks
     InfoCamereService infoCamereService;
 
-    @MockitoBean
+    @Mock
     InfoCamereConverter infoCamereConverter;
-    @MockitoBean
+
+    @Mock
     InfoCamereClient infoCamereClient;
-    @MockitoBean
+
+    @Mock
     IniPecBatchRequestRepository batchRequestRepository;
 
-    @MockitoBean
+    @Mock
     ValidateTaxIdUtils validateTaxIdUtils;
+
+    @Mock
+    NationalRegistriesConfig nationalRegistriesConfig;
+
+    NationalRegistriesConfig.InfoCamere infoCamereConfig;
+
+    @BeforeEach
+    void setup() {
+        infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        NationalRegistriesConfig.Inipec inipecConfig = new NationalRegistriesConfig.Inipec();
+        inipecConfig.setTtl(0);
+        infoCamereConfig.setInipec(inipecConfig);
+    }
 
     @Test
     void testGetDigitalAddress() {
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
+
         GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
         GetDigitalAddressIniPECRequestBodyFilterDto dto = new GetDigitalAddressIniPECRequestBodyFilterDto();
         dto.setCorrelationId("correlationId");

@@ -1,12 +1,16 @@
 package it.pagopa.pn.national.registries.client.infocamere;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.AuthenticationApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -23,30 +27,22 @@ import java.nio.charset.StandardCharsets;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-@ContextConfiguration(classes = {InfoCamereTokenClient.class, String.class})
-@ExtendWith(SpringExtension.class)
+@ExtendWith(MockitoExtension.class)
 class InfoCamereTokenClientTest {
-    @Autowired
+
+    @InjectMocks
     private InfoCamereTokenClient infoCamereTokenClient;
 
-    @MockitoBean
+    @Mock
     private InfoCamereJwsGenerator infoCamereJwsGenerator;
 
-    @MockitoBean
+    @Mock
     AuthenticationApi authenticationApi;
 
-    final String clientId = "tezt_clientId";
+    @Mock
+    NationalRegistriesConfig nationalRegistriesConfig;
 
-    @BeforeEach
-    public void setup() {
-        ApiClient apiClient = mock(ApiClient.class);
-        authenticationApi = mock(AuthenticationApi.class);
 
-        doNothing().when(apiClient).setBearerToken(anyString());
-        when(apiClient.addDefaultHeader(anyString(), anyString())).thenReturn(apiClient);
-
-        when(authenticationApi.getApiClient()).thenReturn(apiClient);
-    }
     /**
      * Method under test: {@link InfoCamereTokenClient#getToken(String)}
      */
@@ -61,7 +57,9 @@ class InfoCamereTokenClientTest {
 
     @Test
     void callGetTokenTest() {
-        InfoCamereTokenClient infoCamereTokenClient1 = new InfoCamereTokenClient(clientId, infoCamereJwsGenerator, authenticationApi);
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
+        when(authenticationApi.getToken(any(), any())).thenReturn(Mono.just("token"));
 
         String scope = "test_scope";
         String jws = "jws";
@@ -70,7 +68,7 @@ class InfoCamereTokenClientTest {
 
         when(authenticationApi.getToken(any(), any())).thenReturn(Mono.just(jws));
 
-        StepVerifier.create(infoCamereTokenClient1.getToken(scope))
+        StepVerifier.create(infoCamereTokenClient.getToken(scope))
                 .expectNext(jws)
                 .verifyComplete();
     }
@@ -84,21 +82,25 @@ class InfoCamereTokenClientTest {
 
     @Test
     void testGetTokenWebException() {
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         String scope = "test_scope";
-        InfoCamereTokenClient infoCamereTokenClient1 = new InfoCamereTokenClient(clientId, infoCamereJwsGenerator, authenticationApi);
+        when(authenticationApi.getToken(any(), any())).thenReturn(Mono.just("token"));
 
         String jws = "jws";
         WebClientResponseException ex = buildException();
         when(infoCamereJwsGenerator.createAuthRest(any())).thenReturn(jws);
         when(authenticationApi.getToken(any(), any())).thenReturn(Mono.error(ex));
 
-        StepVerifier.create(infoCamereTokenClient1.getToken(scope)).expectError(PnNationalRegistriesException.class).verify();
+        StepVerifier.create(infoCamereTokenClient.getToken(scope)).expectError(PnNationalRegistriesException.class).verify();
     }
 
     @Test
     void testGetTokenWebUnauthorizedException() {
+        NationalRegistriesConfig.InfoCamere infoCamereConfig = new NationalRegistriesConfig.InfoCamere();
+        when(nationalRegistriesConfig.getInfoCamere()).thenReturn(infoCamereConfig);
         String scope = "test_scope";
-        InfoCamereTokenClient infoCamereTokenClient1 = new InfoCamereTokenClient(clientId, infoCamereJwsGenerator, authenticationApi);
+        when(authenticationApi.getToken(any(), any())).thenReturn(Mono.just("token"));
 
         String jws = "jws";
         when(infoCamereJwsGenerator.createAuthRest(any())).thenReturn(jws);
@@ -107,7 +109,7 @@ class InfoCamereTokenClientTest {
                 HttpStatus.UNAUTHORIZED.getReasonPhrase(), null, null, null);
         when(authenticationApi.getToken(any(), any())).thenReturn(Mono.error(exception));
 
-        StepVerifier.create(infoCamereTokenClient1.getToken(scope)).expectError(PnInternalException.class).verify();
+        StepVerifier.create(infoCamereTokenClient.getToken(scope)).expectError(PnInternalException.class).verify();
     }
 }
 

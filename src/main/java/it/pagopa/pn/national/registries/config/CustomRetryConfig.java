@@ -3,8 +3,8 @@ package it.pagopa.pn.national.registries.config;
 import io.netty.handler.timeout.TimeoutException;
 import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
 import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.ExchangeFilterFunction;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
@@ -23,20 +23,17 @@ import java.util.function.Predicate;
 @Slf4j
 @Component
 @Data
+@RequiredArgsConstructor
 public class CustomRetryConfig {
 
-    private final int retryMaxAttempts;
-
-    public CustomRetryConfig(@Value("${pn.national.registries.custom.retry.max-attempts}") int retryMaxAttempts) {
-        this.retryMaxAttempts = retryMaxAttempts;
-    }
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     public ExchangeFilterFunction buildRetryExchangeFilterFunction() {
-        return buildRetryExchangeFilterFunction(defaultRetryCondition, this.retryMaxAttempts);
+        return buildRetryExchangeFilterFunction(defaultRetryCondition, nationalRegistriesConfig.getCustomRetryMaxAttempts());
     }
 
     public ExchangeFilterFunction buildRetryExchangeFilterFunction(Predicate<Throwable> retryCondition) {
-        return buildRetryExchangeFilterFunction(retryCondition, this.retryMaxAttempts);
+        return buildRetryExchangeFilterFunction(retryCondition, nationalRegistriesConfig.getCustomRetryMaxAttempts());
     }
 
     public ExchangeFilterFunction buildRetryExchangeFilterFunction(Predicate<Throwable> retryCondition, int maxRetryAttempts) {
