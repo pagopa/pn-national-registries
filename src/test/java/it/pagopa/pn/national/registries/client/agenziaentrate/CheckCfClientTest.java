@@ -9,7 +9,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.ApiCli
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.VerificheApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.dto.Richiesta;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.dto.VerificaCodiceFiscale;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
@@ -69,8 +68,7 @@ class CheckCfClientTest {
         taxIdVerification.setMessaggio("valid");
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(verificheApi.getApiClient()).thenReturn(mock(ApiClient.class));
@@ -99,8 +97,7 @@ class CheckCfClientTest {
         when(objectMapper.writeValueAsString(any())).thenReturn(richiestaJson);
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(verificheApi.getApiClient()).thenReturn(mock(ApiClient.class));

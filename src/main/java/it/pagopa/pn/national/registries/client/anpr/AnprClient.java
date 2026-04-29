@@ -81,9 +81,9 @@ public class AnprClient {
         String s = convertToJson(request);
         String digest = createDigestFromPayload(s);
         log.debug("digest: {}", digest);
-        var bearerToken = "Bearer " + tokenEntry.getTokenValue();
+        var bearerToken = "Bearer " + tokenEntry.getBearerToken();
         var agidJWTSignature = agidJwtSignature.createAgidJwt(digest);
-        var bearerAuth = tokenEntry.getTokenValue();
+        var bearerAuth = tokenEntry.getBearerToken();
         return e002ServiceApi.e002(request, bearerToken, agidJWTSignature, agidTrackingEvidence, bearerAuth, digest)
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ANPR, throwable.getMessage(), throwable);

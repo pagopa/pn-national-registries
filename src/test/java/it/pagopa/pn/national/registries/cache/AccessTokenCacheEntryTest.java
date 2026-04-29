@@ -13,13 +13,13 @@ class AccessTokenCacheEntryTest {
     @Test
     void setClientCredentials() {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        TokenType tokenType = TokenType.BEARER;
+        String auditToken = "test auditToken";
         ClientCredentialsResponse client = new ClientCredentialsResponse();
         client.setAccessToken("test");
-        client.setTokenType(tokenType);
         accessTokenCacheEntry.setClientCredentials(client);
-        Assertions.assertEquals("test",accessTokenCacheEntry.getTokenValue());
+        accessTokenCacheEntry.setAuditToken(auditToken);
+        Assertions.assertEquals("test",accessTokenCacheEntry.getBearerToken());
         Assertions.assertEquals("purposeId",accessTokenCacheEntry.getTokenKey());
-        Assertions.assertEquals("Bearer",accessTokenCacheEntry.getTokenType().getValue());
+        Assertions.assertEquals("test auditToken",accessTokenCacheEntry.getAuditToken());
     }
 }

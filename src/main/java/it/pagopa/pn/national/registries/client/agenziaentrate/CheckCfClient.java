@@ -56,7 +56,7 @@ public class CheckCfClient {
 
     private Mono<VerificaCodiceFiscale> callVerifica(Richiesta request, AccessTokenCacheEntry tokenEntry) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.ADE, PROCESS_SERVICE_AGENZIA_ENTRATE_CHECK_TAX_ID);
-        verificheApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
+        verificheApi.getApiClient().setBearerToken(tokenEntry.getBearerToken());
         return verificheApi.postVerificaCodiceFiscale(request)
                 .doOnError(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.ADE, throwable.getMessage(), throwable);

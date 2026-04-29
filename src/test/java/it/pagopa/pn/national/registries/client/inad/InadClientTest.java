@@ -8,7 +8,6 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
 import it.pagopa.pn.national.registries.model.JwtConfig;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
@@ -57,8 +56,7 @@ class InadClientTest {
         response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
 
@@ -97,8 +95,7 @@ class InadClientTest {
         response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());
@@ -124,8 +121,7 @@ class InadClientTest {
         response.setSince(new Date());
 
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
-        accessTokenCacheEntry.setTokenValue("fafsff");
-        accessTokenCacheEntry.setTokenType(TokenType.BEARER);
+        accessTokenCacheEntry.setClientCredentials("fafsff");
 
         PdndSecretValue value = new PdndSecretValue();
         value.setJwtConfig(new JwtConfig());

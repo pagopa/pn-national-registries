@@ -59,7 +59,7 @@ public class InadClient {
 
     private Mono<ResponseRequestDigitalAddress> callExtract(String taxId, String practicalReference, AccessTokenCacheEntry tokenEntry) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INAD, PROCESS_SERVICE_INAD_ADDRESS);
-        apiEstrazioniPuntualiApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
+        apiEstrazioniPuntualiApi.getApiClient().setBearerToken(tokenEntry.getBearerToken());
         return apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(taxId, practicalReference)
                 .doOnError(throwable -> {
                     String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())

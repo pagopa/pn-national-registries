@@ -1,7 +1,8 @@
 package it.pagopa.pn.national.registries.cache;
 
+import io.micrometer.common.lang.Nullable;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.ClientCredentialsResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
+import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -9,21 +10,22 @@ import lombok.extern.slf4j.Slf4j;
 @Slf4j
 public class AccessTokenCacheEntry {
 
-    private String tokenValue;
-    private TokenType tokenType;
+    @NotNull
+    private String bearerToken;
+    @Nullable
+    private String auditToken;
+    @NotNull
     private String tokenKey;
 
-    public AccessTokenCacheEntry(String tokenKey) {
+    public AccessTokenCacheEntry(@NotNull String tokenKey) {
         this.tokenKey = tokenKey;
     }
 
     public void setClientCredentials(ClientCredentialsResponse clientCredential) {
-        tokenValue = clientCredential.getAccessToken();
-        tokenType = clientCredential.getTokenType();
+        bearerToken = clientCredential.getAccessToken();
     }
 
-    public void setClientCredentials(String tokenValue) {
-        this.tokenValue = tokenValue;
-        this.tokenType = TokenType.BEARER;
+    public void setClientCredentials(@NotNull String bearerToken) {
+        this.bearerToken = bearerToken;
     }
 }
