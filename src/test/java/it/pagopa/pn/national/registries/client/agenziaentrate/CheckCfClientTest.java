@@ -70,7 +70,7 @@ class CheckCfClientTest {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setClientCredentials("fafsff");
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(verificheApi.getApiClient()).thenReturn(mock(ApiClient.class));
         when(verificheApi.postVerificaCodiceFiscale(any())).thenReturn(Mono.just(taxIdVerification));
 
@@ -99,7 +99,7 @@ class CheckCfClientTest {
         AccessTokenCacheEntry accessTokenCacheEntry = new AccessTokenCacheEntry("purposeId");
         accessTokenCacheEntry.setClientCredentials("fafsff");
 
-        when(accessTokenExpiringMap.getPDNDToken(any(), any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
+        when(accessTokenExpiringMap.getPDNDToken(any(), any(), anyBoolean())).thenReturn(Mono.just(accessTokenCacheEntry));
         when(verificheApi.getApiClient()).thenReturn(mock(ApiClient.class));
         when(verificheApi.postVerificaCodiceFiscale(any())).thenReturn(Mono.error(webClientResponseException));
 
