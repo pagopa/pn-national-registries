@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -13,7 +14,9 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.inipec.StatoImpresa;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 
@@ -28,6 +31,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
+import reactor.test.StepVerifier;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
@@ -250,6 +254,65 @@ class IniPecBatchRequestServiceTest {
         verify(batchRequestRepository, never()).setNewBatchIdToBatchRequest(any());
         verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);
+    }
+
+    @Test
+    void testStatoImpresaNull() {
+        BatchRequest batchRequest = new BatchRequest();
+        Pec pec = new Pec();
+        pec.setStatoImpresa(null);
+
+        BatchRequest result = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec).block();
+        assertSame(batchRequest, result);
+    }
+
+    @Test
+    void testStatoImpresaER() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setBatchId("testBatchId");
+        Pec pec = new Pec();
+        pec.setStatoImpresa(StatoImpresa.ER.getValue());
+
+        when(batchRequestRepository.update(any())).thenReturn(Mono.just(batchRequest));
+
+        BatchRequest result = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec).block();
+
+        assertSame(batchRequest, result);
+        assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
+        verify(batchRequestRepository).update(argThat(r ->
+                r.getBatchId().equals("testBatchId")));
+    }
+
+    @Test
+    void testStatoImpresaND() {
+        BatchRequest batchRequest = new BatchRequest();
+        Pec pec = new Pec();
+        pec.setStatoImpresa(StatoImpresa.ND.getValue());
+
+        BatchRequest result = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec).block();
+        assertSame(batchRequest, result);
+    }
+
+    @Test
+    void testStatoImpresaNF() {
+        BatchRequest batchRequest = new BatchRequest();
+        Pec pec = new Pec();
+        pec.setStatoImpresa(StatoImpresa.NF.getValue());
+
+        BatchRequest result = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec).block();
+        assertSame(batchRequest, result);
+    }
+
+    @Test
+    void testStatoImpresaInvalid() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setBatchId("testBatchId");
+        Pec pec = new Pec();
+        pec.setStatoImpresa("INVALID");
+
+        StepVerifier.create(iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec))
+                .expectErrorMatches(e -> e instanceof PnInternalException)
+                .verify();
     }
 
 }

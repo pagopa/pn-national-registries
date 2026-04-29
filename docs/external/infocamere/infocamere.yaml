@@ -493,12 +493,20 @@ components:
           description: List of PEC addresses of professionals
           items:
             $ref: '#/components/schemas/PecProfessionista'
+        statoImpresa:
+          type: string
+          description: >
+            Status of the company. Empty if at least one PEC is found for the company or professional. Otherwise:
+                - ER: temporary error, retry later;
+                - ND: not found in RI or INI-PEC;
+                - NF: exists in RI but no PEC found in INI-PEC.
       required:
         - cf
         - pecImpresa
       example:
         cf: "CF1"
         pecImpresa: "pec1@example.com"
+        statoImpresa: ""
         pecProfessionista:
           - pec: "pec1@example.com"
     PecProfessionista:
