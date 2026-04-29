@@ -20,11 +20,12 @@ public enum StatoImpresa {
     }
 
     public static StatoImpresa fromString(String value) {
-        try {
-            return StatoImpresa.valueOf(value);
-        } catch (IllegalArgumentException e) {
-            log.warn("Invalid statoImpresa value: {}", value);
-            throw new PnInternalException("Invalid statoImpresa value: " + value, ERROR_CODE_INVALID_STATO_IMPRESA);
+        for (StatoImpresa stato : StatoImpresa.values()) {
+            if (stato.getValue().equals(value)) {
+                return stato;
+            }
         }
+        log.warn("Invalid statoImpresa value: {}", value);
+        throw new PnInternalException("Invalid statoImpresa value. Allowed values: ER, ND, NF", ERROR_CODE_INVALID_STATO_IMPRESA);
     }
 }

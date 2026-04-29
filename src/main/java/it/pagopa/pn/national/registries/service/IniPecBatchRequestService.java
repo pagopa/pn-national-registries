@@ -230,12 +230,13 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     public Mono<BatchRequest> evaluateBusinessState(BatchRequest batchRequest, Pec pec) {
-        if (pec.getStatoImpresa() == null) {
+        String statoImpresaStr = pec.getStatoImpresa();
+        if (statoImpresaStr == null|| statoImpresaStr.trim().isEmpty()) {
             log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
             return Mono.just(batchRequest);
         }
 
-        return Mono.fromCallable(() -> StatoImpresa.fromString(pec.getStatoImpresa()))
+        return Mono.fromCallable(() -> StatoImpresa.fromString(statoImpresaStr))
                 .doOnNext(statoImpresa -> log.debug("IniPEC - correlationId {} - statoImpresa is {}",
                         batchRequest.getCorrelationId(), statoImpresa))
                 .flatMap(statoImpresa -> switch (statoImpresa) {

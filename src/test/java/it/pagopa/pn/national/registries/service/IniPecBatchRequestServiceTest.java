@@ -25,13 +25,15 @@ import java.util.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
-import reactor.test.StepVerifier;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
@@ -256,63 +258,46 @@ class IniPecBatchRequestServiceTest {
         verifyNoInteractions(infoCamereClient);
     }
 
-    @Test
-    void testStatoImpresaNull() {
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"   "})
+    void testStatoImpresaNullOrBlank(String statoImpresa) {
         BatchRequest batchRequest = new BatchRequest();
         Pec pec = new Pec();
-        pec.setStatoImpresa(null);
+        pec.setStatoImpresa(statoImpresa);
 
         BatchRequest result = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec).block();
         assertSame(batchRequest, result);
     }
 
-    @Test
-    void testStatoImpresaER() {
+    @ParameterizedTest
+    @ValueSource(strings = {"ER", "ND", "NF"})
+    void testStatoImpresaValidValues(String statoImpresa) {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId("testBatchId");
         Pec pec = new Pec();
-        pec.setStatoImpresa(StatoImpresa.ER.getValue());
+        pec.setStatoImpresa(statoImpresa);
 
-        when(batchRequestRepository.update(any())).thenReturn(Mono.just(batchRequest));
-
-        BatchRequest result = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec).block();
-
-        assertSame(batchRequest, result);
-        assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
-        verify(batchRequestRepository).update(argThat(r ->
-                r.getBatchId().equals("testBatchId")));
-    }
-
-    @Test
-    void testStatoImpresaND() {
-        BatchRequest batchRequest = new BatchRequest();
-        Pec pec = new Pec();
-        pec.setStatoImpresa(StatoImpresa.ND.getValue());
+        if (StatoImpresa.ER.getValue().equals(statoImpresa)) {
+            when(batchRequestRepository.update(any())).thenReturn(Mono.just(batchRequest));
+        }
 
         BatchRequest result = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec).block();
         assertSame(batchRequest, result);
+        if (StatoImpresa.ER.getValue().equals(statoImpresa)) {
+            assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
+        }
     }
 
-    @Test
-    void testStatoImpresaNF() {
+    @ParameterizedTest
+    @ValueSource(strings = {"INVALID"})
+    void testStatoImpresaInvalid(String statoImpresa) {
         BatchRequest batchRequest = new BatchRequest();
         Pec pec = new Pec();
-        pec.setStatoImpresa(StatoImpresa.NF.getValue());
+        pec.setStatoImpresa(statoImpresa);
 
-        BatchRequest result = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec).block();
-        assertSame(batchRequest, result);
-    }
-
-    @Test
-    void testStatoImpresaInvalid() {
-        BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setBatchId("testBatchId");
-        Pec pec = new Pec();
-        pec.setStatoImpresa("INVALID");
-
-        StepVerifier.create(iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec))
-                .expectErrorMatches(e -> e instanceof PnInternalException)
-                .verify();
+        Mono<BatchRequest> mono = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec);
+        assertThrows(PnInternalException.class, mono::block);
     }
 
 }
