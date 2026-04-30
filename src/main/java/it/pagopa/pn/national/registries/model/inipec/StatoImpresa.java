@@ -1,31 +1,25 @@
 package it.pagopa.pn.national.registries.model.inipec;
 
-import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_INVALID_STATO_IMPRESA;
+import java.util.Arrays;
 
 @Getter
 @Slf4j
 public enum StatoImpresa {
-    ER("ER"),
-    ND("ND"),
-    NF("NF");
+    ER,
+    ND,
+    NF;
 
-    private final String value;
-
-    StatoImpresa(String value) {
-        this.value = value;
-    }
-
-    public static StatoImpresa fromString(String value) {
-        for (StatoImpresa stato : StatoImpresa.values()) {
-            if (stato.getValue().equals(value)) {
-                return stato;
-            }
-        }
-        log.warn("Invalid statoImpresa value: {}", value);
-        throw new PnInternalException("Invalid statoImpresa value. Allowed values: ER, ND, NF", ERROR_CODE_INVALID_STATO_IMPRESA);
+    public static StatoImpresa fromString(String value, String correlationId) {
+        return Arrays.stream(StatoImpresa.values())
+                .filter(stato -> stato.name().equalsIgnoreCase(value))
+                .findFirst()
+                .orElseThrow(() -> {
+                    log.error("Invalid attribute statoImpresa: {} for correlatioId: {}", value, correlationId);
+                    return new DigitalAddressException("Invalid attribute statoImpresa");
+                });
     }
 }

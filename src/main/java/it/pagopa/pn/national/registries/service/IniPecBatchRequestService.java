@@ -229,20 +229,26 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 });
     }
 
-    public Mono<BatchRequest> evaluateBusinessState(BatchRequest batchRequest, Pec pec) {
+    public Mono<BatchRequest> evaluateStatoImpresa(BatchRequest batchRequest, Pec pec) {
+        log.info("evaluateStatoImpresa for correlationId: {} with statoImpresa: {}", batchRequest.getCorrelationId(), pec.getStatoImpresa());
         String statoImpresaStr = pec.getStatoImpresa();
         if (statoImpresaStr == null|| statoImpresaStr.trim().isEmpty()) {
             log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
             return Mono.just(batchRequest);
         }
 
-        return Mono.fromCallable(() -> StatoImpresa.fromString(statoImpresaStr))
+        return Mono.fromCallable(() -> StatoImpresa.fromString(statoImpresaStr, batchRequest.getCorrelationId()))
                 .doOnNext(statoImpresa -> log.debug("IniPEC - correlationId {} - statoImpresa is {}",
                         batchRequest.getCorrelationId(), statoImpresa))
                 .flatMap(statoImpresa -> switch (statoImpresa) {
                     case ER -> handleERState(batchRequest);
-                    case ND, NF -> Mono.just(batchRequest);
+                    case ND, NF -> handlePecNotFoundResponse(batchRequest);
                 });
+    }
+
+    private Mono<BatchRequest> handlePecNotFoundResponse(BatchRequest request) {
+        //TODO nel task successivo
+        return Mono.just(request);
     }
 
     private Mono<BatchRequest> handleERState(BatchRequest batchRequest) {

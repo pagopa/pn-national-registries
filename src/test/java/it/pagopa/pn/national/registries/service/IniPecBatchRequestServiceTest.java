@@ -5,7 +5,6 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -266,7 +265,7 @@ class IniPecBatchRequestServiceTest {
         Pec pec = new Pec();
         pec.setStatoImpresa(statoImpresa);
 
-        BatchRequest result = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec).block();
+        BatchRequest result = iniPecBatchRequestService.evaluateStatoImpresa(batchRequest, pec).block();
         assertSame(batchRequest, result);
     }
 
@@ -278,13 +277,13 @@ class IniPecBatchRequestServiceTest {
         Pec pec = new Pec();
         pec.setStatoImpresa(statoImpresa);
 
-        if (StatoImpresa.ER.getValue().equals(statoImpresa)) {
+        if (StatoImpresa.ER.name().equals(statoImpresa)) {
             when(batchRequestRepository.update(any())).thenReturn(Mono.just(batchRequest));
         }
 
-        BatchRequest result = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec).block();
+        BatchRequest result = iniPecBatchRequestService.evaluateStatoImpresa(batchRequest, pec).block();
         assertSame(batchRequest, result);
-        if (StatoImpresa.ER.getValue().equals(statoImpresa)) {
+        if (StatoImpresa.ER.name().equals(statoImpresa)) {
             assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
         }
     }
@@ -296,8 +295,8 @@ class IniPecBatchRequestServiceTest {
         Pec pec = new Pec();
         pec.setStatoImpresa(statoImpresa);
 
-        Mono<BatchRequest> mono = iniPecBatchRequestService.evaluateBusinessState(batchRequest, pec);
-        assertThrows(PnInternalException.class, mono::block);
+        Mono<BatchRequest> mono = iniPecBatchRequestService.evaluateStatoImpresa(batchRequest, pec);
+        assertThrows(DigitalAddressException.class, mono::block);
     }
 
 }

@@ -73,6 +73,5 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_MESSAGE_ADE_LEGAL_CREATE_SOAP = "Errore durante la creazione dell'envelope SOAP";
 
     public static final String ERROR_CODE_NATIONAL_REGISTRIES_HANDLEEVENTFAILED = "PN_NATIONAL_REGISTRIES_HANDLEEVENTFAILED";
-    public static final String ERROR_CODE_INVALID_STATO_IMPRESA = "PN_NATIONAL_REGISTRIES_INVALID_STATO_IMPRESA";
 
 }
