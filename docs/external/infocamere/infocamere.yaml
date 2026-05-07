@@ -530,11 +530,17 @@ components:
           description: Tax ID (Codice Fiscale)
           x-field-extra-annotation: "@lombok.ToString.Exclude"
           format: password
+        denominazione:
+          type: string
+          description: Company name (external scenario)
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         indirizzoLocalizzazione:
           $ref: '#/components/schemas/LegalAddress'
       example:
         dataOraEstrazione: "2024-05-21T12:30:00Z"
         cf: "ABCDEF1234567890"
+        denominazione: "Company Name"
         indirizzoLocalizzazione:
           denominazione: "Company Name"
           via: "Via Roma"
@@ -543,6 +549,8 @@ components:
           toponimo: "Toponym"
           nCivico: "123"
           cap: "00100"
+          stato: "ITALIA"
+          cstato: "IT"
     LegalAddress:
       type: object
       properties:
@@ -581,6 +589,16 @@ components:
           description: The postal code of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
           format: password
+        stato:
+          type: string
+          description: Country description
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
+        cstato:
+          type: string
+          description: Country code
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
       example:
         denominazione: "Company Name"
         via: "Via Roma"
@@ -589,6 +607,8 @@ components:
         toponimo: "Toponym"
         nCivico: "123"
         cap: "00100"
+        stato: "ITALIA"
+        cstato: "IT"
 
     InfoCamereLegalInstituionsResponse:
       type: object

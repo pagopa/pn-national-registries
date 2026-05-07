@@ -204,7 +204,7 @@ class InfoCamereConverterTest {
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
-        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
+        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now());
         addressRegistroImpreseResponse.setCf("taxId");
 
         GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
@@ -225,7 +225,7 @@ class InfoCamereConverterTest {
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
-        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
+        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now());
         addressRegistroImpreseResponse.setCf("taxId");
 
         GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
@@ -247,7 +247,7 @@ class InfoCamereConverterTest {
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
-        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
+        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now());
         addressRegistroImpreseResponse.setCf("taxId");
 
         GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
@@ -268,7 +268,7 @@ class InfoCamereConverterTest {
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
-        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
+        addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now());
         addressRegistroImpreseResponse.setCf("taxId");
 
         GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter

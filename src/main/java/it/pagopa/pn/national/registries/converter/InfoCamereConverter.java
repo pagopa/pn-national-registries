@@ -145,14 +145,31 @@ public class InfoCamereConverter {
     private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImprese response) {
         GetAddressRegistroImpreseOKProfessionalAddressDto dto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
         LegalAddress address = response.getIndirizzoLocalizzazione();
+        dto.setDescription(resolveDenominazione(response, address));
         if (Objects.nonNull(address)) {
             dto.setAddress(createLegalAddress(address));
             dto.setMunicipality(address.getComune());
             dto.setProvince(address.getProvincia());
             dto.setZip(address.getCap());
-            dto.setDescription(address.getVia());
+            dto.setForeignState(address.getStato());
         }
         return dto;
+    }
+
+    private String resolveDenominazione(AddressRegistroImprese response, LegalAddress address) {
+        return firstNonBlank(
+                response.getDenominazione(),
+                Objects.nonNull(address) ? address.getDenominazione() : null
+        );
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isEmpty()) {
+                return value;
+            }
+        }
+        return null;
     }
 
     private List<DigitalAddress> convertToDigitalAddress(Pec pec) {
