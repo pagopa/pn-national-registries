@@ -171,7 +171,7 @@ public class GatewayConverter {
         physicalAddress.setAddress(addressDto.getAddress());
         physicalAddress.setMunicipality(addressDto.getMunicipality());
         physicalAddress.setZip(addressDto.getZip());
-        physicalAddress.setForeignState(addressDto.getForeignState());
+        physicalAddress.setForeignState(addressDto.getStato());
         return physicalAddress;
     }
 

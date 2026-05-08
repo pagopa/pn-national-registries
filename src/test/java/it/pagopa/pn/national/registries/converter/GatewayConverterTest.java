@@ -433,11 +433,14 @@ class GatewayConverterTest {
         registroImpreseDto.setDescription("description");
         registroImpreseDto.setZip("zip");
         registroImpreseDto.setMunicipality("municipality");
+        registroImpreseDto.setStato("Italy");
+        registroImpreseDto.setCstato("IT");
         PhysicalAddress physicalAddress = gatewayConverter.convertRegImpToPhysicalAddress(registroImpreseDto);
         assertEquals("address", physicalAddress.getAddress());
         assertEquals("zip", physicalAddress.getZip());
         assertEquals("province", physicalAddress.getProvince());
         assertEquals("municipality", physicalAddress.getMunicipality());
+        assertEquals("Italy", physicalAddress.getForeignState());
     }
 
     /**
@@ -707,6 +710,7 @@ class GatewayConverterTest {
         assertEquals("12345", result.getPhysicalAddress().getZip());
         assertEquals("Test Province", result.getPhysicalAddress().getProvince());
         assertEquals("Test Municipality", result.getPhysicalAddress().getMunicipality());
+        assertEquals("Italy", result.getPhysicalAddress().getForeignState());
         assertEquals(1, result.getRecIndex());
         assertEquals("REGISTRO_IMPRESE", result.getRegistry());
     }
@@ -744,6 +748,7 @@ class GatewayConverterTest {
         assertEquals("12345", responseDto.getPhysicalAddress().getZip());
         assertEquals("Test Province", responseDto.getPhysicalAddress().getProvince());
         assertEquals("Test Municipality", responseDto.getPhysicalAddress().getMunicipality());
+        assertEquals("Italy", responseDto.getPhysicalAddress().getForeignState());
         assertEquals(1, responseDto.getRecIndex());
         assertEquals("ANPR", responseDto.getRegistry());
     }
@@ -754,6 +759,7 @@ class GatewayConverterTest {
         professionalAddress.setZip("12345");
         professionalAddress.setProvince("Test Province");
         professionalAddress.setMunicipality("Test Municipality");
+        professionalAddress.setStato("Italy");
 
         GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
         response.setProfessionalAddress(professionalAddress);
@@ -766,6 +772,7 @@ class GatewayConverterTest {
         physicalAddress.setZip("12345");
         physicalAddress.setProvince("Test Province");
         physicalAddress.setMunicipality("Test Municipality");
+        physicalAddress.setForeignState("Italy");
 
         GatewayAddressResponse.AddressInfo addressInfo = new GatewayAddressResponse.AddressInfo();
         addressInfo.setPhysicalAddress(physicalAddress);
