@@ -522,6 +522,11 @@ components:
     ServizioSedeImpresaResponse:
       type: object
       properties:
+        denominazione:
+          type: string
+          description: The name of the address
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         dataOraEstrazione:
           type: string
           description: The date and time of the extraction
@@ -530,17 +535,12 @@ components:
           description: Tax ID (Codice Fiscale)
           x-field-extra-annotation: "@lombok.ToString.Exclude"
           format: password
-        denominazione:
-          type: string
-          description: Company name (external scenario)
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
-          format: password
         indirizzoLocalizzazione:
           $ref: '#/components/schemas/LegalAddress'
       example:
+        denominazione: "Company Name"
         dataOraEstrazione: "2024-05-21T12:30:00Z"
         cf: "ABCDEF1234567890"
-        denominazione: "Company Name"
         indirizzoLocalizzazione:
           denominazione: "Company Name"
           via: "Via Roma"
@@ -549,7 +549,7 @@ components:
           toponimo: "Toponym"
           nCivico: "123"
           cap: "00100"
-          stato: "ITALIA"
+          stato: "Italy"
           cstato: "IT"
     LegalAddress:
       type: object
@@ -591,12 +591,12 @@ components:
           format: password
         stato:
           type: string
-          description: Country description
+          description: The state of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
           format: password
         cstato:
           type: string
-          description: Country code
+          description: The state code of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
           format: password
       example:
@@ -607,7 +607,7 @@ components:
         toponimo: "Toponym"
         nCivico: "123"
         cap: "00100"
-        stato: "ITALIA"
+        stato: "Italy"
         cstato: "IT"
 
     InfoCamereLegalInstituionsResponse:
