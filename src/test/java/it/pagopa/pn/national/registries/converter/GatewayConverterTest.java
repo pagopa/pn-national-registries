@@ -434,7 +434,6 @@ class GatewayConverterTest {
         registroImpreseDto.setZip("zip");
         registroImpreseDto.setMunicipality("municipality");
         registroImpreseDto.setStato("Italy");
-        registroImpreseDto.setCstato("IT");
         PhysicalAddress physicalAddress = gatewayConverter.convertRegImpToPhysicalAddress(registroImpreseDto);
         assertEquals("address", physicalAddress.getAddress());
         assertEquals("zip", physicalAddress.getZip());

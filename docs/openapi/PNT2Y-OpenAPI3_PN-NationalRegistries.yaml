@@ -870,6 +870,11 @@ components:
         professionalAddress:
           type: object
           properties:
+            denominazione:
+              type: string
+              description: The name of the address
+              x-field-extra-annotation: "@lombok.ToString.Exclude"
+              format: password
             description:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
