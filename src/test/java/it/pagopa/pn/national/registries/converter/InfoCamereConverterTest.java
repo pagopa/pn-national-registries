@@ -204,7 +204,6 @@ class InfoCamereConverterTest {
         legalAddress.setStato("Italy");
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
-        addressRegistroImpreseResponse.setDenominazione("Company Name");
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
         addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
         addressRegistroImpreseResponse.setCf("taxId");
@@ -213,7 +212,6 @@ class InfoCamereConverterTest {
                 .mapToResponseOkByResponse(addressRegistroImpreseResponse);
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
-        assertEquals("Company Name", actualMapToResponseOkResult.getProfessionalAddress().getDenominazione());
         assertEquals("Italy", actualMapToResponseOkResult.getProfessionalAddress().getStato());
     }
 
@@ -228,7 +226,6 @@ class InfoCamereConverterTest {
         legalAddress.setToponimo(null);
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
-        addressRegistroImpreseResponse.setDenominazione("Company Name");
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
         addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
         addressRegistroImpreseResponse.setCf("taxId");
@@ -238,7 +235,6 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
         assertEquals("", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
-        assertEquals("Company Name", actualMapToResponseOkResult.getProfessionalAddress().getDenominazione());
     }
 
     @Test
@@ -252,7 +248,6 @@ class InfoCamereConverterTest {
         legalAddress.setToponimo("");
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
-        addressRegistroImpreseResponse.setDenominazione("Company Name");
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
         addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
         addressRegistroImpreseResponse.setCf("taxId");
@@ -262,7 +257,6 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
         assertEquals("", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
-        assertEquals("Company Name", actualMapToResponseOkResult.getProfessionalAddress().getDenominazione());
     }
 
     @Test
@@ -276,7 +270,6 @@ class InfoCamereConverterTest {
         legalAddress.setStato("Italy");
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
-        addressRegistroImpreseResponse.setDenominazione("Company Name");
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
         addressRegistroImpreseResponse.setDataOraEstrazione(OffsetDateTime.now().toString());
         addressRegistroImpreseResponse.setCf("taxId");
@@ -286,7 +279,6 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
         assertEquals("Toponimo Via", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
-        assertEquals("Company Name", actualMapToResponseOkResult.getProfessionalAddress().getDenominazione());
         assertEquals("Italy", actualMapToResponseOkResult.getProfessionalAddress().getStato());
     }
 

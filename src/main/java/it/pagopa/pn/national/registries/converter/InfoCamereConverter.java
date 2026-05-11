@@ -144,7 +144,6 @@ public class InfoCamereConverter {
 
     private GetAddressRegistroImpreseOKProfessionalAddressDto convertToProfessionalAddressDto(AddressRegistroImprese response) {
         GetAddressRegistroImpreseOKProfessionalAddressDto dto = new GetAddressRegistroImpreseOKProfessionalAddressDto();
-        dto.setDenominazione(response.getDenominazione());
         LegalAddress address = response.getIndirizzoLocalizzazione();
         if (Objects.nonNull(address)) {
             dto.setAddress(createLegalAddress(address));
