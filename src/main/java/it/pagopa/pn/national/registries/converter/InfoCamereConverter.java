@@ -151,6 +151,7 @@ public class InfoCamereConverter {
             dto.setProvince(address.getProvincia());
             dto.setZip(address.getCap());
             dto.setDescription(address.getVia());
+            dto.setStato(address.getStato());
         }
         return dto;
     }

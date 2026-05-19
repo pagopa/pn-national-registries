@@ -201,6 +201,7 @@ class InfoCamereConverterTest {
         legalAddress.setVia("Street");
         legalAddress.setnCivico("42");
         legalAddress.setToponimo("Toponym");
+        legalAddress.setStato("Italy");
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
@@ -211,6 +212,7 @@ class InfoCamereConverterTest {
                 .mapToResponseOkByResponse(addressRegistroImpreseResponse);
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
+        assertEquals("Italy", actualMapToResponseOkResult.getProfessionalAddress().getStato());
     }
 
     @Test
@@ -265,6 +267,7 @@ class InfoCamereConverterTest {
         legalAddress.setCap("Postal Code");
         legalAddress.setProvincia("Province");
         legalAddress.setToponimo("Toponimo");
+        legalAddress.setStato("Italy");
 
         AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
         addressRegistroImpreseResponse.setIndirizzoLocalizzazione(legalAddress);
@@ -276,6 +279,7 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
         assertEquals("Toponimo Via", actualMapToResponseOkResult.getProfessionalAddress().getAddress());
+        assertEquals("Italy", actualMapToResponseOkResult.getProfessionalAddress().getStato());
     }
 
     @Test
