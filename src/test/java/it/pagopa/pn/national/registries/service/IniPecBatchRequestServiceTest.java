@@ -13,9 +13,7 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.inipec.StatoImpresa;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 
@@ -24,9 +22,6 @@ import java.util.*;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.NullAndEmptySource;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -256,47 +251,4 @@ class IniPecBatchRequestServiceTest {
         verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);
     }
-
-    @ParameterizedTest
-    @NullAndEmptySource
-    @ValueSource(strings = {"   "})
-    void testStatoImpresaNullOrBlank(String statoImpresa) {
-        BatchRequest batchRequest = new BatchRequest();
-        Pec pec = new Pec();
-        pec.setStatoImpresa(statoImpresa);
-
-        BatchRequest result = iniPecBatchRequestService.evaluateStatoImpresa(batchRequest, pec).block();
-        assertSame(batchRequest, result);
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"ER", "ND", "NF"})
-    void testStatoImpresaValidValues(String statoImpresa) {
-        BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setBatchId("testBatchId");
-        Pec pec = new Pec();
-        pec.setStatoImpresa(statoImpresa);
-
-        if (StatoImpresa.ER.name().equals(statoImpresa)) {
-            when(batchRequestRepository.update(any())).thenReturn(Mono.just(batchRequest));
-        }
-
-        BatchRequest result = iniPecBatchRequestService.evaluateStatoImpresa(batchRequest, pec).block();
-        assertSame(batchRequest, result);
-        if (StatoImpresa.ER.name().equals(statoImpresa)) {
-            assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
-        }
-    }
-
-    @ParameterizedTest
-    @ValueSource(strings = {"INVALID"})
-    void testStatoImpresaInvalid(String statoImpresa) {
-        BatchRequest batchRequest = new BatchRequest();
-        Pec pec = new Pec();
-        pec.setStatoImpresa(statoImpresa);
-
-        Mono<BatchRequest> mono = iniPecBatchRequestService.evaluateStatoImpresa(batchRequest, pec);
-        assertThrows(DigitalAddressException.class, mono::block);
-    }
-
 }

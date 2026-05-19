@@ -500,6 +500,10 @@ components:
                 - ER: temporary error, retry later;
                 - ND: not found in RI or INI-PEC;
                 - NF: exists in RI but no PEC found in INI-PEC.
+          enum:
+            - ER
+            - ND
+            - NF
       required:
         - cf
         - pecImpresa

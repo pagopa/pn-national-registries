@@ -9,10 +9,8 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.model.StatusDimension;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
-import it.pagopa.pn.national.registries.model.inipec.StatoImpresa;
 import it.pagopa.pn.national.registries.model.metrics.DimensionName;
 import it.pagopa.pn.national.registries.model.metrics.MetricName;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
@@ -205,7 +203,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .then();
     }
 
-    private Mono<Void> incrementAndCheckRetry(List<BatchRequest> requests, Throwable throwable, String batchId) {
+    protected Mono<Void> incrementAndCheckRetry(List<BatchRequest> requests, Throwable throwable, String batchId) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return Flux.fromStream(requests.stream())
                 .doOnNext(r -> {
@@ -228,33 +226,4 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     return iniPecBatchSqsService.sendListToDlqQueue(l);
                 });
     }
-
-    public Mono<BatchRequest> evaluateStatoImpresa(BatchRequest batchRequest, Pec pec) {
-        log.info("evaluateStatoImpresa for correlationId: {} with statoImpresa: {}", batchRequest.getCorrelationId(), pec.getStatoImpresa());
-        String statoImpresaStr = pec.getStatoImpresa();
-        if (statoImpresaStr == null|| statoImpresaStr.trim().isEmpty()) {
-            log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
-            return Mono.just(batchRequest);
-        }
-
-        return Mono.fromCallable(() -> StatoImpresa.fromString(statoImpresaStr, batchRequest.getCorrelationId()))
-                .doOnNext(statoImpresa -> log.debug("IniPEC - correlationId {} - statoImpresa is {}",
-                        batchRequest.getCorrelationId(), statoImpresa))
-                .flatMap(statoImpresa -> switch (statoImpresa) {
-                    case ER -> handleERState(batchRequest);
-                    case ND, NF -> handlePecNotFoundResponse(batchRequest);
-                });
-    }
-
-    private Mono<BatchRequest> handlePecNotFoundResponse(BatchRequest request) {
-        //TODO nel task successivo
-        return Mono.just(request);
-    }
-
-    private Mono<BatchRequest> handleERState(BatchRequest batchRequest) {
-        batchRequest.setStatus(BatchStatus.TAKEN_CHARGE.getValue());
-        return incrementAndCheckRetry(List.of(batchRequest), null, batchRequest.getBatchId())
-                .thenReturn(batchRequest);
-    }
-
 }

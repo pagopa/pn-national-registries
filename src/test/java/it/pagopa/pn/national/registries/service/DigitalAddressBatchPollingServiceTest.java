@@ -13,6 +13,7 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
@@ -25,6 +26,8 @@ import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
@@ -539,5 +542,36 @@ class DigitalAddressBatchPollingServiceTest {
         verify(batchPollingRepository, never()).setNewReservationIdToBatchPolling(any());
         verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);
+    }
+
+    @Test
+    void testStatoImpresaNull() {
+        BatchRequest batchRequest = new BatchRequest();
+        Pec pec = new Pec();
+        pec.setStatoImpresa(null);
+
+        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec).block();
+        assertSame(batchRequest, result);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ER", "ND", "NF"})
+    void testStatoImpresaValidValues(Pec.StatoImpresaEnum  statoImpresa) {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setBatchId("testBatchId");
+        Pec pec = new Pec();
+        pec.setStatoImpresa(statoImpresa);
+
+        if (statoImpresa == Pec.StatoImpresaEnum.ER) {
+            when(iniPecBatchRequestService.incrementAndCheckRetry(anyList(), isNull(), eq("testBatchId")))
+                    .thenReturn(Mono.empty());
+        }
+
+        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec).block();
+        assertSame(batchRequest, result);
+
+        if (statoImpresa == Pec.StatoImpresaEnum.ER) {
+            assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
+        }
     }
 }
