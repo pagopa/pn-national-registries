@@ -632,6 +632,7 @@ class DigitalAddressBatchPollingServiceTest {
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setBatchId("batchId");
         batchPolling.setPollingId("pollingId");
+        batchPolling.setCreatedAt(LocalDateTime.now().minusSeconds(5));
 
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId("batchId");
@@ -688,6 +689,7 @@ class DigitalAddressBatchPollingServiceTest {
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setBatchId("batchId");
         batchPolling.setPollingId("pollingId");
+        batchPolling.setCreatedAt(LocalDateTime.now().minusSeconds(5));
 
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId("batchId");

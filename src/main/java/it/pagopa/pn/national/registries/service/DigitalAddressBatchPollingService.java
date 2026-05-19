@@ -250,7 +250,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .flatMapIterable(requests -> requests)
                 .flatMap(batchRequest -> {
                     if(StringUtils.hasText(error)) {
-                        return digitalAddressUtils.buildErrorBatchRequest(status, error, batchRequest);
+                        return digitalAddressUtils.buildErrorBatchRequest(status, error, batchRequest, now);
                     }else {
                         return evaluateInipecResponse(batchRequest, status, iniPecPollingResponse, now);
                     }
@@ -273,8 +273,11 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Pec retrieveBatchRequestPec(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
+        String requestCf = batchRequest.getCf();
         return iniPecPollingResponse.getElencoPec().stream()
-                .filter(pec -> pec.getCf().equals(batchRequest.getCf()))
+                .filter(pec -> StringUtils.hasText(pec.getCf())
+                        && StringUtils.hasText(requestCf)
+                        && pec.getCf().equalsIgnoreCase(requestCf))
                 .findFirst()
                 .orElse(null);
     }

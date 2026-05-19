@@ -118,7 +118,7 @@ class DigitalAddressUtilsTest {
         when(gatewayService.convertCodeSqsDtoToString(sqsDto)).thenReturn("error-message");
 
         BatchRequest result = digitalAddressUtils
-                .buildErrorBatchRequest(status, error, request)
+                .buildErrorBatchRequest(status, error, request, LocalDateTime.now())
                 .block();
 
         assertNotNull(result);
@@ -147,7 +147,7 @@ class DigitalAddressUtilsTest {
                 request, BatchStatus.WORKED, LocalDateTime.now(), pec
         );
         Mono<BatchRequest> errorMono = digitalAddressUtils.buildErrorBatchRequest(
-                BatchStatus.ERROR, "err", request
+                BatchStatus.ERROR, "err", request, LocalDateTime.now()
         );
 
         assertNotNull(updateMono);
