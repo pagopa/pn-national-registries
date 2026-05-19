@@ -510,7 +510,7 @@ components:
       example:
         cf: "CF1"
         pecImpresa: "pec1@example.com"
-        statoImpresa: ""
+        statoImpresa: "ER"
         pecProfessionista:
           - pec: "pec1@example.com"
     PecProfessionista:

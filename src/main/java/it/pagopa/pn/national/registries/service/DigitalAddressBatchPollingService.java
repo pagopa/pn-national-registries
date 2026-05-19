@@ -423,7 +423,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private Mono<BatchRequest> handleERState(BatchRequest batchRequest) {
         batchRequest.setStatus(BatchStatus.TAKEN_CHARGE.getValue());
-        return iniPecBatchRequestService.incrementAndCheckRetry(List.of(batchRequest), null, batchRequest.getBatchId())
+        return iniPecBatchRequestService.handleRetryAndCheckDlq(List.of(batchRequest), null, batchRequest.getBatchId())
                 .thenReturn(batchRequest);
     }
 }

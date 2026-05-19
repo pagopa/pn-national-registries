@@ -203,7 +203,11 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .then();
     }
 
-    protected Mono<Void> incrementAndCheckRetry(List<BatchRequest> requests, Throwable throwable, String batchId) {
+    public Mono<Void> handleRetryAndCheckDlq(List<BatchRequest> requests, Throwable throwable, String batchId) {
+        return incrementAndCheckRetry(requests, throwable, batchId);
+    }
+
+    private Mono<Void> incrementAndCheckRetry(List<BatchRequest> requests, Throwable throwable, String batchId) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         return Flux.fromStream(requests.stream())
                 .doOnNext(r -> {

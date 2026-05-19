@@ -23,6 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -250,5 +251,87 @@ class IniPecBatchRequestServiceTest {
         verify(batchRequestRepository, never()).setNewBatchIdToBatchRequest(any());
         verifyNoInteractions(iniPecBatchSqsService);
         verifyNoInteractions(infoCamereClient);
+    }
+
+    @Test
+    void testHandleRetryAndCheckDlq() {
+        BatchRequest batchRequest1 = new BatchRequest();
+        batchRequest1.setCorrelationId("correlationId1");
+        batchRequest1.setCf("cf1");
+        batchRequest1.setRetry(2);
+
+        BatchRequest batchRequest2 = new BatchRequest();
+        batchRequest2.setCorrelationId("correlationId2");
+        batchRequest2.setCf("cf2");
+        batchRequest2.setRetry(2);
+
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getMessage()).thenReturn("E Service error");
+
+        when(batchRequestRepository.update(same(batchRequest1)))
+                .thenReturn(Mono.just(batchRequest1));
+        when(batchRequestRepository.update(same(batchRequest2)))
+                .thenReturn(Mono.just(batchRequest2));
+
+        when(iniPecBatchSqsService.sendListToDlqQueue(anyList()))
+                .thenReturn(Mono.empty().then());
+
+        assertDoesNotThrow(() -> iniPecBatchRequestService.handleRetryAndCheckDlq(
+                List.of(batchRequest1, batchRequest2), exception, "batchId").block());
+
+        assertEquals(3, batchRequest1.getRetry());
+        assertEquals(3, batchRequest2.getRetry());
+
+        assertEquals(BatchStatus.ERROR.getValue(), batchRequest1.getStatus());
+        assertEquals(BatchStatus.ERROR.getValue(), batchRequest2.getStatus());
+
+        verify(iniPecBatchSqsService, times(1)).sendListToDlqQueue(anyList());
+    }
+
+    @Test
+    void testHandleRetryAndCheckDlqRetryNotExhausted() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId");
+        batchRequest.setCf("cf");
+        batchRequest.setRetry(1); // Retry < maxRetry (3)
+
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+
+        when(batchRequestRepository.update(same(batchRequest)))
+                .thenReturn(Mono.just(batchRequest));
+
+        assertDoesNotThrow(() -> iniPecBatchRequestService.handleRetryAndCheckDlq(
+                List.of(batchRequest), exception, "batchId").block());
+
+        assertEquals(2, batchRequest.getRetry());
+
+        assertNotEquals(BatchStatus.ERROR.getValue(), batchRequest.getStatus());
+
+        verifyNoInteractions(iniPecBatchSqsService);
+    }
+
+    @Test
+    void testHandleRetryAndCheckDlqWithBadRequest() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId");
+        batchRequest.setCf("cf");
+        batchRequest.setRetry(0);
+
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
+
+        when(batchRequestRepository.update(same(batchRequest)))
+                .thenReturn(Mono.just(batchRequest));
+
+        when(iniPecBatchSqsService.sendListToDlqQueue(anyList()))
+                .thenReturn(Mono.empty().then());
+
+        assertDoesNotThrow(() -> iniPecBatchRequestService.handleRetryAndCheckDlq(
+                List.of(batchRequest), exception, "batchId").block());
+
+        assertEquals(BatchStatus.ERROR.getValue(), batchRequest.getStatus());
+        assertEquals(1, batchRequest.getRetry());
+
+        verify(iniPecBatchSqsService, times(1)).sendListToDlqQueue(anyList());
     }
 }
