@@ -55,16 +55,10 @@ public class InfoCamereConverter {
         return batchPolling;
     }
 
-    public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
+    public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0]);
-        List<Pec> pecs = iniPecPollingResponse.getElencoPec();
-        pecs.stream()
-                .filter(p -> p.getCf().equalsIgnoreCase(batchRequest.getCf()))
-                .findAny()
-                .ifPresentOrElse(
-                        pec -> codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec)),
-                        () -> codeSqsDto.setDigitalAddress(Collections.emptyList()));
+        codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
         return codeSqsDto;
     }
 
