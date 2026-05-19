@@ -1,8 +1,10 @@
 package it.pagopa.pn.national.registries.utils;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
 import it.pagopa.pn.national.registries.model.SSLData;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.opensaml.core.xml.Namespace;
@@ -31,6 +33,7 @@ import static it.pagopa.pn.national.registries.utils.XMLWriterConstant.SOAP_ENV_
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class SAMLAssertionWriter {
 
     static final Pattern patternRoot = Pattern.compile(".*Root=(.*);P.*");
@@ -38,23 +41,9 @@ public class SAMLAssertionWriter {
 
     private final OpenSAMLUtils openSAMLUtils;
     private final X509CertificateUtils x509CertificateUtils;
-    private final String clientId;
-    private final String environmentType;
-    private final String issuerName;
-
     private final AdeLegalSecretConfig adeLegalSecretConfig;
-    public SAMLAssertionWriter(OpenSAMLUtils openSAMLUtils,
-                               X509CertificateUtils x509CertificateUtils,
-                               @Value("${pn.national.registries.ade.legal.name.id}") String clientId,
-                               @Value("${pn.national.registries.environment.type}") String environmentType,
-                               @Value("${pn.national.registries.issuer}") String issuerName, AdeLegalSecretConfig adeLegalSecretConfig) {
-        this.openSAMLUtils = openSAMLUtils;
-        this.x509CertificateUtils = x509CertificateUtils;
-        this.clientId = clientId;
-        this.environmentType = environmentType;
-        this.issuerName = issuerName;
-        this.adeLegalSecretConfig = adeLegalSecretConfig;
-    }
+    private final NationalRegistriesConfig nationalRegistriesConfig;
+
 
     public Assertion buildDefaultAssertion() {
         Assertion assertion = (Assertion) openSAMLUtils.buildSAMLObject(Assertion.DEFAULT_ELEMENT_NAME, null);
@@ -88,7 +77,7 @@ public class SAMLAssertionWriter {
         }
         AttributeStatement attrStatement = (AttributeStatement) openSAMLUtils.buildSAMLObject(AttributeStatement.DEFAULT_ELEMENT_NAME, null);
         attrStatement.getAttributes().add(getAttribute("User", traceId));
-        attrStatement.getAttributes().add(getAttribute("IP-User", environmentType));
+        attrStatement.getAttributes().add(getAttribute("IP-User", nationalRegistriesConfig.getEnvironmentType()));
         return attrStatement;
     }
 
@@ -133,7 +122,7 @@ public class SAMLAssertionWriter {
 
         NameID nameID = (NameID) openSAMLUtils.buildSAMLObject(NameID.DEFAULT_ELEMENT_NAME, null);
         nameID.setFormat(NameIDType.UNSPECIFIED);
-        nameID.setValue(clientId);
+        nameID.setValue(nationalRegistriesConfig.getAde().getLegalNameId());
         subject.setNameID(nameID);
 
         SubjectConfirmation subjectConfirmation = (SubjectConfirmation) openSAMLUtils.buildSAMLObject(SubjectConfirmation.DEFAULT_ELEMENT_NAME, null);
@@ -170,7 +159,7 @@ public class SAMLAssertionWriter {
     }
     private Issuer getIssuer() {
         Issuer issuer = (Issuer) openSAMLUtils.buildSAMLObject(Issuer.DEFAULT_ELEMENT_NAME, null);
-        issuer.setValue(environmentType + issuerName);
+        issuer.setValue(nationalRegistriesConfig.getEnvironmentType() + nationalRegistriesConfig.getIssuer());
         return issuer;
     }
 

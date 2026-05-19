@@ -62,7 +62,7 @@ class CheckCfClientConfigtest {
         when(pnNationalRegistriesSecretService.getTrustedCertFromSecret(any())).thenReturn(trustData);
         when(secureWebClientUtils.getSslContextForAde(any(), any())).thenReturn(mock(SslContext.class));
         when(customRetryConfig.buildRetryExchangeFilterFunction()).thenReturn(mock(ExchangeFilterFunction.class));
-        VerificheApi verificheapi = checkCfClientConfig.verificheApi("basePath");
+        VerificheApi verificheapi = checkCfClientConfig.verificheApi();
 
         assertNotNull(verificheapi);
         assertEquals("basePath", verificheapi.getApiClient().getBasePath());

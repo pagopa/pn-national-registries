@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.config.adelegal;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.config.SsmParameterConsumerActivation;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import lombok.Getter;
@@ -17,14 +18,12 @@ public class AdeLegalSecretConfig {
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
     private final String trustData;
 
-    public AdeLegalSecretConfig(
-            @Value("${pn.national.registries.ade.auth}") String authChannelData,
-            SsmParameterConsumerActivation ssmParameterConsumerActivation,
+    public AdeLegalSecretConfig(SsmParameterConsumerActivation ssmParameterConsumerActivation,
             PnNationalRegistriesSecretService pnNationalRegistriesSecretService,
-            @Value("${pn.national.registries.ade.legal.trust.secret}") String trustData) {
-        this.authChannelData = authChannelData;
+            NationalRegistriesConfig nationalRegistriesConfig) {
+        this.authChannelData = nationalRegistriesConfig.getAde().getAuth();
         this.ssmParameterConsumerActivation = ssmParameterConsumerActivation;
         this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
-        this.trustData = trustData;
+        this.trustData = nationalRegistriesConfig.getAde().getLegalTrustSecret();
     }
 }

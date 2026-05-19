@@ -6,9 +6,11 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.client.CustomFormMessageWriter;
 import it.pagopa.pn.national.registries.client.SecureWebClientUtils;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
 import it.pagopa.pn.national.registries.model.TrustData;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
@@ -22,27 +24,17 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 
 @Component
 @Slf4j
+@RequiredArgsConstructor
 public class AdELegalWebClient extends CommonBaseClient {
 
-    private final String basePath;
     private final AdeLegalSecretConfig adeLegalSecretConfig;
     private final SecureWebClientUtils secureWebClientUtils;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    public AdELegalWebClient(
-            @Value("${pn.national.registries.ade-legal.base-path}") String basePath,
-            AdeLegalSecretConfig adeLegalSecretConfig,
-            SecureWebClientUtils secureWebClientUtils,
-            PnNationalRegistriesSecretService pnNationalRegistriesSecretService
-    ) {
-        this.basePath = basePath;
-        this.adeLegalSecretConfig = adeLegalSecretConfig;
-        this.secureWebClientUtils = secureWebClientUtils;
-        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
-    }
 
     public WebClient init() {
-        return super.initWebClient(WebClient.builder().baseUrl(basePath)
+        return super.initWebClient(WebClient.builder().baseUrl(nationalRegistriesConfig.getAde().getLegalBaseUrl())
                 .codecs(c -> c.customCodecs().register(new CustomFormMessageWriter())));
     }
 

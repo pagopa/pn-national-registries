@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.config.adecheckcf;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,11 +14,9 @@ public class CheckCfSecretConfig {
     private final String trustData;
     private final String authChannelData;
 
-    public CheckCfSecretConfig(@Value("${pn.national.registries.ade.auth}") String authChannelData,
-                               @Value("${pn.national.registries.pdnd.ade-check-cf.secret}") String pdndSecret,
-                               @Value("${pn.national.registries.trust.ade-check-cf.secret}") String trustData) {
-        this.pdndSecret = pdndSecret;
-        this.trustData = trustData;
-        this.authChannelData = authChannelData;
+    public CheckCfSecretConfig(NationalRegistriesConfig nationalRegistriesConfig) {
+        this.pdndSecret = nationalRegistriesConfig.getAde().getCheckCfPdndClientSecret();
+        this.trustData = nationalRegistriesConfig.getAde().getCheckCfTrustSecret();
+        this.authChannelData = nationalRegistriesConfig.getAde().getAuth();
     }
 }

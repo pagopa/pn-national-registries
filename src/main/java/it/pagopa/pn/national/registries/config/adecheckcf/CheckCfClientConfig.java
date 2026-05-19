@@ -6,6 +6,7 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.client.SecureWebClientUtils;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.VerificheApi;
 import it.pagopa.pn.national.registries.model.TrustData;
@@ -32,11 +33,12 @@ public class CheckCfClientConfig extends CommonBaseClient {
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
     private final CheckCfSecretConfig checkCfSecretConfig;
     private final SecureWebClientUtils secureWebClientUtils;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     @Bean
-    VerificheApi verificheApi(@Value("${pn.national.registries.ade-check-cf.base-path}") String basePath) {
+    VerificheApi verificheApi() {
         var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder()));
-        apiClient.setBasePath(basePath);
+        apiClient.setBasePath(nationalRegistriesConfig.getAde().getCheckCfBaseUrl());
         return new VerificheApi(apiClient);
     }
 

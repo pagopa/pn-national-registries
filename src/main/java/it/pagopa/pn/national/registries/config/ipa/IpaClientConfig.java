@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.config.ipa;
 
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.api.IpaApi;
 import lombok.RequiredArgsConstructor;
@@ -16,11 +17,12 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class IpaClientConfig extends CommonBaseClient {
 
     private final WebClient.Builder builder;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     @Bean
-    IpaApi ipaApi(@Value("${pn.national.registries.ipa.base-path}") String basePath) {
+    IpaApi ipaApi() {
         var apiClient = new ApiClient(initWebClient(this.builder));
-        apiClient.setBasePath(basePath);
+        apiClient.setBasePath(nationalRegistriesConfig.getIpa().getBaseUrl());
         return new IpaApi(apiClient);
     }
 }

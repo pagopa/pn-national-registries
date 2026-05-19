@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.config.inad;
 
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +20,12 @@ public class InadClientConfig extends CommonBaseClient {
     private final WebClient.Builder builder;
 
     private final CustomRetryConfig customRetryConfig;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     @Bean
-    ApiEstrazioniPuntualiApi apiEstrazioniPuntualiApi(@Value("${pn.national.registries.inad.base-path}") String basePath) {
+    ApiEstrazioniPuntualiApi apiEstrazioniPuntualiApi() {
         var apiClient = new ApiClient(initWebClient(this.builder));
-        apiClient.setBasePath(basePath);
+        apiClient.setBasePath(nationalRegistriesConfig.getInad().getBaseUrl());
         return new ApiEstrazioniPuntualiApi(apiClient);
     }
 

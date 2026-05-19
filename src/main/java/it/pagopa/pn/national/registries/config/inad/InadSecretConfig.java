@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.config.inad;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -12,7 +13,7 @@ public class InadSecretConfig{
 
    private final String pdndSecret;
 
-    public InadSecretConfig(@Value("${pn.national.registries.pdnd.inad.secret}") String pdndSecret) {
-        this.pdndSecret = pdndSecret;
+    public InadSecretConfig(NationalRegistriesConfig nationalRegistriesConfig) {
+        this.pdndSecret = nationalRegistriesConfig.getInad().getPdndClientSecret();
     }
 }
