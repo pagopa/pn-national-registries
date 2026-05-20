@@ -69,6 +69,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final String batchRequestPkSeparator;
 
     private final IpaService ipaService;
+    private final IniPecBatchRequestService iniPecBatchRequestService;
 
     private final IniPecBatchRequestService iniPecBatchRequestService;
     private final DigitalAddressUtils digitalAddressUtils;
