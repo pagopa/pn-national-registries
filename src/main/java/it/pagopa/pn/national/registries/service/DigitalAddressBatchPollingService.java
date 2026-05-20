@@ -14,6 +14,7 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.StatusDimension;
@@ -74,6 +75,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final String batchRequestPkSeparator;
 
     private final IpaService ipaService;
+    private final IniPecBatchRequestService iniPecBatchRequestService;
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
     private static final Pattern PEC_REQUEST_IN_PROGRESS_PATTERN = Pattern.compile(".*(List PEC in progress).*");
@@ -86,7 +88,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                                              InadService inadService,
                                              FeatureEnabledUtils featureEnableUtils, @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
                                              @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry,
-                                             @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator, IpaService ipaService) {
+                                             @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator, IpaService ipaService,
+                                             IniPecBatchRequestService iniPecBatchRequestService) {
         this.infoCamereConverter = infoCamereConverter;
         this.batchRequestRepository = batchRequestRepository;
         this.batchPollingRepository = batchPollingRepository;
@@ -98,6 +101,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         this.inProgressMaxRetry = inProgressMaxRetry;
         this.batchRequestPkSeparator = batchRequestPkSeparator;
         this.ipaService = ipaService;
+        this.iniPecBatchRequestService = iniPecBatchRequestService;
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
@@ -392,5 +396,34 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         } else {
             log.error(message, throwable.getMessage());
         }
+    }
+
+    public Mono<BatchRequest> evaluateStatoImpresa(BatchRequest batchRequest, Pec pec) {
+        log.info("evaluateStatoImpresa for correlationId: {} with statoImpresa: {}",
+                batchRequest.getCorrelationId(), pec.getStatoImpresa());
+
+        if (Objects.isNull(pec.getStatoImpresa())) {
+            log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
+            return Mono.just(batchRequest);
+        }
+
+        return Mono.fromCallable(pec::getStatoImpresa)
+                .doOnNext(statoImpresa -> log.debug("IniPEC - correlationId {} - statoImpresa is {}",
+                        batchRequest.getCorrelationId(), statoImpresa))
+                .flatMap(statoImpresa -> switch (statoImpresa) {
+                    case ER -> handleERState(batchRequest);
+                    case ND, NF -> handlePecNotFoundResponse(batchRequest);
+                });
+    }
+
+    private Mono<BatchRequest> handlePecNotFoundResponse(BatchRequest request) {
+        //TODO nel task successivo
+        return Mono.just(request);
+    }
+
+    private Mono<BatchRequest> handleERState(BatchRequest batchRequest) {
+        batchRequest.setStatus(BatchStatus.TAKEN_CHARGE.getValue());
+        return iniPecBatchRequestService.handleRetryAndCheckDlq(List.of(batchRequest), null, batchRequest.getBatchId())
+                .thenReturn(batchRequest);
     }
 }
