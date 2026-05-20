@@ -69,7 +69,6 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final String batchRequestPkSeparator;
 
     private final IpaService ipaService;
-    private final IniPecBatchRequestService iniPecBatchRequestService;
 
     private final IniPecBatchRequestService iniPecBatchRequestService;
     private final DigitalAddressUtils digitalAddressUtils;
@@ -250,9 +249,9 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(requests -> log.debug("IniPEC - batchId {} - updating {} requests in status {}", polling.getBatchId(), requests.size(), status))
                 .flatMapIterable(requests -> requests)
                 .flatMap(batchRequest -> {
-                    if(StringUtils.hasText(error)) {
+                    if (StringUtils.hasText(error)) {
                         return digitalAddressUtils.buildErrorBatchRequest(status, error, batchRequest, now);
-                    }else {
+                    } else {
                         return evaluateInipecResponse(batchRequest, status, iniPecPollingResponse, now);
                     }
                 })
@@ -267,7 +266,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private Mono<BatchRequest> evaluateInipecResponse(BatchRequest batchRequest, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, LocalDateTime now) {
         Pec pec = retrieveBatchRequestPec(batchRequest, iniPecPollingResponse);
-        if(Objects.isNull(pec)){
+        if (Objects.isNull(pec)) {
             return handlePecNotFoundResponse(batchRequest);
         }
         return evaluateStatoImpresa(batchRequest, pec, status, now);
@@ -307,14 +306,14 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private Mono<BatchRequest> oldWorkFlow(BatchRequest request) {
         log.info("oldWorkFlow - digital Address not found for [{}] on {} - Step {} - nextSource: [{}]", request.getCorrelationId(), INIPEC, INIPEC.getStepNumber(), INIPEC.getNextStep());
-            return callInadEservice(request)
-                    .thenReturn(request);
+        return callInadEservice(request)
+                .thenReturn(request);
     }
 
     private Mono<BatchRequest> newWorkFlow(BatchRequest request) {
-            log.info("newWorkFlow - digital Address not found for [{}] on {} - Step {} - nextSource: [{}]", request.getCorrelationId(), INIPEC, INIPEC.getStepNumber(), INIPEC.getNextStep());
-            return callIpaEservice(request)
-                    .thenReturn(request);
+        log.info("newWorkFlow - digital Address not found for [{}] on {} - Step {} - nextSource: [{}]", request.getCorrelationId(), INIPEC, INIPEC.getStepNumber(), INIPEC.getNextStep());
+        return callIpaEservice(request)
+                .thenReturn(request);
     }
 
     private Mono<Void> callIpaEservice(BatchRequest request) {
@@ -398,7 +397,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     public Mono<BatchRequest> handlePecNotFoundResponse(BatchRequest request) {
-        if(featureEnableUtils.isPfNewWorkflowEnabled(request.getReferenceRequestDate().toInstant(ZoneOffset.UTC))) {
+        if (featureEnableUtils.isPfNewWorkflowEnabled(request.getReferenceRequestDate().toInstant(ZoneOffset.UTC))) {
             return newWorkFlow(request);
         } else {
             return oldWorkFlow(request);
