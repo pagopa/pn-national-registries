@@ -28,6 +28,7 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
 
+import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -83,6 +84,9 @@ class DigitalAddressBatchPollingServiceTest {
 
     @MockitoBean
     private IniPecBatchRequestService iniPecBatchRequestService;
+
+    @MockitoBean
+    private DigitalAddressUtils digitalAddressUtils;
 
     @Test
     void testBatchPecPollingIncrementAndCheckRetryError() {
@@ -628,6 +632,7 @@ class DigitalAddressBatchPollingServiceTest {
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setBatchId("batchId");
         batchPolling.setPollingId("pollingId");
+        batchPolling.setCreatedAt(LocalDateTime.now().minusSeconds(5));
 
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId("batchId");
@@ -684,6 +689,7 @@ class DigitalAddressBatchPollingServiceTest {
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setBatchId("batchId");
         batchPolling.setPollingId("pollingId");
+        batchPolling.setCreatedAt(LocalDateTime.now().minusSeconds(5));
 
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId("batchId");
@@ -732,10 +738,15 @@ class DigitalAddressBatchPollingServiceTest {
     @Test
     void testStatoImpresaNull() {
         BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setStatus(BatchStatus.WORKING.getValue());
         Pec pec = new Pec();
         pec.setStatoImpresa(null);
 
-        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec).block();
+        BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
+        when(digitalAddressUtils.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(Pec.class)))
+                .thenAnswer(inv -> Mono.just(batchRequest));
+
+        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
         assertSame(batchRequest, result);
     }
 
@@ -743,13 +754,16 @@ class DigitalAddressBatchPollingServiceTest {
     void testStatoImpresaER() {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId("testBatchId");
+        batchRequest.setStatus(BatchStatus.WORKING.getValue());
         Pec pec = new Pec();
         pec.setStatoImpresa(Pec.StatoImpresaEnum.ER);
+
+        BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
 
         when(iniPecBatchRequestService.handleRetryAndCheckDlq(anyList(), isNull(), eq("testBatchId")))
                 .thenReturn(Mono.empty());
 
-        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec).block();
+        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
 
         assertSame(batchRequest, result);
         assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
@@ -761,13 +775,16 @@ class DigitalAddressBatchPollingServiceTest {
     void testStatoImpresaERHandleRetryFailure() {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId("testBatchId");
+        batchRequest.setStatus(BatchStatus.WORKING.getValue());
         Pec pec = new Pec();
         pec.setStatoImpresa(Pec.StatoImpresaEnum.ER);
+
+        BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
 
         when(iniPecBatchRequestService.handleRetryAndCheckDlq(anyList(), isNull(), eq("testBatchId")))
                 .thenReturn(Mono.error(new RuntimeException("retry-failed")));
 
-        Mono<BatchRequest> mono = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec);
+        Mono<BatchRequest> mono = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now());
 
         assertThrows(RuntimeException.class, mono::block);
         verify(iniPecBatchRequestService, times(1))
@@ -779,10 +796,23 @@ class DigitalAddressBatchPollingServiceTest {
     void testStatoImpresaNdNf(Pec.StatoImpresaEnum statoImpresa) {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId("testBatchId");
+        batchRequest.setCorrelationId("testCorrelationId");
+        batchRequest.setStatus(BatchStatus.WORKING.getValue());
+        batchRequest.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
         Pec pec = new Pec();
         pec.setStatoImpresa(statoImpresa);
 
-        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec).block();
+        BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
+
+        GetDigitalAddressINADOKDto inadResp = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("inad@pec.it");
+        inadResp.setDigitalAddress(digitalAddressDto);
+
+        when(inadService.callEService(any(), any(), any()))
+                .thenReturn(Mono.just(inadResp));
+
+        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
 
         assertSame(batchRequest, result);
         assertNotEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
