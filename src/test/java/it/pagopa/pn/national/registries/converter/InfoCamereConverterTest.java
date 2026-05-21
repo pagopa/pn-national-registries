@@ -60,10 +60,8 @@ class InfoCamereConverterTest {
 
         Pec pec = new Pec();
         pec.setCf("cf");
-        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
-        iniPecPollingResponse.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNull(codeSqsDto.getError());
         assertTrue(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()));
@@ -79,10 +77,8 @@ class InfoCamereConverterTest {
         pec.setCf("Cf");
         pec.setPecImpresa("pecImpresa");
         pec.setPecProfessionista(Collections.emptyList());
-        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
-        iniPecPollingResponse.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
         assertNotNull(codeSqsDto);
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertEquals(1, codeSqsDto.getDigitalAddress().size());
@@ -97,10 +93,8 @@ class InfoCamereConverterTest {
 
         Pec pec = new Pec();
         pec.setCf("altro-cf");
-        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
-        iniPecPollingResponse.setElencoPec(List.of(pec));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, iniPecPollingResponse);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
