@@ -743,10 +743,8 @@ class DigitalAddressBatchPollingServiceTest {
         pec.setStatoImpresa(null);
 
         BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
-        when(digitalAddressUtils.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(Pec.class)))
-                .thenAnswer(inv -> Mono.just(batchRequest));
 
-        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
+        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, new CodeSqsDto()).block();
         assertSame(batchRequest, result);
     }
 
@@ -763,7 +761,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(iniPecBatchRequestService.handleRetryAndCheckDlq(anyList(), isNull(), eq("testBatchId")))
                 .thenReturn(Mono.empty());
 
-        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
+        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, new CodeSqsDto()).block();
 
         assertSame(batchRequest, result);
         assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
@@ -784,7 +782,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(iniPecBatchRequestService.handleRetryAndCheckDlq(anyList(), isNull(), eq("testBatchId")))
                 .thenReturn(Mono.error(new RuntimeException("retry-failed")));
 
-        Mono<BatchRequest> mono = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now());
+        Mono<BatchRequest> mono = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, new CodeSqsDto());
 
         assertThrows(RuntimeException.class, mono::block);
         verify(iniPecBatchRequestService, times(1))
@@ -812,7 +810,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(inadService.callEService(any(), any(), any()))
                 .thenReturn(Mono.just(inadResp));
 
-        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
+        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, new CodeSqsDto()).block();
 
         assertSame(batchRequest, result);
         assertNotEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());

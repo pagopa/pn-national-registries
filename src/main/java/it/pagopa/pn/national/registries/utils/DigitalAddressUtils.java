@@ -4,7 +4,6 @@ import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
@@ -25,12 +24,6 @@ public class DigitalAddressUtils {
     private final InfoCamereConverter infoCamereConverter;
     private final GatewayService gatewayService;
 
-    public Mono<BatchRequest> updateBatchRequestFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, Pec pec) {
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
-        populateBatchRequestSendFields(batchRequest, status, now, codeSqsDto);
-        return Mono.just(batchRequest);
-    }
-
     private void populateBatchRequestSendFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, CodeSqsDto codeSqsDto) {
         removeInvalidEmails(codeSqsDto);
         batchRequest.setMessage(gatewayService.convertCodeSqsDtoToString(codeSqsDto));
@@ -40,7 +33,7 @@ public class DigitalAddressUtils {
         batchRequest.setLastReserved(now);
     }
 
-    private static void removeInvalidEmails(CodeSqsDto sqsDto) {
+    public static void removeInvalidEmails(CodeSqsDto sqsDto) {
         List<DigitalAddress> digitalAddresses = new ArrayList<>();
         if (!CollectionUtils.isEmpty(sqsDto.getDigitalAddress())) {
             digitalAddresses = sqsDto.getDigitalAddress().stream()
