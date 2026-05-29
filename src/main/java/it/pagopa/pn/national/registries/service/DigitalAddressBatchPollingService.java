@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
@@ -265,6 +266,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<BatchRequest> evaluateInipecResponse(BatchRequest batchRequest, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, LocalDateTime now) {
+        batchRequest.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
+        batchRequest.setLastReserved(now);
         Pec pec = retrieveBatchRequestPec(batchRequest, iniPecPollingResponse);
         if (Objects.isNull(pec)) {
             return handlePecNotFoundResponse(batchRequest);
