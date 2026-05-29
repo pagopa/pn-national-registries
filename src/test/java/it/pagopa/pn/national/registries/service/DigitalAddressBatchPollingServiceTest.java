@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
@@ -201,12 +202,17 @@ class DigitalAddressBatchPollingServiceTest {
         BatchRequest batchRequest1 = new BatchRequest();
         batchRequest1.setCorrelationId("correlationId1");
         batchRequest1.setBatchId("batchId1");
+        batchRequest1.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+
         BatchRequest batchRequest2 = new BatchRequest();
         batchRequest2.setCorrelationId("correlationId2");
         batchRequest2.setBatchId("batchId1");
+        batchRequest2.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+
         BatchRequest batchRequest3 = new BatchRequest();
         batchRequest3.setCorrelationId("correlationId3");
         batchRequest3.setBatchId("batchId3");
+        batchRequest3.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
 
         Page<BatchPolling> page1 = Page.create(List.of(batchPolling1), Map.of("key", AttributeValue.builder().s("value").build()));
         Page<BatchPolling> page2 = Page.create(List.of(batchPolling2, batchPolling3));
@@ -239,12 +245,27 @@ class DigitalAddressBatchPollingServiceTest {
         when(infoCamereClient.callEServiceRequestPec("pollingId3"))
                 .thenReturn(Mono.just(iniPecPollingResponse3));
 
+        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any(IniPecPollingResponse.class))).thenReturn(false);
+
+        CodeSqsDto emptySqs = new CodeSqsDto();
+        emptySqs.setDigitalAddress(Collections.emptyList());
+        emptySqs.setError(null);
+        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(emptySqs);
+
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest1, batchRequest2)));
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId2", BatchStatus.WORKING))
                 .thenReturn(Mono.just(Collections.emptyList()));
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest3)));
+
+        when(featureEnabledUtils.isPfNewWorkflowEnabled(any(Instant.class))).thenReturn(false);
+
+        GetDigitalAddressINADOKDto inadResp = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("inad@pec.it");
+        inadResp.setDigitalAddress(digitalAddressDto);
+        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(inadResp));
 
         when(iniPecBatchSqsService.batchSendToSqs(anyList()))
                 .thenReturn(Mono.empty().then());
@@ -263,6 +284,15 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(batchRequest3));
 
         assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+
+        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest1.getSendStatus());
+        assertNotNull(batchRequest1.getLastReserved());
+
+        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest2.getSendStatus());
+        assertNotNull(batchRequest2.getLastReserved());
+
+        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest3.getSendStatus());
+        assertNotNull(batchRequest3.getLastReserved());
     }
 
     @Test
@@ -312,6 +342,7 @@ class DigitalAddressBatchPollingServiceTest {
         digitalAddress2.setAddress("invalid_pec");
 
         codeSqsDto.setDigitalAddress(List.of(digitalAddress, digitalAddress2));
+        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(codeSqsDto);
 
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
@@ -328,6 +359,8 @@ class DigitalAddressBatchPollingServiceTest {
 
         assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
 
+        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
+        assertNotNull(batchRequest.getLastReserved());
     }
 
     @Test
@@ -460,6 +493,8 @@ class DigitalAddressBatchPollingServiceTest {
 
         assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
 
+        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
+        assertNotNull(batchRequest.getLastReserved());
     }
 
     @Test
@@ -625,6 +660,8 @@ class DigitalAddressBatchPollingServiceTest {
 
         assertEquals(BatchStatus.WORKED.getValue(), request.getStatus());
         assertEquals(EService.IPA.name(), request.getEservice());
+        assertEquals(BatchSendStatus.NOT_SENT.getValue(), request.getSendStatus());
+        assertNotNull(request.getLastReserved());
     }
 
     @Test
@@ -682,6 +719,8 @@ class DigitalAddressBatchPollingServiceTest {
 
         assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
         assertEquals(EService.INAD.name(), batchRequest.getEservice());
+        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
+        assertNotNull(batchRequest.getLastReserved());
     }
 
     @Test
@@ -733,6 +772,9 @@ class DigitalAddressBatchPollingServiceTest {
 
         verify(ipaService, times(1)).getIpaPec(any());
         verify(inadService, times(1)).callEService(any(), any(), any());
+
+        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
+        assertNotNull(batchRequest.getLastReserved());
     }
 
     @Test
