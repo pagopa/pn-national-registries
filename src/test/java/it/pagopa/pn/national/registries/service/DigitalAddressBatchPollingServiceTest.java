@@ -805,10 +805,8 @@ class DigitalAddressBatchPollingServiceTest {
         when(iniPecBatchRequestService.handleRetryAndCheckDlq(anyList(), isNull(), eq("testBatchId")))
                 .thenReturn(Mono.empty());
 
-        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
-
-        assertSame(batchRequest, result);
-        assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
+        var result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
+        assertNull(result);
         verify(iniPecBatchRequestService, times(1))
                 .handleRetryAndCheckDlq(anyList(), isNull(), eq("testBatchId"));
     }
