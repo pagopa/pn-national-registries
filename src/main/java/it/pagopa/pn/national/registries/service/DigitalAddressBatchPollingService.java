@@ -48,6 +48,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
+import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 import static it.pagopa.pn.national.registries.model.EService.*;
@@ -394,7 +395,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(statoImpresa -> log.debug("IniPEC - correlationId {} - statoImpresa is {}",
                         batchRequest.getCorrelationId(), statoImpresa))
                 .flatMap(statoImpresa -> switch (statoImpresa) {
-                    case ER -> handleERState(batchRequest);
+                    case ER -> handleERState(batchRequest).then(Mono.empty());
                     case ND, NF -> handlePecNotFoundResponse(batchRequest);
                 });
     }
@@ -408,7 +409,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<BatchRequest> handleERState(BatchRequest batchRequest) {
-        batchRequest.setStatus(BatchStatus.TAKEN_CHARGE.getValue());
+        batchRequest.setStatus(TAKEN_CHARGE.getValue());
         return iniPecBatchRequestService.handleRetryAndCheckDlq(List.of(batchRequest), null, batchRequest.getBatchId())
                 .thenReturn(batchRequest);
     }
