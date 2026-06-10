@@ -452,6 +452,14 @@ Parameters:
     Type: String
     Default: 'alarm@notifichedigitali.it' # aggiornare
 
+  CertRenewalAlarmEnabled:
+    Type: String
+    Default: "true"
+    Description: 'Enable or disable the certificate renewal CodeBuild failed build alarms'
+    AllowedValues:
+      - "true"
+      - "false"
+
   InfoCamereSigningKeyAlias:
     Type: String
     Default: pn-national-registries-infocamere-signing-key-alias
@@ -880,6 +888,24 @@ Resources:
           - Name: PARAM_NAME
             Type: PLAINTEXT
             Value: !Sub ${AdESSL}-next
+
+  InfocamereCertRenewalAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/codebuild-alarms.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        CodeBuildProjectName: !Ref InfocamereCertRenewalCodebuildProject
+        AlarmEnabled: !Ref CertRenewalAlarmEnabled
+
+  AdeCertRenewalAlarm:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/codebuild-alarms.yaml"
+      Parameters:
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+        CodeBuildProjectName: !Ref AdeCertRenewalCodebuildProject
+        AlarmEnabled: !Ref CertRenewalAlarmEnabled
 
   CertificateRenewalCodeBuildRole:
     Type: AWS::IAM::Role
