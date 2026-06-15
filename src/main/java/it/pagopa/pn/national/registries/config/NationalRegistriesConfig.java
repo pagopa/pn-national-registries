@@ -25,4 +25,16 @@ public class NationalRegistriesConfig {
         private String shedlockTableName;
     }
 
+    private CacheConfigs redisCache;
+
+    @Data
+    public static class CacheConfigs {
+        private String hostName;
+        private int port;
+        private String userId;
+        private String cacheName;
+        private String cacheRegion;
+        private String mode;
+    }
+
 }
