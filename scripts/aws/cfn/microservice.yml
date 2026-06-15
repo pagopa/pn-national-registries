@@ -545,7 +545,7 @@ Parameters:
     Description: the region of the cache
 
   ElasticachePort:
-    Type: String
+    Type: Number
     Description: the port of the cache
 Resources:
 
