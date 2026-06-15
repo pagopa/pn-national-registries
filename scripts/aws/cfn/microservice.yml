@@ -545,8 +545,9 @@ Parameters:
     Description: the region of the cache
 
   ElasticachePort:
-    Type: String
+    Type: Number
     Description: the port of the cache
+
 Resources:
 
   # PN-National-Registry microservice
@@ -1024,5 +1025,9 @@ Resources:
 
 Outputs:
   NationalRegistriesRedisIamUserId:
-    Description: Identifier of the IAM user used for pn-national-registries Redis access
+    Description: IAM username used for pn-national-registries Redis access (CloudFormation Ref on AWS::IAM::User returns the username)
+    Value: !Ref NationalRegistriesRedisIamUser
+
+  NationalRegistriesRedisIamUsername:
+    Description: IAM username used for pn-national-registries Redis access
     Value: !Ref NationalRegistriesRedisIamUser

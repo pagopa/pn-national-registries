@@ -60,7 +60,7 @@
     "AddressCompositionMode": "MINIMAL",
     "IniPecReadTimeoutMillis": "15000",
     "ElasticacheMode": "serverless",
-    "ElasticacheUserId": "iam-user-emdintegration",
+    "ElasticacheUserId": "iam-user-national-registries",
     "ElasticacheCacheName": "pn-redis-serverless",
     "ElasticacheCacheRegion": "eu-south-1",
     "ElasticachePort": "6379"
