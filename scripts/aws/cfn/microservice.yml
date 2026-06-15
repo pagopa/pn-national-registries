@@ -511,6 +511,42 @@ Parameters:
     Description: 'Whether retry on timeout errors for InfoCamere PEC api'
     Default: false
 
+    # Redis parameters
+  RedisServerlessArn:
+    Type: String
+    Description: 'RedisServerless ARN'
+
+  ElasticCacheNationalRegistriesUserArn:
+    Type: String
+    Description: 'ElastiCache user ARN for pn-national-registries'
+
+  ElasticacheEndpoint:
+    Type: String
+    Description: elasticache endpoint
+
+  ElasticacheMode:
+    Type: String
+    Description: elasticache mode
+    Default: serverless
+    AllowedValues:
+      - serverless
+      - managed
+
+  ElasticacheUserId:
+    Type: String
+    Description: the username to connect to elasticache
+
+  ElasticacheCacheName:
+    Type: String
+    Description: the name of the cache
+
+  ElasticacheCacheRegion:
+    Type: String
+    Description: the region of the cache
+
+  ElasticachePort:
+    Type: String
+    Description: the port of the cache
 Resources:
 
   # PN-National-Registry microservice
@@ -599,6 +635,12 @@ Resources:
         ContainerEnvEntry58: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_READ_TIMEOUT_MILLIS=${IniPecReadTimeoutMillis}'
         ContainerEnvEntry59: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_RETRY_ATTEMPTS=${IniPecMaxRetryAttempts}'
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
+        ContainerEnvEntry61: !Sub 'PN_NATIONAL_REGISTRIES_REDISCACHE_HOSTNAME=${ElasticacheEndpoint}'
+        ContainerEnvEntry62: !Sub 'PN_NATIONAL_REGISTRIES_REDISCACHE_PORT=${ElasticachePort}'
+        ContainerEnvEntry63: !Sub 'PN_NATIONAL_REGISTRIES_REDISCACHE_USERID=${ElasticacheUserId}'
+        ContainerEnvEntry64: !Sub 'PN_NATIONAL_REGISTRIES_REDISCACHE_CACHENAME=${ElasticacheCacheName}'
+        ContainerEnvEntry65: !Sub 'PN_NATIONAL_REGISTRIES_REDISCACHE_CACHEREGION=${ElasticacheCacheRegion}'
+        ContainerEnvEntry66: !Sub 'PN_NATIONAL_REGISTRIES_REDISCACHE_MODE=${ElasticacheMode}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
@@ -618,6 +660,13 @@ Resources:
       PolicyDocument:
         Version: 2012-10-17
         Statement:
+          - Sid: RedisAuth
+            Effect: Allow
+            Action:
+              - elasticache:Connect
+            Resource:
+              - !Ref RedisServerlessArn
+              - !Ref ElasticCacheNationalRegistriesUserArn
           - Effect: Allow
             Action:
               - secretsmanager:GetSecretValue
@@ -967,3 +1016,13 @@ Resources:
               - "SQS:SendMessage"
             Resource:
               - !Ref "PnNationalRegistriesCertificateDLQARN"
+
+  NationalRegistriesRedisIamUser:
+    Type: AWS::IAM::User
+    Properties:
+      UserName: iam-user-national-registries
+
+Outputs:
+  NationalRegistriesRedisIamUserId:
+    Description: Identifier of the IAM user used for pn-national-registries Redis access
+    Value: !Ref NationalRegistriesRedisIamUser

@@ -6,6 +6,8 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
 
+import java.time.Duration;
+
 @Configuration
 @ConfigurationProperties(prefix = "pn.national-registries")
 @Data
@@ -23,6 +25,18 @@ public class NationalRegistriesConfig {
     @Data
     public static class Dao {
         private String shedlockTableName;
+    }
+
+    private CacheConfigs redisCache;
+
+    @Data
+    public static class CacheConfigs {
+        private String hostName;
+        private int port;
+        private String userId;
+        private String cacheName;
+        private String cacheRegion;
+        private String mode;
     }
 
 }
