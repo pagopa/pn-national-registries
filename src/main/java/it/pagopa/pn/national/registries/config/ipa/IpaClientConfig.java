@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.config.ipa;
 
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
+import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.api.IpaApi;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +17,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class IpaClientConfig extends CommonBaseClient {
 
     private final WebClient.Builder builder;
+    private final DownstreamCallLoggingFilterFactory filterFactory;
 
     @Bean
     IpaApi ipaApi(@Value("${pn.national.registries.ipa.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(this.builder));
+        var apiClient = new ApiClient(initWebClient(this.builder.filter(filterFactory.create("ipa"))));
         apiClient.setBasePath(basePath);
         return new IpaApi(apiClient);
     }

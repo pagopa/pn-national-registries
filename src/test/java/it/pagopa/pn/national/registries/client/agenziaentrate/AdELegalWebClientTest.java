@@ -1,7 +1,9 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.ssl.SslContext;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.client.SecureWebClientUtils;
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
 import it.pagopa.pn.national.registries.model.TrustData;
@@ -33,7 +35,8 @@ class AdELegalWebClientTest {
 
     @Test
     void testInit() throws SSLException {
-        AdELegalWebClient adELegalWebClient = new AdELegalWebClient("basePath", adeLegalSecretConfig, secureWebClientUtils, pnNationalRegistriesSecretService);
+        DownstreamCallLoggingFilterFactory filterFactory = new DownstreamCallLoggingFilterFactory(new ObjectMapper());
+        AdELegalWebClient adELegalWebClient = new AdELegalWebClient("basePath", adeLegalSecretConfig, secureWebClientUtils, pnNationalRegistriesSecretService, filterFactory);
 
         TrustData trustData = mock(TrustData.class);
 
@@ -47,13 +50,14 @@ class AdELegalWebClientTest {
 
     @Test
     void testInitException() throws SSLException {
-        AdELegalWebClient adELegalWebClient = new AdELegalWebClient("basePath", adeLegalSecretConfig, secureWebClientUtils, pnNationalRegistriesSecretService);
+        DownstreamCallLoggingFilterFactory filterFactory = new DownstreamCallLoggingFilterFactory(new ObjectMapper());
+        AdELegalWebClient adELegalWebClient = new AdELegalWebClient("basePath", adeLegalSecretConfig, secureWebClientUtils, pnNationalRegistriesSecretService, filterFactory);
 
         TrustData trustData = mock(TrustData.class);
 
         when(adeLegalSecretConfig.getTrustData()).thenReturn("secret");
         when(pnNationalRegistriesSecretService.getTrustedCertFromSecret(anyString())).thenReturn(trustData);
-        when(secureWebClientUtils.getSslContext(any(), any())).thenThrow(SSLException.class);
+        when(secureWebClientUtils.getSslContext(any(), any())).thenThrow(new SSLException("SSL Error"));
 
         assertThrows(PnInternalException.class, adELegalWebClient::init);
     }

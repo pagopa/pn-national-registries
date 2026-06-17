@@ -4,6 +4,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
+import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.client.SecureWebClientUtils;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.api.E002ServiceApi;
@@ -31,10 +32,11 @@ public class AnprClientConfig extends CommonBaseClient {
     private final AnprSecretConfig anprSecretConfig;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
     private final WebClient.Builder builder;
+    private final DownstreamCallLoggingFilterFactory filterFactory;
 
     @Bean
     E002ServiceApi e002ServiceApi(@Value("${pn.national.registries.anpr.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(this.builder));
+        var apiClient = new ApiClient(initWebClient(this.builder.filter(filterFactory.create("anpr"))));
         apiClient.setBasePath(basePath);
         return new E002ServiceApi(apiClient);
     }

@@ -5,6 +5,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.client.CustomFormMessageWriter;
+import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.client.SecureWebClientUtils;
 import it.pagopa.pn.national.registries.config.adelegal.AdeLegalSecretConfig;
 import it.pagopa.pn.national.registries.model.TrustData;
@@ -28,21 +29,25 @@ public class AdELegalWebClient extends CommonBaseClient {
     private final AdeLegalSecretConfig adeLegalSecretConfig;
     private final SecureWebClientUtils secureWebClientUtils;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
+    private final DownstreamCallLoggingFilterFactory filterFactory;
 
     public AdELegalWebClient(
             @Value("${pn.national.registries.ade-legal.base-path}") String basePath,
             AdeLegalSecretConfig adeLegalSecretConfig,
             SecureWebClientUtils secureWebClientUtils,
-            PnNationalRegistriesSecretService pnNationalRegistriesSecretService
+            PnNationalRegistriesSecretService pnNationalRegistriesSecretService,
+            DownstreamCallLoggingFilterFactory filterFactory
     ) {
         this.basePath = basePath;
         this.adeLegalSecretConfig = adeLegalSecretConfig;
         this.secureWebClientUtils = secureWebClientUtils;
         this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
+        this.filterFactory = filterFactory;
     }
 
     public WebClient init() {
         return super.initWebClient(WebClient.builder().baseUrl(basePath)
+                .filter(filterFactory.create("ade-legal"))
                 .codecs(c -> c.customCodecs().register(new CustomFormMessageWriter())));
     }
 

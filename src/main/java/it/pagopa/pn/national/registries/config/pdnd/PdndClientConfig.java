@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.config.pdnd;
 
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
+import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.api.AuthApi;
 import lombok.RequiredArgsConstructor;
@@ -16,10 +17,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class PdndClientConfig extends CommonBaseClient {
 
     private final WebClient.Builder builder;
+    private final DownstreamCallLoggingFilterFactory filterFactory;
 
     @Bean
     AuthApi authApi(@Value("${pn.national.registries.pdnd.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(this.builder));
+        var apiClient = new ApiClient(initWebClient(this.builder.filter(filterFactory.create("pdnd"))));
         apiClient.setBasePath(basePath);
         return new AuthApi(apiClient);
     }

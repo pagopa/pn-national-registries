@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.config.infocamere;
 
+import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -11,6 +12,7 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.*;
 import reactor.core.publisher.Mono;
@@ -39,6 +41,8 @@ class InfocamereClientConfigTest {
     private WebClient webClient;
     @Mock
     private CustomRetryConfig customRetryConfig;
+    @MockitoBean
+    private DownstreamCallLoggingFilterFactory downstreamCallLoggingFilterFactory;
 
     private InfocamereClientConfig infocamereClientConfig;
 
@@ -50,7 +54,7 @@ class InfocamereClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        infocamereClientConfig = new InfocamereClientConfig(customRetryConfig, webClientBuilder);
+        infocamereClientConfig = new InfocamereClientConfig(customRetryConfig, webClientBuilder, downstreamCallLoggingFilterFactory);
     }
     /**
      * Method under test: {@link InfocamereClientConfig#authenticationApi(String)}
