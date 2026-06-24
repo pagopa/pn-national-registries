@@ -43,7 +43,7 @@ public class AdELegalWebClient extends CommonBaseClient {
 
     public WebClient init() {
         return super.initWebClient(WebClient.builder().baseUrl(basePath)
-                .codecs(c -> c.customCodecs().register(new CustomFormMessageWriter())), "ade-legal");
+                .codecs(c -> c.customCodecs().register(new CustomFormMessageWriter())), "ADE-LEGAL");
     }
 
     @Override

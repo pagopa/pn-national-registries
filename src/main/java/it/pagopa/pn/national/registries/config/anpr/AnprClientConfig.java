@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.ApiCl
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.api.E002ServiceApi;
 import it.pagopa.pn.national.registries.model.TrustData;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +23,7 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_CHECK_CF;
 
 @Configuration
+@RequiredArgsConstructor
 @Slf4j
 public class AnprClientConfig extends CommonBaseClient {
 
@@ -30,19 +32,9 @@ public class AnprClientConfig extends CommonBaseClient {
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
     private final WebClient.Builder builder;
 
-    public AnprClientConfig(SecureWebClientUtils secureWebClientUtils,
-                            AnprSecretConfig anprSecretConfig,
-                            PnNationalRegistriesSecretService pnNationalRegistriesSecretService,
-                            WebClient.Builder builder) {
-        this.secureWebClientUtils = secureWebClientUtils;
-        this.anprSecretConfig = anprSecretConfig;
-        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
-        this.builder = builder;
-    }
-    
     @Bean
     E002ServiceApi e002ServiceApi(@Value("${pn.national.registries.anpr.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(builder, "anpr-client"));
+        var apiClient = new ApiClient(initWebClient(builder, "ANPR"));
         apiClient.setBasePath(basePath);
         return new E002ServiceApi(apiClient);
     }

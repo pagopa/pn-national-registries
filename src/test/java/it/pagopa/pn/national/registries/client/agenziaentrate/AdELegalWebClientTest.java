@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.client.agenziaentrate;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.handler.ssl.SslContext;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.client.SecureWebClientUtils;
@@ -54,7 +53,7 @@ class AdELegalWebClientTest {
 
         when(adeLegalSecretConfig.getTrustData()).thenReturn("secret");
         when(pnNationalRegistriesSecretService.getTrustedCertFromSecret(anyString())).thenReturn(trustData);
-        when(secureWebClientUtils.getSslContext(any(), any())).thenThrow(new SSLException("SSL Error"));
+        when(secureWebClientUtils.getSslContext(any(), any())).thenThrow(SSLException.class);
 
         assertThrows(PnInternalException.class, adELegalWebClient::init);
     }

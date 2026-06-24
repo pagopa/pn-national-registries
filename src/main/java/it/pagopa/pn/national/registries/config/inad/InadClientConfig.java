@@ -21,7 +21,7 @@ public class InadClientConfig extends CommonBaseClient {
 
     @Bean
     ApiEstrazioniPuntualiApi apiEstrazioniPuntualiApi(@Value("${pn.national.registries.inad.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(this.builder, "inad"));
+        var apiClient = new ApiClient(initWebClient(this.builder, "INAD"));
         apiClient.setBasePath(basePath);
         return new ApiEstrazioniPuntualiApi(apiClient);
     }

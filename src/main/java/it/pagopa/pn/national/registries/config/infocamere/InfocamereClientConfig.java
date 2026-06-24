@@ -27,13 +27,11 @@ import java.net.UnknownHostException;
 public class InfocamereClientConfig extends CommonBaseClient {
 
     private final CustomRetryConfig customRetryConfig;
-    private final WebClient.Builder builder;
     private final WebClient infocamereWebClient;
 
     public InfocamereClientConfig(CustomRetryConfig customRetryConfig, WebClient.Builder builder) {
         this.customRetryConfig = customRetryConfig;
-        this.builder = builder;
-        this.infocamereWebClient = initWebClient(builder, "infocamere");
+        this.infocamereWebClient = initWebClient(builder, "INFOCAMERE");
     }
 
     @Bean

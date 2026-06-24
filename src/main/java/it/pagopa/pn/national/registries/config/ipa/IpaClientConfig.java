@@ -19,7 +19,7 @@ public class IpaClientConfig extends CommonBaseClient {
 
     @Bean
     IpaApi ipaApi(@Value("${pn.national.registries.ipa.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(this.builder, "ipa"));
+        var apiClient = new ApiClient(initWebClient(this.builder, "IPA"));
         apiClient.setBasePath(basePath);
         return new IpaApi(apiClient);
     }
