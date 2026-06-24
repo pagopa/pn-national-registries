@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.config.inad;
 
-import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,9 +29,6 @@ class InadClientConfigTest {
     @Mock
     private WebClient webClient;
 
-    @MockitoBean
-    private DownstreamCallLoggingFilterFactory downstreamCallLoggingFilterFactory;
-
     private InadClientConfig inadClientConfig;
 
 
@@ -44,7 +40,7 @@ class InadClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        inadClientConfig = new InadClientConfig(webClientBuilder, new CustomRetryConfig(1), downstreamCallLoggingFilterFactory);
+        inadClientConfig = new InadClientConfig(webClientBuilder, new CustomRetryConfig(1));
     }
 
     @Test

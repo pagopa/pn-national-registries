@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.config.infocamere;
 
-import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.*;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,8 +40,6 @@ class InfocamereClientConfigTest {
     private WebClient webClient;
     @Mock
     private CustomRetryConfig customRetryConfig;
-    @MockitoBean
-    private DownstreamCallLoggingFilterFactory downstreamCallLoggingFilterFactory;
 
     private InfocamereClientConfig infocamereClientConfig;
 
@@ -54,7 +51,7 @@ class InfocamereClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        infocamereClientConfig = new InfocamereClientConfig(customRetryConfig, webClientBuilder, downstreamCallLoggingFilterFactory);
+        infocamereClientConfig = new InfocamereClientConfig(customRetryConfig, webClientBuilder);
     }
     /**
      * Method under test: {@link InfocamereClientConfig#authenticationApi(String)}

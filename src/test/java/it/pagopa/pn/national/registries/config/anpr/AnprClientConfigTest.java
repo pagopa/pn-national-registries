@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.config.anpr;
 
 import io.netty.handler.ssl.SslContext;
-import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.client.SecureWebClientUtils;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.api.E002ServiceApi;
 import it.pagopa.pn.national.registries.model.TrustData;
@@ -32,8 +31,6 @@ class AnprClientConfigTest {
     AnprSecretConfig anprSecretConfig;
     @MockitoBean
     PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
-    @MockitoBean
-    DownstreamCallLoggingFilterFactory downstreamCallLoggingFilterFactory;
     @Mock
     private WebClient.Builder webClientBuilder;
     @Mock
@@ -49,7 +46,7 @@ class AnprClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        anprClientConfig = new AnprClientConfig(secureWebClientUtils, anprSecretConfig, pnNationalRegistriesSecretService, webClientBuilder, downstreamCallLoggingFilterFactory);
+        anprClientConfig = new AnprClientConfig(secureWebClientUtils, anprSecretConfig, pnNationalRegistriesSecretService, webClientBuilder);
     }
 
     @Test

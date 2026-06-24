@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.config.pdnd;
 
-import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.api.AuthApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,8 +22,6 @@ class PdndClientConfigTest {
     private WebClient.Builder webClientBuilder;
     @Mock
     private WebClient webClient;
-    @MockitoBean
-    private DownstreamCallLoggingFilterFactory downstreamCallLoggingFilterFactory;
 
     @BeforeEach
     void setUp() {
@@ -34,7 +31,7 @@ class PdndClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        pdndClientConfig = new PdndClientConfig(webClientBuilder, downstreamCallLoggingFilterFactory);
+        pdndClientConfig = new PdndClientConfig(webClientBuilder);
     }
 
     @Test

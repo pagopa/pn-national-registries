@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.config.adecheckcf;
 
 import io.netty.handler.ssl.SslContext;
-import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.client.SecureWebClientUtils;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.VerificheApi;
@@ -33,8 +32,6 @@ class CheckCfClientConfigtest {
     CheckCfSecretConfig checkCfSecretConfig;
     @MockitoBean
     PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
-    @MockitoBean
-    DownstreamCallLoggingFilterFactory downstreamCallLoggingFilterFactory;
     @Mock
     private WebClient.Builder webClientBuilder;
 
@@ -54,7 +51,7 @@ class CheckCfClientConfigtest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        checkCfClientConfig = new CheckCfClientConfig(customRetryConfig, pnNationalRegistriesSecretService, checkCfSecretConfig, secureWebClientUtils, downstreamCallLoggingFilterFactory);
+        checkCfClientConfig = new CheckCfClientConfig(customRetryConfig, pnNationalRegistriesSecretService, checkCfSecretConfig, secureWebClientUtils);
     }
 
     @Test

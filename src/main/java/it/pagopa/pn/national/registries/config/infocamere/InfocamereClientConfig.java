@@ -2,7 +2,6 @@ package it.pagopa.pn.national.registries.config.infocamere;
 
 import io.netty.handler.timeout.TimeoutException;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
-import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.AuthenticationApi;
@@ -28,11 +27,13 @@ import java.net.UnknownHostException;
 public class InfocamereClientConfig extends CommonBaseClient {
 
     private final CustomRetryConfig customRetryConfig;
+    private final WebClient.Builder builder;
     private final WebClient infocamereWebClient;
 
-    public InfocamereClientConfig(CustomRetryConfig customRetryConfig, WebClient.Builder builder, DownstreamCallLoggingFilterFactory filterFactory) {
+    public InfocamereClientConfig(CustomRetryConfig customRetryConfig, WebClient.Builder builder) {
         this.customRetryConfig = customRetryConfig;
-        this.infocamereWebClient = initWebClient(builder.filter(filterFactory.create("infocamere")));
+        this.builder = builder;
+        this.infocamereWebClient = initWebClient(builder, "infocamere");
     }
 
     @Bean

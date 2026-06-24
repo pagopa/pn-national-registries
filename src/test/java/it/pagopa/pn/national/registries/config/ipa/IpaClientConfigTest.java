@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.config.ipa;
 
-import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.api.IpaApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,8 +20,6 @@ class IpaClientConfigTest {
     private WebClient.Builder webClientBuilder;
     @Mock
     private WebClient webClient;
-    @MockitoBean
-    private DownstreamCallLoggingFilterFactory downstreamCallLoggingFilterFactory;
     private IpaClientConfig ipaClientConfig;
 
     @BeforeEach
@@ -33,7 +30,7 @@ class IpaClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        ipaClientConfig = new IpaClientConfig(webClientBuilder, downstreamCallLoggingFilterFactory);
+        ipaClientConfig = new IpaClientConfig(webClientBuilder);
     }
 
     @Test

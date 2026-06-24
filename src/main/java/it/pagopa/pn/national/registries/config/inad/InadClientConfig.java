@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.config.inad;
 
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
-import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.ApiClient;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
@@ -19,11 +18,10 @@ import org.springframework.web.reactive.function.client.WebClient;
 public class InadClientConfig extends CommonBaseClient {
     private final WebClient.Builder builder;
     private final CustomRetryConfig customRetryConfig;
-    private final DownstreamCallLoggingFilterFactory filterFactory;
 
     @Bean
     ApiEstrazioniPuntualiApi apiEstrazioniPuntualiApi(@Value("${pn.national.registries.inad.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(this.builder.filter(filterFactory.create("inad"))));
+        var apiClient = new ApiClient(initWebClient(this.builder, "inad"));
         apiClient.setBasePath(basePath);
         return new ApiEstrazioniPuntualiApi(apiClient);
     }

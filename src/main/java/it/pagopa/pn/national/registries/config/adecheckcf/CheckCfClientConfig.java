@@ -4,7 +4,6 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.pnclients.CommonBaseClient;
-import it.pagopa.pn.national.registries.client.DownstreamCallLoggingFilterFactory;
 import it.pagopa.pn.national.registries.client.SecureWebClientUtils;
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.ApiClient;
@@ -33,11 +32,10 @@ public class CheckCfClientConfig extends CommonBaseClient {
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
     private final CheckCfSecretConfig checkCfSecretConfig;
     private final SecureWebClientUtils secureWebClientUtils;
-    private final DownstreamCallLoggingFilterFactory filterFactory;
 
     @Bean
     VerificheApi verificheApi(@Value("${pn.national.registries.ade-check-cf.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder().filter(filterFactory.create("ade"))));
+        var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder(), "ade"));
         apiClient.setBasePath(basePath);
         return new VerificheApi(apiClient);
     }
