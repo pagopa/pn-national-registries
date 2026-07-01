@@ -35,7 +35,7 @@ public class CheckCfClientConfig extends CommonBaseClient {
 
     @Bean
     VerificheApi verificheApi(@Value("${pn.national.registries.ade-check-cf.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder(), "ADE"));
+        var apiClient = new ApiClient(initWebClient(ApiClient.buildWebClientBuilder(), "ADE-CHECK-CF"));
         apiClient.setBasePath(basePath);
         return new VerificheApi(apiClient);
     }
