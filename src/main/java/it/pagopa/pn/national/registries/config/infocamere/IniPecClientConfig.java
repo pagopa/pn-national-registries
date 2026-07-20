@@ -38,7 +38,7 @@ public class IniPecClientConfig extends CommonBaseClient {
         this.maxRetryAttempts = maxRetryAttempts;
         this.shouldRetryOnTimeout = shouldRetryOnTimeout;
         this.customRetryConfig = customRetryConfig;
-        this.pecWebClient = initWebClient(builder);
+        this.pecWebClient = initWebClient(builder, "INIPEC");
     }
 
     @Bean

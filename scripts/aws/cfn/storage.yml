@@ -31,6 +31,14 @@ Parameters:
   AlarmSNSTopicName:
     Type: String
 
+  EnableDownstreamSubscriptionFilter:
+    Type: String
+    Default: false
+    Description: Enable downstream subscription filter
+    AllowedValues:
+      - true
+      - false
+
 Resources:
   ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI M2M DI PDND    ###
   ###   La chiave viene impiegata per firmare il client assertion che serve          ###
@@ -305,6 +313,7 @@ Resources:
         LogGroupName: !Sub '${ProjectName}-national-registries'
         LogGroupRetention: !Ref LogRetention
         LogsKinesisSourceStreamArn: !Ref LogsKinesisSourceStreamArn
+        LogEnableDownstreamSubscriptionFilter: !Ref EnableDownstreamSubscriptionFilter
 
   PnNationalRegistriesCertificateDLQ:
     Type: AWS::CloudFormation::Stack
