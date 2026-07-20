@@ -58,7 +58,6 @@
     "pfNewWorkflowStop": "2099-07-14T23:59:59Z",
     "MetricFormatType": "",
     "AddressCompositionMode": "MINIMAL",
-    "IniPecReadTimeoutMillis": "15000",
-    "EnableDownstreamSubscriptionFilter": "true"
+    "IniPecReadTimeoutMillis": "15000"
   }
 }
