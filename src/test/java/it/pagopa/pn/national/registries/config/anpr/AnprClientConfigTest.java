@@ -46,7 +46,7 @@ class AnprClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        anprClientConfig = new AnprClientConfig(secureWebClientUtils, anprSecretConfig, pnNationalRegistriesSecretService,webClientBuilder);
+        anprClientConfig = new AnprClientConfig(secureWebClientUtils, anprSecretConfig, pnNationalRegistriesSecretService, webClientBuilder);
     }
 
     @Test

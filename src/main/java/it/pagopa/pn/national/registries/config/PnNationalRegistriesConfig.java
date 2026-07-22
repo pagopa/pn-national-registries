@@ -15,7 +15,6 @@ import static it.pagopa.pn.national.registries.utils.JacksonCustomSpELSerializer
 @Configuration
 @Import(SharedAutoConfiguration.class)
 public class PnNationalRegistriesConfig implements BeanPostProcessor {
-
     @Override
     public Object postProcessAfterInitialization(@NonNull Object bean, @NonNull String beanName) throws BeansException {
         if (bean instanceof ObjectMapper objectMapper) {

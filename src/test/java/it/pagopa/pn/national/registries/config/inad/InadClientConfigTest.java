@@ -39,7 +39,7 @@ class InadClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        inadClientConfig = new InadClientConfig(webClientBuilder,new CustomRetryConfig(1));
+        inadClientConfig = new InadClientConfig(webClientBuilder, new CustomRetryConfig(1));
     }
 
     @Test

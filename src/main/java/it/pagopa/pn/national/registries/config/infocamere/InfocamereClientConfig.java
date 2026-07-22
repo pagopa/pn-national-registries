@@ -31,7 +31,7 @@ public class InfocamereClientConfig extends CommonBaseClient {
 
     public InfocamereClientConfig(CustomRetryConfig customRetryConfig, WebClient.Builder builder) {
         this.customRetryConfig = customRetryConfig;
-        this.infocamereWebClient = initWebClient(builder);
+        this.infocamereWebClient = initWebClient(builder, "INFOCAMERE");
     }
 
     @Bean
