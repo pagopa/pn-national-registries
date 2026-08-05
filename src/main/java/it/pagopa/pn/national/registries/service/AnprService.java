@@ -27,18 +27,14 @@ public class AnprService {
 
     private final AnprClient anprClient;
     private final CounterRepositoryImpl counterRepository;
-    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     public AnprService(AnprClient anprClient,
-                       CounterRepositoryImpl counterRepository,
-                       ValidateTaxIdUtils validateTaxIdUtils) {
+                       CounterRepositoryImpl counterRepository) {
         this.anprClient = anprClient;
         this.counterRepository = counterRepository;
-        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     public Mono<RispostaE002OK> getAddressANPR(GetAddressANPRRequestBodyDto request) {
-
         if (StringUtils.isEmpty(request.getFilter().getReferenceRequestDate())) {
             throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null,

@@ -1,11 +1,14 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.constant.RecipientType;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.DigitalAddressInadApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.service.InadService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
@@ -13,7 +16,7 @@ import reactor.core.scheduler.Scheduler;
 
 @RestController
 @lombok.CustomLog
-public class InadController implements DigitalAddressInadApi {
+public class InadController{
 
     private final InadService inadService;
     private final Scheduler scheduler;
@@ -25,23 +28,14 @@ public class InadController implements DigitalAddressInadApi {
         this.scheduler = scheduler;
     }
 
-    /**
-     * POST /national-registries-private/{recipient-type}/inad/digital-address : Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata.
-     * Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata.
-     *
-     * @param extractDigitalAddressINADRequestBodyDto Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata. (required)
-     * @return OK (status code 200)
-     *         or Bad Request (status code 400)
-     *         or Unauthorized (status code 401)
-     *         or Forbidden (status code 403)
-     *         or Not found (status code 404)
-     *         or Internal server error (status code 500)
-     *         or Service Unavailable (status code 503)
-     */
-    @Override
-    public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
-        RecipientType recipientTypeEnum = RecipientType.fromString(recipientType);
-        return extractDigitalAddressINADRequestBodyDto.flatMap(request -> inadService.callEService(request, recipientTypeEnum, null))
+    @RequestMapping(
+            method = RequestMethod.POST,
+            value = "/national-registries-private/{recipient-type}/inad/digital-address",
+            produces = { "application/json" },
+            consumes = { "application/json" }
+    )
+    public Mono<ResponseEntity<ResponseRequestDigitalAddress>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
+        return extractDigitalAddressINADRequestBodyDto.flatMap(inadService::callEService)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }
