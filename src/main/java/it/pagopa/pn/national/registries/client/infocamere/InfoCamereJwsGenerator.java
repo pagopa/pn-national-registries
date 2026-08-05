@@ -9,7 +9,6 @@ import it.pagopa.pn.national.registries.model.SSLData;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Base64Utils;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kms.KmsClient;
 import software.amazon.awssdk.services.kms.model.MessageType;
@@ -132,7 +131,7 @@ public class InfoCamereJwsGenerator {
     }
 
     private String bytesToUrlSafeBase64String(byte[] bytes) {
-        byte[] base64JsonBytes = Base64Utils.encodeUrlSafe(bytes);
+        byte[] base64JsonBytes = Base64.getUrlEncoder().encode(bytes);
         return new String(base64JsonBytes, StandardCharsets.UTF_8)
                 .replaceFirst(String.valueOf(myRegex), "");
     }

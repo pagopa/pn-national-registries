@@ -7,8 +7,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.common.rest.error.v1.dto.Problem;
 import it.pagopa.pn.commons.exceptions.ExceptionHelper;
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalErrorDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.model.NationalRegistriesProblem;
+import it.pagopa.pn.national.registries.model.agenziaentrate.AdEResponseKO;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.anpr.ErrorListAnpr;
 import it.pagopa.pn.national.registries.model.anpr.ResponseKO;
@@ -36,8 +38,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_ADE;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_IPA;
 
 @Slf4j
@@ -122,6 +126,8 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
             problemDef.setErrors(List.of(mapToIpaResponseKO(exception.getResponseBodyAsString())));
         } else if (exception.getClassName().equals(PdndResponseKO.class)) {
             problemDef.setErrors(mapToPdndResponseKO(responseBody));
+        } else if (exception.getClassName().equals(ADELegalErrorDto.class)){
+            problemDef.setErrors(mapToAdEResponseKo(responseBody));
         } else if (StringUtils.hasText(responseBody)) {
             problemDef.setErrors(List.of(objectMapper.readValue(responseBody, exception.getClassName())));
         } else {
@@ -169,6 +175,26 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
             return response.getErrors();
         }
         return Collections.emptyList();
+    }
+
+    private AdEResponseKO mapToAdEResponseKo(String responseBody) {
+        AdEResponseKO adEResponseKO = new AdEResponseKO();
+        if (StringUtils.hasText(responseBody)) {
+            extractTagContent(responseBody, "faultstring",adEResponseKO);
+        }
+        adEResponseKO.setCode(ERROR_CODE_ADE);
+        return adEResponseKO;
+    }
+
+    private void extractTagContent(String xml, String tagName,AdEResponseKO adEResponseKO) {
+        if (StringUtils.hasText(xml) && StringUtils.hasText(tagName)) {
+            String regex = String.format("<%s[^>]*>(.*?)</%s>", tagName, tagName);
+            Pattern pattern = Pattern.compile(regex, Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+            Matcher matcher = pattern.matcher(xml);
+            if (matcher.find()) {
+                adEResponseKO.setDetail(matcher.group(1).trim());
+            }
+        }
     }
 
     private IpaResponseKO mapToIpaResponseKO(String errorDetail) {

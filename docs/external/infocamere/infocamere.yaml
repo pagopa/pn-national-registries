@@ -25,6 +25,7 @@ paths:
               type: string
               description: JSON Web Signature (JWS) token
               x-field-extra-annotation: "@lombok.ToString.Exclude"
+              format: password
               example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
       responses:
         '200':
@@ -36,6 +37,7 @@ paths:
                 description: Authentication token
                 example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
                 x-field-extra-annotation: "@lombok.ToString.Exclude"
+                format: password
         '401':
           description: Unauthorized
           content:
@@ -89,6 +91,7 @@ paths:
             schema:
               type: string
               x-field-extra-annotation: "@lombok.ToString.Exclude"
+              format: password
               description: Request body for PEC list
               example: |
                 {
@@ -193,7 +196,7 @@ paths:
                   code: 500
   /sede/{cf}:
     post:
-      summary: Get address by tax ID
+      summary: Consente di ottenere l’indirizzo della sede legale dell’impresa al momento della consultazione
       operationId: getAddressByTaxId
       tags:
         - Sede
@@ -203,8 +206,9 @@ paths:
           required: true
           schema:
             type: string
+            x-field-extra-annotation: "@lombok.ToString.Exclude"
+            format: password
           description: Tax ID for which to retrieve the address
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         - name: client_id
           in: query
           required: false
@@ -220,39 +224,56 @@ paths:
         - bearerAuth: [ ]
       responses:
         '200':
-          description: Successful response
+          description: Controllo eseguito
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddressRegistroImprese'
-        '401':
-          description: Unauthorized
+        '400':
+          description: Richiesta non valida
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  code:
-                    type: string
+                $ref: '#/components/schemas/ErrorResponse'
+                example:
+                  message: Richiesta non valida
+                  code: 400
+        '401':
+          description: Utente non abilitato al servizio
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
                 example:
                   message: Unauthorized
                   code: 401
+        '404':
+          description: Servizio non trovato
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                example:
+                  message: Servizio non trovato
+                  code: 404
         '500':
           description: Internal server error
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  message:
-                    type: string
-                  code:
-                    type: string
+                $ref: '#/components/schemas/ErrorResponse'
                 example:
                   message: Internal server error
                   code: 500
+        '503':
+          description: Servizio non disponibile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+                example:
+                  message: Servizio non disponibile
+                  code: 503
   /listaLegaleRappresentante/{cfPersona}:
     get:
       summary: Get legal representative list by tax ID
@@ -265,8 +286,9 @@ paths:
           required: true
           schema:
             type: string
+            x-field-extra-annotation: "@lombok.ToString.Exclude"
+            format: password
           description: Tax ID of the person
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         - name: client_id
           in: query
           required: false
@@ -327,8 +349,9 @@ paths:
           required: true
           schema:
             type: string
+            x-field-extra-annotation: "@lombok.ToString.Exclude"
+            format: password
           description: Tax ID of the person
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         - name: client_id
           in: query
           required: false
@@ -340,8 +363,9 @@ paths:
           required: true
           schema:
             type: string
+            x-field-extra-annotation: "@lombok.ToString.Exclude"
+            format: password
           description: VAT number of the company
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         - name: scope
           in: header
           required: true
@@ -386,6 +410,17 @@ paths:
                   code: 500
 components:
   schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        code:
+          type: string
+        appName:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
     IniPecBatchResponse:
       type: object
       properties:
@@ -447,21 +482,35 @@ components:
           type: string
           description: Codice Fiscale (Tax ID)
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         pecImpresa:
           type: string
           description: PEC address of the company
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         pecProfessionista:
           type: array
           description: List of PEC addresses of professionals
           items:
             $ref: '#/components/schemas/PecProfessionista'
+        statoImpresa:
+          type: string
+          description: >
+            Status of the company. Empty if at least one PEC is found for the company or professional. Otherwise:
+                - ER: temporary error, retry later;
+                - ND: not found in RI or INI-PEC;
+                - NF: exists in RI but no PEC found in INI-PEC.
+          enum:
+            - ER
+            - ND
+            - NF
       required:
         - cf
         - pecImpresa
       example:
         cf: "CF1"
         pecImpresa: "pec1@example.com"
+        statoImpresa: "ER"
         pecProfessionista:
           - pec: "pec1@example.com"
     PecProfessionista:
@@ -471,14 +520,25 @@ components:
           type: string
           description: PEC address of the professional
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
       required:
         - pec
       example:
         pec: "pec1@example.com"
 
     AddressRegistroImprese:
+      oneOf:
+        - $ref: '#/components/schemas/ServizioSedeImpresaResponse'
+        - $ref: '#/components/schemas/ErrorResponse'
+
+    ServizioSedeImpresaResponse:
       type: object
       properties:
+        denominazione:
+          type: string
+          description: The name of the address
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         dataOraEstrazione:
           type: string
           description: The date and time of the extraction
@@ -486,76 +546,74 @@ components:
           type: string
           description: Tax ID (Codice Fiscale)
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         indirizzoLocalizzazione:
           $ref: '#/components/schemas/LegalAddress'
-        code:
-          type: string
-        appName:
-          type: string
-        description:
-          type: string
-        timestamp:
-          type: string
-      required:
-        - dataOraEstrazione
-        - cf
-        - indirizzoLocalizzazione
       example:
+        denominazione: "Company Name"
         dataOraEstrazione: "2024-05-21T12:30:00Z"
         cf: "ABCDEF1234567890"
         indirizzoLocalizzazione:
-          denominazione: "Company Name"
           via: "Via Roma"
           comune: "Rome"
           provincia: "RM"
           toponimo: "Toponym"
           nCivico: "123"
           cap: "00100"
+          stato: "Italy"
+          cstato: "IT"
     LegalAddress:
       type: object
       properties:
-        denominazione:
-          type: string
-          description: The name of the address
-          x-field-extra-annotation: "@lombok.ToString.Exclude"
         via:
           type: string
           description: The street of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         comune:
           type: string
           description: The municipality of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         provincia:
           type: string
           description: The province of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         toponimo:
           type: string
           description: The toponym of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         nCivico:
           type: string
           description: The street number of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         cap:
           type: string
           description: The postal code of the address
           x-field-extra-annotation: "@lombok.ToString.Exclude"
-      required:
-        - denominazione
-        - via
-        - comune
-        - provincia
-        - cap
+          format: password
+        stato:
+          type: string
+          description: The state of the address
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
+        cstato:
+          type: string
+          description: The state code of the address
+          x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
       example:
-        denominazione: "Company Name"
         via: "Via Roma"
         comune: "Rome"
         provincia: "RM"
         toponimo: "Toponym"
         nCivico: "123"
         cap: "00100"
+        stato: "Italy"
+        cstato: "IT"
 
     InfoCamereLegalInstituionsResponse:
       type: object
@@ -567,6 +625,7 @@ components:
           type: string
           description: Legal tax ID (Codice Fiscale) of the person
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         elencoImpreseRappresentate:
           type: array
           description: List of represented businesses
@@ -599,6 +658,7 @@ components:
           type: string
           description: Business tax ID (Codice Fiscale) of the institution
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         denominazione:
           type: string
           description: The name of the institution
@@ -620,10 +680,12 @@ components:
           type: string
           description: Tax ID (Codice Fiscale) of the person
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         cfImpresa:
           type: string
           description: VAT number (Partita IVA) of the company
           x-field-extra-annotation: "@lombok.ToString.Exclude"
+          format: password
         esitoVerifica:
           type: string
           description: The result of the verification

@@ -17,12 +17,11 @@ import org.springframework.web.reactive.function.client.WebClient;
 @Slf4j
 public class InadClientConfig extends CommonBaseClient {
     private final WebClient.Builder builder;
-
     private final CustomRetryConfig customRetryConfig;
 
     @Bean
     ApiEstrazioniPuntualiApi apiEstrazioniPuntualiApi(@Value("${pn.national.registries.inad.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(this.builder));
+        var apiClient = new ApiClient(initWebClient(this.builder, "INAD"));
         apiClient.setBasePath(basePath);
         return new ApiEstrazioniPuntualiApi(apiClient);
     }

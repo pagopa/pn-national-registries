@@ -16,4 +16,13 @@ public class NationalRegistriesConfig {
 
     private String pfNewWorkflowStop;
 
+    private Dao dao;
+
+    private String addressCompositionMode;
+
+    @Data
+    public static class Dao {
+        private String shedlockTableName;
+    }
+
 }

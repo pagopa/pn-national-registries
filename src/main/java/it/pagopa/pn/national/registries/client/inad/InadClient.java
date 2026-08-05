@@ -65,7 +65,7 @@ public class InadClient {
                     String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
                             .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
                             .orElse("Unknown error");
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, maskedErrorMessage);
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, maskedErrorMessage, throwable);
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
                         throw new PnNationalRegistriesException(maskedErrorMessage, ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.model.TokenHeader;
 import it.pagopa.pn.national.registries.model.TokenPayload;
 import org.springframework.stereotype.Component;
-import org.springframework.util.Base64Utils;
 import software.amazon.awssdk.core.SdkBytes;
 import software.amazon.awssdk.services.kms.model.MessageType;
 import software.amazon.awssdk.services.kms.model.SignRequest;
@@ -13,6 +12,7 @@ import software.amazon.awssdk.services.kms.model.SignResponse;
 import software.amazon.awssdk.services.kms.model.SigningAlgorithmSpec;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Base64;
 import java.util.Map;
 import java.util.regex.Pattern;
 
@@ -69,7 +69,7 @@ public class ClientUtils {
     }
 
     private static String bytesToUrlSafeBase64String(byte[] bytes) {
-        byte[] base64JsonBytes = Base64Utils.encodeUrlSafe(bytes);
+        byte[] base64JsonBytes = Base64.getUrlEncoder().encode(bytes);
         return new String(base64JsonBytes, StandardCharsets.UTF_8)
                 .replaceFirst(String.valueOf(myRegex), "");
     }

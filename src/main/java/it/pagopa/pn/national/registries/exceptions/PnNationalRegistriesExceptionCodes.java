@@ -12,6 +12,7 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
     public static final String ERROR_CODE_ANPR = "PN_NATIONAL_REGISTRIES_ADDRESS_ANPR";
     // ADE - CheckCF
     public static final String ERROR_CODE_CHECK_CF = "PN_NATIONAL_REGISTRIES_CHECK_CF";
+    public static final String ERROR_CODE_ADE = "PN_NATIONAL_REGISTRIES_ADE";
     // INAD
     public static final String ERROR_CODE_INAD = "PN_NATIONAL_REGISTRIES_INAD";
     // INFOCAMERE
@@ -28,6 +29,7 @@ public class PnNationalRegistriesExceptionCodes extends PnExceptionsCodes {
 
     public static final String ERROR_CODE_UNAUTHORIZED = "PN_NATIONAL_REGISTRIES_UNAUTHORIZED";
     public static final String ERROR_CODE_INVALID_RECIPIENTTYPE = "PN_NATIONAL_REGISTRIES_INVALID_RECIPIENTTYPE";
+    public static final String ERROR_CODE_INVALID_DOMICILETYPE = "PN_NATIONAL_REGISTRIES_INVALID_DOMICILETYPE";
     public static final String ERROR_CODE_INFOCAMERE_TOKEN_DURATION = "PN_NATIONAL_REGISTRIES_INFOCAMERE_TOKEN_DURATION";
 
     public static final String ERROR_CODE_ADE_LEGAL_OPENSAML_INIT = "PN_NATIONAL_REGISTRIES_ADE_LEGAL_OPENSAML_INIT";

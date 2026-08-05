@@ -22,6 +22,8 @@ public final class ProcessStatus {
 
     public static final String PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS = "[REGISTRO IMPRESE] address";
     public static final String PROCESS_SERVICE_REGISTRO_IMPRESE_ADDRESS = "[REGISTRO IMPRESE] retrieving address";
+    public static final String PROCESS_SERVICE_INIPEC_POLLING = "Getting elencoPec InfoCamere for correlationId";
+    public static final String PROCESS_SERVICE_INIPEC_BATCH = "Retrieving correlationId [INFOCAMERE]";
 
     public static final String PROCESS_NAME_INFO_CAMERE_LEGAL = "[INFO CAMERE] legal";
     public static final String PROCESS_CHEKING_INFO_CAMERE_LEGAL = "[INFO CAMERE] legal";
