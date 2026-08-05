@@ -40,83 +40,28 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 public class InfoCamereClient {
     private final AccessTokenExpiringMap accessTokenExpiringMap;
     private final String clientId;
-    private final ObjectMapper mapper;
     private static final String TRAKING_ID = "X-Tracking-trackingId";
 
     private final LegalRepresentationApi legalRepresentationApi;
     private final LegalRepresentativeApi legalRepresentativeApi;
-    private final PecApi pecApi;
     private final SedeApi sedeApi;
 
     protected InfoCamereClient(@Value("${pn.national.registries.infocamere.client-id}") String clientId,
                                AccessTokenExpiringMap accessTokenExpiringMap,
-                               ObjectMapper mapper,
                                LegalRepresentationApi legalRepresentationApi,
                                LegalRepresentativeApi legalRepresentativeApi,
-                               PecApi pecApi,
                                SedeApi sedeApi
     ) {
         this.clientId = clientId;
         this.accessTokenExpiringMap = accessTokenExpiringMap;
-        this.mapper = mapper;
 
         this.legalRepresentationApi = legalRepresentationApi;
         this.legalRepresentativeApi = legalRepresentativeApi;
-        this.pecApi = pecApi;
         this.sedeApi = sedeApi;
     }
 
     private void logJwt(String token) {
         log.debug("Using jwt = {}", token);
-    }
-
-    public Mono<IniPecBatchResponse> callEServiceRequestId(IniPecBatchRequest request) {
-        String requestJson = convertToJson(request);
-        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value())
-                .flatMap(token -> callRichiestaElencoPec(requestJson, token.getTokenValue()))
-                .retryWhen(Retry.max(1).filter(this::shouldRetry)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
-                );
-    }
-
-    private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token) {
-        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INIPEC_BATCH);
-        this.logJwt(token);
-
-        var apiClient = pecApi.getApiClient();
-        apiClient.setBearerToken(token);
-        return pecApi.callRichiestaElencoPecWithHttpInfo(InipecScopeEnum.PEC.value(), body, clientId)
-                .doOnNext(responseEntity -> {
-                    String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
-                    log.info("callRichiestaElencoPec - responded with tracking ID: {}", trackingId);
-                })
-                .map(ResponseEntity::getBody)
-                .doOnError(handleErrorCall());
-    }
-
-    public Mono<IniPecPollingResponse> callEServiceRequestPec(String correlationId) {
-        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value())
-                .flatMap(token -> callGetElencoPec(correlationId, token.getTokenValue()))
-                .retryWhen(Retry.max(1).filter(this::shouldRetry)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
-                );
-    }
-
-    private Mono<IniPecPollingResponse> callGetElencoPec(String correlationId, String token) {
-        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INIPEC_POLLING);
-        this.logJwt(token);
-
-        ApiClient apiClient = pecApi.getApiClient();
-        apiClient.setBearerToken(token);
-        return pecApi.callGetElencoPecWithHttpInfo(correlationId, InipecScopeEnum.PEC.value(), clientId)
-                .doOnNext(responseEntity -> {
-                    String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
-                    log.info("callGetElencoPec - responded with tracking ID: {}", trackingId);
-                })
-                .map(ResponseEntity::getBody)
-                .doOnError(handleErrorCall());
     }
 
     public Mono<AddressRegistroImprese> getLegalAddress(String taxId) {
@@ -218,13 +163,5 @@ public class InfoCamereClient {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;
-    }
-
-    private String convertToJson(IniPecBatchRequest iniPecBatchRequest) {
-        try {
-            return mapper.writeValueAsString(iniPecBatchRequest);
-        } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, e);
-        }
     }
 }
