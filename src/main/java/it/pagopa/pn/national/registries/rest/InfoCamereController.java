@@ -5,8 +5,10 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressRegistroImpreseRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalInstitutionsRequestBodyDto;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,7 +39,7 @@ public class InfoCamereController{
             produces = { "application/json" },
             consumes = { "application/json" }
     )
-    public Mono<ResponseEntity<AddressRegistroImprese>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<AddressRegistroImprese>> addressRegistroImprese(@Valid @RequestBody Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
         return getAddressRegistroImpreseRequestBodyDto.flatMap(infoCamereService::getRegistroImpreseLegalAddress)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
@@ -50,7 +52,7 @@ public class InfoCamereController{
             produces = { "application/json" },
             consumes = { "application/json" }
     )
-    public Mono<ResponseEntity<InfoCamereLegalInstituionsResponse>> infoCamereLegalInstitutions(Mono<InfoCamereLegalInstitutionsRequestBodyDto> infoCamereLegalInstitutionsRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<InfoCamereLegalInstituionsResponse>> infoCamereLegalInstitutions(@Valid @RequestBody Mono<InfoCamereLegalInstitutionsRequestBodyDto> infoCamereLegalInstitutionsRequestBodyDto, final ServerWebExchange exchange) {
         return infoCamereLegalInstitutionsRequestBodyDto
                 .flatMap(infoCamereService::getLegalInstitutions)
                 .map(t -> ResponseEntity.ok().body(t))

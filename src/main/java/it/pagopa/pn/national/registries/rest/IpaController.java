@@ -4,8 +4,10 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.IpaApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,7 +36,7 @@ public class IpaController{
             produces = { "application/json" },
             consumes = { "application/json" }
     )
-    public Mono<ResponseEntity<Object>> ipaPec(Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
+    public Mono<ResponseEntity<Object>> ipaPec(@Valid @RequestBody Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
         return ipARequestBodyDto.flatMap(ipaService::getIpaPec)
             .map(t -> ResponseEntity.ok().body(t))
             .publishOn(scheduler);

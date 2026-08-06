@@ -45,7 +45,7 @@ public class AgenziaEntrateController{
             produces = { "application/json" },
             consumes = { "application/json" }
     )
-    public Mono<ResponseEntity<VerificaCodiceFiscale>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<VerificaCodiceFiscale>> checkTaxId(@Valid @RequestBody Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
         return checkTaxIdRequestBodyDto.flatMap(agenziaEntrateService::callEService)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
