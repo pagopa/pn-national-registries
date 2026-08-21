@@ -6,6 +6,7 @@ import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
@@ -19,9 +20,11 @@ import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 
 import java.util.*;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.test.context.ContextConfiguration;
@@ -34,10 +37,10 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 @TestPropertySource(properties = {
-        "pn.national.registries.inipec.batch.request.delay=30000",
+        "pn.national-registries.inipec.batch-request-delay=30000",
         "pn.national-registries.inipec.batch.request.recovery.delay=30000",
-        "pn.national-registries.inipec.batch.request.max-retry=3",
-        "pn.national-registries.inipec.max.batch.request.size=2"
+        "pn.national-registries.inipec.batch-request-max-retry=3",
+        "pn.national-registries.inipec.max-batch-request-size=2"
 })
 @ContextConfiguration(classes = IniPecBatchRequestService.class)
 @ExtendWith(SpringExtension.class)
@@ -58,6 +61,16 @@ class IniPecBatchRequestServiceTest {
     private IniPecBatchSqsService iniPecBatchSqsService;
     @MockitoBean
     private ObjectMapper objectMapper;
+    @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
+
+    @BeforeEach
+    void setUp() {
+        NationalRegistriesConfig.Inipec inipecConfig = new NationalRegistriesConfig.Inipec();
+        inipecConfig.setBatchRequestMaxRetry(3);
+        inipecConfig.setMaxBatchRequestSize(2);
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipecConfig);
+    }
 
     @Test
     void testBatchPecRequest() {

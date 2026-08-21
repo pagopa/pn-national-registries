@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.ttl=0",
-        "pn.national.registries.inipec.batchrequest.pk.separator=~"
+        "pn.national-registries.inipec.batch-request-pk-separator=~"
 })
 @ContextConfiguration(classes = InfoCamereConverter.class)
 @ExtendWith(SpringExtension.class)

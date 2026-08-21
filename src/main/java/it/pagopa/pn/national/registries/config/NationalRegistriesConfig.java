@@ -17,12 +17,22 @@ public class NationalRegistriesConfig {
     private String pfNewWorkflowStop;
 
     private Dao dao;
+    private Integer queryLimit;
+    private Inipec inipec;
+
 
     private String addressCompositionMode;
 
     @Data
     public static class Dao {
         private String shedlockTableName;
+    }
+
+    @Data
+    public static class Inipec {
+        private Integer maxBatchRequestSize;
+        private Integer batchRequestMaxRetry;
+        private String batchRequestPkSeparator;
     }
 
 }

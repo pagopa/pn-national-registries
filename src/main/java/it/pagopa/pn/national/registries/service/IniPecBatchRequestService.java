@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -17,9 +18,9 @@ import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MetricUtils;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -32,12 +33,16 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 
 @Service
 @CustomLog
+@RequiredArgsConstructor
 public class IniPecBatchRequestService extends GatewayConverter {
 
     private final InfoCamereConverter infoCamereConverter;
@@ -45,29 +50,11 @@ public class IniPecBatchRequestService extends GatewayConverter {
     private final IniPecBatchPollingRepository batchPollingRepository;
     private final InfoCamereClient infoCamereClient;
     private final IniPecBatchSqsService iniPecBatchSqsService;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    private final int maxRetry;
-    private final int maxBatchRequestSize;
-
-    public IniPecBatchRequestService(InfoCamereConverter infoCamereConverter,
-                                     IniPecBatchRequestRepository batchRequestRepository,
-                                     IniPecBatchPollingRepository batchPollingRepository,
-                                     InfoCamereClient infoCamereClient,
-                                     IniPecBatchSqsService iniPecBatchSqsService,
-                                     @Value("${pn.national-registries.inipec.max.batch.request.size}") int maxBatchRequestsize,
-                                     @Value("${pn.national-registries.inipec.batch.request.max-retry}") int maxRetry) {
-        this.infoCamereConverter = infoCamereConverter;
-        this.batchRequestRepository = batchRequestRepository;
-        this.batchPollingRepository = batchPollingRepository;
-        this.infoCamereClient = infoCamereClient;
-        this.iniPecBatchSqsService = iniPecBatchSqsService;
-        this.maxRetry = maxRetry;
-        this.maxBatchRequestSize = maxBatchRequestsize;
-    }
-
-    @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
-    @SchedulerLock(name = "batchPecRequest", lockAtMostFor = "${pn.national-registries.inipec.batch.request.lock-at-most}",
-            lockAtLeastFor = "${pn.national-registries.inipec.batch.request.lock-at-least}")
+    @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch-request-delay}")
+    @SchedulerLock(name = "batchPecRequest", lockAtMostFor = "${pn.national-registries.inipec.batch-request-lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch-request-lock-at-least}")
     public void batchPecRequest() {
         log.trace("IniPEC - batchPecRequest start");
         collectBatchRequests()
@@ -107,7 +94,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     private Page<BatchRequest> getBatchRequest(Map<String, AttributeValue> lastEvaluatedKey) {
-        return batchRequestRepository.getBatchRequestByNotBatchId(lastEvaluatedKey, maxBatchRequestSize)
+        return batchRequestRepository.getBatchRequestByNotBatchId(lastEvaluatedKey, nationalRegistriesConfig.getQueryLimit())
                 .blockOptional()
                 .orElseThrow(() -> {
                     log.warn("IniPEC - can not get batch request - DynamoDB Mono<Page> is null");
@@ -116,7 +103,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
     }
 
     private Mono<List<BatchRequest>> collectBatchRequests() {
-        return Mono.defer(() -> Mono.just(getBatchRequest(new HashMap<>())))
+        return Mono.fromSupplier(() -> getBatchRequest(new HashMap<>()))
                 .expand(page -> {
                     if (CollectionUtils.isEmpty(page.lastEvaluatedKey())) {
                         return Mono.empty();
@@ -124,7 +111,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     return Mono.fromSupplier(() -> getBatchRequest(page.lastEvaluatedKey()));
                 })
                 .concatMapIterable(Page::items)
-                .take(maxBatchRequestSize)
+                .take(nationalRegistriesConfig.getInipec().getMaxBatchRequestSize())
                 .collectList();
     }
 
@@ -228,7 +215,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .doOnNext(r -> {
                     int nextRetry = (r.getRetry() != null) ? (r.getRetry() + 1) : 1;
                     r.setRetry(nextRetry);
-                    if (nextRetry >= maxRetry || (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
+                    if (nextRetry >= nationalRegistriesConfig.getInipec().getBatchRequestMaxRetry() || (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
                         r.setStatus(BatchStatus.ERROR.getValue());
                         r.setLastReserved(now);
                         log.debug("IniPEC - batchId {} - request {} status in {} (retry: {})", batchId, r.getCorrelationId(), r.getStatus(), r.getRetry());

@@ -204,6 +204,11 @@ Parameters:
     Type: String
     Description: 'Validazione del pn-national-registries cx id'
 
+  PnNationalRegistriesQueryLimit:
+    Type: Number
+    Description: 'Query limit for National Registries Tables'
+    Default: 1000
+
   PnNationalRegistriesInipecTtl:
     Type: Number
     Description: 'IniPEC TTL'
@@ -297,7 +302,7 @@ Parameters:
   PnNationalRegistriesInipecMaxBatchRequestSize:
     Type: Number
     Description: 'IniPEC batch request max size'
-    Default: 6250
+    Default: 100
 
   PnNationalRegistriesInipecBatchSqsRecoveryDelay:
     Type: Number
@@ -599,6 +604,7 @@ Resources:
         ContainerEnvEntry58: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_READ_TIMEOUT_MILLIS=${IniPecReadTimeoutMillis}'
         ContainerEnvEntry59: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_RETRY_ATTEMPTS=${IniPecMaxRetryAttempts}'
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
+        ContainerEnvEntry61: !Sub 'PN_NATIONAL_REGISTRIES_QUERY_LIMIT=${PnNationalRegistriesQueryLimit}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
