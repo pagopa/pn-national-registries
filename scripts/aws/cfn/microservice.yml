@@ -297,7 +297,7 @@ Parameters:
   PnNationalRegistriesInipecMaxBatchRequestSize:
     Type: Number
     Description: 'IniPEC batch request max size'
-    Default: 100
+    Default: 6250
 
   PnNationalRegistriesInipecBatchSqsRecoveryDelay:
     Type: Number

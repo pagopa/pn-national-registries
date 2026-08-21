@@ -23,6 +23,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -69,17 +70,18 @@ public class IniPecBatchRequestService extends GatewayConverter {
             lockAtLeastFor = "${pn.national-registries.inipec.batch.request.lock-at-least}")
     public void batchPecRequest() {
         log.trace("IniPEC - batchPecRequest start");
-        Page<BatchRequest> page;
-        Map<String, AttributeValue> lastEvaluatedKey = new HashMap<>();
-        page = getBatchRequest(lastEvaluatedKey);
-        if (!page.items().isEmpty()) {
-            String batchId = UUID.randomUUID().toString();
-            execBatchRequest(page.items(), batchId)
-                    .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + batchId))
-                    .block();
-        } else {
-            log.info("IniPEC - no batch request available");
-        }
+        collectBatchRequests()
+                .flatMap(requests -> {
+                    if (requests.isEmpty()) {
+                        log.info("IniPEC - no batch request available");
+                        return Mono.empty();
+                    }
+                    String batchId = UUID.randomUUID().toString();
+                    return execBatchRequest(requests, batchId)
+                            .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + batchId));
+                })
+                .block();
+
         log.trace("IniPEC - batchPecRequest end");
     }
 
@@ -111,6 +113,19 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     log.warn("IniPEC - can not get batch request - DynamoDB Mono<Page> is null");
                     return new DigitalAddressException("IniPEC - can not get batch request");
                 });
+    }
+
+    private Mono<List<BatchRequest>> collectBatchRequests() {
+        return Mono.defer(() -> Mono.just(getBatchRequest(new HashMap<>())))
+                .expand(page -> {
+                    if (CollectionUtils.isEmpty(page.lastEvaluatedKey())) {
+                        return Mono.empty();
+                    }
+                    return Mono.fromSupplier(() -> getBatchRequest(page.lastEvaluatedKey()));
+                })
+                .concatMapIterable(Page::items)
+                .take(maxBatchRequestSize)
+                .collectList();
     }
 
     private Mono<Void> execBatchRequest(List<BatchRequest> items, String batchId) {
