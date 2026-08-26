@@ -566,7 +566,7 @@ Resources:
         ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_DELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
         ContainerEnvEntry22: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
-        ContainerEnvEntry23: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_MAX_RETRY=${PnNationalRegistriesInipecBatchRequestMaxRetry}'
+        ContainerEnvEntry23: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTMAXRETRY=${PnNationalRegistriesInipecBatchRequestMaxRetry}'
         ContainerEnvEntry24: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_DELAY=${PnNationalRegistriesInipecBatchPollingDelay}'
         ContainerEnvEntry25: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchPollingRecoveryDelay}'
         ContainerEnvEntry26: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchPollingRecoveryAfter}'
