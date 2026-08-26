@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -17,12 +18,13 @@ import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.MetricUtils;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -31,12 +33,16 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
 
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 
 @Service
 @CustomLog
+@RequiredArgsConstructor
 public class IniPecBatchRequestService extends GatewayConverter {
 
     private final InfoCamereConverter infoCamereConverter;
@@ -44,42 +50,25 @@ public class IniPecBatchRequestService extends GatewayConverter {
     private final IniPecBatchPollingRepository batchPollingRepository;
     private final InfoCamereClient infoCamereClient;
     private final IniPecBatchSqsService iniPecBatchSqsService;
-
-    private final int maxRetry;
-    private final int maxBatchRequestSize;
-
-    public IniPecBatchRequestService(InfoCamereConverter infoCamereConverter,
-                                     IniPecBatchRequestRepository batchRequestRepository,
-                                     IniPecBatchPollingRepository batchPollingRepository,
-                                     InfoCamereClient infoCamereClient,
-                                     IniPecBatchSqsService iniPecBatchSqsService,
-                                     @Value("${pn.national-registries.inipec.max.batch.request.size}") int maxBatchRequestsize,
-                                     @Value("${pn.national-registries.inipec.batch.request.max-retry}") int maxRetry) {
-        this.infoCamereConverter = infoCamereConverter;
-        this.batchRequestRepository = batchRequestRepository;
-        this.batchPollingRepository = batchPollingRepository;
-        this.infoCamereClient = infoCamereClient;
-        this.iniPecBatchSqsService = iniPecBatchSqsService;
-        this.maxRetry = maxRetry;
-        this.maxBatchRequestSize = maxBatchRequestsize;
-    }
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
     @SchedulerLock(name = "batchPecRequest", lockAtMostFor = "${pn.national-registries.inipec.batch.request.lock-at-most}",
             lockAtLeastFor = "${pn.national-registries.inipec.batch.request.lock-at-least}")
     public void batchPecRequest() {
         log.trace("IniPEC - batchPecRequest start");
-        Page<BatchRequest> page;
-        Map<String, AttributeValue> lastEvaluatedKey = new HashMap<>();
-        page = getBatchRequest(lastEvaluatedKey);
-        if (!page.items().isEmpty()) {
-            String batchId = UUID.randomUUID().toString();
-            execBatchRequest(page.items(), batchId)
-                    .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + batchId))
-                    .block();
-        } else {
-            log.info("IniPEC - no batch request available");
-        }
+        collectBatchRequests()
+                .flatMap(requests -> {
+                    if (requests.isEmpty()) {
+                        log.info("IniPEC - no batch request available");
+                        return Mono.empty();
+                    }
+                    String batchId = UUID.randomUUID().toString();
+                    return execBatchRequest(requests, batchId)
+                            .contextWrite(context -> context.put(MDC_TRACE_ID_KEY, "batch_id:" + batchId));
+                })
+                .block();
+
         log.trace("IniPEC - batchPecRequest end");
     }
 
@@ -104,13 +93,22 @@ public class IniPecBatchRequestService extends GatewayConverter {
         log.trace("IniPEC - recoveryBatchRequest end");
     }
 
-    private Page<BatchRequest> getBatchRequest(Map<String, AttributeValue> lastEvaluatedKey) {
-        return batchRequestRepository.getBatchRequestByNotBatchId(lastEvaluatedKey, maxBatchRequestSize)
-                .blockOptional()
-                .orElseThrow(() -> {
+    private Mono<Page<BatchRequest>> getBatchRequest(Map<String, AttributeValue> lastEvaluatedKey) {
+        return batchRequestRepository.getBatchRequestByNotBatchId(lastEvaluatedKey, nationalRegistriesConfig.getQueryLimit())
+                .switchIfEmpty(Mono.defer(() -> {
                     log.warn("IniPEC - can not get batch request - DynamoDB Mono<Page> is null");
-                    return new DigitalAddressException("IniPEC - can not get batch request");
-                });
+                    return Mono.error(new DigitalAddressException("IniPEC - can not get batch request"));
+                }));
+    }
+
+    private Mono<List<BatchRequest>> collectBatchRequests() {
+        return getBatchRequest(new HashMap<>())
+                .expand(page -> CollectionUtils.isEmpty(page.lastEvaluatedKey())
+                        ? Mono.empty()
+                        : getBatchRequest(page.lastEvaluatedKey()))
+                .concatMapIterable(Page::items)
+                .take(nationalRegistriesConfig.getInipec().getMaxBatchRequestSize())
+                .collectList();
     }
 
     private Mono<Void> execBatchRequest(List<BatchRequest> items, String batchId) {
@@ -213,7 +211,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .doOnNext(r -> {
                     int nextRetry = (r.getRetry() != null) ? (r.getRetry() + 1) : 1;
                     r.setRetry(nextRetry);
-                    if (nextRetry >= maxRetry || (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
+                    if (nextRetry >= nationalRegistriesConfig.getInipec().getBatchRequestMaxRetry() || (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
                         r.setStatus(BatchStatus.ERROR.getValue());
                         r.setLastReserved(now);
                         log.debug("IniPEC - batchId {} - request {} status in {} (retry: {})", batchId, r.getCorrelationId(), r.getStatus(), r.getRetry());

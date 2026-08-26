@@ -41,7 +41,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     private static final String LAST_RESERVED_EQ = LAST_RESERVED_ALIAS + " = " + LAST_RESERVED_PLACEHOLDER;
 
     public IniPecBatchRequestRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
-                                            @Value("${pn.national-registries.inipec.batch.request.max-retry}") int maxRetry,
+                                            @Value("${pn.national-registries.inipec.batch-request-max-retry}") int maxRetry,
                                             @Value("${pn.national-registries.inipec.batch.request.recovery.after}") int retryAfter) {
         this.table = dynamoDbEnhancedAsyncClient.table("pn-batchRequests", TableSchema.fromClass(BatchRequest.class));
         this.maxRetry = maxRetry;
