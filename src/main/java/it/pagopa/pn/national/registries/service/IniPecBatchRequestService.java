@@ -93,23 +93,19 @@ public class IniPecBatchRequestService extends GatewayConverter {
         log.trace("IniPEC - recoveryBatchRequest end");
     }
 
-    private Page<BatchRequest> getBatchRequest(Map<String, AttributeValue> lastEvaluatedKey) {
+    private Mono<Page<BatchRequest>> getBatchRequest(Map<String, AttributeValue> lastEvaluatedKey) {
         return batchRequestRepository.getBatchRequestByNotBatchId(lastEvaluatedKey, nationalRegistriesConfig.getQueryLimit())
-                .blockOptional()
-                .orElseThrow(() -> {
+                .switchIfEmpty(Mono.defer(() -> {
                     log.warn("IniPEC - can not get batch request - DynamoDB Mono<Page> is null");
-                    return new DigitalAddressException("IniPEC - can not get batch request");
-                });
+                    return Mono.error(new DigitalAddressException("IniPEC - can not get batch request"));
+                }));
     }
 
     private Mono<List<BatchRequest>> collectBatchRequests() {
-        return Mono.fromSupplier(() -> getBatchRequest(new HashMap<>()))
-                .expand(page -> {
-                    if (CollectionUtils.isEmpty(page.lastEvaluatedKey())) {
-                        return Mono.empty();
-                    }
-                    return Mono.fromSupplier(() -> getBatchRequest(page.lastEvaluatedKey()));
-                })
+        return getBatchRequest(new HashMap<>())
+                .expand(page -> CollectionUtils.isEmpty(page.lastEvaluatedKey())
+                        ? Mono.empty()
+                        : getBatchRequest(page.lastEvaluatedKey()))
                 .concatMapIterable(Page::items)
                 .take(nationalRegistriesConfig.getInipec().getMaxBatchRequestSize())
                 .collectList();
