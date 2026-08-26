@@ -52,9 +52,9 @@ public class IniPecBatchRequestService extends GatewayConverter {
     private final IniPecBatchSqsService iniPecBatchSqsService;
     private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch-request-delay}")
-    @SchedulerLock(name = "batchPecRequest", lockAtMostFor = "${pn.national-registries.inipec.batch-request-lock-at-most}",
-            lockAtLeastFor = "${pn.national-registries.inipec.batch-request-lock-at-least}")
+    @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
+    @SchedulerLock(name = "batchPecRequest", lockAtMostFor = "${pn.national-registries.inipec.batch.request.lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch.request.lock-at-least}")
     public void batchPecRequest() {
         log.trace("IniPEC - batchPecRequest start");
         collectBatchRequests()

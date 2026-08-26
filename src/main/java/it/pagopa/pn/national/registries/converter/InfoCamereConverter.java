@@ -25,7 +25,7 @@ public class InfoCamereConverter {
     private final String batchRequestPkSeparator;
     
     public InfoCamereConverter(@Value("${pn.national.registries.inipec.ttl}") long iniPecTtl,
-                               @Value("${pn.national-registries.inipec.batch-request-pk-separator}") String batchRequestPkSeparator) {
+                               @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator) {
         this.iniPecTtl = iniPecTtl;
         this.batchRequestPkSeparator = batchRequestPkSeparator;
     }

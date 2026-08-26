@@ -44,7 +44,7 @@ public class IniPecBatchSqsService {
 
     public IniPecBatchSqsService(IniPecBatchRequestRepository batchRequestRepository,
                                  SqsService sqsService,
-                                 @Value("${pn.national-registries.inipec.batch-request-pk-separator}") String batchRequestPkSeparator) {
+                                 @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator) {
         this.batchRequestRepository = batchRequestRepository;
         this.sqsService = sqsService;
         this.batchRequestPkSeparator = batchRequestPkSeparator;

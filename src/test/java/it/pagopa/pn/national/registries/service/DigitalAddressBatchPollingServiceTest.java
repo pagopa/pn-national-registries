@@ -51,7 +51,7 @@ import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedExce
         "pn.national-registries.inipec.batch.polling.recovery.delay=30000",
         "pn.national-registries.inipec.batch.polling.max-retry=3",
         "pn.national-registries.inipec.batch.polling.inprogress.max-retry=24",
-        "pn.national-registries.inipec.batch-request-pk-separator=~"
+        "pn.national.registries.inipec.batchrequest.pk.separator=~"
 })
 @ContextConfiguration(classes = DigitalAddressBatchPollingService.class)
 @ExtendWith(SpringExtension.class)
