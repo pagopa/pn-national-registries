@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.constant.AddressSourceEnum;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
@@ -57,6 +58,7 @@ public class InfoCamereConverter {
 
     public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setSource(AddressSourceEnum.INIPEC);
         codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0]);
         codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
         return codeSqsDto;

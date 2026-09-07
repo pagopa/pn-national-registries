@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.model;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import it.pagopa.pn.national.registries.constant.AddressSourceEnum;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import it.pagopa.pn.national.registries.utils.JsonFilterSpEL;
@@ -34,4 +35,7 @@ public class CodeSqsDto {
     @JsonIgnore
     @ToString.Exclude
     private String addressType;
+
+    @JsonFilterSpEL("#? != null")
+    private AddressSourceEnum source;
 }

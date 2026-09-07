@@ -10,6 +10,7 @@ import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.config.CachedSecretsManagerConsumer;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
+import it.pagopa.pn.national.registries.constant.AddressSourceEnum;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -21,7 +22,6 @@ import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayAddressResponse;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
-import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
@@ -348,28 +348,13 @@ class GatewayConverterTest {
     }
 
 
-    /**
-     * Method under test: {@link GatewayConverter#errorRegImpToSqsDto(String, Throwable)}
-     */
-    @Test
-    void testErrorRegImpToSqsDto1() {
-        PnNationalRegistriesException exception = new PnNationalRegistriesException("message",
-                HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null,
-                "OPS".getBytes(StandardCharsets.UTF_8),
-                StandardCharsets.UTF_8, InfocamereResponseKO.class);
-        CodeSqsDto codeSqsDto = gatewayConverter.errorRegImpToSqsDto(C_ID, exception);
-        assertEquals("PHYSICAL", codeSqsDto.getAddressType());
-        assertEquals("message", codeSqsDto.getError());
-        assertNull(codeSqsDto.getPhysicalAddress());
-        assertEquals(C_ID, codeSqsDto.getCorrelationId());
-    }
 
     /**
-     * Method under test: {@link GatewayConverter#newCodeSqsDto(String)}
+     * Method under test: {@link GatewayConverter#newCodeSqsDto(String, AddressSourceEnum)}
      */
     @Test
     void testNewCodeSqsDto() {
-        CodeSqsDto codeSqsDto = gatewayConverter.newCodeSqsDto(C_ID);
+        CodeSqsDto codeSqsDto = gatewayConverter.newCodeSqsDto(C_ID, AddressSourceEnum.ANPR);
         assertEquals(C_ID, codeSqsDto.getCorrelationId());
     }
 

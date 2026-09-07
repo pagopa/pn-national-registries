@@ -50,7 +50,7 @@ public class GatewayConverter {
     }
 
     protected CodeSqsDto anprToSqsDto(String correlationId, GetAddressANPROKDto anprResponse) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, AddressSourceEnum.ANPR);
         if (anprResponse != null && !CollectionUtils.isEmpty(anprResponse.getResidentialAddresses())) {
             codeSqsDto.setPhysicalAddress(convertAnprToPhysicalAddress(anprResponse.getResidentialAddresses().get(0)));
         } else {
@@ -70,14 +70,14 @@ public class GatewayConverter {
                 && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find()) {
             log.info("correlationId: {} - ANPR - CF non trovato", correlationId);
             // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo
-            codeSqsDto = newCodeSqsDto(correlationId);
+            codeSqsDto = newCodeSqsDto(correlationId, AddressSourceEnum.ANPR);
             codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
         }
         return codeSqsDto;
     }
 
     protected CodeSqsDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto, DigitalAddressRecipientType digitalAddressRecipientType) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, AddressSourceEnum.INAD);
         if (inadDto != null && inadDto.getDigitalAddress() != null) {
             codeSqsDto.setDigitalAddress(List.of(convertInadToDigitalAddress(inadDto.getDigitalAddress(), digitalAddressRecipientType)));
         } else {
@@ -97,7 +97,7 @@ public class GatewayConverter {
                 && INAD_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find())
         || CF_NOT_FOUND.equalsIgnoreCase(exception.getMessage()))) {
             log.info("correlationId: {} - INAD - CF non trovato", correlationId);
-            codeSqsDto = newCodeSqsDto(correlationId);
+            codeSqsDto = newCodeSqsDto(correlationId,AddressSourceEnum.INAD);
             codeSqsDto.setDigitalAddress(Collections.emptyList());
             codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         }
@@ -105,7 +105,7 @@ public class GatewayConverter {
     }
 
     protected CodeSqsDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, AddressSourceEnum.REGISTRO_IMPRESE);
         if (registroImpreseDto != null && registroImpreseDto.getProfessionalAddress() != null) {
             codeSqsDto.setPhysicalAddress(convertRegImpToPhysicalAddress(registroImpreseDto.getProfessionalAddress()));
         } else {
@@ -117,7 +117,7 @@ public class GatewayConverter {
     }
 
     protected CodeSqsDto ipaToSqsDto(String correlationId, IPAPecDto ipaResponse) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, AddressSourceEnum.IPA);
         if (ipaResponse != null && ipaResponse.getDomicilioDigitale() != null) {
             codeSqsDto.setDigitalAddress(List.of(convertIpaPecToDigitalAddress(ipaResponse)));
         } else {
@@ -134,16 +134,10 @@ public class GatewayConverter {
 
     }
 
-    protected CodeSqsDto errorRegImpToSqsDto(String correlationId, Throwable error) {
-        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId);
-        codeSqsDto.setError(error.getMessage());
-        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue());
-        return codeSqsDto;
-    }
-
-    protected CodeSqsDto newCodeSqsDto(String correlationId) {
+    protected CodeSqsDto newCodeSqsDto(String correlationId, AddressSourceEnum addressSourceEnum) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
+        codeSqsDto.setSource(addressSourceEnum);
         return codeSqsDto;
     }
 
