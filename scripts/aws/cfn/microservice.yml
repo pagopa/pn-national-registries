@@ -360,16 +360,6 @@ Parameters:
       - true
       - false
 
-  pfNewWorkflowStart:
-    Type: String
-    Description: 'Start date for new workflow'
-    Default: '2021-01-01T00:00:00Z'
-
-  pfNewWorkflowStop:
-    Type: String
-    Description: 'End date for new workflow'
-    Default: '2021-01-01T00:00:00Z'
-
   PnCronAnalyzer:
     Type: String
     Default: '-'
@@ -586,8 +576,6 @@ Resources:
         ContainerEnvEntry40: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
         ContainerEnvEntry41: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
         ContainerEnvEntry42: !Sub 'SPRING_CODEC_MAXINMEMORYSIZE=${CodecMemorySize}'
-        ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTART=${pfNewWorkflowStart}'
-        ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTOP=${pfNewWorkflowStop}'
         ContainerEnvEntry45: !Sub 'PN_NATIONALREGISTRIES_DAO_SHEDLOCKTABLENAME=${ShedLockTableName}'
         ContainerEnvEntry46: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchRequestLockAtMost}'
         ContainerEnvEntry47: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchRequestLockAtLeast}'

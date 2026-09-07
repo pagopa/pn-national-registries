@@ -64,8 +64,6 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final IniPecBatchSqsService iniPecBatchSqsService;
     private final InadService inadService;
 
-    private final FeatureEnabledUtils featureEnableUtils;
-
     private final int maxRetry;
     private final int inProgressMaxRetry;
     private final String batchRequestPkSeparator;
@@ -83,8 +81,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                                              IniPecBatchPollingRepository batchPollingRepository,
                                              InfoCamereClient infoCamereClient,
                                              IniPecBatchSqsService iniPecBatchSqsService,
-                                             InadService inadService,
-                                             FeatureEnabledUtils featureEnableUtils, @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
+                                             InadService inadService, @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
                                              @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry,
                                              @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator, IpaService ipaService,
                                              IniPecBatchRequestService iniPecBatchRequestService, DigitalAddressUtils digitalAddressUtils) {
@@ -94,7 +91,6 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         this.infoCamereClient = infoCamereClient;
         this.iniPecBatchSqsService = iniPecBatchSqsService;
         this.inadService = inadService;
-        this.featureEnableUtils = featureEnableUtils;
         this.maxRetry = maxRetry;
         this.inProgressMaxRetry = inProgressMaxRetry;
         this.batchRequestPkSeparator = batchRequestPkSeparator;
@@ -184,12 +180,11 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
         return infoCamereClient.callEServiceRequestPec(pollingId)
                 .doOnNext(response -> {
-                    if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
+                    if (infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
                         throw new PnNationalRegistriesException(response.getDescription(), HttpStatus.NOT_FOUND.value(),
-                                HttpStatus.NOT_FOUND.getReasonPhrase() , null, null,
+                                HttpStatus.NOT_FOUND.getReasonPhrase(), null, null,
                                 Charset.defaultCharset(), InfocamereResponseKO.class);
-                    }
-                    else {
+                    } else {
                         log.info("IniPEC - batchId {} - pollingId {} - response pec size: {}", batchId, pollingId, response.getElencoPec().size());
                     }
                 })
@@ -203,7 +198,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private boolean checkPecRequestInProgressPattern(String message) {
-        if(message == null) {
+        if (message == null) {
             return false;
         }
 
@@ -220,9 +215,9 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<Void> incrementAndCheckRetry(BatchPolling polling, Throwable throwable) {
-        if(isPollingResponseNotReady(throwable)){
+        if (isPollingResponseNotReady(throwable)) {
             polling.setInProgressRetry(polling.getInProgressRetry() != null ? polling.getInProgressRetry() + 1 : 1);
-        }else{
+        } else {
             polling.setRetry(polling.getRetry() != null ? polling.getRetry() + 1 : 1);
         }
         if (maxRetry <= Optional.ofNullable(polling.getRetry()).orElse(0) || inProgressMaxRetry <= Optional.ofNullable(polling.getInProgressRetry()).orElse(0) ||
@@ -338,7 +333,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                         log.info("digital Address not found for [{}] on {} - Step {} - nextSource: [{}]", request.getCorrelationId(), IPA, IPA.getStepNumber(), IPA.getNextStep());
                         log.info("START retrieve digital address for [{}] on [{}] - Step {} - nextSource: [{}]", request.getCorrelationId(), INAD, INAD.getStepNumber(), INAD.getNextStep());
                         return callInadEservice(request);
-                    }else{
+                    } else {
                         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
                         request.setMessage(convertCodeSqsDtoToString(ipaToSqsDto(correlationId, response)));
                         request.setStatus(BatchStatus.WORKED.getValue());
@@ -363,10 +358,10 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .onErrorResume(e -> {
                     logEServiceError(e, "can not retrieve digital address from INAD: {}");
                     CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
-                    if(codeSqsDto != null) {
+                    if (codeSqsDto != null) {
                         request.setMessage(convertCodeSqsDtoToString(codeSqsDto));
                         request.setStatus(BatchStatus.WORKED.getValue());
-                    }else{
+                    } else {
                         request.setStatus(BatchStatus.ERROR.getValue());
                     }
                     return Mono.empty();
@@ -401,11 +396,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     public Mono<BatchRequest> handlePecNotFoundResponse(BatchRequest request) {
-        if (featureEnableUtils.isPfNewWorkflowEnabled(request.getReferenceRequestDate().toInstant(ZoneOffset.UTC))) {
-            return newWorkFlow(request);
-        } else {
-            return oldWorkFlow(request);
-        }
+        return oldWorkFlow(request);
     }
 
     private Mono<BatchRequest> handleERState(BatchRequest batchRequest) {

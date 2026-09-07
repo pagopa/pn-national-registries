@@ -11,11 +11,6 @@ import org.springframework.context.annotation.Import;
 @Data
 @Import(SharedAutoConfiguration.class)
 public class NationalRegistriesConfig {
-
-    private String pfNewWorkflowStart;
-
-    private String pfNewWorkflowStop;
-
     private Dao dao;
     private Integer queryLimit;
     private Inipec inipec;

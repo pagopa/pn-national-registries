@@ -27,7 +27,6 @@ import it.pagopa.pn.national.registries.model.inipec.PhysicalAddress;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
 import it.pagopa.pn.national.registries.service.*;
-import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -72,8 +71,6 @@ class GatewayConverterTest {
     @MockitoBean
     private ObjectMapper objectMapper;
 
-    @MockitoBean
-    private FeatureEnabledUtils featureEnabledUtils;
 
 
     /**
@@ -330,7 +327,7 @@ class GatewayConverterTest {
         InfoCamereService infoCamereService = new InfoCamereService(infoCamereClient,
                 new InfoCamereConverter(2L, "~"), iniPecBatchRequestRepository, 2L, "~", validateTaxIdUtils);
 
-        InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils, featureEnabledUtils);
+        InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils);
         PnNationalRegistriesSecretService pnNationalRegistriesSecretService = new PnNationalRegistriesSecretService(new CachedSecretsManagerConsumer(mock(SecretsManagerClient.class)));
         IpaSecretConfig ipaSecretConfig = new IpaSecretConfig("ipaSecret");
         IpaService ipaService = new IpaService(new IpaConverter(), mock(IpaClient.class), validateTaxIdUtils, pnNationalRegistriesSecretService, ipaSecretConfig);
@@ -338,7 +335,7 @@ class GatewayConverterTest {
         SqsAsyncClient sqsClient = mock(SqsAsyncClient.class);
         GatewayService gatewayService = new GatewayService(anprService, inadService, infoCamereService, ipaService,
                 new SqsService("outputQueue", "inputQueue", "inputDlqQueue", sqsClient,
-                        new ObjectMapper()), featureEnabledUtils,
+                        new ObjectMapper()),
                 true);
         CodeSqsDto actualIpaToSqsDtoResult = gatewayService.ipaToSqsDto("42", new IPAPecDto());
         assertEquals(DIGITAL.name(), actualIpaToSqsDtoResult.getAddressType());
