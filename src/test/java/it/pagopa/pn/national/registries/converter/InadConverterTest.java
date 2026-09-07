@@ -34,13 +34,13 @@ class InadConverterTest {
         LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
         Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
         responseRequestDigitalAddressDto.setSince(fromResult);
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, PF, "taxId", false);
+        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, PF, "taxId");
         assertEquals("MNZVMH95B09L084U", actualMapToResponseOkResult.getTaxId());
     }
 
     @Test
     void testMapToResponseOk2() {
-        assertNull(InadConverter.mapToResponseOk(null, PF, "TaxId", false).getDigitalAddress());
+        assertNull(InadConverter.mapToResponseOk(null, PF, "TaxId").getDigitalAddress());
     }
 
     @Test
@@ -59,7 +59,7 @@ class InadConverterTest {
         LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
         Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
         responseRequestDigitalAddress.setSince(fromResult);
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddress, PF, "TaxId", false);
+        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddress, PF, "TaxId");
         assertEquals("MNZVMH95B09L084U", actualMapToResponseOkResult.getTaxId());
     }
 
@@ -95,7 +95,7 @@ class InadConverterTest {
         List<ElementDigitalAddress> lista = List.of(elementDigitalAddress1, elementDigitalAddress2, elementDigitalAddress3);
         responseRequestDigitalAddress.setDigitalAddress(lista);
 
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(responseRequestDigitalAddress, PG, "TaxIs", false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(responseRequestDigitalAddress, PG, "TaxIs");
         assertNotNull(result);
         assertNotNull(result.getDigitalAddress());
         assertFalse(result.getDigitalAddress().getDigitalAddress().equalsIgnoreCase("da1"));
@@ -114,7 +114,7 @@ class InadConverterTest {
         address.setUsageInfo(usageInfo);
         address.setDigitalAddress("digital Address");
         elementDigitalAddress.setDigitalAddress(List.of(address));
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(elementDigitalAddress, PF, "TaxId", false);
+        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(elementDigitalAddress, PF, "TaxId");
         assertEquals("MNZVMH95B09L084U", actualMapToResponseOkResult.getTaxId());
         assertEquals(since, actualMapToResponseOkResult.getSince());
     }
@@ -134,7 +134,7 @@ class InadConverterTest {
                 .setSince(Date.from(LocalDate.of(1970, 1, 1).atStartOfDay().atZone(ZoneOffset.UTC).toInstant()));
         elementDigitalAddress.setCodiceFiscale("42");
 
-        Assertions.assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(elementDigitalAddress, PF, "TaxId", false),
+        Assertions.assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(elementDigitalAddress, PF, "TaxId"),
                 "Errore durante la chiamata al servizio EstrazioniPuntualiApi");
     }
 
@@ -158,7 +158,7 @@ class InadConverterTest {
         LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
         Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
         responseRequestDigitalAddress.setSince(fromResult);
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddress, PG, "TaxId", false);
+        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddress, PG, "TaxId");
         assertEquals("Codice Fiscale", actualMapToResponseOkResult.getTaxId());
     }
 
@@ -177,7 +177,7 @@ class InadConverterTest {
         responseRequestDigitalAddress.setDigitalAddress(list);
         responseRequestDigitalAddress.setCodiceFiscale("CodiceFiscale");
         responseRequestDigitalAddress.setSince(new Date());
-        assertNotNull(InadConverter.mapToResponseOk(responseRequestDigitalAddress, PG, "TaxId", false));
+        assertNotNull(InadConverter.mapToResponseOk(responseRequestDigitalAddress, PG, "TaxId"));
     }
 
     @Test
@@ -200,7 +200,7 @@ class InadConverterTest {
         LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
         Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
         responseRequestDigitalAddress.setSince(fromResult);
-        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddress, PG, "00123456789", false);
+        GetDigitalAddressINADOKDto actualMapToResponseOkResult = InadConverter.mapToResponseOk(responseRequestDigitalAddress, PG, "00123456789");
         assertEquals("Codice Fiscale", actualMapToResponseOkResult.getTaxId());
     }
 
@@ -227,6 +227,6 @@ class InadConverterTest {
         LocalDateTime atStartOfDayResult = LocalDate.of(1970, 1, 1).atStartOfDay();
         Date fromResult = Date.from(atStartOfDayResult.atZone(ZoneId.of("UTC")).toInstant());
         responseRequestDigitalAddress.setSince(fromResult);
-        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(responseRequestDigitalAddress, PG, "TaxId", false));
+        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(responseRequestDigitalAddress, PG, "TaxId"));
     }
 }

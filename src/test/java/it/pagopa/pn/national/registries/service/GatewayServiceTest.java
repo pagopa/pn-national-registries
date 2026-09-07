@@ -63,8 +63,6 @@ class GatewayServiceTest {
     @MockitoBean
     private ObjectMapper objectMapper;
 
-    @MockitoBean
-    private FeatureEnabledUtils featureEnabledUtils;
 
     private static final String CF = "CF";
     private static final String C_ID = "correlationId";
@@ -215,30 +213,6 @@ class GatewayServiceTest {
         verifyNoInteractions(infoCamereService);
         verifyNoInteractions(ipaService);
     }
-
-    @Test
-    void testRetrieveDigitalOrPhysicalAddressNewWorkflow() {
-        when(featureEnabledUtils.isPfNewWorkflowEnabled(any())).thenReturn(true);
-        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
-
-        GetDigitalAddressIniPECOKDto inipecDto = new GetDigitalAddressIniPECOKDto();
-
-        when(infoCamereService.getIniPecDigitalAddress(any(), any(), any()))
-                .thenReturn(Mono.just(inipecDto));
-
-
-        ArgumentCaptor<CodeSqsDto> codeSqsDtoArgumentCaptor = ArgumentCaptor.forClass(CodeSqsDto.class);
-        when(sqsService.pushToOutputQueue(codeSqsDtoArgumentCaptor.capture(), any()))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
-
-        AddressOKDto addressOKDto = new AddressOKDto();
-        addressOKDto.setCorrelationId(C_ID);
-
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
-                .expectNext(addressOKDto)
-                .verifyComplete();
-
-   }
 
 
     @Test
