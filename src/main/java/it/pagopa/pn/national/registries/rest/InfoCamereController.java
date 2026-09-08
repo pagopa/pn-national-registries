@@ -2,8 +2,11 @@ package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.AddressRegistroImprese;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.InfoCamereLegalInstituionsResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.InfoCamereVerification;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressRegistroImpreseRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalInstitutionsRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyDto;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -55,6 +58,18 @@ public class InfoCamereController{
     public Mono<ResponseEntity<InfoCamereLegalInstituionsResponse>> infoCamereLegalInstitutions(@Valid @RequestBody Mono<InfoCamereLegalInstitutionsRequestBodyDto> infoCamereLegalInstitutionsRequestBodyDto, final ServerWebExchange exchange) {
         return infoCamereLegalInstitutionsRequestBodyDto
                 .flatMap(infoCamereService::getLegalInstitutions)
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
+    }
+
+    @RequestMapping(
+            method = RequestMethod.POST,
+            value = "/national-registries-private/infocamere/legal",
+            produces = { "application/json" },
+            consumes = { "application/json" }
+    )
+    public Mono<ResponseEntity<InfoCamereVerification>> infoCamereLegal(@Valid @RequestBody Mono<InfoCamereLegalRequestBodyDto> infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
+        return infoCamereLegalRequestBodyDto.flatMap(infoCamereService::checkTaxIdAndVatNumber)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }
