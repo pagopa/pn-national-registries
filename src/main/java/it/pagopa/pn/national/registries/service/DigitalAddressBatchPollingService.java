@@ -15,7 +15,7 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
 import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.StatusDimension;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
@@ -81,7 +81,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                                              IniPecBatchPollingRepository batchPollingRepository,
                                              InfoCamereClient infoCamereClient,
                                              IniPecBatchSqsService iniPecBatchSqsService,
-                                             InadService inadService, @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
+                                             InadService inadService,
+                                             FeatureEnabledUtils featureEnableUtils, @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
                                              @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry,
                                              @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator, IpaService ipaService,
                                              IniPecBatchRequestService iniPecBatchRequestService, DigitalAddressUtils digitalAddressUtils) {
@@ -91,6 +92,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         this.infoCamereClient = infoCamereClient;
         this.iniPecBatchSqsService = iniPecBatchSqsService;
         this.inadService = inadService;
+        this.featureEnableUtils = featureEnableUtils;
         this.maxRetry = maxRetry;
         this.inProgressMaxRetry = inProgressMaxRetry;
         this.batchRequestPkSeparator = batchRequestPkSeparator;
@@ -357,8 +359,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
                 .onErrorResume(e -> {
                     logEServiceError(e, "can not retrieve digital address from INAD: {}");
-                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
-                    if (codeSqsDto != null) {
+                    AddressSQSMessageDto codeSqsDto = errorInadToSqsDto(correlationId, e);
+                    if(codeSqsDto != null) {
                         request.setMessage(convertCodeSqsDtoToString(codeSqsDto));
                         request.setStatus(BatchStatus.WORKED.getValue());
                     } else {

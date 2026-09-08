@@ -10,11 +10,9 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
-import it.pagopa.pn.national.registries.model.gateway.GatewayAddressResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
@@ -137,7 +135,7 @@ public class GatewayService extends GatewayConverter {
                     .doOnNext(sendMessageResponse -> log.info("retrieved physycal address from ANPR for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId()))
                     .doOnError(e -> logEServiceError(e, "can not retrieve physical address from ANPR: {}"))
                     .onErrorResume(e -> {
-                        CodeSqsDto codeSqsDto = errorAnprToSqsDto(correlationId, e);
+                        AddressSQSMessageDto codeSqsDto = errorAnprToSqsDto(correlationId, e);
                         if(codeSqsDto != null) {
                             return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId);
                         }
@@ -151,7 +149,7 @@ public class GatewayService extends GatewayConverter {
                     .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId()))
                     .doOnError(e -> logEServiceError(e, "can not retrieve digital address from INAD: {}"))
                     .onErrorResume(e -> {
-                        CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
+                        AddressSQSMessageDto codeSqsDto = errorInadToSqsDto(correlationId, e);
                         if(codeSqsDto != null) {
                             return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId);
                         }
@@ -245,14 +243,14 @@ public class GatewayService extends GatewayConverter {
                 .map(addresses -> convertToPhysicalAddressesResponseDto(addresses, request.getCorrelationId()));
     }
 
-    private Mono<GatewayAddressResponse.AddressInfo> retrievePhysicalAddresses(AddressQueryRequest addressQueryRequest) {
+    private Mono<PhysicalAddressResponseDto> retrievePhysicalAddresses(AddressQueryRequest addressQueryRequest) {
         return switch (addressQueryRequest.getRecipientType()) {
             case PF -> retrievePhysicalAddressForPF(addressQueryRequest);
             case PG -> retrievePhysicalAddressForPG(addressQueryRequest);
         };
     }
 
-    private Mono<GatewayAddressResponse.AddressInfo> retrievePhysicalAddressForPF(AddressQueryRequest addressQueryRequest) {
+    private Mono<PhysicalAddressResponseDto> retrievePhysicalAddressForPF(AddressQueryRequest addressQueryRequest) {
         PnAuditLogEvent auditLogEvent = buildAndPrintRequestAuditLog(addressQueryRequest, GatewayDownstreamService.ANPR);
 
         return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressQueryRequest))
@@ -271,7 +269,7 @@ public class GatewayService extends GatewayConverter {
             && StringUtils.hasText(exception.getResponseBodyAsString())
             && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
 
-    private Mono<GatewayAddressResponse.AddressInfo> retrievePhysicalAddressForPG(AddressQueryRequest addressQueryRequest) {
+    private Mono<PhysicalAddressResponseDto> retrievePhysicalAddressForPG(AddressQueryRequest addressQueryRequest) {
         PnAuditLogEvent auditLogEvent = buildAndPrintRequestAuditLog(addressQueryRequest, GatewayDownstreamService.REGISTRO_IMPRESE);
         return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressQueryRequest))
                 .map(res -> convertRegImprResponseToInternalRecipientAddress(res, addressQueryRequest))
@@ -297,12 +295,12 @@ public class GatewayService extends GatewayConverter {
         return auditLogEvent.log();
     }
 
-    private Mono<GatewayAddressResponse.AddressInfo> handleException(Throwable throwable, AddressQueryRequest addressQueryRequest, GatewayDownstreamService gatewayDownstreamService) {
-        GatewayAddressResponse.AddressInfo addressInfo = new GatewayAddressResponse.AddressInfo();
+    private Mono<PhysicalAddressResponseDto> handleException(Throwable throwable, AddressQueryRequest addressQueryRequest, GatewayDownstreamService gatewayDownstreamService) {
+        PhysicalAddressResponseDto addressInfo = new PhysicalAddressResponseDto();
         addressInfo.setRecIndex(addressQueryRequest.getRecIndex());
         addressInfo.setRegistry(gatewayDownstreamService.name());
-        addressInfo.setError(toAddressResponseError(throwable));
-        addressInfo.setErrorStatus(toAddressResponseErrorStatus(throwable));
+        addressInfo.setError(toAddressResponseError(throwable).name());
+        addressInfo.setErrorStatus(toAddressResponseErrorStatus(throwable).value());
         return Mono.just(addressInfo);
     }
 

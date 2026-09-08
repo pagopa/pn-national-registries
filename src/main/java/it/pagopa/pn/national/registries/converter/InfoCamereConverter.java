@@ -7,8 +7,7 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
+import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
@@ -55,21 +54,25 @@ public class InfoCamereConverter {
         return batchPolling;
     }
 
-    public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
+    public AddressSQSMessageDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
+        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
+        codeSqsDto.setRegistry(GatewayDownstreamService.INIPEC.name());
         codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0]);
         codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
     }
 
-    public CodeSqsDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
+    public AddressSQSMessageDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
+        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         codeSqsDto.setCorrelationId(request.getCorrelationId().split(batchRequestPkSeparator)[0]);
         if (error != null) {
             codeSqsDto.setError(error);
         } else {
             codeSqsDto.setDigitalAddress(Collections.emptyList());
         }
+        codeSqsDto.setRegistry(GatewayDownstreamService.INIPEC.name());
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
     }
 
@@ -150,18 +153,27 @@ public class InfoCamereConverter {
         return dto;
     }
 
-    private List<DigitalAddress> convertToDigitalAddress(Pec pec) {
-        List<DigitalAddress> digitalAddress = new ArrayList<>();
+    private List<AddressSQSMessageDigitalAddressInnerDto> convertToDigitalAddress(Pec pec) {
+        List<AddressSQSMessageDigitalAddressInnerDto> digitalAddress = new ArrayList<>();
         if (!StringUtils.isEmpty(pec.getPecImpresa())) {
-            digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA));
+            digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA, DigitalAddressType.PEC.getValue()));
         }
         if (pec.getPecProfessionista() != null) {
             pec.getPecProfessionista().stream()
-                    .map(pecProf -> toDigitalAddress(pecProf.getPec(), DigitalAddressRecipientType.PROFESSIONISTA))
+                    .map(pecProf -> toDigitalAddress(pecProf.getPec(), DigitalAddressRecipientType.PROFESSIONISTA, DigitalAddressType.PEC.getValue()))
                     .forEach(digitalAddress::add);
         }
         return digitalAddress;
     }
+
+    private AddressSQSMessageDigitalAddressInnerDto toDigitalAddress(String address, DigitalAddressRecipientType recipientType, String type) {
+        AddressSQSMessageDigitalAddressInnerDto digitalAddress = new AddressSQSMessageDigitalAddressInnerDto();
+        digitalAddress.setAddress(address);
+        digitalAddress.setRecipient(AddressSQSMessageDigitalAddressInnerDto.RecipientEnum.fromValue(recipientType.getValue()));
+        digitalAddress.setType(type);
+        return digitalAddress;
+    }
+
 
     private String createLegalAddress(LegalAddress address) {
         List<String> addressFields = new ArrayList<>();
@@ -175,10 +187,6 @@ public class InfoCamereConverter {
             addressFields.add(address.getnCivico());
         }
         return String.join(" ", addressFields);
-    }
-
-    private DigitalAddress toDigitalAddress(String address, DigitalAddressRecipientType recipient) {
-        return new DigitalAddress(DigitalAddressType.PEC.getValue(), address, recipient.getValue());
     }
 
     public InfoCamereLegalOKDto infoCamereResponseToDtoByResponse(InfoCamereVerification response) {

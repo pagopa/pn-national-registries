@@ -1,9 +1,5 @@
 package it.pagopa.pn.national.registries.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
@@ -15,20 +11,10 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.EService;
-import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.util.*;
-
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,6 +30,18 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
+
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.batch.polling.delay=30000",
@@ -113,7 +111,7 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(List.of(batchRequest1)));
 
 
-        CodeSqsDto codeSqsDto = mock(CodeSqsDto.class);
+        AddressSQSMessageDto codeSqsDto = mock(AddressSQSMessageDto.class);
         when(codeSqsDto.getError()).thenReturn("error");
         when(infoCamereConverter.convertIniPecRequestToSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
@@ -243,7 +241,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         when(infoCamereConverter.checkIfResponseIsInfoCamereError(any(IniPecPollingResponse.class))).thenReturn(false);
 
-        CodeSqsDto emptySqs = new CodeSqsDto();
+        AddressSQSMessageDto emptySqs = new AddressSQSMessageDto();
         emptySqs.setDigitalAddress(Collections.emptyList());
         emptySqs.setError(null);
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(emptySqs);
@@ -329,11 +327,11 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest)));
 
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        DigitalAddress digitalAddress = new DigitalAddress();
+        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
+        AddressSQSMessageDigitalAddressInnerDto digitalAddress = new AddressSQSMessageDigitalAddressInnerDto();
         digitalAddress.setAddress("address@pec.it");
 
-        DigitalAddress digitalAddress2 = new DigitalAddress();
+        AddressSQSMessageDigitalAddressInnerDto digitalAddress2 = new AddressSQSMessageDigitalAddressInnerDto();
         digitalAddress2.setAddress("invalid_pec");
 
         codeSqsDto.setDigitalAddress(List.of(digitalAddress, digitalAddress2));
@@ -396,7 +394,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest)));
 
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 
@@ -474,7 +472,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
                 .thenReturn(Mono.just(List.of(batchRequest)));
 
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 
@@ -543,7 +541,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(infoCamereClient.callEServiceRequestPec("pollingId"))
                 .thenReturn(Mono.error(exception));
 
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         when(infoCamereConverter.convertIniPecRequestToSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
         when(iniPecBatchSqsService.batchSendToSqs(anyList()))

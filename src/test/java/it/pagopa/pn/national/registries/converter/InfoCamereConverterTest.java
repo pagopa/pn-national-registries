@@ -5,7 +5,6 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,7 +60,7 @@ class InfoCamereConverterTest {
         Pec pec = new Pec();
         pec.setCf("cf");
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+        AddressSQSMessageDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNull(codeSqsDto.getError());
         assertTrue(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()));
@@ -78,7 +77,7 @@ class InfoCamereConverterTest {
         pec.setPecImpresa("pecImpresa");
         pec.setPecProfessionista(Collections.emptyList());
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+        AddressSQSMessageDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
         assertNotNull(codeSqsDto);
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertEquals(1, codeSqsDto.getDigitalAddress().size());
@@ -94,7 +93,7 @@ class InfoCamereConverterTest {
         Pec pec = new Pec();
         pec.setCf("altro-cf");
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+        AddressSQSMessageDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
@@ -168,7 +167,7 @@ class InfoCamereConverterTest {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCorrelationId("correlationId");
         batchRequest.setCf("cf");
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, null);
+        AddressSQSMessageDto codeSqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, null);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
@@ -179,9 +178,9 @@ class InfoCamereConverterTest {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCorrelationId("correlationId");
         batchRequest.setCf("cf");
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, "error");
+        AddressSQSMessageDto codeSqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, "error");
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
-        assertNull(codeSqsDto.getDigitalAddress());
+        assertEquals(0, codeSqsDto.getDigitalAddress().size());
         assertEquals("error", codeSqsDto.getError());
     }
 
