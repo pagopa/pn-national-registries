@@ -8,10 +8,8 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.joda.time.LocalDateTime;
-
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -228,7 +226,7 @@ class GatewayServiceTest {
                 .thenReturn(Mono.just(inipecDto));
 
 
-        ArgumentCaptor<CodeSqsDto> codeSqsDtoArgumentCaptor = ArgumentCaptor.forClass(CodeSqsDto.class);
+        ArgumentCaptor<AddressSQSMessageDto> codeSqsDtoArgumentCaptor = ArgumentCaptor.forClass(AddressSQSMessageDto.class);
         when(sqsService.pushToOutputQueue(codeSqsDtoArgumentCaptor.capture(), any()))
                 .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 

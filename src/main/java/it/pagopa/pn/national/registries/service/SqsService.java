@@ -3,7 +3,7 @@ package it.pagopa.pn.national.registries.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -48,8 +48,8 @@ public class SqsService {
         this.inputDlqQueueName = inputDlqQueueName;
     }
 
-    public Mono<SendMessageResponse> pushToOutputQueue(CodeSqsDto msg, String pnNationalRegistriesCxId) {
-        log.info(PUSHING_OUTPUT_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId(), msg.getSource());
+    public Mono<SendMessageResponse> pushToOutputQueue(AddressSQSMessageDto msg, String pnNationalRegistriesCxId) {
+        log.info(PUSHING_OUTPUT_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId(), msg.getRegistry());
         log.info(INSERTING_MSG_WITHOUT_DATA, outputQueueName);
         return push(toJson(msg), pnNationalRegistriesCxId, outputQueueName, "NR_GATEWAY_RESPONSE");
     }
