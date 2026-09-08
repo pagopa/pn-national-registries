@@ -5,9 +5,9 @@ import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
 import it.pagopa.pn.national.registries.model.EService;
-import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.service.GatewayService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,15 +45,15 @@ class DigitalAddressUtilsTest {
         LocalDateTime now = LocalDateTime.now();
         Pec pec = new Pec();
 
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        DigitalAddress valid = new DigitalAddress();
+        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
+        AddressSQSMessageDigitalAddressInnerDto valid = new AddressSQSMessageDigitalAddressInnerDto();
         valid.setAddress("valid@pec.it");
-        DigitalAddress invalid = new DigitalAddress();
+        AddressSQSMessageDigitalAddressInnerDto invalid = new AddressSQSMessageDigitalAddressInnerDto();
         invalid.setAddress("invalid_pec");
         codeSqsDto.setDigitalAddress(new ArrayList<>(List.of(valid, invalid)));
 
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(request, pec)).thenReturn(codeSqsDto);
-        when(gatewayService.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("serialized-message");
+        when(gatewayService.convertCodeSqsDtoToString(any(AddressSQSMessageDto.class))).thenReturn("serialized-message");
 
         BatchRequest result = digitalAddressUtils
                 .updateBatchRequestFields(request, status, now, pec)
@@ -82,11 +82,11 @@ class DigitalAddressUtilsTest {
         LocalDateTime now = LocalDateTime.now();
         Pec pec = new Pec();
 
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         codeSqsDto.setDigitalAddress(null);
 
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(request, pec)).thenReturn(codeSqsDto);
-        when(gatewayService.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("serialized-message");
+        when(gatewayService.convertCodeSqsDtoToString(any(AddressSQSMessageDto.class))).thenReturn("serialized-message");
 
         BatchRequest result = digitalAddressUtils
                 .updateBatchRequestFields(request, status, now, pec)
@@ -113,7 +113,7 @@ class DigitalAddressUtilsTest {
         BatchStatus status = BatchStatus.ERROR;
         String error = "generic error";
 
-        CodeSqsDto sqsDto = new CodeSqsDto();
+        AddressSQSMessageDto sqsDto = new AddressSQSMessageDto();
         when(infoCamereConverter.convertIniPecRequestToSqsDto(request, error)).thenReturn(sqsDto);
         when(gatewayService.convertCodeSqsDtoToString(sqsDto)).thenReturn("error-message");
 
@@ -136,11 +136,11 @@ class DigitalAddressUtilsTest {
         BatchRequest request = new BatchRequest();
         Pec pec = new Pec();
 
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         codeSqsDto.setDigitalAddress(new ArrayList<>());
 
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(codeSqsDto);
-        when(infoCamereConverter.convertIniPecRequestToSqsDto(any(), anyString())).thenReturn(new CodeSqsDto());
+        when(infoCamereConverter.convertIniPecRequestToSqsDto(any(), anyString())).thenReturn(new AddressSQSMessageDto());
         when(gatewayService.convertCodeSqsDtoToString(any())).thenReturn("msg");
 
         Mono<BatchRequest> updateMono = digitalAddressUtils.updateBatchRequestFields(
