@@ -288,7 +288,7 @@ public class GatewayConverter {
     protected PhysicalAddressResponseDto convertAnprResponseToInternalRecipientAddress(GetAddressANPROKDto response, AddressQueryRequest addressQueryRequest) {
         PhysicalAddressResponseDto addressResponseDto = new PhysicalAddressResponseDto();
         if (response != null && !CollectionUtils.isEmpty(response.getResidentialAddresses())) {
-        addressResponseDto.setPhysicalAddress(convertAnprToPhysicalAddress(response.getResidentialAddresses().get(0)));
+            addressResponseDto.setPhysicalAddress(convertAnprToPhysicalAddress(response.getResidentialAddresses().getFirst()));
         } else {
             log.info("correlationId: {} recIndex: {} - ANPR - indirizzi non presenti", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex());
             // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo

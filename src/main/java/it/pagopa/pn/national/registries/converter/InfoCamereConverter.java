@@ -59,6 +59,7 @@ public class InfoCamereConverter {
         codeSqsDto.setRegistry(GatewayDownstreamService.INIPEC.name());
         codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0]);
         codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
     }
 
@@ -70,6 +71,8 @@ public class InfoCamereConverter {
         } else {
             codeSqsDto.setDigitalAddress(Collections.emptyList());
         }
+        codeSqsDto.setRegistry(GatewayDownstreamService.INIPEC.name());
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
     }
 

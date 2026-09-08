@@ -7,7 +7,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Spy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.TestPropertySource;

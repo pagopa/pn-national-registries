@@ -357,7 +357,7 @@ class GatewayConverterTest {
     }
 
     /**
-     * Method under test: {@link GatewayConverter#convertAnprToPhysicalAddress(ResidentialAddressDto)} (ResidentialAddressDto)}
+     * Method under test: {@link GatewayConverter#convertAnprToPhysicalAddress(ResidentialAddressDto)}
      */
     @Test
     void testConvertAnprToPhysicalAddress() {
