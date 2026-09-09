@@ -67,8 +67,6 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final int inProgressMaxRetry;
     private final String batchRequestPkSeparator;
 
-    private final IpaService ipaService;
-
     private final IniPecBatchRequestService iniPecBatchRequestService;
     private final DigitalAddressUtils digitalAddressUtils;
 
@@ -83,7 +81,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                                              InadService inadService,
                                              @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
                                              @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry,
-                                             @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator, IpaService ipaService,
+                                             @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator,
                                              IniPecBatchRequestService iniPecBatchRequestService, DigitalAddressUtils digitalAddressUtils) {
         this.infoCamereConverter = infoCamereConverter;
         this.batchRequestRepository = batchRequestRepository;
@@ -94,7 +92,6 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         this.maxRetry = maxRetry;
         this.inProgressMaxRetry = inProgressMaxRetry;
         this.batchRequestPkSeparator = batchRequestPkSeparator;
-        this.ipaService = ipaService;
         this.iniPecBatchRequestService = iniPecBatchRequestService;
         this.digitalAddressUtils = digitalAddressUtils;
     }
@@ -307,7 +304,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private Mono<Void> callInadEservice(BatchRequest request) {
         RecipientType recipientType = InadConverter.retrieveRecipientType(request);
         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
-        return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType, request.getReferenceRequestDate().toInstant(ZoneOffset.UTC))
+        return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType)
                 .flatMap(this::emailValidation)
                 .doOnNext(inadResponse -> {
                     request.setMessage(convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, PF.equals(recipientType) ? DigitalAddressRecipientType.PERSONA_FISICA : DigitalAddressRecipientType.IMPRESA)));

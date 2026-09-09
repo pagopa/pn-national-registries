@@ -91,7 +91,7 @@ class GatewayServiceTest {
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId("correlationId");
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(getDigitalAddressINADOKDto));
+        when(inadService.callEService(any(), any())).thenReturn(Mono.just(getDigitalAddressINADOKDto));
         when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         StepVerifier.create(gatewayService.handleMessage(payload)).expectNext(addressOKDto).verifyComplete();
     }
@@ -194,7 +194,7 @@ class GatewayServiceTest {
         digitalAddressDto.setDigitalAddress("digitalAddress@inad.com");
         getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
         when(sqsService.pushToOutputQueue(any(), any()))
@@ -217,7 +217,7 @@ class GatewayServiceTest {
     void testRetrieveDigitalOrPhysicalAddressInadError() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
         when(sqsService.pushToInputDlqQueue(any(), any()))
@@ -239,7 +239,7 @@ class GatewayServiceTest {
         digitalAddressDto.setDigitalAddress("digitalAddressInadIvalidEmail.com");
         getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
         when(sqsService.pushToOutputQueue(any(), any()))
@@ -292,7 +292,7 @@ class GatewayServiceTest {
     }
 
     @Test
-    @DisplayName("Test retrieve from IniPEC")
+    @DisplayName("Test PG digital fallback from IPA to IniPEC")
     void testRetrieveDigitalOrPhysicalAddressIniPEC() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
@@ -308,19 +308,25 @@ class GatewayServiceTest {
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+
+        verify(ipaService).getIpaPec(any());
+        verify(infoCamereService).getIniPecDigitalAddress(any(), any(), any());
+        verifyNoInteractions(inadService);
     }
 
     @Test
-    @DisplayName("Test retrieve from IniPEC")
-    void testRetrieveDigitalOrPhysicalAddressIniPEC2() {
+    @DisplayName("Test PG digital address found in IPA")
+    void testRetrieveDigitalOrPhysicalAddressIpa() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
         IPAPecDto ipaPecOKDto = new IPAPecDto();
+        ipaPecOKDto.setDomicilioDigitale("address@pec.it");
 
         when(ipaService.getIpaPec(any()))
                 .thenReturn(Mono.just(ipaPecOKDto));
 
-        when(infoCamereService.getIniPecDigitalAddress(any(),any(), any())).thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
+        when(sqsService.pushToOutputQueue(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
@@ -328,6 +334,10 @@ class GatewayServiceTest {
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+
+        verify(ipaService).getIpaPec(any());
+        verifyNoInteractions(infoCamereService);
+        verifyNoInteractions(inadService);
     }
 
     @Test

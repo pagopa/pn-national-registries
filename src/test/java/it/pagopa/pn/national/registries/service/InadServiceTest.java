@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.inad.InadClient;
-import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
@@ -13,21 +12,16 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
-import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -48,7 +42,7 @@ class InadServiceTest {
     private static final String DIGITAL_ADDRESS_3 = "da_3";
 
     @Test
-    void callEServiceOldWorkflow() {
+    void callEServiceSelectsPersonalAddressForPf() {
         String practicalReference = "00001";
         Date now = new Date();
 
@@ -90,13 +84,13 @@ class InadServiceTest {
         req.setFilter(filterDto);
 
 
-        StepVerifier.create(inadService.callEService(req, PF, Instant.now()))
+        StepVerifier.create(inadService.callEService(req, PF))
                 .expectNextMatches(getDigitalAddressINADOKDto -> Objects.isNull(getDigitalAddressINADOKDto.getDigitalAddress().getPracticedProfession()))
                 .verifyComplete();
     }
 
     @Test
-    void callEServiceREferenceDateNullOldWorkflowPersonalPecRetrieved() {
+    void callEServiceSelectsExpectedPersonalAddressForPf() {
         String practicalReference = "00001";
         Date now = new Date();
 
@@ -148,7 +142,7 @@ class InadServiceTest {
                                 .motivation(UsageInfoDto.MotivationEnum.CESSAZIONE_UFFICIO)));
 
 
-        StepVerifier.create(inadService.callEService(req, PF, null))
+        StepVerifier.create(inadService.callEService(req, PF))
                 .expectNext(response)
                 .verifyComplete();
     }

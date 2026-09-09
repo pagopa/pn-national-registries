@@ -68,9 +68,6 @@ class DigitalAddressBatchPollingServiceTest {
     @MockitoBean
     private InadService inadService;
 
-    @MockitoBean
-    private IpaService ipaService;
-
     @Autowired
     private DigitalAddressBatchPollingService digitalAddressBatchPollingService;
 
@@ -258,7 +255,7 @@ class DigitalAddressBatchPollingServiceTest {
         DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
         digitalAddressDto.setDigitalAddress("inad@pec.it");
         inadResp.setDigitalAddress(digitalAddressDto);
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(inadResp));
+        when(inadService.callEService(any(), any())).thenReturn(Mono.just(inadResp));
 
         when(iniPecBatchSqsService.batchSendToSqs(anyList()))
                 .thenReturn(Mono.empty().then());
@@ -655,13 +652,14 @@ class DigitalAddressBatchPollingServiceTest {
         digitalAddressDto.setDigitalAddress("inad@pec.it");
         inadResp.setDigitalAddress(digitalAddressDto);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.just(inadResp));
 
         BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
 
         assertSame(batchRequest, result);
         assertNotEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
+        verify(inadService).callEService(any(), any());
         verifyNoInteractions(iniPecBatchRequestService);
     }
 }

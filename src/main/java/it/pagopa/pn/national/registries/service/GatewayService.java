@@ -143,7 +143,7 @@ public class GatewayService extends GatewayConverter {
                     })
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
-            return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), PF, null)
+            return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), PF)
                     .flatMap(this::emailValidation)
                     .flatMap(inadResponse -> sqsService.pushToOutputQueue(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.PERSONA_FISICA), pnNationalRegistriesCxId))
                     .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId()))
@@ -169,11 +169,11 @@ public class GatewayService extends GatewayConverter {
                     .onErrorResume(throwable -> handleException(throwable, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), PG.name(), pnNationalRegistriesCxId)))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
-            return retrieveDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId, PG);
+            return retrieveDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId);
         }
     }
 
-    private Mono<AddressOKDto> retrieveDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId, RecipientType recipientType) {
+    private Mono<AddressOKDto> retrieveDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return ipaService.getIpaPec(convertToGetIpaPecRequest(addressRequestBodyDto))
                 .flatMap(response -> {
                     if ((response.getDomicilioDigitale() == null &&
