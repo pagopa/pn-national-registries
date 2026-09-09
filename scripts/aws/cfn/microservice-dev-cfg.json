@@ -59,6 +59,8 @@
     "pfNewWorkflowStop": "2099-07-14T23:59:59Z",
     "MetricFormatType": "",
     "AddressCompositionMode": "MINIMAL",
-    "IniPecReadTimeoutMillis": "15000"
+    "IniPecReadTimeoutMillis": "15000",
+    "FirstAttemptDelaySecondsPerCf": "0.085",
+    "FirstAttemptFixedDelaySeconds": "300"
   }
 }
