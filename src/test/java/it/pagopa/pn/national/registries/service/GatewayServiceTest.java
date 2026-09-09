@@ -8,14 +8,12 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
-import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
 import org.joda.time.LocalDateTime;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.ArgumentCaptor;
 import org.slf4j.MDC;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -62,8 +60,6 @@ class GatewayServiceTest {
     @MockitoBean
     private ObjectMapper objectMapper;
 
-    @MockitoBean
-    private FeatureEnabledUtils featureEnabledUtils;
 
     private static final String CF = "CF";
     private static final String C_ID = "correlationId";
@@ -95,7 +91,7 @@ class GatewayServiceTest {
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId("correlationId");
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(getDigitalAddressINADOKDto));
+        when(inadService.callEService(any(), any())).thenReturn(Mono.just(getDigitalAddressINADOKDto));
         when(sqsService.pushToOutputQueue(any(), any())).thenReturn(Mono.just(SendMessageResponse.builder().build()));
         StepVerifier.create(gatewayService.handleMessage(payload)).expectNext(addressOKDto).verifyComplete();
     }
@@ -198,7 +194,7 @@ class GatewayServiceTest {
         digitalAddressDto.setDigitalAddress("digitalAddress@inad.com");
         getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
         when(sqsService.pushToOutputQueue(any(), any()))
@@ -215,37 +211,13 @@ class GatewayServiceTest {
         verifyNoInteractions(ipaService);
     }
 
-    @Test
-    void testRetrieveDigitalOrPhysicalAddressNewWorkflow() {
-        when(featureEnabledUtils.isPfNewWorkflowEnabled(any())).thenReturn(true);
-        AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
-
-        GetDigitalAddressIniPECOKDto inipecDto = new GetDigitalAddressIniPECOKDto();
-
-        when(infoCamereService.getIniPecDigitalAddress(any(), any(), any()))
-                .thenReturn(Mono.just(inipecDto));
-
-
-        ArgumentCaptor<AddressSQSMessageDto> codeSqsDtoArgumentCaptor = ArgumentCaptor.forClass(AddressSQSMessageDto.class);
-        when(sqsService.pushToOutputQueue(codeSqsDtoArgumentCaptor.capture(), any()))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
-
-        AddressOKDto addressOKDto = new AddressOKDto();
-        addressOKDto.setCorrelationId(C_ID);
-
-        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", "clientId", addressRequestBodyDto))
-                .expectNext(addressOKDto)
-                .verifyComplete();
-
-   }
-
 
     @Test
     @DisplayName("Test failed retrieve from INAD")
     void testRetrieveDigitalOrPhysicalAddressInadError() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.error(new RuntimeException()));
 
         when(sqsService.pushToInputDlqQueue(any(), any()))
@@ -267,7 +239,7 @@ class GatewayServiceTest {
         digitalAddressDto.setDigitalAddress("digitalAddressInadIvalidEmail.com");
         getDigitalAddressINADOKDto.setDigitalAddress(digitalAddressDto);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.just(getDigitalAddressINADOKDto));
 
         when(sqsService.pushToOutputQueue(any(), any()))
@@ -320,7 +292,7 @@ class GatewayServiceTest {
     }
 
     @Test
-    @DisplayName("Test retrieve from IniPEC")
+    @DisplayName("Test PG digital fallback from IPA to IniPEC")
     void testRetrieveDigitalOrPhysicalAddressIniPEC() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
@@ -336,19 +308,25 @@ class GatewayServiceTest {
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+
+        verify(ipaService).getIpaPec(any());
+        verify(infoCamereService).getIniPecDigitalAddress(any(), any(), any());
+        verifyNoInteractions(inadService);
     }
 
     @Test
-    @DisplayName("Test retrieve from IniPEC")
-    void testRetrieveDigitalOrPhysicalAddressIniPEC2() {
+    @DisplayName("Test PG digital address found in IPA")
+    void testRetrieveDigitalOrPhysicalAddressIpa() {
         AddressRequestBodyDto addressRequestBodyDto = newAddressRequestBodyDto(DIGITAL);
 
         IPAPecDto ipaPecOKDto = new IPAPecDto();
+        ipaPecOKDto.setDomicilioDigitale("address@pec.it");
 
         when(ipaService.getIpaPec(any()))
                 .thenReturn(Mono.just(ipaPecOKDto));
 
-        when(infoCamereService.getIniPecDigitalAddress(any(),any(), any())).thenReturn(Mono.just(new GetDigitalAddressIniPECOKDto()));
+        when(sqsService.pushToOutputQueue(any(), any()))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
 
         AddressOKDto addressOKDto = new AddressOKDto();
         addressOKDto.setCorrelationId(C_ID);
@@ -356,6 +334,10 @@ class GatewayServiceTest {
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", "clientId", addressRequestBodyDto))
                 .expectNext(addressOKDto)
                 .verifyComplete();
+
+        verify(ipaService).getIpaPec(any());
+        verifyNoInteractions(infoCamereService);
+        verifyNoInteractions(inadService);
     }
 
     @Test

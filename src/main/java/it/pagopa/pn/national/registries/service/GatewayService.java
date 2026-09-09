@@ -16,8 +16,6 @@ import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
-import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
-import org.jetbrains.annotations.NotNull;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -45,7 +43,6 @@ public class GatewayService extends GatewayConverter {
     private final InfoCamereService infoCamereService;
     private final IpaService ipaService;
     private final SqsService sqsService;
-    private final FeatureEnabledUtils featureEnabledUtils;
 
     private final boolean pnNationalRegistriesCxIdFlag;
     private static final String CORRELATION_ID = "correlationId";
@@ -58,7 +55,6 @@ public class GatewayService extends GatewayConverter {
                           InadService inadService,
                           InfoCamereService infoCamereService,
                           IpaService ipaService, SqsService sqsService,
-                          FeatureEnabledUtils featureEnabledUtils,
                           @Value("${pn.national.registries.val.cx.id.enabled}") boolean pnNationalRegistriesCxIdFlag) {
         this.anprService = anprService;
         this.inadService = inadService;
@@ -66,7 +62,6 @@ public class GatewayService extends GatewayConverter {
         this.ipaService = ipaService;
         this.sqsService = sqsService;
         this.pnNationalRegistriesCxIdFlag = pnNationalRegistriesCxIdFlag;
-        this.featureEnabledUtils = featureEnabledUtils;
     }
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto request) {
@@ -148,10 +143,7 @@ public class GatewayService extends GatewayConverter {
                     })
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
-            if (featureEnabledUtils.isPfNewWorkflowEnabled(addressRequestBodyDto.getFilter().getReferenceRequestDate().toInstant())) {
-                return retrieveDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId, PF);
-            }
-            return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), PF, null)
+            return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), PF)
                     .flatMap(this::emailValidation)
                     .flatMap(inadResponse -> sqsService.pushToOutputQueue(inadToSqsDto(correlationId, inadResponse, DigitalAddressRecipientType.PERSONA_FISICA), pnNationalRegistriesCxId))
                     .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId()))
@@ -177,14 +169,11 @@ public class GatewayService extends GatewayConverter {
                     .onErrorResume(throwable -> handleException(throwable, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), PG.name(), pnNationalRegistriesCxId)))
                     .map(sendMessageResponse -> mapToAddressesOKDto(correlationId));
         } else {
-            if(featureEnabledUtils.isPfNewWorkflowEnabled(addressRequestBodyDto.getFilter().getReferenceRequestDate().toInstant())) {
-                return retrieveDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId, PG);
-            }
-            return retrieveOldDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId, PG);
+            return retrieveDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId);
         }
     }
 
-    private Mono<AddressOKDto> retrieveOldDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId, RecipientType recipientType) {
+    private Mono<AddressOKDto> retrieveDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return ipaService.getIpaPec(convertToGetIpaPecRequest(addressRequestBodyDto))
                 .flatMap(response -> {
                     if ((response.getDomicilioDigitale() == null &&
@@ -200,22 +189,6 @@ public class GatewayService extends GatewayConverter {
                 .doOnError(e -> logEServiceError(e, "can not retrieve digital address from IPA: {}"))
                 .onErrorResume(e -> handleException(e, toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), "PG", pnNationalRegistriesCxId)))
                 .map(sqs -> mapToAddressesOKDto(correlationId));
-    }
-
-    @NotNull
-    private Mono<AddressOKDto> retrieveDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId, RecipientType recipientType) {
-        AddressOKDto addressOKDto = mapToAddressesOKDto(correlationId);
-        return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto), addressRequestBodyDto.getFilter().getReferenceRequestDate())
-                .map(sqs -> addressOKDto)
-                .doOnError(e -> logEServiceError(e, "can not save request on pn-batchRequest: {}"))
-                .onErrorResume(e -> {
-                    InternalCodeSqsDto internalCodeSqsDto = toInternalCodeSqsDto(addressRequestBodyDto.getFilter(), recipientType.name(), pnNationalRegistriesCxId);
-                    return sqsService.pushToInputDlqQueue(internalCodeSqsDto, pnNationalRegistriesCxId)
-                            .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
-                                    internalCodeSqsDto.getCorrelationId(),
-                                    sendMessageResponse))
-                            .thenReturn(addressOKDto);
-                });
     }
 
     private InternalCodeSqsDto toInternalCodeSqsDto(AddressRequestBodyFilterDto filter, String recipientType, String pnNationalRegistriesCxId) {

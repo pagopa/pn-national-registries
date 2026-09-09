@@ -12,6 +12,7 @@ import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
@@ -27,23 +28,13 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 
 @Component
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class InadClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
     private final ApiEstrazioniPuntualiApi apiEstrazioniPuntualiApi;
     private final InadSecretConfig inadSecretConfig;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
-
-    protected InadClient(AccessTokenExpiringMap accessTokenExpiringMap,
-                         ApiEstrazioniPuntualiApi apiEstrazioniPuntualiApi,
-                         InadSecretConfig inadSecretConfig,
-                         PnNationalRegistriesSecretService pnNationalRegistriesSecretService
-    ) {
-        this.accessTokenExpiringMap = accessTokenExpiringMap;
-        this.apiEstrazioniPuntualiApi = apiEstrazioniPuntualiApi;
-        this.inadSecretConfig = inadSecretConfig;
-        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
-    }
 
     public Mono<ResponseRequestDigitalAddress> callEService(String taxId, String practicalReference) {
         PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(inadSecretConfig.getPdndSecret());

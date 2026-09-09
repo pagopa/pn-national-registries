@@ -39,7 +39,7 @@ public class InadConverter {
         return  StringUtils.hasText(request.getCf()) && request.getCf().length() == CF_LENGTH ? RecipientType.PF : RecipientType.PG;
     }
 
-    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, RecipientType recipientType, String taxId, boolean newWorkflowEnabled) {
+    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, RecipientType recipientType, String taxId) {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
         if (elementDigitalAddress != null) {
             response.setSince(elementDigitalAddress.getSince());
@@ -50,7 +50,7 @@ public class InadConverter {
                         .map(InadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
                         .toList();
                 switch (recipientType) {
-                    case PF -> mapToPfAddress(digitalAddressDtoList, response, newWorkflowEnabled);
+                    case PF -> mapToPfAddress(digitalAddressDtoList, response);
                     case PG -> mapToPgAddress(digitalAddressDtoList, taxId, response);
                     default -> throw new PnNationalRegistriesException("Invalid recipientType",HttpStatus.BAD_REQUEST.value(),
                             HttpStatus.BAD_REQUEST.getReasonPhrase(),null,null , Charset.defaultCharset(), InadResponseKO.class);
@@ -77,16 +77,8 @@ public class InadConverter {
                     );
         }
     }
-    private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response, boolean newWorkflowEnabled) {
-        if (newWorkflowEnabled) {
-            retrieveProfessionalAddress(digitalAddressDtoList)
-                    .ifPresentOrElse(
-                            response::setDigitalAddress,
-                            () -> retrievePersonalAddress(digitalAddressDtoList, response));
-
-        } else {
-            retrievePersonalAddress(digitalAddressDtoList, response);
-        }
+    private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response) {
+        retrievePersonalAddress(digitalAddressDtoList, response);
     }
 
     private static void retrievePersonalAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response) {
