@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.inad.InadClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InadConverter;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
@@ -19,12 +20,12 @@ import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NA
 public class InadService{
 
     private final InadClient inadClient;
-
     private final ValidateTaxIdUtils validateTaxIdUtils;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request, RecipientType recipientType) {
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INAD_ADDRESS, false);
         return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference())
-                .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, request.getFilter().getTaxId()));
+                .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, request.getFilter().getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow()));
     }
 }
