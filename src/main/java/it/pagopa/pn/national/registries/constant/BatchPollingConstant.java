@@ -17,6 +17,8 @@ public final class BatchPollingConstant {
     public static final String COL_RESERVATION_ID = "reservationId";
     public static final String COL_LAST_RESERVED = "lastReserved";
     public static final String COL_TIMESTAMP = "timeStamp";
+    public static final String COL_BATCH_SIZE = "batchSize";
+    public static final String COL_FIRST_ATTEMPT_AFTER = "firstAttemptAfter";
 
     public static final String GSI_S = "status-index";
 }

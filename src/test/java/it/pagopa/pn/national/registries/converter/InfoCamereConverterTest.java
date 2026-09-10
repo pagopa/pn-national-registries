@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
@@ -20,6 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.ttl=0",
@@ -35,6 +37,9 @@ class InfoCamereConverterTest {
     @MockitoBean
     private ObjectMapper objectMapper;
 
+    @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
+
     @Test
     void testConvertToGetAddressIniPecOKDto() {
         BatchRequest batchRequest = new BatchRequest();
@@ -45,8 +50,14 @@ class InfoCamereConverterTest {
 
     @Test
     void testCreateBatchPollingByBatchIdAndPollingId() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchPolling actualCreateBatchPollingByBatchIdAndPollingIdResult = infoCamereConverter
-                .createBatchPollingByBatchIdAndPollingId("batchId", "pollingId");
+                .createBatchPollingByBatchIdAndPollingId("batchId", "pollingId", 3);
         assertEquals("batchId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getBatchId());
         assertEquals("NOT_WORKED", actualCreateBatchPollingByBatchIdAndPollingIdResult.getStatus());
         assertEquals("pollingId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getPollingId());

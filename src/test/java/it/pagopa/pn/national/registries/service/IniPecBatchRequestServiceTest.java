@@ -102,7 +102,7 @@ class IniPecBatchRequestServiceTest {
         when(infoCamereClient.callEServiceRequestId(isNotNull()))
                 .thenReturn(Mono.just(iniPecBatchResponse));
 
-        when(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(anyString(), eq("pollingId")))
+        when(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(anyString(), eq("pollingId"), anyInt()))
                 .thenReturn(batchPolling);
 
         when(batchPollingRepository.create(same(batchPolling)))
@@ -174,7 +174,7 @@ class IniPecBatchRequestServiceTest {
                 .thenReturn(Mono.just(iniPecResponse));
 
         BatchPolling batchPolling = new BatchPolling();
-        when(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(anyString(), eq("pollingId")))
+        when(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(anyString(), eq("pollingId"), anyInt()))
                 .thenReturn(batchPolling);
         when(batchPollingRepository.create(same(batchPolling)))
                 .thenReturn(Mono.just(batchPolling));
