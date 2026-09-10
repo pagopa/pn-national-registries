@@ -57,6 +57,7 @@
     "MountEfs": "false",
     "MetricFormatType": "",
     "AddressCompositionMode": "MINIMAL",
-    "IniPecReadTimeoutMillis": "15000"
+    "IniPecReadTimeoutMillis": "15000",
+    "EnablePfPecFallbackFlow": "true"
   }
 }

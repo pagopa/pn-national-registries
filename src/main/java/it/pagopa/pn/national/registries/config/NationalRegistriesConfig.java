@@ -11,6 +11,10 @@ import org.springframework.context.annotation.Import;
 @Data
 @Import(SharedAutoConfiguration.class)
 public class NationalRegistriesConfig {
+
+    private boolean enablePfPecFallbackFlow;
+    private boolean valCxIdEnabled;
+
     private Dao dao;
     private Integer queryLimit;
     private Inipec inipec;

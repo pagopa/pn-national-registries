@@ -20,6 +20,7 @@ import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
+import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepositoryImpl;
 import it.pagopa.pn.national.registries.service.*;
@@ -68,6 +69,9 @@ class GatewayConverterTest {
     private GatewayConverter gatewayConverter;
     @MockitoBean
     private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
 
 
 
@@ -315,7 +319,7 @@ class GatewayConverterTest {
         AnprService anprService = new AnprService(new AnprConverter(List.of(new OldAnprAddressStrategy(), new FullAnprAddressStrategy(), new OldMinimalAnprAddressStrategy()), mock(NationalRegistriesConfig.class)), mock(AnprClient.class), counterRepository, validateTaxIdUtils);
 
         DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient2 = mock(DynamoDbEnhancedAsyncClient.class);
-        when(dynamoDbEnhancedAsyncClient2.table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any())).thenReturn(
+        when(dynamoDbEnhancedAsyncClient2.table(Mockito.any(), Mockito.any())).thenReturn(
                 new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(
                         new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(mock(DynamoDbAsyncTable.class)))))));
         IniPecBatchRequestRepositoryImpl iniPecBatchRequestRepository = new IniPecBatchRequestRepositoryImpl(
@@ -325,7 +329,7 @@ class GatewayConverterTest {
         InfoCamereService infoCamereService = new InfoCamereService(infoCamereClient,
                 new InfoCamereConverter(2L, "~"), iniPecBatchRequestRepository, 2L, "~", validateTaxIdUtils);
 
-        InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils);
+        InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils, nationalRegistriesConfig);
         PnNationalRegistriesSecretService pnNationalRegistriesSecretService = new PnNationalRegistriesSecretService(new CachedSecretsManagerConsumer(mock(SecretsManagerClient.class)));
         IpaSecretConfig ipaSecretConfig = new IpaSecretConfig("ipaSecret");
         IpaService ipaService = new IpaService(new IpaConverter(), mock(IpaClient.class), validateTaxIdUtils, pnNationalRegistriesSecretService, ipaSecretConfig);
@@ -333,13 +337,12 @@ class GatewayConverterTest {
         SqsAsyncClient sqsClient = mock(SqsAsyncClient.class);
         GatewayService gatewayService = new GatewayService(anprService, inadService, infoCamereService, ipaService,
                 new SqsService("outputQueue", "inputQueue", "inputDlqQueue", sqsClient,
-                        new ObjectMapper()),
-                true);
+                        new ObjectMapper()), true);
         AddressSQSMessageDto actualIpaToSqsDtoResult = gatewayService.ipaToSqsDto("42", new IPAPecDto());
         assertEquals(DIGITAL.name(), actualIpaToSqsDtoResult.getAddressType());
         assertEquals("42", actualIpaToSqsDtoResult.getCorrelationId());
-        verify(dynamoDbEnhancedAsyncClient).table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any());
-        verify(dynamoDbEnhancedAsyncClient2).table(Mockito.<String>any(), Mockito.<TableSchema<Object>>any());
+        verify(dynamoDbEnhancedAsyncClient).table(Mockito.any(), Mockito.any());
+        verify(dynamoDbEnhancedAsyncClient2).table(Mockito.any(), Mockito.any());
     }
 
 
