@@ -245,26 +245,52 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 });
     }
 
-    private Mono<Void> updateBatchRequest(BatchPolling polling, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, String error) {
+    private Mono<Void> updateBatchRequest(BatchPolling polling, BatchStatus status,IniPecPollingResponse iniPecPollingResponse, String error) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
-        return batchRequestRepository.getBatchRequestByBatchIdAndStatus(polling.getBatchId(), BatchStatus.WORKING)
-                .doOnNext(requests -> log.debug("IniPEC - batchId {} - updating {} requests in status {}", polling.getBatchId(), requests.size(), status))
-                .flatMapIterable(requests -> requests)
-                .flatMap(batchRequest -> {
-                    if (StringUtils.hasText(error)) {
-                        return digitalAddressUtils.buildErrorBatchRequest(status, error, batchRequest, now);
-                    } else {
-                        return evaluateInipecResponse(batchRequest, status, iniPecPollingResponse, now);
+        return batchRequestRepository
+                .getBatchRequestByBatchIdAndStatus(polling.getBatchId(), BatchStatus.WORKING, new HashMap<>())
+                .flatMap(page -> processPageRecursively(polling.getBatchId(), page, status, iniPecPollingResponse, error, now))
+                .doOnSuccess(unused -> logBatchEndingMetrics(polling, status));
+    }
+
+    private Mono<Void> processPageRecursively(String batchId, Page<BatchRequest> page, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, String error, LocalDateTime now) {
+        log.debug("IniPEC - batchId {} - pageSize {}, hasNextPage {}", batchId, page.items().size(), hasNextPage(page));
+        Map<String, AttributeValue> nextPageKey = page.lastEvaluatedKey();
+
+        return processSinglePage(page, status, iniPecPollingResponse, error, now, batchId)
+                .then(Mono.defer(() -> {
+                    if (CollectionUtils.isEmpty(nextPageKey)) {
+                        return Mono.empty();
                     }
-                })
+                    return batchRequestRepository.getBatchRequestByBatchIdAndStatus(batchId, BatchStatus.WORKING, nextPageKey)
+                            .flatMap(nextPage -> processPageRecursively(batchId, nextPage, status, iniPecPollingResponse, error, now));
+                }));
+    }
+
+    private Mono<Void> processSinglePage(Page<BatchRequest> page, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, String error, LocalDateTime now, String batchId) {
+        return Flux.fromIterable(page.items())
+                .flatMap(batchRequest -> toUpdatedBatchRequest(batchRequest, status, iniPecPollingResponse, error, now))
                 .flatMap(batchRequestRepository::update)
                 .doOnNext(r -> log.debug("IniPEC - correlationId {} - set status in {}", r.getCorrelationId(), r.getStatus()))
-                .doOnError(e -> log.warn("IniPEC - batchId {} - failed to set request in status {}", polling.getBatchId(), status, e))
+                .doOnError(e -> log.warn("IniPEC - batchId {} - failed to set request in status {}", batchId, status, e))
                 .collectList()
-                .filter(l -> !l.isEmpty())
+                .filter(requests -> !requests.isEmpty())
                 .flatMap(iniPecBatchSqsService::batchSendToSqs)
-                .doOnSuccess(unused -> this.logBatchEndingMetrics(polling, status));
+                .then();
     }
+
+    private Mono<BatchRequest> toUpdatedBatchRequest(BatchRequest batchRequest, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, String error, LocalDateTime now) {
+        if (StringUtils.hasText(error)) {
+            return digitalAddressUtils.buildErrorBatchRequest(status, error, batchRequest, now);
+        }
+        return evaluateInipecResponse(batchRequest, status, iniPecPollingResponse, now);
+    }
+
+    private boolean hasNextPage(Page<BatchRequest> page) {
+        return !CollectionUtils.isEmpty(page.lastEvaluatedKey());
+    }
+
+
 
     private Mono<BatchRequest> evaluateInipecResponse(BatchRequest batchRequest, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, LocalDateTime now) {
         batchRequest.setSendStatus(BatchSendStatus.NOT_SENT.getValue());

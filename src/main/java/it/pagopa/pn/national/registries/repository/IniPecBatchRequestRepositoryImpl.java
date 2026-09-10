@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -31,6 +32,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
     private final int maxRetry;
     private final int retryAfter;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     private static final String STATUS_ALIAS = "#status";
     private static final String STATUS_PLACEHOLDER = ":status";
@@ -42,10 +44,12 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
     public IniPecBatchRequestRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
                                             @Value("${pn.national-registries.inipec.batch-request-max-retry}") int maxRetry,
-                                            @Value("${pn.national-registries.inipec.batch.request.recovery.after}") int retryAfter) {
+                                            @Value("${pn.national-registries.inipec.batch.request.recovery.after}") int retryAfter,
+                                            NationalRegistriesConfig nationalRegistriesConfig) {
         this.table = dynamoDbEnhancedAsyncClient.table("pn-batchRequests", TableSchema.fromClass(BatchRequest.class));
         this.maxRetry = maxRetry;
         this.retryAfter = retryAfter;
+        this.nationalRegistriesConfig = nationalRegistriesConfig;
     }
 
     @Override
@@ -84,20 +88,25 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     }
 
     @Override
-    public Mono<List<BatchRequest>> getBatchRequestByBatchIdAndStatus(String batchId, BatchStatus status) {
+    public Mono<Page<BatchRequest>> getBatchRequestByBatchIdAndStatus(String batchId, BatchStatus status, Map<String, AttributeValue> lastKey) {
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put(STATUS_ALIAS, COL_STATUS);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(STATUS_PLACEHOLDER, AttributeValue.builder().s(status.getValue()).build());
 
-        QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
+        QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
                 .filterExpression(expressionBuilder(STATUS_EQ, expressionValues, expressionNames))
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(batchId)))
-                .build();
+                .limit(nationalRegistriesConfig.getQueryLimit());
 
-        return Flux.from(table.index(GSI_BL).query(queryEnhancedRequest).flatMapIterable(Page::items))
-                .collectList();
+        if (!CollectionUtils.isEmpty(lastKey)) {
+            queryEnhancedRequestBuilder.exclusiveStartKey(lastKey);
+        }
+
+        QueryEnhancedRequest queryEnhancedRequest = queryEnhancedRequestBuilder.build();
+
+        return Mono.from(table.index(GSI_BL).query(queryEnhancedRequest));
     }
 
     @Override
