@@ -133,7 +133,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                             .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest, false))
                             .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest, true))
                             .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId).then(Mono.error(t)))
-                            .flatMap(response -> createPolling(response, batchId))
+                            .flatMap(response -> createPolling(response, batchId, iniPecBatchRequest.getElencoCf().size()))
                             .thenReturn(requests);
                 })
                 .doOnError(e -> log.error("IniPEC - batchId {} - failed to execute batch", batchId, e))
@@ -178,10 +178,10 @@ public class IniPecBatchRequestService extends GatewayConverter {
         return iniPecBatchRequest;
     }
 
-    private Mono<Void> createPolling(IniPecBatchResponse response, String batchId) {
+    private Mono<Void> createPolling(IniPecBatchResponse response, String batchId, Integer iniPecBatchRequestSize) {
         String pollingId = response.getIdentificativoRichiesta();
         log.info("IniPEC - batchId {} - creating BatchPolling with pollingId: {}", batchId, pollingId);
-        return batchPollingRepository.create(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId))
+        return batchPollingRepository.create(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId, iniPecBatchRequestSize))
                 .flatMap(polling -> {
                     log.debug("IniPEC - batchId {} - created BatchPolling with pollingId: {}", batchId, pollingId);
                     return setBatchRequestStatusToWorking(batchId);
