@@ -6,7 +6,7 @@
 #   docker run -it -v $HOME/.aws/:/root/.aws --rm generate_certificate_from_kms /bin/bash ./generate.sh --fqdn test3.client.dev.notifichedigitali.it --keyid 50431e00-79d4-4966-ad70-881d965bdb07 --parameter-name infocamere-client-test --region eu-south-1 --e-mail test@pagopa.it --profile sso_pn-core-dev
 
 
-FROM alpine:3.18.0
+FROM alpine:3.18.0@sha256:02bb6f428431fbc2809c5d1b41eab5a68350194fb508869a33cb1af4444c9b11
 RUN apk add --no-cache ca-certificates bash jq aws-cli coreutils openssl python3 py3-pip
 
 COPY . .
