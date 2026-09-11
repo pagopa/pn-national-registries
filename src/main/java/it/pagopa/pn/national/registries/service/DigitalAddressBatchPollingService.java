@@ -212,11 +212,13 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
-        polling.setStatus(BatchStatus.WORKED.getValue());
-        return batchPollingRepository.update(polling)
+        return updateBatchRequest(polling, BatchStatus.WORKED, response, null)
+                .thenReturn(polling)
+                .doOnNext(batchPolling -> batchPolling.setStatus(BatchStatus.WORKED.getValue()))
+                .flatMap(batchPolling -> batchPollingRepository.update(polling))
                 .doOnNext(p -> log.debug("IniPEC - batchId {} - pollingId {} - updated status to WORKED", polling.getBatchId(), polling.getPollingId()))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - pollingId {} - failed to update status to WORKED", polling.getBatchId(), polling.getPollingId(), e))
-                .flatMap(p -> updateBatchRequest(p, BatchStatus.WORKED, response, null));
+                .then();
     }
 
     private Mono<Void> incrementAndCheckRetry(BatchPolling polling, Throwable throwable) {
