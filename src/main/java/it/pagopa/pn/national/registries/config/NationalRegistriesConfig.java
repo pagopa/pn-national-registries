@@ -33,8 +33,8 @@ public class NationalRegistriesConfig {
         private Integer maxBatchRequestSize;
         private Integer batchRequestMaxRetry;
         private String batchRequestPkSeparator;
-        private Integer FirstAttemptDelaySecondsPerCf;
-        private Integer FirstAttemptFixedDelaySeconds;
+        private Double firstAttemptDelaySecondsPerCf;
+        private Integer firstAttemptFixedDelaySeconds;
     }
 
 }
