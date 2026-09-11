@@ -43,7 +43,7 @@ class IniPecBatchRequestRepositoryImplTest {
     @BeforeEach
     void setUp() {
         when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
-        batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER, nationalRegistriesConfig);
+        batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, nationalRegistriesConfig);
     }
 
     @Test
@@ -130,6 +130,13 @@ class IniPecBatchRequestRepositoryImplTest {
         BatchRequest batchRequest = new BatchRequest();
 
         DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
+        NationalRegistriesConfig.Inipec inipecConfig = new NationalRegistriesConfig.Inipec();
+        inipecConfig.setBatchRequestMaxRetry(RETRY);
+        inipecConfig.setBatchRequestRecoveryAfter(AFTER);
+
+        when(nationalRegistriesConfig.getInipec())
+                .thenReturn(inipecConfig);
+
         when(dynamoDbAsyncTable.index(any()))
                 .thenReturn(index);
         when(index.query((QueryEnhancedRequest) any()))
@@ -147,6 +154,12 @@ class IniPecBatchRequestRepositoryImplTest {
 
         SdkPublisher<Page<Object>> sdkPublisher = mock(SdkPublisher.class);
         DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
+        NationalRegistriesConfig.Inipec inipecConfig = new NationalRegistriesConfig.Inipec();
+        inipecConfig.setBatchRequestMaxRetry(RETRY);
+        inipecConfig.setBatchRequestRecoveryAfter(AFTER);
+
+        when(nationalRegistriesConfig.getInipec())
+                .thenReturn(inipecConfig);
         when(dynamoDbAsyncTable.index(any()))
                 .thenReturn(index);
         when(index.query((QueryEnhancedRequest) any()))

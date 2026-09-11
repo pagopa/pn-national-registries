@@ -327,7 +327,7 @@ class GatewayConverterTest {
                 new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(
                         new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(mock(DynamoDbAsyncTable.class)))))));
         IniPecBatchRequestRepositoryImpl iniPecBatchRequestRepository = new IniPecBatchRequestRepositoryImpl(
-                dynamoDbEnhancedAsyncClient2, 3, 2, nationalRegistriesConfig);
+                dynamoDbEnhancedAsyncClient2, nationalRegistriesConfig);
 
         InfoCamereClient infoCamereClient = mock(InfoCamereClient.class);
         InfoCamereService infoCamereService = new InfoCamereService(infoCamereClient,
