@@ -1,24 +1,21 @@
 package it.pagopa.pn.national.registries.converter;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.national.registries.constant.*;
+import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
+import it.pagopa.pn.national.registries.constant.DigitalAddressType;
+import it.pagopa.pn.national.registries.constant.DomicileType;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
-import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
-import it.pagopa.pn.national.registries.utils.CheckEmailUtils;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
-import reactor.core.publisher.Mono;
 
-import java.nio.charset.Charset;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -34,9 +31,6 @@ public class GatewayConverter {
             Pattern.CASE_INSENSITIVE);
     private static final String DATE_PATTERN = "yyyy-MM-dd";
     private static final String CF_NOT_FOUND = "CF non trovato";
-
-    @Autowired
-    private ObjectMapper mapper;
 
     protected AddressOKDto mapToAddressesOKDto(String correlationId) {
         AddressOKDto dto = new AddressOKDto();
@@ -234,30 +228,6 @@ public class GatewayConverter {
         return dto;
     }
 
-    protected IPARequestBodyDto convertToGetIpaPecRequest(BatchRequest batchRequest) {
-        IPARequestBodyDto dto = new IPARequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filterDto = new CheckTaxIdRequestBodyFilterDto();
-        filterDto.setTaxId(batchRequest.getCf());
-        dto.setFilter(filterDto);
-        return dto;
-    }
-
-    public String convertCodeSqsDtoToString(AddressSQSMessageDto codeSqsDto) {
-        try {
-            return mapper.writeValueAsString(codeSqsDto);
-        } catch (JsonProcessingException e) {
-            throw new DigitalAddressException("can not convert SQS DTO to String", e);
-        }
-    }
-
-    protected Mono<GetDigitalAddressINADOKDto> emailValidation(GetDigitalAddressINADOKDto inadResponse) {
-        if (!CheckEmailUtils.isValidEmail(inadResponse.getDigitalAddress().getDigitalAddress())) {
-            return Mono.error(new PnNationalRegistriesException(CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
-                    HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class));
-        }
-        return Mono.just(inadResponse);
-    }
-
     // START METHODS FOR MULTI ADDRESSES
     protected List<AddressQueryRequest> toAddressQueryRequests(PhysicalAddressesRequestBodyDto requestBodyDto) {
         return requestBodyDto.getAddresses().stream()
@@ -337,4 +307,32 @@ public class GatewayConverter {
 
     // END METHODS FOR MULTI ADDRESSES
 
+    protected AddressRequestBodyDto toAddressRequestBodyDto(PnAddressGatewayEvent.Payload payload) {
+        AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
+        AddressRequestBodyFilterDto addressRequestBodyFilterDto = new AddressRequestBodyFilterDto();
+        addressRequestBodyFilterDto.setCorrelationId(payload.getCorrelationId());
+        addressRequestBodyFilterDto.setReferenceRequestDate(payload.getReferenceRequestDate());
+        addressRequestBodyFilterDto.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.fromValue(payload.getDomicileType()));
+        addressRequestBodyFilterDto.setTaxId(payload.getTaxId());
+        addressRequestBodyDto.setFilter(addressRequestBodyFilterDto);
+        return addressRequestBodyDto;
+    }
+
+    protected AddressSQSMessageDto emptyDigitalAddressSqsDto(String correlationId) {
+        var codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.INAD);
+        codeSqsDto.setDigitalAddress(Collections.emptyList());
+        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
+        return codeSqsDto;
+    }
+
+    protected InternalCodeSqsDto toInternalCodeSqsDto(AddressRequestBodyFilterDto filter, String recipientType, String pnNationalRegistriesCxId) {
+        return InternalCodeSqsDto.builder()
+                .taxId(filter.getTaxId())
+                .correlationId(filter.getCorrelationId())
+                .recipientType(recipientType)
+                .domicileType(filter.getDomicileType().getValue())
+                .referenceRequestDate(filter.getReferenceRequestDate())
+                .pnNationalRegistriesCxId(pnNationalRegistriesCxId)
+                .build();
+    }
 }

@@ -1,157 +1,234 @@
 package it.pagopa.pn.national.registries.utils;
 
-import it.pagopa.pn.national.registries.constant.BatchSendStatus;
-import it.pagopa.pn.national.registries.constant.BatchStatus;
-import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
-import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
-import it.pagopa.pn.national.registries.model.EService;
-import it.pagopa.pn.national.registries.service.GatewayService;
-import org.junit.jupiter.api.BeforeEach;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import org.junit.jupiter.api.Test;
-import reactor.core.publisher.Mono;
+import org.springframework.http.HttpStatus;
+import reactor.test.StepVerifier;
 
-import java.lang.reflect.Constructor;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
 
 class DigitalAddressUtilsTest {
-    private InfoCamereConverter infoCamereConverter;
-    private GatewayService gatewayService;
-    private DigitalAddressUtils digitalAddressUtils;
-
-    @BeforeEach
-    void setUp() throws Exception {
-        infoCamereConverter = mock(InfoCamereConverter.class);
-        gatewayService = mock(GatewayService.class);
-
-        Constructor<DigitalAddressUtils> constructor =
-                DigitalAddressUtils.class.getDeclaredConstructor(InfoCamereConverter.class, GatewayService.class);
-        constructor.setAccessible(true);
-        digitalAddressUtils = constructor.newInstance(infoCamereConverter, gatewayService);
-    }
 
     @Test
-    void updateBatchRequestFieldsFiltersInvalidEmailsAndSetsFields() {
-        BatchRequest request = new BatchRequest();
-        BatchStatus status = BatchStatus.WORKED;
-        LocalDateTime now = LocalDateTime.now();
-        Pec pec = new Pec();
+    void removeInvalidEmails_shouldKeepOnlyValidEmails() {
+        AddressSQSMessageDigitalAddressInnerDto validAddress =
+                new AddressSQSMessageDigitalAddressInnerDto();
+        validAddress.setAddress("valid@email.it");
 
-        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
-        AddressSQSMessageDigitalAddressInnerDto valid = new AddressSQSMessageDigitalAddressInnerDto();
-        valid.setAddress("valid@pec.it");
-        AddressSQSMessageDigitalAddressInnerDto invalid = new AddressSQSMessageDigitalAddressInnerDto();
-        invalid.setAddress("invalid_pec");
-        codeSqsDto.setDigitalAddress(new ArrayList<>(List.of(valid, invalid)));
-
-        when(infoCamereConverter.convertResponsePecToCodeSqsDto(request, pec)).thenReturn(codeSqsDto);
-        when(gatewayService.convertCodeSqsDtoToString(any(AddressSQSMessageDto.class))).thenReturn("serialized-message");
-
-        BatchRequest result = digitalAddressUtils
-                .updateBatchRequestFields(request, status, now, pec)
-                .block();
-
-        assertNotNull(result);
-        assertSame(request, result);
-        assertEquals("serialized-message", result.getMessage());
-        assertEquals(EService.INIPEC.name(), result.getEservice());
-        assertEquals(BatchStatus.WORKED.getValue(), result.getStatus());
-        assertEquals(BatchSendStatus.NOT_SENT.getValue(), result.getSendStatus());
-        assertEquals(now, result.getLastReserved());
-
-        assertNotNull(codeSqsDto.getDigitalAddress());
-        assertEquals(1, codeSqsDto.getDigitalAddress().size());
-        assertEquals("valid@pec.it", codeSqsDto.getDigitalAddress().getFirst().getAddress());
-
-        verify(infoCamereConverter, times(1)).convertResponsePecToCodeSqsDto(request, pec);
-        verify(gatewayService, times(1)).convertCodeSqsDtoToString(codeSqsDto);
-    }
-
-    @Test
-    void updateBatchRequestFieldsHandlesNullDigitalAddressList() {
-        BatchRequest request = new BatchRequest();
-        BatchStatus status = BatchStatus.WORKING;
-        LocalDateTime now = LocalDateTime.now();
-        Pec pec = new Pec();
-
-        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
-        codeSqsDto.setDigitalAddress(null);
-
-        when(infoCamereConverter.convertResponsePecToCodeSqsDto(request, pec)).thenReturn(codeSqsDto);
-        when(gatewayService.convertCodeSqsDtoToString(any(AddressSQSMessageDto.class))).thenReturn("serialized-message");
-
-        BatchRequest result = digitalAddressUtils
-                .updateBatchRequestFields(request, status, now, pec)
-                .block();
-
-        assertNotNull(result);
-        assertSame(request, result);
-        assertEquals("serialized-message", result.getMessage());
-        assertEquals(EService.INIPEC.name(), result.getEservice());
-        assertEquals(BatchStatus.WORKING.getValue(), result.getStatus());
-        assertEquals(BatchSendStatus.NOT_SENT.getValue(), result.getSendStatus());
-        assertEquals(now, result.getLastReserved());
-
-        assertNotNull(codeSqsDto.getDigitalAddress());
-        assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
-
-        verify(infoCamereConverter, times(1)).convertResponsePecToCodeSqsDto(request, pec);
-        verify(gatewayService, times(1)).convertCodeSqsDtoToString(codeSqsDto);
-    }
-
-    @Test
-    void buildErrorBatchRequestSetsFields() {
-        BatchRequest request = new BatchRequest();
-        BatchStatus status = BatchStatus.ERROR;
-        String error = "generic error";
+        AddressSQSMessageDigitalAddressInnerDto invalidAddress =
+                new AddressSQSMessageDigitalAddressInnerDto();
+        invalidAddress.setAddress("invalid-email");
 
         AddressSQSMessageDto sqsDto = new AddressSQSMessageDto();
-        when(infoCamereConverter.convertIniPecRequestToSqsDto(request, error)).thenReturn(sqsDto);
-        when(gatewayService.convertCodeSqsDtoToString(sqsDto)).thenReturn("error-message");
+        sqsDto.setDigitalAddress(List.of(validAddress, invalidAddress));
 
-        BatchRequest result = digitalAddressUtils
-                .buildErrorBatchRequest(status, error, request, LocalDateTime.now())
-                .block();
+        DigitalAddressUtils.removeInvalidEmails(sqsDto);
 
-        assertNotNull(result);
-        assertSame(request, result);
-        assertEquals("error-message", result.getMessage());
-        assertEquals(EService.INIPEC.name(), result.getEservice());
-        assertEquals(BatchStatus.ERROR.getValue(), result.getStatus());
-
-        verify(infoCamereConverter, times(1)).convertIniPecRequestToSqsDto(request, error);
-        verify(gatewayService, times(1)).convertCodeSqsDtoToString(sqsDto);
+        assertNotNull(sqsDto.getDigitalAddress());
+        assertEquals(1, sqsDto.getDigitalAddress().size());
+        assertEquals(
+                "valid@email.it",
+                sqsDto.getDigitalAddress().getFirst().getAddress()
+        );
     }
 
     @Test
-    void methodsReturnNonNullMono() {
-        BatchRequest request = new BatchRequest();
-        Pec pec = new Pec();
+    void removeInvalidEmails_shouldRemoveAllInvalidEmails() {
+        AddressSQSMessageDigitalAddressInnerDto invalidAddress1 =
+                new AddressSQSMessageDigitalAddressInnerDto();
+        invalidAddress1.setAddress("invalid");
 
-        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
-        codeSqsDto.setDigitalAddress(new ArrayList<>());
+        AddressSQSMessageDigitalAddressInnerDto invalidAddress2 =
+                new AddressSQSMessageDigitalAddressInnerDto();
+        invalidAddress2.setAddress("another-invalid-email");
 
-        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(codeSqsDto);
-        when(infoCamereConverter.convertIniPecRequestToSqsDto(any(), anyString())).thenReturn(new AddressSQSMessageDto());
-        when(gatewayService.convertCodeSqsDtoToString(any())).thenReturn("msg");
+        AddressSQSMessageDto sqsDto = new AddressSQSMessageDto();
+        sqsDto.setDigitalAddress(List.of(invalidAddress1, invalidAddress2));
 
-        Mono<BatchRequest> updateMono = digitalAddressUtils.updateBatchRequestFields(
-                request, BatchStatus.WORKED, LocalDateTime.now(), pec
-        );
-        Mono<BatchRequest> errorMono = digitalAddressUtils.buildErrorBatchRequest(
-                BatchStatus.ERROR, "err", request, LocalDateTime.now()
-        );
+        DigitalAddressUtils.removeInvalidEmails(sqsDto);
 
-        assertNotNull(updateMono);
-        assertNotNull(errorMono);
+        assertNotNull(sqsDto.getDigitalAddress());
+        assertTrue(sqsDto.getDigitalAddress().isEmpty());
     }
 
+    @Test
+    void removeInvalidEmails_shouldSetEmptyListWhenDigitalAddressIsNull() {
+        AddressSQSMessageDto sqsDto = new AddressSQSMessageDto();
+        sqsDto.setDigitalAddress(null);
+
+        DigitalAddressUtils.removeInvalidEmails(sqsDto);
+
+        assertNotNull(sqsDto.getDigitalAddress());
+        assertTrue(sqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void removeInvalidEmails_shouldKeepEmptyListWhenDigitalAddressIsEmpty() {
+        AddressSQSMessageDto sqsDto = new AddressSQSMessageDto();
+        sqsDto.setDigitalAddress(List.of());
+
+        DigitalAddressUtils.removeInvalidEmails(sqsDto);
+
+        assertNotNull(sqsDto.getDigitalAddress());
+        assertTrue(sqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void emailValidation_shouldReturnResponseWhenEmailIsValid() {
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("valid@email.it");
+
+        GetDigitalAddressINADOKDto inadResponse =
+                new GetDigitalAddressINADOKDto();
+        inadResponse.setDigitalAddress(digitalAddressDto);
+
+        StepVerifier.create(
+                        DigitalAddressUtils.emailValidation(inadResponse)
+                )
+                .assertNext(result -> assertSame(inadResponse, result))
+                .verifyComplete();
+    }
+
+    @Test
+    void emailValidation_shouldReturnNotFoundWhenEmailIsInvalid() {
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("invalid-email");
+
+        GetDigitalAddressINADOKDto inadResponse =
+                new GetDigitalAddressINADOKDto();
+        inadResponse.setDigitalAddress(digitalAddressDto);
+
+        StepVerifier.create(
+                        DigitalAddressUtils.emailValidation(inadResponse)
+                )
+                .expectErrorSatisfies(error -> {
+                    assertInstanceOf(
+                            PnNationalRegistriesException.class,
+                            error
+                    );
+
+                    PnNationalRegistriesException exception =
+                            (PnNationalRegistriesException) error;
+
+                    assertEquals(
+                            HttpStatus.NOT_FOUND,
+                            exception.getStatusCode()
+                    );
+
+                    assertEquals(
+                            "CF non trovato",
+                            exception.getMessage()
+                    );
+                })
+                .verify();
+    }
+
+    @Test
+    void emailValidation_shouldReturnNotFoundWhenEmailIsNull() {
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress(null);
+
+        GetDigitalAddressINADOKDto inadResponse =
+                new GetDigitalAddressINADOKDto();
+        inadResponse.setDigitalAddress(digitalAddressDto);
+
+        StepVerifier.create(
+                        DigitalAddressUtils.emailValidation(inadResponse)
+                )
+                .expectErrorSatisfies(error -> {
+                    assertInstanceOf(
+                            PnNationalRegistriesException.class,
+                            error
+                    );
+
+                    PnNationalRegistriesException exception =
+                            (PnNationalRegistriesException) error;
+
+                    assertEquals(
+                            HttpStatus.NOT_FOUND,
+                            exception.getStatusCode()
+                    );
+                })
+                .verify();
+    }
+
+    @Test
+    void emailValidation_shouldReturnNotFoundWhenEmailIsBlank() {
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("   ");
+
+        GetDigitalAddressINADOKDto inadResponse =
+                new GetDigitalAddressINADOKDto();
+        inadResponse.setDigitalAddress(digitalAddressDto);
+
+        StepVerifier.create(
+                        DigitalAddressUtils.emailValidation(inadResponse)
+                )
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
+    }
+
+    @Test
+    void isValidEmail_shouldReturnTrueForValidEmail() {
+        assertTrue(
+                DigitalAddressUtils.isValidEmail("test@example.com")
+        );
+    }
+
+    @Test
+    void isValidEmail_shouldReturnTrueForPecEmail() {
+        assertTrue(
+                DigitalAddressUtils.isValidEmail("test@pec.example.it")
+        );
+    }
+
+    @Test
+    void isValidEmail_shouldReturnTrueForEmailWithSpecialCharacters() {
+        assertTrue(
+                DigitalAddressUtils.isValidEmail(
+                        "test.user+notification@example.com"
+                )
+        );
+    }
+
+    @Test
+    void isValidEmail_shouldReturnFalseForEmailWithoutAt() {
+        assertFalse(
+                DigitalAddressUtils.isValidEmail("invalid-email")
+        );
+    }
+
+    @Test
+    void isValidEmail_shouldReturnFalseForEmailWithoutDomain() {
+        assertFalse(
+                DigitalAddressUtils.isValidEmail("test@")
+        );
+    }
+
+    @Test
+    void isValidEmail_shouldReturnFalseForNullEmail() {
+        assertFalse(
+                DigitalAddressUtils.isValidEmail(null)
+        );
+    }
+
+    @Test
+    void isValidEmail_shouldReturnFalseForEmptyEmail() {
+        assertFalse(
+                DigitalAddressUtils.isValidEmail("")
+        );
+    }
+
+    @Test
+    void isValidEmail_shouldReturnFalseForBlankEmail() {
+        assertFalse(
+                DigitalAddressUtils.isValidEmail("   ")
+        );
+    }
 }
