@@ -115,9 +115,9 @@ public class GatewayUtils {
 
     public void logEServiceError(Throwable throwable, String message) {
         if (CheckExceptionUtils.isForLogLevelWarn(throwable)) {
-            log.warn(message, throwable.getMessage());
+            log.warn(message, throwable.getMessage(), throwable);
         } else {
-            log.error(message, throwable.getMessage());
+            log.error(message, throwable.getMessage(), throwable);
         }
     }
 }
