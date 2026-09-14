@@ -12,9 +12,8 @@ import org.springframework.context.annotation.Import;
 @Import(SharedAutoConfiguration.class)
 public class NationalRegistriesConfig {
 
-    private String pfNewWorkflowStart;
-
-    private String pfNewWorkflowStop;
+    private boolean enablePfPecFallbackFlow;
+    private boolean valCxIdEnabled;
 
     private Dao dao;
     private Integer queryLimit;

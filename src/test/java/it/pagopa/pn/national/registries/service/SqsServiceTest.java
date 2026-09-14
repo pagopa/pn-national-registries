@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import org.junit.jupiter.api.Test;
 import reactor.test.StepVerifier;
@@ -33,7 +33,7 @@ class SqsServiceTest {
 
         SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
 
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         codeSqsDto.setCorrelationId("correlationId");
         StepVerifier.create(sqsService.pushToOutputQueue(codeSqsDto,"clientId"))
                 .expectNext(sendMessageResponse)

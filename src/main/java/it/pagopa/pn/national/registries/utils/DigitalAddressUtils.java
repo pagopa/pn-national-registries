@@ -1,58 +1,61 @@
 package it.pagopa.pn.national.registries.utils;
 
-import it.pagopa.pn.national.registries.constant.BatchSendStatus;
-import it.pagopa.pn.national.registries.constant.BatchStatus;
-import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
-import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.EService;
-import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
-import it.pagopa.pn.national.registries.service.GatewayService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Component;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 
-import java.time.LocalDateTime;
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-@RequiredArgsConstructor
-@Component
-@lombok.CustomLog
 public class DigitalAddressUtils {
-    private final InfoCamereConverter infoCamereConverter;
-    private final GatewayService gatewayService;
 
-    public Mono<BatchRequest> updateBatchRequestFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, Pec pec) {
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
-        populateBatchRequestSendFields(batchRequest, status, now, codeSqsDto);
-        return Mono.just(batchRequest);
-    }
+    private static final String CF_NOT_FOUND = "CF non trovato";
+    private static final String EMAIL_PATTERN = "^[a-zA-Z0-9_!#$%&’*+/=?`{|}~^.-]+@[a-zA-Z0-9.-]+$";
 
-    private void populateBatchRequestSendFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, CodeSqsDto codeSqsDto) {
-        removeInvalidEmails(codeSqsDto);
-        batchRequest.setMessage(gatewayService.convertCodeSqsDtoToString(codeSqsDto));
-        batchRequest.setEservice(EService.INIPEC.name());
-        batchRequest.setStatus(status.getValue());
-        batchRequest.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
-        batchRequest.setLastReserved(now);
-    }
+    private static final Pattern pattern = Pattern.compile(EMAIL_PATTERN);
+    private static final Logger log = LoggerFactory.getLogger(DigitalAddressUtils.class);
 
-    private static void removeInvalidEmails(CodeSqsDto sqsDto) {
-        List<DigitalAddress> digitalAddresses = new ArrayList<>();
+    public static void removeInvalidEmails(AddressSQSMessageDto sqsDto) {
+        List<AddressSQSMessageDigitalAddressInnerDto> digitalAddresses = new ArrayList<>();
         if (!CollectionUtils.isEmpty(sqsDto.getDigitalAddress())) {
             digitalAddresses = sqsDto.getDigitalAddress().stream()
-                    .filter(digitalAddress -> CheckEmailUtils.isValidEmail(digitalAddress.getAddress()))
+                    .filter(digitalAddress -> isValidEmail(digitalAddress.getAddress()))
                     .toList();
         }
         sqsDto.setDigitalAddress(digitalAddresses);
     }
 
-    public Mono<BatchRequest> buildErrorBatchRequest(BatchStatus status, String error, BatchRequest batchRequest, LocalDateTime now) {
-        CodeSqsDto sqsDto = infoCamereConverter.convertIniPecRequestToSqsDto(batchRequest, error);
-        populateBatchRequestSendFields(batchRequest, status, now, sqsDto);
-        return Mono.just(batchRequest);
+    public static Mono<GetDigitalAddressINADOKDto> emailValidation(GetDigitalAddressINADOKDto inadResponse) {
+        if (Objects.nonNull(inadResponse.getDigitalAddress()) && !isValidEmail(inadResponse.getDigitalAddress().getDigitalAddress())) {
+            return Mono.error(new PnNationalRegistriesException(CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
+                    HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class));
+        }
+        return Mono.just(inadResponse);
+    }
+
+    public static boolean isValidEmail(String email) {
+        if (!StringUtils.hasText(email)) {
+            return false;
+        }
+        Matcher matcher = pattern.matcher(email);
+        boolean match = matcher.matches();
+
+        if(!match) {
+            log.warn("Email {} is not valid", email);
+        }
+
+        return match;
     }
 }

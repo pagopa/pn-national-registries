@@ -4,7 +4,7 @@ import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import lombok.extern.slf4j.Slf4j;
@@ -100,7 +100,7 @@ public class IniPecBatchSqsService {
                         .onErrorResume(ConditionalCheckFailedException.class, e -> Mono.empty()))
                 .flatMap(item -> {
                     if (!BatchStatus.ERROR.getValue().equalsIgnoreCase(item.getStatus())) {
-                        CodeSqsDto codeSqsDto = sqsService.toObject(item.getMessage(), CodeSqsDto.class);
+                        AddressSQSMessageDto codeSqsDto = sqsService.toObject(item.getMessage(), AddressSQSMessageDto.class);
                         return sqsService.pushToOutputQueue(codeSqsDto, item.getClientId())
                                 .thenReturn(item)
                                 .doOnNext(r -> {

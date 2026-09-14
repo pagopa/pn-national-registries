@@ -3,7 +3,7 @@ package it.pagopa.pn.national.registries.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,7 +26,8 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @Component
 public class SqsService {
 
-    private static final String PUSHING_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}";
+    private static final String PUSHING_OUTPUT_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}, from source: {}";
+    private static final String PUSHING_INPUT_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}";
     private static final String INSERTING_MSG_WITHOUT_DATA = "Inserted data in SQS {}";
 
     private final SqsAsyncClient sqsClient;
@@ -47,20 +48,20 @@ public class SqsService {
         this.inputDlqQueueName = inputDlqQueueName;
     }
 
-    public Mono<SendMessageResponse> pushToOutputQueue(CodeSqsDto msg, String pnNationalRegistriesCxId) {
-        log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
+    public Mono<SendMessageResponse> pushToOutputQueue(AddressSQSMessageDto msg, String pnNationalRegistriesCxId) {
+        log.info(PUSHING_OUTPUT_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId(), msg.getRegistry());
         log.info(INSERTING_MSG_WITHOUT_DATA, outputQueueName);
         return push(toJson(msg), pnNationalRegistriesCxId, outputQueueName, "NR_GATEWAY_RESPONSE");
     }
 
     public Mono<SendMessageResponse> pushToInputQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
-        log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
+        log.info(PUSHING_INPUT_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
         log.info(INSERTING_MSG_WITHOUT_DATA, inputQueueName);
         return push(toJson(msg), pnNationalRegistriesCxId, inputQueueName, "NR_GATEWAY_INPUT");
     }
 
     public Mono<SendMessageResponse> pushToInputDlqQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
-        log.info(PUSHING_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
+        log.info(PUSHING_INPUT_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
         log.info(INSERTING_MSG_WITHOUT_DATA, inputDlqQueueName);
         return push(toJson(msg), pnNationalRegistriesCxId, inputDlqQueueName, "NR_GATEWAY_INPUT");
     }
