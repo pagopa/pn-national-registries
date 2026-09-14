@@ -66,9 +66,10 @@ public class DigitalAddressService extends GatewayConverter {
         return callInadForPF(request)
                 .map(response -> inadToSqsDto(correlationId, response, DigitalAddressRecipientType.PERSONA_FISICA))
                 .onErrorResume(e -> {
-                    if (isInadNotFound(e)) {
+                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
+                    if(codeSqsDto != null) {
                         log.info("correlationId: {} - PEC not found on INAD, fallback to INI-PEC", correlationId);
-                        return Mono.just(emptyDigitalCodeSqsDto(correlationId));
+                        return Mono.just(codeSqsDto);
                     }
                     return Mono.error(e);
                 })
@@ -79,10 +80,6 @@ public class DigitalAddressService extends GatewayConverter {
                     }
                     return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId).then();
                 });
-    }
-
-    public boolean isInadNotFound(Throwable e) {
-        return e instanceof PnNationalRegistriesException pnNationalRegistriesException && pnNationalRegistriesException.getStatusCode().equals(HttpStatusCode.valueOf(404));
     }
 
     private Mono<GetDigitalAddressINADOKDto> callInadForPF(AddressRequestBodyDto request) {

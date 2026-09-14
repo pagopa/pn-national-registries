@@ -433,41 +433,6 @@ class DigitalAddressServiceTest {
         verifyNoInteractions(sqsService);
     }
 
-
-    @Test
-    void isInadNotFound_shouldReturnTrueForPnExceptionWith404() {
-        PnNationalRegistriesException exception =
-                mock(PnNationalRegistriesException.class);
-
-        when(exception.getStatusCode())
-                .thenReturn(HttpStatus.NOT_FOUND);
-
-        assertTrue(digitalAddressService.isInadNotFound(exception));
-    }
-
-
-    @Test
-    void isInadNotFound_shouldReturnFalseForPnExceptionWithDifferentStatus() {
-        PnNationalRegistriesException exception =
-                mock(PnNationalRegistriesException.class);
-
-        when(exception.getStatusCode())
-                .thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
-
-        assertFalse(digitalAddressService.isInadNotFound(exception));
-    }
-
-
-    @Test
-    void isInadNotFound_shouldReturnFalseForGenericException() {
-        assertFalse(
-                digitalAddressService.isInadNotFound(
-                        new RuntimeException("error")
-                )
-        );
-    }
-
-
     private AddressRequestBodyDto buildRequest() {
         AddressRequestBodyFilterDto filter =
                 new AddressRequestBodyFilterDto();
