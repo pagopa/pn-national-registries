@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
@@ -7,10 +8,13 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
+import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
+import reactor.core.publisher.Mono;
 import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.awssdk.utils.StringUtils;
 
@@ -18,15 +22,40 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
 
+import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.removeInvalidEmails;
+
 @Component
-public class InfoCamereConverter {
+public class InfoCamereConverter{
     private final long iniPecTtl;
     private final String batchRequestPkSeparator;
+    private final GatewayUtils gatewayUtils;
     
     public InfoCamereConverter(@Value("${pn.national.registries.inipec.ttl}") long iniPecTtl,
-                               @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator) {
+                               @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator, GatewayUtils gatewayUtils) {
         this.iniPecTtl = iniPecTtl;
         this.batchRequestPkSeparator = batchRequestPkSeparator;
+        this.gatewayUtils = gatewayUtils;
+    }
+
+    public Mono<BatchRequest> buildErrorBatchRequest(BatchStatus status, String error, BatchRequest batchRequest, LocalDateTime now) {
+        AddressSQSMessageDto sqsDto = convertIniPecRequestToSqsDto(batchRequest, error);
+        populateBatchRequestSendFields(batchRequest, status, now, sqsDto);
+        return Mono.just(batchRequest);
+    }
+
+    public Mono<BatchRequest> updateBatchRequestFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, Pec pec) {
+        AddressSQSMessageDto codeSqsDto = convertResponsePecToCodeSqsDto(batchRequest, pec);
+        populateBatchRequestSendFields(batchRequest, status, now, codeSqsDto);
+        return Mono.just(batchRequest);
+    }
+
+    private void populateBatchRequestSendFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, AddressSQSMessageDto codeSqsDto) {
+        removeInvalidEmails(codeSqsDto);
+        batchRequest.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
+        batchRequest.setEservice(EService.INIPEC.name());
+        batchRequest.setStatus(status.getValue());
+        batchRequest.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
+        batchRequest.setLastReserved(now);
     }
 
     public GetDigitalAddressIniPECOKDto convertToGetAddressIniPecOKDto(BatchRequest requestCorrelation) {

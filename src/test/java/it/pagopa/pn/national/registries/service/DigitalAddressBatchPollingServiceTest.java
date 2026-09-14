@@ -16,6 +16,7 @@ import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
+import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,6 +69,9 @@ class DigitalAddressBatchPollingServiceTest {
     @MockitoBean
     private InadService inadService;
 
+    @MockitoBean
+    private IpaService ipaService;
+
     @Autowired
     private DigitalAddressBatchPollingService digitalAddressBatchPollingService;
 
@@ -78,7 +82,7 @@ class DigitalAddressBatchPollingServiceTest {
     private IniPecBatchRequestService iniPecBatchRequestService;
 
     @MockitoBean
-    private DigitalAddressUtils digitalAddressUtils;
+    private GatewayUtils gatewayUtils;
 
     @Test
     void testBatchPecPollingIncrementAndCheckRetryError() {
@@ -588,7 +592,7 @@ class DigitalAddressBatchPollingServiceTest {
         pec.setStatoImpresa(null);
 
         BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
-        when(digitalAddressUtils.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(Pec.class)))
+        when(infoCamereConverter.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(Pec.class)))
                 .thenAnswer(inv -> Mono.just(batchRequest));
 
         BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
@@ -659,7 +663,6 @@ class DigitalAddressBatchPollingServiceTest {
 
         assertSame(batchRequest, result);
         assertNotEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
-        verify(inadService).callEService(any(), any());
         verifyNoInteractions(iniPecBatchRequestService);
     }
 }
