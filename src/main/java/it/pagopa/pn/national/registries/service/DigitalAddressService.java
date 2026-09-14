@@ -53,13 +53,7 @@ public class DigitalAddressService extends GatewayConverter {
         return callInadForPF(addressRequestBodyDto)
                 .map(response -> inadToSqsDto(correlationId, response, DigitalAddressRecipientType.PERSONA_FISICA))
                 .flatMap(codeSqsDto -> sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId))
-                .onErrorResume(e -> {
-                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
-                    if(codeSqsDto != null) {
-                        return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId);
-                    }
-                    return Mono.error(e);
-                })
+                .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve physical address from INAD: {}"))
                 .then();
     }
 
