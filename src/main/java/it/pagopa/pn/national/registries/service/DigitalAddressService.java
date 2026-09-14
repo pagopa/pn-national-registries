@@ -4,6 +4,7 @@ import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
@@ -50,6 +51,13 @@ public class DigitalAddressService extends GatewayConverter {
         return callInad(addressRequestBodyDto)
                 .map(response -> inadToSqsDto(correlationId, response, DigitalAddressRecipientType.PERSONA_FISICA))
                 .flatMap(codeSqsDto -> sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId))
+                .onErrorResume(e -> {
+                    AddressSQSMessageDto codeSqsDto = errorInadToSqsDto(correlationId, e);
+                    if(codeSqsDto != null) {
+                        return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId);
+                    }
+                    return Mono.error(e);
+                })
                 .then();
     }
 
