@@ -24,9 +24,9 @@ import java.net.UnknownHostException;
 @Slf4j
 public class IniPecClientConfig extends CommonBaseClient {
     private final CustomRetryConfig customRetryConfig;
-    private final WebClient pecWebClient;
     private final int maxRetryAttempts;
     private final boolean shouldRetryOnTimeout;
+    private final WebClient.Builder builder;
 
     public IniPecClientConfig(
             CustomRetryConfig customRetryConfig,
@@ -38,12 +38,12 @@ public class IniPecClientConfig extends CommonBaseClient {
         this.maxRetryAttempts = maxRetryAttempts;
         this.shouldRetryOnTimeout = shouldRetryOnTimeout;
         this.customRetryConfig = customRetryConfig;
-        this.pecWebClient = initWebClient(builder, "INIPEC");
+        this.builder = builder;
     }
 
     @Bean
     PecApi pecApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(pecWebClient);
+        var apiClient = new ApiClient(initWebClient(builder, "INIPEC"));
         apiClient.setBasePath(basePath);
         return new PecApi(apiClient);
     }

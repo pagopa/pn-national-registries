@@ -27,16 +27,16 @@ import java.net.UnknownHostException;
 public class InfocamereClientConfig extends CommonBaseClient {
 
     private final CustomRetryConfig customRetryConfig;
-    private final WebClient infocamereWebClient;
+    private final WebClient.Builder builder;
 
     public InfocamereClientConfig(CustomRetryConfig customRetryConfig, WebClient.Builder builder) {
         this.customRetryConfig = customRetryConfig;
-        this.infocamereWebClient = initWebClient(builder, "INFOCAMERE");
+        this.builder = builder;
     }
 
     @Bean
     AuthenticationApi authenticationApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(infocamereWebClient);
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE"));
         apiClient.setBasePath(basePath);
         return new AuthenticationApi(apiClient);
     }
@@ -44,21 +44,21 @@ public class InfocamereClientConfig extends CommonBaseClient {
 
     @Bean
     LegalRepresentationApi legalRepresentationApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(infocamereWebClient);
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE"));
         apiClient.setBasePath(basePath);
         return new LegalRepresentationApi(apiClient);
     }
 
     @Bean
     SedeApi sedeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(infocamereWebClient);
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE"));
         apiClient.setBasePath(basePath);
         return new SedeApi(apiClient);
     }
 
     @Bean
     LegalRepresentativeApi legalRepresentativeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(infocamereWebClient);
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE"));
         apiClient.setBasePath(basePath);
         return new LegalRepresentativeApi(apiClient);
     }
