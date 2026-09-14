@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
@@ -15,19 +16,18 @@ import org.springframework.stereotype.Component;
 import software.amazon.awssdk.utils.CollectionUtils;
 import software.amazon.awssdk.utils.StringUtils;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Component
 public class InfoCamereConverter {
-    private final long iniPecTtl;
-    private final String batchRequestPkSeparator;
-    
-    public InfoCamereConverter(@Value("${pn.national.registries.inipec.ttl}") long iniPecTtl,
-                               @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator) {
-        this.iniPecTtl = iniPecTtl;
-        this.batchRequestPkSeparator = batchRequestPkSeparator;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
+
+    public InfoCamereConverter(NationalRegistriesConfig nationalRegistriesConfig) {
+        this.nationalRegistriesConfig = nationalRegistriesConfig;
     }
 
     public GetDigitalAddressIniPECOKDto convertToGetAddressIniPecOKDto(BatchRequest requestCorrelation) {
@@ -42,7 +42,7 @@ public class InfoCamereConverter {
         }
     }
 
-    public BatchPolling createBatchPollingByBatchIdAndPollingId(String batchId, String pollingId) {
+    public BatchPolling createBatchPollingByBatchIdAndPollingId(String batchId, String pollingId, Integer iniPecBatchRequestSize) {
         LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
         BatchPolling batchPolling = new BatchPolling();
         batchPolling.setBatchId(batchId);
@@ -51,20 +51,32 @@ public class InfoCamereConverter {
         batchPolling.setRetry(0);
         batchPolling.setInProgressRetry(0);
         batchPolling.setCreatedAt(now);
-        batchPolling.setTtl(now.plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
+        batchPolling.setTtl(now.plusSeconds(nationalRegistriesConfig.getInipec().getTtl()).toEpochSecond(ZoneOffset.UTC));
+        batchPolling.setBatchSize(iniPecBatchRequestSize);
+        batchPolling.setFirstAttemptAfter(calculateFirstAttemptAfter(iniPecBatchRequestSize));
         return batchPolling;
+    }
+
+    private Instant calculateFirstAttemptAfter(Integer iniPecBatchRequestSize) {
+        double delaySecondsPerCf = nationalRegistriesConfig.getInipec().getFirstAttemptDelaySecondsPerCf();
+        int fixedDelaySeconds = nationalRegistriesConfig.getInipec().getFirstAttemptFixedDelaySeconds();
+        int batchSize = Optional.ofNullable(iniPecBatchRequestSize).orElse(0);
+
+        long delaySeconds = Math.round((delaySecondsPerCf * batchSize) + fixedDelaySeconds);
+
+        return Instant.now().plusSeconds(delaySeconds).truncatedTo(ChronoUnit.SECONDS);
     }
 
     public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0]);
+        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
         codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
         return codeSqsDto;
     }
 
     public CodeSqsDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(request.getCorrelationId().split(batchRequestPkSeparator)[0]);
+        codeSqsDto.setCorrelationId(request.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
         if (error != null) {
             codeSqsDto.setError(error);
         } else {

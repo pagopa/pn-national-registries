@@ -34,6 +34,9 @@ public class NationalRegistriesConfig {
         private Integer batchRequestMaxRetry;
         private String batchRequestPkSeparator;
         private Integer batchRequestRecoveryAfter;
+        private Double firstAttemptDelaySecondsPerCf;
+        private Integer firstAttemptFixedDelaySeconds;
+        private Integer ttl;
     }
 
 }
