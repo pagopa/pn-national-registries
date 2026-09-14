@@ -11,8 +11,10 @@ import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.*;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,13 +59,19 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
     public Mono<Page<BatchPolling>> getBatchPollingWithoutReservationIdAndStatusNotWorked(Map<String, AttributeValue> lastKey, int limit) {
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put("#reservationId", COL_RESERVATION_ID);
+        expressionNames.put("#firstAttemptAfter", COL_FIRST_ATTEMPT_AFTER);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(":zero", AttributeValue.builder().n("0").build());
+        expressionValues.put(":now", AttributeValue.builder()
+                .s(Instant.now().truncatedTo(ChronoUnit.SECONDS).toString())
+                .build());
 
         QueryConditional queryConditional = QueryConditional.keyEqualTo(keyBuilder(BatchStatus.NOT_WORKED.getValue()));
 
-        String expression = "attribute_not_exists(#reservationId) OR size(#reservationId) = :zero";
+        String expression = "(attribute_not_exists(#reservationId) OR size(#reservationId) = :zero) " +
+                "AND (attribute_not_exists(#firstAttemptAfter) OR #firstAttemptAfter <= :now)";
+
         QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
                 .queryConditional(queryConditional)
                 .filterExpression(expressionBuilder(expression, expressionValues, expressionNames))
