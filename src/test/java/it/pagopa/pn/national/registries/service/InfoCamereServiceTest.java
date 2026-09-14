@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.AddressRegistroImprese;
@@ -67,7 +68,7 @@ class InfoCamereServiceTest {
         when(infoCamereConverter.convertToGetAddressIniPecOKDto(any()))
                 .thenReturn(getDigitalAddressIniPECOKDto);
 
-        StepVerifier.create(infoCamereService.getIniPecDigitalAddress("clientId", requestBodyDto, new Date()))
+        StepVerifier.create(infoCamereService.getIniPecDigitalAddress("clientId", requestBodyDto, new Date(), RecipientType.PG))
                 .expectNext(getDigitalAddressIniPECOKDto)
                 .verifyComplete();
     }

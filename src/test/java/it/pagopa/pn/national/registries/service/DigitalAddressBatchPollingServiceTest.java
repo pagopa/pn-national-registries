@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -40,6 +41,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -198,16 +200,21 @@ class DigitalAddressBatchPollingServiceTest {
         batchRequest1.setCorrelationId("correlationId1");
         batchRequest1.setBatchId("batchId1");
         batchRequest1.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+        batchRequest1.setRecipientType(PG.name());
 
         BatchRequest batchRequest2 = new BatchRequest();
         batchRequest2.setCorrelationId("correlationId2");
         batchRequest2.setBatchId("batchId1");
         batchRequest2.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+        batchRequest2.setRecipientType(PG.name());
+
 
         BatchRequest batchRequest3 = new BatchRequest();
         batchRequest3.setCorrelationId("correlationId3");
         batchRequest3.setBatchId("batchId3");
         batchRequest3.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+        batchRequest3.setRecipientType(PG.name());
+
 
         Page<BatchPolling> page1 = Page.create(List.of(batchPolling1), Map.of("key", AttributeValue.builder().s("value").build()));
         Page<BatchPolling> page2 = Page.create(List.of(batchPolling2, batchPolling3));
@@ -283,6 +290,7 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(batchRequest2));
         when(batchRequestRepository.update(same(batchRequest3)))
                 .thenReturn(Mono.just(batchRequest3));
+        when(gatewayUtils.retrieveRecipientType(any(), any())).thenReturn(PG);
 
         assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
 
@@ -572,7 +580,7 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
         when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPollingToRecover2)))
                 .thenReturn(Mono.just(batchPollingToRecover2));
-
+        when(gatewayUtils.retrieveRecipientType(any(), any())).thenReturn(PG);
         testBatchPecPolling();
 
         assertDoesNotThrow(() -> digitalAddressBatchPollingService.recoveryBatchPolling());
@@ -653,6 +661,7 @@ class DigitalAddressBatchPollingServiceTest {
         batchRequest.setCorrelationId("testCorrelationId");
         batchRequest.setStatus(BatchStatus.WORKING.getValue());
         batchRequest.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+        batchRequest.setCf("32565856321");
         Pec pec = new Pec();
         pec.setStatoImpresa(statoImpresa);
 

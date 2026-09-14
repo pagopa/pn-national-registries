@@ -16,6 +16,7 @@ import reactor.test.StepVerifier;
 import java.util.Date;
 
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
+import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
@@ -102,7 +103,8 @@ class DigitalAddressServiceTest {
         when(infoCamereService.getIniPecDigitalAddress(
                 eq(CX_ID),
                 any(GetDigitalAddressIniPECRequestBodyDto.class),
-                eq(request.getFilter().getReferenceRequestDate())
+                eq(request.getFilter().getReferenceRequestDate()),
+                eq(PG)
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
@@ -121,7 +123,8 @@ class DigitalAddressServiceTest {
                                 && CORRELATION_ID.equals(req.getFilter().getCorrelationId())
                                 && TAX_ID.equals(req.getFilter().getTaxId())
                 ),
-                eq(request.getFilter().getReferenceRequestDate())
+                eq(request.getFilter().getReferenceRequestDate()),
+                eq(PG)
         );
 
         verifyNoInteractions(sqsService);
@@ -144,7 +147,8 @@ class DigitalAddressServiceTest {
         when(infoCamereService.getIniPecDigitalAddress(
                 eq(CX_ID),
                 any(GetDigitalAddressIniPECRequestBodyDto.class),
-                any(Date.class)
+                any(Date.class),
+                eq(PG)
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
@@ -159,7 +163,8 @@ class DigitalAddressServiceTest {
         verify(infoCamereService).getIniPecDigitalAddress(
                 eq(CX_ID),
                 any(GetDigitalAddressIniPECRequestBodyDto.class),
-                eq(request.getFilter().getReferenceRequestDate())
+                eq(request.getFilter().getReferenceRequestDate()),
+                eq(PG)
         );
 
         verifyNoInteractions(sqsService);
@@ -342,7 +347,8 @@ class DigitalAddressServiceTest {
         when(infoCamereService.getIniPecDigitalAddress(
                 eq(CX_ID),
                 any(GetDigitalAddressIniPECRequestBodyDto.class),
-                eq(request.getFilter().getReferenceRequestDate())
+                eq(request.getFilter().getReferenceRequestDate()),
+                eq(PF)
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
@@ -357,7 +363,8 @@ class DigitalAddressServiceTest {
         verify(infoCamereService).getIniPecDigitalAddress(
                 eq(CX_ID),
                 any(GetDigitalAddressIniPECRequestBodyDto.class),
-                eq(request.getFilter().getReferenceRequestDate())
+                eq(request.getFilter().getReferenceRequestDate()),
+                eq(PF)
         );
 
         verifyNoInteractions(sqsService);
@@ -374,6 +381,12 @@ class DigitalAddressServiceTest {
         when(exception.getStatusCode())
                 .thenReturn(HttpStatus.NOT_FOUND);
 
+        when(exception.getResponseBodyAsString())
+                .thenReturn("detail CF non trovato");
+
+        when(exception.getMessage())
+                .thenReturn("CF non trovato");
+
         when(inadService.callEService(
                 any(GetDigitalAddressINADRequestBodyDto.class),
                 eq(PF)
@@ -382,22 +395,28 @@ class DigitalAddressServiceTest {
         when(infoCamereService.getIniPecDigitalAddress(
                 eq(CX_ID),
                 any(GetDigitalAddressIniPECRequestBodyDto.class),
-                eq(request.getFilter().getReferenceRequestDate())
+                eq(request.getFilter().getReferenceRequestDate()),
+                eq(PF)
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
-                        digitalAddressService.retrieveDigitalAddressForPFFromInadWithIniPecFallback(
-                                CX_ID,
-                                request,
-                                CORRELATION_ID
-                        )
+                digitalAddressService.retrieveDigitalAddressForPFFromInadWithIniPecFallback(
+                        CX_ID,
+                        request,
+                        CORRELATION_ID
                 )
-                .verifyComplete();
+        ).verifyComplete();
+
+        verify(inadService).callEService(
+                any(GetDigitalAddressINADRequestBodyDto.class),
+                eq(PF)
+        );
 
         verify(infoCamereService).getIniPecDigitalAddress(
                 eq(CX_ID),
                 any(GetDigitalAddressIniPECRequestBodyDto.class),
-                eq(request.getFilter().getReferenceRequestDate())
+                eq(request.getFilter().getReferenceRequestDate()),
+                eq(PF)
         );
 
         verifyNoInteractions(sqsService);

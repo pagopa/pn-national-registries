@@ -193,10 +193,10 @@ public class InfoCamereConverter{
 
     private List<AddressSQSMessageDigitalAddressInnerDto> convertToDigitalAddress(Pec pec) {
         List<AddressSQSMessageDigitalAddressInnerDto> digitalAddress = new ArrayList<>();
-        if (!StringUtils.isEmpty(pec.getPecImpresa())) {
+        if (Objects.nonNull(pec) && !StringUtils.isEmpty(pec.getPecImpresa())) {
             digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA, DigitalAddressType.PEC.getValue()));
         }
-        if (pec.getPecProfessionista() != null) {
+        if (Objects.nonNull(pec) && pec.getPecProfessionista() != null) {
             pec.getPecProfessionista().stream()
                     .map(pecProf -> toDigitalAddress(pecProf.getPec(), DigitalAddressRecipientType.PROFESSIONISTA, DigitalAddressType.PEC.getValue()))
                     .forEach(digitalAddress::add);

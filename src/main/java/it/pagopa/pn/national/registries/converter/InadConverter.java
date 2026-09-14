@@ -35,10 +35,6 @@ public class InadConverter {
     private InadConverter() {
     }
 
-    public static RecipientType retrieveRecipientType(BatchRequest request) {
-        return  StringUtils.hasText(request.getCf()) && request.getCf().length() == CF_LENGTH ? RecipientType.PF : RecipientType.PG;
-    }
-
     public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, RecipientType recipientType, String taxId, boolean isEnablePfPecFallbackFlow) {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
         if (elementDigitalAddress != null) {

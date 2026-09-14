@@ -21,6 +21,7 @@ public final class BatchRequestConstant {
     public static final String COL_MESSAGE = "message";
     public static final String COL_ESERVICE = "eservice";
     public static final String COL_REQUEST_DATE = "referenceRequestDate";
+    public static final String COL_RECIPIENT_TYPE = "recipientType";
     public static final String COL_AWS_MESSAGE_ID = "aws-messageId";
     public static final String GSI_BL = "batchId-lastReserved-index";
     public static final String GSI_S = "status-index";

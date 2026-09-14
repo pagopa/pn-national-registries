@@ -17,6 +17,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
 
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
+import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.isValidEmail;
 
 @Component
@@ -38,7 +39,7 @@ public class DigitalAddressService extends GatewayConverter {
                             response.getCodEnte() == null &&
                             response.getTipo() == null) ||
                             !isValidEmail(response.getDomicilioDigitale())) {
-                        return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto), addressRequestBodyDto.getFilter().getReferenceRequestDate())
+                        return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto), addressRequestBodyDto.getFilter().getReferenceRequestDate(), PG)
                                 .then();
                     }
                     log.info("retrieved digital address from IPA for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId());
@@ -75,7 +76,7 @@ public class DigitalAddressService extends GatewayConverter {
                 })
                 .flatMap(codeSqsDto -> {
                     if (CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
-                        return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(request), request.getFilter().getReferenceRequestDate())
+                        return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(request), request.getFilter().getReferenceRequestDate(), PF)
                                 .then();
                     }
                     return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId).then();

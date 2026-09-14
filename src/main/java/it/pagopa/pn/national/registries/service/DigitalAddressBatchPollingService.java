@@ -53,6 +53,7 @@ import java.util.regex.Pattern;
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
+import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 
 @CustomLog
@@ -295,7 +296,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         batchRequest.setLastReserved(now);
         Pec pec = retrieveBatchRequestPec(batchRequest, iniPecPollingResponse);
         if (Objects.isNull(pec)) {
-            return handlePecNotFoundResponse(batchRequest);
+            return handlePecNotFoundResponse(batchRequest, status, now);
         }
         return evaluateStatoImpresa(batchRequest, pec, status, now);
     }
@@ -333,7 +334,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<Void> callInadEservice(BatchRequest request) {
-        RecipientType recipientType = InadConverter.retrieveRecipientType(request);
+        RecipientType recipientType = gatewayUtils.retrieveRecipientType(request.getCf(), request.getRecipientType());
         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
         return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType)
                 .flatMap(DigitalAddressUtils::emailValidation)
@@ -379,11 +380,14 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                         batchRequest.getCorrelationId(), statoImpresa))
                 .flatMap(statoImpresa -> switch (statoImpresa) {
                     case ER -> handleERState(batchRequest).then(Mono.empty());
-                    case ND, NF -> handlePecNotFoundResponse(batchRequest);
+                    case ND, NF -> handlePecNotFoundResponse(batchRequest, status, now);
                 });
     }
 
-    public Mono<BatchRequest> handlePecNotFoundResponse(BatchRequest request) {
+    public Mono<BatchRequest> handlePecNotFoundResponse(BatchRequest request, BatchStatus status, LocalDateTime now) {
+        if(PF.name().equalsIgnoreCase(request.getRecipientType())) {
+            return infoCamereConverter.updateBatchRequestFields(request, status, now, null);
+        }
         return callInadEservice(request)
                 .thenReturn(request);
     }
