@@ -4,10 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.GatewayError;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressResponseDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,12 +19,15 @@ import reactor.util.context.Context;
 import java.util.HashMap;
 import java.util.Map;
 
+import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
+import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class GatewayUtilsTest {
 
     private static final String CORRELATION_ID = "correlationId";
+    private static final String VALID_CF = "MNZVMH95B09L084U";
 
     private ObjectMapper mapper;
     private GatewayUtils gatewayUtils;
@@ -35,8 +39,34 @@ class GatewayUtilsTest {
     }
 
     @Test
+    void retrieveRecipientTypeShouldReturnPfWhenCfHas16Characters() {
+        RecipientType result = gatewayUtils.retrieveRecipientType(VALID_CF, null);
+        assertEquals(PF, result);
+    }
+
+
+    @Test
+    void retrieveRecipientTypeShouldReturnPfWhenCfHas16CharactersButRecipientTypeIsPG() {
+        RecipientType result = gatewayUtils.retrieveRecipientType(VALID_CF, PG.name());
+        assertEquals(PG, result);
+    }
+
+    @Test
+    void retrieveRecipientTypeShouldReturnPgWhenCfIsNotPresent() {
+        RecipientType result = gatewayUtils.retrieveRecipientType(null, null);
+        assertEquals(PG, result);
+    }
+
+    @Test
+    void retrieveRecipientTypeShouldReturnPgWhenCfHasWrongLength() {
+        RecipientType result = gatewayUtils.retrieveRecipientType("12345678901", null);
+        assertEquals(PG, result);
+    }
+
+
+    @Test
     void convertCodeSqsDtoToString_shouldReturnSerializedDto() throws Exception {
-        AddressSQSMessageDto dto = new AddressSQSMessageDto();
+        CodeSqsDto dto = new CodeSqsDto();
 
         when(mapper.writeValueAsString(dto))
                 .thenReturn("{\"correlationId\":\"123\"}");
@@ -52,7 +82,7 @@ class GatewayUtilsTest {
     void convertCodeSqsDtoToString_shouldThrowDigitalAddressExceptionWhenSerializationFails()
             throws Exception {
 
-        AddressSQSMessageDto dto = new AddressSQSMessageDto();
+        CodeSqsDto dto = new CodeSqsDto();
 
         JsonProcessingException jsonException =
                 new JsonProcessingException("serialization error") {};

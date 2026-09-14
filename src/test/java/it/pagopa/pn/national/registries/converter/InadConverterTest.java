@@ -1,7 +1,5 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.constant.RecipientType;
-import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;
@@ -22,32 +20,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class InadConverterTest {
 
-    private static final String VALID_CF = "MNZVMH95B09L084U";
     private static final String VALID_PIVA = "00123456789";
-
-    @Test
-    void retrieveRecipientTypeShouldReturnPfWhenCfHas16Characters() {
-        BatchRequest request = new BatchRequest();
-        request.setCf(VALID_CF);
-        RecipientType result = InadConverter.retrieveRecipientType(request);
-        assertEquals(PF, result);
-    }
-
-    @Test
-    void retrieveRecipientTypeShouldReturnPgWhenCfIsNotPresent() {
-        BatchRequest request = new BatchRequest();
-        request.setCf(null);
-        RecipientType result = InadConverter.retrieveRecipientType(request);
-        assertEquals(PG, result);
-    }
-
-    @Test
-    void retrieveRecipientTypeShouldReturnPgWhenCfHasWrongLength() {
-        BatchRequest request = new BatchRequest();
-        request.setCf("12345678901");
-        RecipientType result = InadConverter.retrieveRecipientType(request);
-        assertEquals(PG, result);
-    }
+    private static final String VALID_CF = "MNZVMH95B09L084U";
 
     @Test
     void mapToResponseOkShouldReturnEmptyResponseWhenInputIsNull() {

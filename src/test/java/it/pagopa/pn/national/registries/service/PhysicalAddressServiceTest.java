@@ -4,6 +4,7 @@ import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
@@ -434,7 +435,7 @@ class PhysicalAddressServiceTest {
         )).thenReturn(Mono.just(response));
 
         when(sqsService.pushToOutputQueue(
-                any(AddressSQSMessageDto.class),
+                any(CodeSqsDto.class),
                 eq(CX_ID)
         )).thenReturn(Mono.empty());
 
@@ -513,7 +514,7 @@ class PhysicalAddressServiceTest {
         )).thenReturn(Mono.just(response));
 
         when(sqsService.pushToOutputQueue(
-                any(AddressSQSMessageDto.class),
+                any(CodeSqsDto.class),
                 eq(CX_ID)
         )).thenReturn(Mono.empty());
 

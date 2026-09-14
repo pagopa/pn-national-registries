@@ -7,19 +7,22 @@ import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.commons.log.PnAuditLogEventType;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.GatewayError;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressResponseDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import reactor.util.context.Context;
 
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 @Slf4j
@@ -31,12 +34,22 @@ public class GatewayUtils {
 
     private final ObjectMapper mapper;
 
-    public String convertCodeSqsDtoToString(AddressSQSMessageDto codeSqsDto) {
+    private static final int CF_LENGTH = 16;
+
+
+    public String convertCodeSqsDtoToString(CodeSqsDto codeSqsDto) {
         try {
             return mapper.writeValueAsString(codeSqsDto);
         } catch (JsonProcessingException e) {
             throw new DigitalAddressException("can not convert SQS DTO to String", e);
         }
+    }
+
+    public RecipientType retrieveRecipientType(String cf, String recipientType) {
+        if(Objects.nonNull(recipientType)){
+            return RecipientType.fromString(recipientType);
+        }
+        return StringUtils.hasText(cf) && cf.length() == CF_LENGTH ? RecipientType.PF : RecipientType.PG;
     }
 
     public Context enrichFluxContext(Context ctx, Map<String, String> mdcCtx) {

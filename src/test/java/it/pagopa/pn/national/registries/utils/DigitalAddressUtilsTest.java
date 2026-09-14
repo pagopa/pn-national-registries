@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.utils;
 
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import org.junit.jupiter.api.Test;
@@ -25,7 +25,7 @@ class DigitalAddressUtilsTest {
                 new AddressSQSMessageDigitalAddressInnerDto();
         invalidAddress.setAddress("invalid-email");
 
-        AddressSQSMessageDto sqsDto = new AddressSQSMessageDto();
+        CodeSqsDto sqsDto = new CodeSqsDto();
         sqsDto.setDigitalAddress(List.of(validAddress, invalidAddress));
 
         DigitalAddressUtils.removeInvalidEmails(sqsDto);
@@ -48,7 +48,7 @@ class DigitalAddressUtilsTest {
                 new AddressSQSMessageDigitalAddressInnerDto();
         invalidAddress2.setAddress("another-invalid-email");
 
-        AddressSQSMessageDto sqsDto = new AddressSQSMessageDto();
+        CodeSqsDto sqsDto = new CodeSqsDto();
         sqsDto.setDigitalAddress(List.of(invalidAddress1, invalidAddress2));
 
         DigitalAddressUtils.removeInvalidEmails(sqsDto);
@@ -59,7 +59,7 @@ class DigitalAddressUtilsTest {
 
     @Test
     void removeInvalidEmails_shouldSetEmptyListWhenDigitalAddressIsNull() {
-        AddressSQSMessageDto sqsDto = new AddressSQSMessageDto();
+        CodeSqsDto sqsDto = new CodeSqsDto();
         sqsDto.setDigitalAddress(null);
 
         DigitalAddressUtils.removeInvalidEmails(sqsDto);
@@ -70,7 +70,7 @@ class DigitalAddressUtilsTest {
 
     @Test
     void removeInvalidEmails_shouldKeepEmptyListWhenDigitalAddressIsEmpty() {
-        AddressSQSMessageDto sqsDto = new AddressSQSMessageDto();
+        CodeSqsDto sqsDto = new CodeSqsDto();
         sqsDto.setDigitalAddress(List.of());
 
         DigitalAddressUtils.removeInvalidEmails(sqsDto);

@@ -2,7 +2,7 @@ package it.pagopa.pn.national.registries.utils;
 
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import org.slf4j.Logger;
@@ -27,7 +27,7 @@ public class DigitalAddressUtils {
     private static final Pattern pattern = Pattern.compile(EMAIL_PATTERN);
     private static final Logger log = LoggerFactory.getLogger(DigitalAddressUtils.class);
 
-    public static void removeInvalidEmails(AddressSQSMessageDto sqsDto) {
+    public static void removeInvalidEmails(CodeSqsDto sqsDto) {
         List<AddressSQSMessageDigitalAddressInnerDto> digitalAddresses = new ArrayList<>();
         if (!CollectionUtils.isEmpty(sqsDto.getDigitalAddress())) {
             digitalAddresses = sqsDto.getDigitalAddress().stream()
