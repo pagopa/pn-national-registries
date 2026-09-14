@@ -35,11 +35,7 @@ public class InadConverter {
     private InadConverter() {
     }
 
-    public static RecipientType retrieveRecipientType(BatchRequest request) {
-        return  StringUtils.hasText(request.getCf()) && request.getCf().length() == CF_LENGTH ? RecipientType.PF : RecipientType.PG;
-    }
-
-    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, RecipientType recipientType, String taxId, boolean newWorkflowEnabled) {
+    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, RecipientType recipientType, String taxId, boolean isEnablePfPecFallbackFlow) {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
         if (elementDigitalAddress != null) {
             response.setSince(elementDigitalAddress.getSince());
@@ -50,7 +46,7 @@ public class InadConverter {
                         .map(InadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
                         .toList();
                 switch (recipientType) {
-                    case PF -> mapToPfAddress(digitalAddressDtoList, response, newWorkflowEnabled);
+                    case PF -> mapToPfAddress(digitalAddressDtoList, response, isEnablePfPecFallbackFlow);
                     case PG -> mapToPgAddress(digitalAddressDtoList, taxId, response);
                     default -> throw new PnNationalRegistriesException("Invalid recipientType",HttpStatus.BAD_REQUEST.value(),
                             HttpStatus.BAD_REQUEST.getReasonPhrase(),null,null , Charset.defaultCharset(), InadResponseKO.class);
@@ -77,29 +73,26 @@ public class InadConverter {
                     );
         }
     }
-    private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response, boolean newWorkflowEnabled) {
-        if (newWorkflowEnabled) {
-            retrieveProfessionalAddress(digitalAddressDtoList)
-                    .ifPresentOrElse(
-                            response::setDigitalAddress,
-                            () -> retrievePersonalAddress(digitalAddressDtoList, response));
 
-        } else {
-            retrievePersonalAddress(digitalAddressDtoList, response);
+    private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response, boolean isEnablePfPecFallbackFlow) {
+
+        Optional<DigitalAddressDto> digitalAddress = retrievePersonalAddress(digitalAddressDtoList, response);
+        if (isEnablePfPecFallbackFlow) {
+            digitalAddress = digitalAddress.or(() -> retrieveProfessionalAddress(digitalAddressDtoList));
         }
+
+        digitalAddress.ifPresentOrElse(
+                response::setDigitalAddress,
+                () -> {
+                    throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class);
+                }
+        );
     }
 
-    private static void retrievePersonalAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response) {
-        digitalAddressDtoList.stream()
+    private static Optional<DigitalAddressDto> retrievePersonalAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response) {
+        return digitalAddressDtoList.stream()
                 .filter(item -> !StringUtils.hasText(item.getPracticedProfession()) && response.getTaxId().length() == CF_LENGTH)
-                .findFirst()
-                .ifPresentOrElse(
-                        response::setDigitalAddress,
-                        () -> {
-                            throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
-                                    HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class);
-                        }
-                );
+                .findFirst();
     }
 
     private static Optional<DigitalAddressDto> retrieveProfessionalAddress(List<DigitalAddressDto> digitalAddressDtoList) {

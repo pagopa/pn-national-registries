@@ -1,13 +1,10 @@
 package it.pagopa.pn.national.registries.service;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -15,22 +12,13 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.EService;
-import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-
-import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.util.*;
-
-import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
-import it.pagopa.pn.national.registries.utils.FeatureEnabledUtils;
+import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,6 +33,18 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
+
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @TestPropertySource(properties = {
         "pn.national.registries.inipec.batch.polling.delay=30000",
@@ -69,9 +69,6 @@ class DigitalAddressBatchPollingServiceTest {
     private IniPecBatchSqsService iniPecBatchSqsService;
 
     @MockitoBean
-    private FeatureEnabledUtils featureEnabledUtils;
-
-    @MockitoBean
     private InadService inadService;
 
     @MockitoBean
@@ -87,7 +84,7 @@ class DigitalAddressBatchPollingServiceTest {
     private IniPecBatchRequestService iniPecBatchRequestService;
 
     @MockitoBean
-    private DigitalAddressUtils digitalAddressUtils;
+    private GatewayUtils gatewayUtils;
 
     @Test
     void testBatchPecPollingIncrementAndCheckRetryError() {
@@ -203,16 +200,21 @@ class DigitalAddressBatchPollingServiceTest {
         batchRequest1.setCorrelationId("correlationId1");
         batchRequest1.setBatchId("batchId1");
         batchRequest1.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+        batchRequest1.setRecipientType(PG.name());
 
         BatchRequest batchRequest2 = new BatchRequest();
         batchRequest2.setCorrelationId("correlationId2");
         batchRequest2.setBatchId("batchId1");
         batchRequest2.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+        batchRequest2.setRecipientType(PG.name());
+
 
         BatchRequest batchRequest3 = new BatchRequest();
         batchRequest3.setCorrelationId("correlationId3");
         batchRequest3.setBatchId("batchId3");
         batchRequest3.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+        batchRequest3.setRecipientType(PG.name());
+
 
         Page<BatchPolling> page1 = Page.create(List.of(batchPolling1), Map.of("key", AttributeValue.builder().s("value").build()));
         Page<BatchPolling> page2 = Page.create(List.of(batchPolling2, batchPolling3));
@@ -267,13 +269,11 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING, new HashMap<>()))
                 .thenReturn(Mono.just(Page.create(List.of(batchRequest3))));
 
-        when(featureEnabledUtils.isPfNewWorkflowEnabled(any(Instant.class))).thenReturn(false);
-
         GetDigitalAddressINADOKDto inadResp = new GetDigitalAddressINADOKDto();
         DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
         digitalAddressDto.setDigitalAddress("inad@pec.it");
         inadResp.setDigitalAddress(digitalAddressDto);
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(inadResp));
+        when(inadService.callEService(any(), any())).thenReturn(Mono.just(inadResp));
 
         when(iniPecBatchSqsService.batchSendToSqs(anyList()))
                 .thenReturn(Mono.empty().then());
@@ -290,6 +290,7 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(batchRequest2));
         when(batchRequestRepository.update(same(batchRequest3)))
                 .thenReturn(Mono.just(batchRequest3));
+        when(gatewayUtils.retrieveRecipientType(any(), any())).thenReturn(PG);
 
         assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
 
@@ -343,10 +344,10 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        DigitalAddress digitalAddress = new DigitalAddress();
+        AddressSQSMessageDigitalAddressInnerDto digitalAddress = new AddressSQSMessageDigitalAddressInnerDto();
         digitalAddress.setAddress("address@pec.it");
 
-        DigitalAddress digitalAddress2 = new DigitalAddress();
+        AddressSQSMessageDigitalAddressInnerDto digitalAddress2 = new AddressSQSMessageDigitalAddressInnerDto();
         digitalAddress2.setAddress("invalid_pec");
 
         codeSqsDto.setDigitalAddress(List.of(digitalAddress, digitalAddress2));
@@ -579,7 +580,7 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
         when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPollingToRecover2)))
                 .thenReturn(Mono.just(batchPollingToRecover2));
-
+        when(gatewayUtils.retrieveRecipientType(any(), any())).thenReturn(PG);
         testBatchPecPolling();
 
         assertDoesNotThrow(() -> digitalAddressBatchPollingService.recoveryBatchPolling());
@@ -599,193 +600,6 @@ class DigitalAddressBatchPollingServiceTest {
     }
 
     @Test
-    void testCallIpaEserviceSuccessPath() {
-        BatchPolling polling = new BatchPolling();
-        polling.setBatchId("batchId");
-        polling.setPollingId("pollingId");
-        polling.setCreatedAt(LocalDateTime.now().minusSeconds(5));
-
-        BatchRequest request = new BatchRequest();
-        request.setBatchId("batchId");
-        request.setCorrelationId("corrId");
-        request.setReferenceRequestDate(LocalDateTime.now());
-
-        IniPecPollingResponse icResponse = new IniPecPollingResponse();
-        icResponse.setElencoPec(Collections.emptyList());
-
-        when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
-                .thenReturn(Mono.just(Page.create(
-                        List.of(polling),
-                        Map.of("k", AttributeValue.builder().s("v").build())
-                )))
-                .thenReturn(Mono.just(Page.create(Collections.emptyList())));
-
-        when(batchPollingRepository.setNewReservationIdToBatchPolling(any(BatchPolling.class)))
-                .thenReturn(Mono.just(polling));
-
-        when(batchPollingRepository.update(any(BatchPolling.class)))
-                .thenReturn(Mono.just(polling));
-
-        when(infoCamereClient.callEServiceRequestPec("pollingId"))
-                .thenReturn(Mono.just(icResponse));
-        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any(IniPecPollingResponse.class)))
-                .thenReturn(false);
-
-        CodeSqsDto empty = new CodeSqsDto();
-        empty.setDigitalAddress(Collections.emptyList());
-        empty.setError(null);
-        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
-                .thenReturn(empty);
-
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
-                .thenReturn(Mono.just(Page.create(List.of(request))));
-
-        when(featureEnabledUtils.isPfNewWorkflowEnabled(any(Instant.class)))
-                .thenReturn(true);
-
-        IPAPecDto ipaResp = new IPAPecDto();
-        ipaResp.setDomicilioDigitale("a@b.it");
-        ipaResp.setDenominazione("Ente");
-        ipaResp.setCodEnte("COD1");
-        ipaResp.setTipo("PA");
-        when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaResp));
-
-        when(batchRequestRepository.update(any(BatchRequest.class)))
-                .thenAnswer(inv -> Mono.just(inv.getArgument(0)));
-
-        when(iniPecBatchSqsService.batchSendToSqs(anyList()))
-                .thenReturn(Mono.empty().then());
-
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
-
-        verify(infoCamereClient, times(1)).callEServiceRequestPec("pollingId");
-        verify(batchRequestRepository, times(1))
-                .getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>());
-        verify(featureEnabledUtils, atLeastOnce())
-                .isPfNewWorkflowEnabled(any(java.time.Instant.class));
-        verify(ipaService, times(1)).getIpaPec(any());
-        verify(inadService, never()).callEService(any(), any(), any());
-
-        assertEquals(BatchStatus.WORKED.getValue(), request.getStatus());
-        assertEquals(EService.IPA.name(), request.getEservice());
-        assertEquals(BatchSendStatus.NOT_SENT.getValue(), request.getSendStatus());
-        assertNotNull(request.getLastReserved());
-    }
-
-    @Test
-    void testCallIpaFallbackToCallInadSuccess() {
-        BatchPolling batchPolling = new BatchPolling();
-        batchPolling.setBatchId("batchId");
-        batchPolling.setPollingId("pollingId");
-        batchPolling.setCreatedAt(LocalDateTime.now().minusSeconds(5));
-
-        BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setBatchId("batchId");
-        batchRequest.setCorrelationId("corrId");
-        batchRequest.setReferenceRequestDate(LocalDateTime.now());
-
-        IniPecPollingResponse pollingResponse = new IniPecPollingResponse();
-        pollingResponse.setElencoPec(Collections.emptyList());
-
-        when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
-                .thenReturn(Mono.just(Page.create(List.of(batchPolling))));
-        when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPolling)))
-                .thenReturn(Mono.just(batchPolling));
-
-        when(batchPollingRepository.update(any(BatchPolling.class)))
-                .thenReturn(Mono.just(batchPolling));
-        when(batchRequestRepository.update(any(BatchRequest.class)))
-                .thenAnswer(inv -> Mono.just(inv.getArgument(0)));
-
-        when(infoCamereClient.callEServiceRequestPec("pollingId")).thenReturn(Mono.just(pollingResponse));
-        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any(IniPecPollingResponse.class))).thenReturn(false);
-
-        CodeSqsDto emptySqs = new CodeSqsDto();
-        emptySqs.setDigitalAddress(Collections.emptyList());
-        emptySqs.setError(null);
-        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(emptySqs);
-
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
-                .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
-        when(featureEnabledUtils.isPfNewWorkflowEnabled(any())).thenReturn(true);
-
-        IPAPecDto ipaResp = new IPAPecDto();
-        when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaResp));
-
-        GetDigitalAddressINADOKDto inadResp = new GetDigitalAddressINADOKDto();
-        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
-        digitalAddressDto.setDigitalAddress("inad@pec.it");
-        inadResp.setDigitalAddress(digitalAddressDto);
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(inadResp));
-
-        when(iniPecBatchSqsService.batchSendToSqs(anyList())).thenReturn(Mono.empty().then());
-
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
-
-        verify(ipaService, times(1)).getIpaPec(any());
-        verify(inadService, times(1)).callEService(any(), any(), any());
-
-        assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
-        assertEquals(EService.INAD.name(), batchRequest.getEservice());
-        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
-        assertNotNull(batchRequest.getLastReserved());
-    }
-
-    @Test
-    void testCallIpaFallbackToCallInadErrorBranchExecuted() {
-        BatchPolling batchPolling = new BatchPolling();
-        batchPolling.setBatchId("batchId");
-        batchPolling.setPollingId("pollingId");
-        batchPolling.setCreatedAt(LocalDateTime.now().minusSeconds(5));
-
-        BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setBatchId("batchId");
-        batchRequest.setCorrelationId("corrId");
-        batchRequest.setReferenceRequestDate(LocalDateTime.now());
-
-        IniPecPollingResponse pollingResponse = new IniPecPollingResponse();
-        pollingResponse.setElencoPec(Collections.emptyList());
-
-        when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
-                .thenReturn(Mono.just(Page.create(List.of(batchPolling))));
-        when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPolling)))
-                .thenReturn(Mono.just(batchPolling));
-
-        when(batchPollingRepository.update(any(BatchPolling.class)))
-                .thenReturn(Mono.just(batchPolling));
-        when(batchRequestRepository.update(any(BatchRequest.class)))
-                .thenAnswer(inv -> Mono.just(inv.getArgument(0)));
-
-        when(infoCamereClient.callEServiceRequestPec("pollingId")).thenReturn(Mono.just(pollingResponse));
-        when(infoCamereConverter.checkIfResponseIsInfoCamereError(any(IniPecPollingResponse.class))).thenReturn(false);
-
-        CodeSqsDto emptySqs = new CodeSqsDto();
-        emptySqs.setDigitalAddress(Collections.emptyList());
-        emptySqs.setError(null);
-        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(emptySqs);
-
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
-                .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
-        when(featureEnabledUtils.isPfNewWorkflowEnabled(any())).thenReturn(true);
-
-        IPAPecDto ipaResp = new IPAPecDto();
-        when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaResp));
-
-        when(inadService.callEService(any(), any(), any()))
-                .thenReturn(Mono.error(new RuntimeException("INAD down")));
-
-        when(iniPecBatchSqsService.batchSendToSqs(anyList())).thenReturn(Mono.empty().then());
-
-        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
-
-        verify(ipaService, times(1)).getIpaPec(any());
-        verify(inadService, times(1)).callEService(any(), any(), any());
-
-        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
-        assertNotNull(batchRequest.getLastReserved());
-    }
-
-    @Test
     void testStatoImpresaNull() {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setStatus(BatchStatus.WORKING.getValue());
@@ -793,7 +607,7 @@ class DigitalAddressBatchPollingServiceTest {
         pec.setStatoImpresa(null);
 
         BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
-        when(digitalAddressUtils.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(Pec.class)))
+        when(infoCamereConverter.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(Pec.class)))
                 .thenAnswer(inv -> Mono.just(batchRequest));
 
         BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
@@ -847,6 +661,7 @@ class DigitalAddressBatchPollingServiceTest {
         batchRequest.setCorrelationId("testCorrelationId");
         batchRequest.setStatus(BatchStatus.WORKING.getValue());
         batchRequest.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+        batchRequest.setCf("32565856321");
         Pec pec = new Pec();
         pec.setStatoImpresa(statoImpresa);
 
@@ -857,7 +672,7 @@ class DigitalAddressBatchPollingServiceTest {
         digitalAddressDto.setDigitalAddress("inad@pec.it");
         inadResp.setDigitalAddress(digitalAddressDto);
 
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any(), any()))
                 .thenReturn(Mono.just(inadResp));
 
         BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();

@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.AddressRegistroImprese;
@@ -45,11 +46,11 @@ public class InfoCamereService {
         this.batchRequestPkSeparator = batchRequestPkSeparator;
     }
 
-    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto, Date referenceRequestDate) {
+    public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto, Date referenceRequestDate, RecipientType recipientType) {
         String cf = dto.getFilter().getTaxId();
         String correlationId = dto.getFilter().getCorrelationId();
         validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_INIPEC_PEC, false);
-        return createBatchRequestByCf(pnNationalRegistriesCxId, dto, MDC.get("AWS_messageId"), referenceRequestDate)
+        return createBatchRequestByCf(pnNationalRegistriesCxId, dto, MDC.get("AWS_messageId"), referenceRequestDate, recipientType)
                 .doOnNext(batchRequest -> log.info("Created Batch Request for correlationId: {}", correlationId))
                 .doOnError(throwable -> log.info("Failed to create Batch Request for correlationId: {}", correlationId))
                 .map(infoCamereConverter::convertToGetAddressIniPecOKDto);
@@ -83,12 +84,13 @@ public class InfoCamereService {
         }
     }
 
-    public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto, String messageId, Date referenceRequestDate) {
+    public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto, String messageId, Date referenceRequestDate, RecipientType recipientType) {
         BatchRequest batchRequest = createNewStartBatchRequest();
         batchRequest.setCorrelationId(dto.getFilter().getCorrelationId() + batchRequestPkSeparator + batchRequest.getCreatedAt());
         batchRequest.setCf(dto.getFilter().getTaxId());
         batchRequest.setClientId(pnNationalRegistriesCxId);
         batchRequest.setAwsMessageId(messageId);
+        batchRequest.setRecipientType(recipientType.name());
         if (referenceRequestDate != null) {
             batchRequest.setReferenceRequestDate(referenceRequestDate.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime());
         }

@@ -1211,6 +1211,15 @@ components:
                   _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica
         physicalAddress:
           $ref: '#/components/schemas/PhysicalAddress'
+        registry:
+          $ref: '#/components/schemas/Registry'
+        addressType:
+          type: string
+          description: >
+            Rappresenta il tipo di indirizzo richiesto.
+            Può assumere i seguenti valori:
+            - PHYSICAL
+            - DIGITAL
     PhysicalAddress:
       description: >
         Rappresenta il domicilio fisico
@@ -1370,4 +1379,5 @@ components:
         - REGISTRO_IMPRESE
         - INIPEC
         - INAD
+        - IPA
     

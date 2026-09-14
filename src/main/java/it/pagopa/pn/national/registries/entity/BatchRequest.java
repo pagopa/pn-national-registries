@@ -96,4 +96,9 @@ public class BatchRequest {
             @DynamoDbAttribute(COL_AWS_MESSAGE_ID)
     }))
     private String awsMessageId;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_RECIPIENT_TYPE)
+    }))
+    private String recipientType;
 }
