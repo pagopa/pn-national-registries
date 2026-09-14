@@ -1,9 +1,9 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
@@ -29,8 +29,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
     private final DynamoDbAsyncTable<BatchRequest> table;
 
-    private final int maxRetry;
-    private final int retryAfter;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     private static final String STATUS_ALIAS = "#status";
     private static final String STATUS_PLACEHOLDER = ":status";
@@ -38,14 +37,11 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
 
     private static final String LAST_RESERVED_ALIAS = "#lastReserved";
     private static final String LAST_RESERVED_PLACEHOLDER = ":lastReserved";
-    private static final String LAST_RESERVED_EQ = LAST_RESERVED_ALIAS + " = " + LAST_RESERVED_PLACEHOLDER;
 
     public IniPecBatchRequestRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
-                                            @Value("${pn.national-registries.inipec.batch-request-max-retry}") int maxRetry,
-                                            @Value("${pn.national-registries.inipec.batch.request.recovery.after}") int retryAfter) {
+                                            NationalRegistriesConfig nationalRegistriesConfig) {
         this.table = dynamoDbEnhancedAsyncClient.table("pn-batchRequests", TableSchema.fromClass(BatchRequest.class));
-        this.maxRetry = maxRetry;
-        this.retryAfter = retryAfter;
+        this.nationalRegistriesConfig = nationalRegistriesConfig;
     }
 
     @Override
@@ -84,20 +80,25 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
     }
 
     @Override
-    public Mono<List<BatchRequest>> getBatchRequestByBatchIdAndStatus(String batchId, BatchStatus status) {
+    public Mono<Page<BatchRequest>> getBatchRequestByBatchIdAndStatus(String batchId, BatchStatus status, Map<String, AttributeValue> lastKey) {
         Map<String, String> expressionNames = new HashMap<>();
         expressionNames.put(STATUS_ALIAS, COL_STATUS);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
         expressionValues.put(STATUS_PLACEHOLDER, AttributeValue.builder().s(status.getValue()).build());
 
-        QueryEnhancedRequest queryEnhancedRequest = QueryEnhancedRequest.builder()
+        QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
                 .filterExpression(expressionBuilder(STATUS_EQ, expressionValues, expressionNames))
                 .queryConditional(QueryConditional.keyEqualTo(keyBuilder(batchId)))
-                .build();
+                .limit(nationalRegistriesConfig.getQueryLimit());
 
-        return Flux.from(table.index(GSI_BL).query(queryEnhancedRequest).flatMapIterable(Page::items))
-                .collectList();
+        if (!CollectionUtils.isEmpty(lastKey)) {
+            queryEnhancedRequestBuilder.exclusiveStartKey(lastKey);
+        }
+
+        QueryEnhancedRequest queryEnhancedRequest = queryEnhancedRequestBuilder.build();
+
+        return Mono.from(table.index(GSI_BL).query(queryEnhancedRequest));
     }
 
     @Override
@@ -145,9 +146,9 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         expressionNames.put(LAST_RESERVED_ALIAS, COL_LAST_RESERVED);
 
         Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(maxRetry)).build());
+        expressionValues.put(":retry", AttributeValue.builder().n(Integer.toString(nationalRegistriesConfig.getInipec().getBatchRequestMaxRetry())).build());
         expressionValues.put(LAST_RESERVED_PLACEHOLDER, AttributeValue.builder()
-                .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(retryAfter).toString())
+                .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(nationalRegistriesConfig.getInipec().getBatchRequestRecoveryAfter()).toString())
                 .build());
 
         String expression = "#retry < :retry AND (:lastReserved > #lastReserved OR attribute_not_exists(#lastReserved))";
@@ -168,7 +169,7 @@ public class IniPecBatchRequestRepositoryImpl implements IniPecBatchRequestRepos
         Key key = Key.builder()
                 .partitionValue(BatchSendStatus.NOT_SENT.getValue())
                 .sortValue(AttributeValue.builder()
-                        .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(retryAfter).toString())
+                        .s(LocalDateTime.now(ZoneOffset.UTC).minusSeconds(nationalRegistriesConfig.getInipec().getBatchRequestRecoveryAfter()).toString())
                         .build())
                 .build();
 

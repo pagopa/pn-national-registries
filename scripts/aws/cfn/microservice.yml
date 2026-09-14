@@ -326,6 +326,16 @@ Parameters:
     Type: String
     Description: ECS log group name
 
+  FirstAttemptDelaySecondsPerCf:
+    Type: Number
+    Description: 'Per-CF delay in seconds for the first polling attempt'
+    Default: 0.085
+
+  FirstAttemptFixedDelaySeconds:
+    Type: Number
+    Description: 'Minimum fixed delay in seconds before the first polling attempt'
+    Default: 300
+
   # Heath Check parameters
   HealthCheckInterval:
     Description: Seconds between two health check
@@ -562,10 +572,10 @@ Resources:
         ContainerEnvEntry16: !Sub 'PN_NATIONALREGISTRIES_VALCXIDENABLED=${PnCxIdValidationEnabled}'
         ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
         ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_IPA_SECRET=${IPASecret}'
-        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONALREGISTRIES_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
         ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_DELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
-        ContainerEnvEntry22: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
+        ContainerEnvEntry22: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTRECOVERYAFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
         ContainerEnvEntry23: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTMAXRETRY=${PnNationalRegistriesInipecBatchRequestMaxRetry}'
         ContainerEnvEntry24: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_DELAY=${PnNationalRegistriesInipecBatchPollingDelay}'
         ContainerEnvEntry25: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchPollingRecoveryDelay}'
@@ -604,6 +614,9 @@ Resources:
         ContainerEnvEntry58: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_READ_TIMEOUT_MILLIS=${IniPecReadTimeoutMillis}'
         ContainerEnvEntry59: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_RETRY_ATTEMPTS=${IniPecMaxRetryAttempts}'
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
+        ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_QUERYLIMIT=${PnNationalRegistriesQueryLimit}'
+        ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTDELAYSECONDSPERCF=${FirstAttemptDelaySecondsPerCf}'
+        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTFIXEDDELAYSECONDS=${FirstAttemptFixedDelaySeconds}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName

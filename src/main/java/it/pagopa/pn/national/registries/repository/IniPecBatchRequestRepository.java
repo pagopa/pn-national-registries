@@ -17,7 +17,7 @@ public interface IniPecBatchRequestRepository {
 
     Mono<Page<BatchRequest>> getBatchRequestByNotBatchId(Map<String, AttributeValue> lastKey, int limit);
 
-    Mono<List<BatchRequest>> getBatchRequestByBatchIdAndStatus(String batchId, BatchStatus status);
+    Mono<Page<BatchRequest>> getBatchRequestByBatchIdAndStatus(String batchId, BatchStatus status, Map<String, AttributeValue> lastKey);
 
     Mono<BatchRequest> setNewBatchIdToBatchRequest(BatchRequest batchRequest);
 

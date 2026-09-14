@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 
 @Slf4j
 @TestPropertySource(properties = {
-        "pn.national.registries.inipec.ttl=0"
+        "pn.national-registries.inipec.ttl=0"
 })
 @ContextConfiguration(classes = {InfoCamereService.class})
 @ExtendWith(SpringExtension.class)
