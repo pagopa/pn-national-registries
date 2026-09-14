@@ -36,6 +36,7 @@ public class NationalRegistriesConfig {
         private Integer batchRequestRecoveryAfter;
         private Double firstAttemptDelaySecondsPerCf;
         private Integer firstAttemptFixedDelaySeconds;
+        private Integer ttl;
     }
 
 }

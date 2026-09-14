@@ -23,15 +23,9 @@ import java.util.*;
 
 @Component
 public class InfoCamereConverter {
-    private final long iniPecTtl;
-    private final String batchRequestPkSeparator;
     private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    public InfoCamereConverter(@Value("${pn.national.registries.inipec.ttl}") long iniPecTtl,
-                               @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator,
-                               NationalRegistriesConfig nationalRegistriesConfig) {
-        this.iniPecTtl = iniPecTtl;
-        this.batchRequestPkSeparator = batchRequestPkSeparator;
+    public InfoCamereConverter(NationalRegistriesConfig nationalRegistriesConfig) {
         this.nationalRegistriesConfig = nationalRegistriesConfig;
     }
 
@@ -56,7 +50,7 @@ public class InfoCamereConverter {
         batchPolling.setRetry(0);
         batchPolling.setInProgressRetry(0);
         batchPolling.setCreatedAt(now);
-        batchPolling.setTtl(now.plusSeconds(iniPecTtl).toEpochSecond(ZoneOffset.UTC));
+        batchPolling.setTtl(now.plusSeconds(nationalRegistriesConfig.getInipec().getTtl()).toEpochSecond(ZoneOffset.UTC));
         batchPolling.setBatchSize(iniPecBatchRequestSize);
         batchPolling.setFirstAttemptAfter(calculateFirstAttemptAfter(iniPecBatchRequestSize));
         return batchPolling;
@@ -74,14 +68,14 @@ public class InfoCamereConverter {
 
     public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0]);
+        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
         codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
         return codeSqsDto;
     }
 
     public CodeSqsDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(request.getCorrelationId().split(batchRequestPkSeparator)[0]);
+        codeSqsDto.setCorrelationId(request.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
         if (error != null) {
             codeSqsDto.setError(error);
         } else {

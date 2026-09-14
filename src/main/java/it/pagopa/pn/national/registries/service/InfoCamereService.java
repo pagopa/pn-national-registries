@@ -34,8 +34,8 @@ public class InfoCamereService {
     public InfoCamereService(InfoCamereClient infoCamereClient,
                              InfoCamereConverter infoCamereConverter,
                              IniPecBatchRequestRepository iniPecBatchRequestRepository,
-                             @Value("${pn.national.registries.inipec.ttl}") long iniPecTtl,
-                             @Value("${pn.national.registries.inipec.batchrequest.pk.separator}") String batchRequestPkSeparator,
+                             @Value("${pn.national-registries.inipec.ttl}") long iniPecTtl,
+                             @Value("${pn.national-registries.inipec.batchrequest-pk-separator}") String batchRequestPkSeparator,
                              ValidateTaxIdUtils validateTaxIdUtils) {
         this.infoCamereClient = infoCamereClient;
         this.infoCamereConverter = infoCamereConverter;

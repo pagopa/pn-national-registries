@@ -572,7 +572,7 @@ Resources:
         ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
         ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
         ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_IPA_SECRET=${IPASecret}'
-        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONALREGISTRIES_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
         ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_DELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
         ContainerEnvEntry22: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTRECOVERYAFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
