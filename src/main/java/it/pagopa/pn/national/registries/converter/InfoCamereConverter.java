@@ -19,6 +19,7 @@ import software.amazon.awssdk.utils.StringUtils;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.*;
 
 @Component
@@ -63,7 +64,7 @@ public class InfoCamereConverter {
 
         long delaySeconds = Math.round((delaySecondsPerCf * batchSize) + fixedDelaySeconds);
 
-        return Instant.now().plusSeconds(delaySeconds);
+        return Instant.now().plusSeconds(delaySeconds).truncatedTo(ChronoUnit.SECONDS);
     }
 
     public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
