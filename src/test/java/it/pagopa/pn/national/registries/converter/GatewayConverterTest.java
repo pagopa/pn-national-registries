@@ -58,7 +58,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @TestPropertySource(properties = {
-        "pn.national.registries.inipec.ttl=0"
+        "pn.national-registries.inipec.ttl=0"
 })
 @ContextConfiguration(classes = GatewayConverter.class)
 @ExtendWith(SpringExtension.class)
@@ -74,6 +74,9 @@ class GatewayConverterTest {
 
     @MockitoBean
     private FeatureEnabledUtils featureEnabledUtils;
+
+    @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
 
 
     /**
@@ -324,11 +327,11 @@ class GatewayConverterTest {
                 new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(
                         new DynamoDbAsyncTableDecorator<>(new DynamoDbAsyncTableDecorator<>(mock(DynamoDbAsyncTable.class)))))));
         IniPecBatchRequestRepositoryImpl iniPecBatchRequestRepository = new IniPecBatchRequestRepositoryImpl(
-                dynamoDbEnhancedAsyncClient2, 3, 2);
+                dynamoDbEnhancedAsyncClient2, nationalRegistriesConfig);
 
         InfoCamereClient infoCamereClient = mock(InfoCamereClient.class);
         InfoCamereService infoCamereService = new InfoCamereService(infoCamereClient,
-                new InfoCamereConverter(2L, "~"), iniPecBatchRequestRepository, 2L, "~", validateTaxIdUtils);
+                new InfoCamereConverter(nationalRegistriesConfig), iniPecBatchRequestRepository, 2L, "~", validateTaxIdUtils);
 
         InadService inadService = new InadService(mock(InadClient.class), validateTaxIdUtils, featureEnabledUtils);
         PnNationalRegistriesSecretService pnNationalRegistriesSecretService = new PnNationalRegistriesSecretService(new CachedSecretsManagerConsumer(mock(SecretsManagerClient.class)));

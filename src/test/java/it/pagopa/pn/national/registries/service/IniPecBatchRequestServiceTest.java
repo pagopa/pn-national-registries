@@ -102,14 +102,14 @@ class IniPecBatchRequestServiceTest {
         when(infoCamereClient.callEServiceRequestId(isNotNull()))
                 .thenReturn(Mono.just(iniPecBatchResponse));
 
-        when(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(anyString(), eq("pollingId")))
+        when(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(anyString(), eq("pollingId"), anyInt()))
                 .thenReturn(batchPolling);
 
         when(batchPollingRepository.create(same(batchPolling)))
                 .thenReturn(Mono.just(batchPolling));
 
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus(anyString(), eq(BatchStatus.TAKEN_CHARGE)))
-                .thenReturn(Mono.just(List.of(batchRequest1, batchRequest2)));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus(anyString(), eq(BatchStatus.TAKEN_CHARGE), anyMap()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest1, batchRequest2))));
 
         when(batchRequestRepository.update(any(BatchRequest.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
@@ -174,13 +174,13 @@ class IniPecBatchRequestServiceTest {
                 .thenReturn(Mono.just(iniPecResponse));
 
         BatchPolling batchPolling = new BatchPolling();
-        when(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(anyString(), eq("pollingId")))
+        when(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(anyString(), eq("pollingId"), anyInt()))
                 .thenReturn(batchPolling);
         when(batchPollingRepository.create(same(batchPolling)))
                 .thenReturn(Mono.just(batchPolling));
 
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus(anyString(), eq(BatchStatus.TAKEN_CHARGE)))
-                .thenReturn(Mono.just(List.of(batchRequest2)));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus(anyString(), eq(BatchStatus.TAKEN_CHARGE), anyMap()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest2))));
         when(batchRequestRepository.update(same(batchRequest2)))
                 .thenReturn(Mono.just(batchRequest2));
 

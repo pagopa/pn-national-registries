@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
@@ -10,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.util.CollectionUtils;
@@ -20,11 +20,9 @@ import java.util.Collections;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.when;
 
-@TestPropertySource(properties = {
-        "pn.national.registries.inipec.ttl=0",
-        "pn.national.registries.inipec.batchrequest.pk.separator=~"
-})
+
 @ContextConfiguration(classes = InfoCamereConverter.class)
 @ExtendWith(SpringExtension.class)
 class InfoCamereConverterTest {
@@ -34,6 +32,9 @@ class InfoCamereConverterTest {
 
     @MockitoBean
     private ObjectMapper objectMapper;
+
+    @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
 
     @Test
     void testConvertToGetAddressIniPecOKDto() {
@@ -45,8 +46,16 @@ class InfoCamereConverterTest {
 
     @Test
     void testCreateBatchPollingByBatchIdAndPollingId() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+        inipec.setTtl(0);
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchPolling actualCreateBatchPollingByBatchIdAndPollingIdResult = infoCamereConverter
-                .createBatchPollingByBatchIdAndPollingId("batchId", "pollingId");
+                .createBatchPollingByBatchIdAndPollingId("batchId", "pollingId", 3);
         assertEquals("batchId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getBatchId());
         assertEquals("NOT_WORKED", actualCreateBatchPollingByBatchIdAndPollingIdResult.getStatus());
         assertEquals("pollingId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getPollingId());
@@ -54,6 +63,13 @@ class InfoCamereConverterTest {
 
     @Test
     void testConvertResponsePecToCodeSqsDtoCfNotFound() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCorrelationId("correlationId");
         batchRequest.setCf("cf");
@@ -69,6 +85,13 @@ class InfoCamereConverterTest {
 
     @Test
     void testConvertResponsePecToCodeSqsDto1() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCf("Cf");
         batchRequest.setCorrelationId("correlationId");
@@ -87,6 +110,13 @@ class InfoCamereConverterTest {
 
     @Test
     void testConvertResponsePecToCodeSqsDto2() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCf("cf");
         batchRequest.setCorrelationId("correlationId");
@@ -165,6 +195,13 @@ class InfoCamereConverterTest {
 
     @Test
     void testConvertIniPecRequestToSqsDto1() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCorrelationId("correlationId");
         batchRequest.setCf("cf");
@@ -176,6 +213,13 @@ class InfoCamereConverterTest {
 
     @Test
     void testConvertIniPecRequestToSqsDto2() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCorrelationId("correlationId");
         batchRequest.setCf("cf");
