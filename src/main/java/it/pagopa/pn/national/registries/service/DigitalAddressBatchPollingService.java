@@ -15,7 +15,7 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.StatusDimension;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
@@ -345,7 +345,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
                 .onErrorResume(e -> {
                     logEServiceError(e, "can not retrieve digital address from INAD: {}");
-                    AddressSQSMessageDto codeSqsDto = errorInadToSqsDto(correlationId, e);
+                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
                     if(codeSqsDto != null) {
                         request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
                         request.setStatus(BatchStatus.WORKED.getValue());

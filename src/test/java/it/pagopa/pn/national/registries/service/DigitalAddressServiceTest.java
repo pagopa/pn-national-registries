@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,7 +60,7 @@ class DigitalAddressServiceTest {
         when(ipaService.getIpaPec(any(IPARequestBodyDto.class)))
                 .thenReturn(Mono.just(ipaResponse));
 
-        when(sqsService.pushToOutputQueue(any(AddressSQSMessageDto.class), eq(CX_ID)))
+        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(
@@ -211,7 +212,7 @@ class DigitalAddressServiceTest {
         )).thenReturn(Mono.just(inadResponse));
 
         when(sqsService.pushToOutputQueue(
-                any(AddressSQSMessageDto.class),
+                any(CodeSqsDto.class),
                 eq(CX_ID)
         )).thenReturn(Mono.empty());
 
@@ -296,7 +297,7 @@ class DigitalAddressServiceTest {
         )).thenReturn(Mono.just(inadResponse));
 
         when(sqsService.pushToOutputQueue(
-                any(AddressSQSMessageDto.class),
+                any(CodeSqsDto.class),
                 eq(CX_ID)
         )).thenReturn(Mono.empty());
 

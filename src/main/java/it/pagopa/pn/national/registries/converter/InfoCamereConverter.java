@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.RequiredArgsConstructor;
@@ -34,18 +35,18 @@ public class InfoCamereConverter{
     private final GatewayUtils gatewayUtils;
 
     public Mono<BatchRequest> buildErrorBatchRequest(BatchStatus status, String error, BatchRequest batchRequest, LocalDateTime now) {
-        AddressSQSMessageDto sqsDto = convertIniPecRequestToSqsDto(batchRequest, error);
+        CodeSqsDto sqsDto = convertIniPecRequestToSqsDto(batchRequest, error);
         populateBatchRequestSendFields(batchRequest, status, now, sqsDto);
         return Mono.just(batchRequest);
     }
 
     public Mono<BatchRequest> updateBatchRequestFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, Pec pec) {
-        AddressSQSMessageDto codeSqsDto = convertResponsePecToCodeSqsDto(batchRequest, pec);
+        CodeSqsDto codeSqsDto = convertResponsePecToCodeSqsDto(batchRequest, pec);
         populateBatchRequestSendFields(batchRequest, status, now, codeSqsDto);
         return Mono.just(batchRequest);
     }
 
-    private void populateBatchRequestSendFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, AddressSQSMessageDto codeSqsDto) {
+    private void populateBatchRequestSendFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, CodeSqsDto codeSqsDto) {
         removeInvalidEmails(codeSqsDto);
         batchRequest.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
         batchRequest.setEservice(GatewayDownstreamService.INIPEC.name());
@@ -91,8 +92,8 @@ public class InfoCamereConverter{
         return Instant.now().plusSeconds(delaySeconds).truncatedTo(ChronoUnit.SECONDS);
     }
 
-  public AddressSQSMessageDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
-        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
+  public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setRegistry(GatewayDownstreamService.INIPEC.name());
         codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
         codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
@@ -100,8 +101,8 @@ public class InfoCamereConverter{
         return codeSqsDto;
     }
 
-    public AddressSQSMessageDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
-        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
+    public CodeSqsDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(request.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
         if (error != null) {
             codeSqsDto.setError(error);

@@ -4,8 +4,9 @@ import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
+
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.CustomLog;
@@ -52,7 +53,7 @@ public class DigitalAddressService extends GatewayConverter {
                 .map(response -> inadToSqsDto(correlationId, response, DigitalAddressRecipientType.PERSONA_FISICA))
                 .flatMap(codeSqsDto -> sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId))
                 .onErrorResume(e -> {
-                    AddressSQSMessageDto codeSqsDto = errorInadToSqsDto(correlationId, e);
+                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
                     if(codeSqsDto != null) {
                         return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId);
                     }
@@ -67,7 +68,7 @@ public class DigitalAddressService extends GatewayConverter {
                 .onErrorResume(e -> {
                     if (isInadNotFound(e)) {
                         log.info("correlationId: {} - PEC not found on INAD, fallback to INI-PEC", correlationId);
-                        return Mono.just(emptyDigitalAddressSqsDto(correlationId));
+                        return Mono.just(emptyDigitalCodeSqsDto(correlationId));
                     }
                     return Mono.error(e);
                 })

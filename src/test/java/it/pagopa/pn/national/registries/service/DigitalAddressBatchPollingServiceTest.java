@@ -12,7 +12,7 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
@@ -112,7 +112,7 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(Page.create(List.of(batchRequest1))));
 
 
-        AddressSQSMessageDto codeSqsDto = mock(AddressSQSMessageDto.class);
+        CodeSqsDto codeSqsDto = mock(CodeSqsDto.class);
         when(codeSqsDto.getError()).thenReturn("error");
         when(infoCamereConverter.convertIniPecRequestToSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
@@ -242,7 +242,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         when(infoCamereConverter.checkIfResponseIsInfoCamereError(any(IniPecPollingResponse.class))).thenReturn(false);
 
-        AddressSQSMessageDto emptySqs = new AddressSQSMessageDto();
+        CodeSqsDto emptySqs = new CodeSqsDto();
         emptySqs.setDigitalAddress(Collections.emptyList());
         emptySqs.setError(null);
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(emptySqs);
@@ -335,7 +335,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
                 .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
 
-        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
         AddressSQSMessageDigitalAddressInnerDto digitalAddress = new AddressSQSMessageDigitalAddressInnerDto();
         digitalAddress.setAddress("address@pec.it");
 
@@ -402,7 +402,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
                 .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
 
-        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 
@@ -480,7 +480,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
                 .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
 
-        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
 
@@ -549,7 +549,7 @@ class DigitalAddressBatchPollingServiceTest {
         when(infoCamereClient.callEServiceRequestPec("pollingId"))
                 .thenReturn(Mono.error(exception));
 
-        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
         when(infoCamereConverter.convertIniPecRequestToSqsDto(any(), any()))
                 .thenReturn(codeSqsDto);
         when(iniPecBatchSqsService.batchSendToSqs(anyList()))

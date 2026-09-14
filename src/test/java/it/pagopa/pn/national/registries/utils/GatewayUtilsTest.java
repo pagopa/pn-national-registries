@@ -6,7 +6,7 @@ import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.GatewayError;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressResponseDto;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
@@ -36,7 +36,7 @@ class GatewayUtilsTest {
 
     @Test
     void convertCodeSqsDtoToString_shouldReturnSerializedDto() throws Exception {
-        AddressSQSMessageDto dto = new AddressSQSMessageDto();
+        CodeSqsDto dto = new CodeSqsDto();
 
         when(mapper.writeValueAsString(dto))
                 .thenReturn("{\"correlationId\":\"123\"}");
@@ -52,7 +52,7 @@ class GatewayUtilsTest {
     void convertCodeSqsDtoToString_shouldThrowDigitalAddressExceptionWhenSerializationFails()
             throws Exception {
 
-        AddressSQSMessageDto dto = new AddressSQSMessageDto();
+        CodeSqsDto dto = new CodeSqsDto();
 
         JsonProcessingException jsonException =
                 new JsonProcessingException("serialization error") {};

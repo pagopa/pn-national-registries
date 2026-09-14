@@ -6,7 +6,7 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
@@ -45,7 +45,7 @@ class GatewayConverterTest {
 
     @Test
     void testNewCodeSqsDto() {
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.newCodeSqsDto(C_ID, GatewayDownstreamService.ANPR);
 
         assertNotNull(result);
@@ -68,7 +68,7 @@ class GatewayConverterTest {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
         response.setResidentialAddresses(List.of(residentialAddress));
 
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.anprToSqsDto(C_ID, response);
 
         assertNotNull(result);
@@ -95,7 +95,7 @@ class GatewayConverterTest {
 
     @Test
     void testAnprToSqsDtoWithNullResponse() {
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.anprToSqsDto(C_ID, null);
 
         assertNotNull(result);
@@ -113,7 +113,7 @@ class GatewayConverterTest {
         GetAddressANPROKDto response = new GetAddressANPROKDto();
         response.setResidentialAddresses(List.of());
 
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.anprToSqsDto(C_ID, response);
 
         assertNotNull(result);
@@ -132,7 +132,7 @@ class GatewayConverterTest {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
         response.setDigitalAddress(digitalAddress);
 
-        AddressSQSMessageDto result = gatewayConverter.inadToSqsDto(
+        CodeSqsDto result = gatewayConverter.inadToSqsDto(
                 C_ID,
                 response,
                 DigitalAddressRecipientType.PERSONA_FISICA
@@ -158,7 +158,7 @@ class GatewayConverterTest {
 
     @Test
     void testInadToSqsDtoWithNullResponse() {
-        AddressSQSMessageDto result = gatewayConverter.inadToSqsDto(
+        CodeSqsDto result = gatewayConverter.inadToSqsDto(
                 C_ID,
                 null,
                 DigitalAddressRecipientType.PERSONA_FISICA
@@ -178,7 +178,7 @@ class GatewayConverterTest {
         IPAPecDto response = new IPAPecDto();
         response.setDomicilioDigitale("ipa@pec.it");
 
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.ipaToSqsDto(C_ID, response);
 
         assertNotNull(result);
@@ -201,11 +201,11 @@ class GatewayConverterTest {
 
     @Test
     void testIpaToSqsDtoWithNullResponse() {
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.ipaToSqsDto(C_ID, null);
 
         assertNotNull(result);
-        assertEquals(0, result.getDigitalAddress().size());
+        assertNull(result.getDigitalAddress());
         assertEquals(
                 AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue(),
                 result.getAddressType()
@@ -227,7 +227,7 @@ class GatewayConverterTest {
                 new GetAddressRegistroImpreseOKDto();
         response.setProfessionalAddress(address);
 
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.regImpToSqsDto(C_ID, response);
 
         assertNotNull(result);
@@ -251,7 +251,7 @@ class GatewayConverterTest {
 
     @Test
     void testRegImpToSqsDtoWithNullResponse() {
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.regImpToSqsDto(C_ID, null);
 
         assertNotNull(result);
@@ -625,9 +625,9 @@ class GatewayConverterTest {
     }
 
     @Test
-    void testEmptyDigitalAddressSqsDto() {
-        AddressSQSMessageDto result =
-                gatewayConverter.emptyDigitalAddressSqsDto(C_ID);
+    void testEmptyDigitalCodeSqsDto() {
+        CodeSqsDto result =
+                gatewayConverter.emptyDigitalCodeSqsDto(C_ID);
 
         assertNotNull(result);
         assertEquals(C_ID, result.getCorrelationId());
@@ -682,7 +682,7 @@ class GatewayConverterTest {
         when(exception.getResponseBodyAsString())
                 .thenReturn("{\"codiceErroreAnomalia\":\"EN122\"}");
 
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.errorAnprToSqsDto(C_ID, exception);
 
         assertNotNull(result);
@@ -699,7 +699,7 @@ class GatewayConverterTest {
     void testErrorAnprToSqsDtoGenericError() {
         RuntimeException exception = new RuntimeException("Generic error");
 
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.errorAnprToSqsDto(C_ID, exception);
 
         assertNull(result);
@@ -714,7 +714,7 @@ class GatewayConverterTest {
         when(exception.getResponseBodyAsString())
                 .thenReturn("{\"detail\":\"CF non trovato\"}");
 
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.errorInadToSqsDto(C_ID, exception);
 
         assertNotNull(result);
@@ -737,7 +737,7 @@ class GatewayConverterTest {
         when(exception.getResponseBodyAsString()).thenReturn(null);
         when(exception.getMessage()).thenReturn("CF non trovato");
 
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.errorInadToSqsDto(C_ID, exception);
 
         assertNotNull(result);
@@ -750,7 +750,7 @@ class GatewayConverterTest {
         RuntimeException exception =
                 new RuntimeException("Generic error");
 
-        AddressSQSMessageDto result =
+        CodeSqsDto result =
                 gatewayConverter.errorInadToSqsDto(C_ID, exception);
 
         assertNull(result);

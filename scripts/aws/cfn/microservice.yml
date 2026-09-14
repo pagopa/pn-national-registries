@@ -614,9 +614,8 @@ Resources:
         ContainerEnvEntry58: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_READ_TIMEOUT_MILLIS=${IniPecReadTimeoutMillis}'
         ContainerEnvEntry59: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_RETRY_ATTEMPTS=${IniPecMaxRetryAttempts}'
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
-        ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_QUERYLIMIT=${PnNationalRegistriesQueryLimit}'
-        ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTDELAYSECONDSPERCF=${FirstAttemptDelaySecondsPerCf}'
-        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTFIXEDDELAYSECONDS=${FirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTDELAYSECONDSPERCF=${FirstAttemptDelaySecondsPerCf}'
+        ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTFIXEDDELAYSECONDS=${FirstAttemptFixedDelaySeconds}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName

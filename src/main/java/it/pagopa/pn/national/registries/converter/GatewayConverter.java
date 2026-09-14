@@ -8,6 +8,7 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
@@ -38,8 +39,8 @@ public class GatewayConverter {
         return dto;
     }
 
-    protected AddressSQSMessageDto anprToSqsDto(String correlationId, GetAddressANPROKDto anprResponse) {
-        AddressSQSMessageDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.ANPR);
+    protected CodeSqsDto anprToSqsDto(String correlationId, GetAddressANPROKDto anprResponse) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.ANPR);
         if (anprResponse != null && !CollectionUtils.isEmpty(anprResponse.getResidentialAddresses())) {
             codeSqsDto.setPhysicalAddress(convertAnprToPhysicalAddress(anprResponse.getResidentialAddresses().getFirst()));
         } else {
@@ -50,8 +51,8 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected AddressSQSMessageDto errorAnprToSqsDto(String correlationId, Throwable throwable) {
-        AddressSQSMessageDto codeSqsDto = null;
+    protected CodeSqsDto errorAnprToSqsDto(String correlationId, Throwable throwable) {
+        CodeSqsDto codeSqsDto = null;
         // per ANPR CF non trovato corrisponde a HTTP Status 404 e nel body codiceErroreAnomalia = "EN122"
         if (throwable instanceof PnNationalRegistriesException exception
                 && exception.getStatusCode() == HttpStatus.NOT_FOUND
@@ -65,8 +66,8 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected AddressSQSMessageDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto, DigitalAddressRecipientType digitalAddressRecipientType) {
-        AddressSQSMessageDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.INAD);
+    protected CodeSqsDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto, DigitalAddressRecipientType digitalAddressRecipientType) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.INAD);
         if (inadDto != null && inadDto.getDigitalAddress() != null) {
             codeSqsDto.setDigitalAddress(List.of(convertInadToDigitalAddress(inadDto.getDigitalAddress(), digitalAddressRecipientType)));
         } else {
@@ -77,8 +78,8 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected AddressSQSMessageDto errorInadToSqsDto(String correlationId, Throwable throwable) {
-        AddressSQSMessageDto codeSqsDto = null;
+    protected CodeSqsDto errorInadToSqsDto(String correlationId, Throwable throwable) {
+        CodeSqsDto codeSqsDto = null;
         // per INAD CF non trovato corrisponde a HTTP Status 404 e nel body deve essere contenuta la stringa "CF non trovato"
         if (throwable instanceof PnNationalRegistriesException exception
                 && exception.getStatusCode() == HttpStatus.NOT_FOUND
@@ -93,8 +94,8 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected AddressSQSMessageDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
-        AddressSQSMessageDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.REGISTRO_IMPRESE);
+    protected CodeSqsDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.REGISTRO_IMPRESE);
         if (registroImpreseDto != null && registroImpreseDto.getProfessionalAddress() != null) {
             codeSqsDto.setPhysicalAddress(convertRegImpToPhysicalAddress(registroImpreseDto.getProfessionalAddress()));
         } else {
@@ -105,8 +106,8 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected AddressSQSMessageDto ipaToSqsDto(String correlationId, IPAPecDto ipaResponse) {
-        AddressSQSMessageDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.IPA);
+    protected CodeSqsDto ipaToSqsDto(String correlationId, IPAPecDto ipaResponse) {
+        CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.IPA);
         if (ipaResponse != null && ipaResponse.getDomicilioDigitale() != null) {
             codeSqsDto.setDigitalAddress(List.of(convertIpaPecToDigitalAddress(ipaResponse)));
         } else {
@@ -124,8 +125,8 @@ public class GatewayConverter {
         return digitalAddress;
     }
 
-    protected AddressSQSMessageDto newCodeSqsDto(String correlationId, GatewayDownstreamService addressSourceEnum) {
-        AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
+    protected CodeSqsDto newCodeSqsDto(String correlationId, GatewayDownstreamService addressSourceEnum) {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
         codeSqsDto.setRegistry(addressSourceEnum.name());
         return codeSqsDto;
@@ -318,7 +319,7 @@ public class GatewayConverter {
         return addressRequestBodyDto;
     }
 
-    protected AddressSQSMessageDto emptyDigitalAddressSqsDto(String correlationId) {
+    protected CodeSqsDto emptyDigitalCodeSqsDto(String correlationId) {
         var codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.INAD);
         codeSqsDto.setDigitalAddress(Collections.emptyList());
         codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
