@@ -76,7 +76,7 @@ public class GatewayService extends GatewayConverter {
 
     private Mono<Void> getDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return nationalRegistriesConfig.isEnablePfPecFallbackFlow()
-                ? digitalAddressService.retrieveDigitalAddressWithIniPecFallback(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId)
+                ? digitalAddressService.retrieveDigitalAddressFromInadWithIniPecFallback(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId)
                 : digitalAddressService.retrieveDigitalAddressFromInad(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId);
     }
 

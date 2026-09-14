@@ -301,7 +301,7 @@ class DigitalAddressServiceTest {
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
-                        digitalAddressService.retrieveDigitalAddressWithIniPecFallback(
+                        digitalAddressService.retrieveDigitalAddressFromInadWithIniPecFallback(
                                 CX_ID,
                                 request,
                                 CORRELATION_ID
@@ -345,7 +345,7 @@ class DigitalAddressServiceTest {
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
-                        digitalAddressService.retrieveDigitalAddressWithIniPecFallback(
+                        digitalAddressService.retrieveDigitalAddressFromInadWithIniPecFallback(
                                 CX_ID,
                                 request,
                                 CORRELATION_ID
@@ -385,7 +385,7 @@ class DigitalAddressServiceTest {
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
-                        digitalAddressService.retrieveDigitalAddressWithIniPecFallback(
+                        digitalAddressService.retrieveDigitalAddressFromInadWithIniPecFallback(
                                 CX_ID,
                                 request,
                                 CORRELATION_ID
@@ -419,7 +419,7 @@ class DigitalAddressServiceTest {
         )).thenReturn(Mono.error(exception));
 
         StepVerifier.create(
-                        digitalAddressService.retrieveDigitalAddressWithIniPecFallback(
+                        digitalAddressService.retrieveDigitalAddressFromInadWithIniPecFallback(
                                 CX_ID,
                                 request,
                                 CORRELATION_ID

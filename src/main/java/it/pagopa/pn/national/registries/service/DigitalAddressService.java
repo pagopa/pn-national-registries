@@ -61,7 +61,7 @@ public class DigitalAddressService extends GatewayConverter {
                 .then();
     }
 
-    public Mono<Void> retrieveDigitalAddressWithIniPecFallback(String pnNationalRegistriesCxId, AddressRequestBodyDto request, String correlationId) {
+    public Mono<Void> retrieveDigitalAddressFromInadWithIniPecFallback(String pnNationalRegistriesCxId, AddressRequestBodyDto request, String correlationId) {
         return callInad(request)
                 .map(response -> inadToSqsDto(correlationId, response, DigitalAddressRecipientType.PERSONA_FISICA))
                 .onErrorResume(e -> {
