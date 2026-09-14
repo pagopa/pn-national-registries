@@ -1,7 +1,9 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -32,16 +34,20 @@ class IniPecBatchRequestRepositoryImplTest {
     private DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient;
     @Mock
     private DynamoDbAsyncTable<Object> dynamoDbAsyncTable;
-
+    @Mock
+    private NationalRegistriesConfig nationalRegistriesConfig;
     private static final int RETRY = 3;
     private static final int AFTER = 60;
+    private IniPecBatchRequestRepository batchRequestRepository;
+
+    @BeforeEach
+    void setUp() {
+        when(dynamoDbEnhancedAsyncClient.table(any(), any())).thenReturn(dynamoDbAsyncTable);
+        batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, nationalRegistriesConfig);
+    }
 
     @Test
     void testUpdate() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
-
         BatchRequest batchRequest = new BatchRequest();
 
         when(dynamoDbAsyncTable.updateItem(same(batchRequest)))
@@ -54,10 +60,6 @@ class IniPecBatchRequestRepositoryImplTest {
 
     @Test
     void testCreate() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
-
         CompletableFuture<Void> completableFuture = new CompletableFuture<>();
         completableFuture.completeAsync(() -> null);
         BatchRequest batchRequest = new BatchRequest();
@@ -71,10 +73,6 @@ class IniPecBatchRequestRepositoryImplTest {
 
     @Test
     void testGetBatchRequestByNotBatchId() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
-
         Map<String, AttributeValue> lastKey = new HashMap<>();
         lastKey.put("chiave", AttributeValue.builder().s("valore").build());
 
@@ -91,27 +89,20 @@ class IniPecBatchRequestRepositoryImplTest {
 
     @Test
     void testGetBatchRequestByBatchId() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
-
         DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
         when(dynamoDbAsyncTable.index(any()))
                 .thenReturn(index);
         when(index.query((QueryEnhancedRequest) any()))
-                .thenReturn(SdkPublisher.adapt(Mono.empty()));
+                .thenReturn(SdkPublisher.adapt(Mono.just(Page.create(Collections.emptyList()))));
+        when(nationalRegistriesConfig.getQueryLimit()).thenReturn(1000);
 
-        StepVerifier.create(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
-                .expectNext(Collections.emptyList())
+        StepVerifier.create(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
+                .expectNextMatches(page -> page.items().isEmpty())
                 .verifyComplete();
     }
 
     @Test
     void testSetNewBatchIdToBatchRequests() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
-
         BatchRequest batchRequest = new BatchRequest();
 
         when(dynamoDbAsyncTable.updateItem((UpdateItemEnhancedRequest) any()))
@@ -124,10 +115,6 @@ class IniPecBatchRequestRepositoryImplTest {
 
     @Test
     void testSetNewReservationIdToBatchRequest() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
-
         BatchRequest batchRequest = new BatchRequest();
 
         when(dynamoDbAsyncTable.updateItem((UpdateItemEnhancedRequest) any()))
@@ -140,13 +127,16 @@ class IniPecBatchRequestRepositoryImplTest {
 
     @Test
     void testGetBatchRequestToRecovery() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
-
         BatchRequest batchRequest = new BatchRequest();
 
         DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
+        NationalRegistriesConfig.Inipec inipecConfig = new NationalRegistriesConfig.Inipec();
+        inipecConfig.setBatchRequestMaxRetry(RETRY);
+        inipecConfig.setBatchRequestRecoveryAfter(AFTER);
+
+        when(nationalRegistriesConfig.getInipec())
+                .thenReturn(inipecConfig);
+
         when(dynamoDbAsyncTable.index(any()))
                 .thenReturn(index);
         when(index.query((QueryEnhancedRequest) any()))
@@ -159,15 +149,17 @@ class IniPecBatchRequestRepositoryImplTest {
 
     @Test
     void testGetBatchRequestToSend() {
-        when(dynamoDbEnhancedAsyncClient.table(any(), any()))
-                .thenReturn(dynamoDbAsyncTable);
-        IniPecBatchRequestRepository batchRequestRepository = new IniPecBatchRequestRepositoryImpl(dynamoDbEnhancedAsyncClient, RETRY, AFTER);
-
         Map<String, AttributeValue> lastKey = new HashMap<>();
         lastKey.put("chiave", AttributeValue.builder().s("valore").build());
 
         SdkPublisher<Page<Object>> sdkPublisher = mock(SdkPublisher.class);
         DynamoDbAsyncIndex<Object> index = mock(DynamoDbAsyncIndex.class);
+        NationalRegistriesConfig.Inipec inipecConfig = new NationalRegistriesConfig.Inipec();
+        inipecConfig.setBatchRequestMaxRetry(RETRY);
+        inipecConfig.setBatchRequestRecoveryAfter(AFTER);
+
+        when(nationalRegistriesConfig.getInipec())
+                .thenReturn(inipecConfig);
         when(dynamoDbAsyncTable.index(any()))
                 .thenReturn(index);
         when(index.query((QueryEnhancedRequest) any()))

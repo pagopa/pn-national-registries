@@ -184,17 +184,15 @@ public class IniPecBatchRequestService extends GatewayConverter {
         return batchPollingRepository.create(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(batchId, pollingId, iniPecBatchRequestSize))
                 .flatMap(polling -> {
                     log.debug("IniPEC - batchId {} - created BatchPolling with pollingId: {}", batchId, pollingId);
-                    return setBatchRequestStatusToWorking(batchId);
+                    return setBatchRequestStatusToWorking(batchId, requests);
                 })
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to create BatchPolling with pollingId: {}", batchId, pollingId, e));
     }
 
-    private Mono<Void> setBatchRequestStatusToWorking(String batchId) {
-        return batchRequestRepository.getBatchRequestByBatchIdAndStatus(batchId, BatchStatus.TAKEN_CHARGE)
-                .doOnNext(requests -> log.debug("IniPEC - batchId {} - updating {} requests in status {}", batchId, requests.size(), BatchStatus.WORKING))
-                .flatMapIterable(requests -> requests)
+    private Mono<Void> setBatchRequestStatusToWorking(String batchId, List<BatchRequest> requests) {
+        return Flux.fromIterable(requests)
                 .doOnNext(request -> request.setStatus(BatchStatus.WORKING.getValue()))
-                .flatMap(batchRequestRepository::update)
+                .flatMap(batchRequestRepository::update, 1000)
                 .doOnNext(r -> log.debug("IniPEC - correlationId {} - set status in {}", r.getCorrelationId(), r.getStatus()))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to set request in status {}", batchId, BatchStatus.WORKING, e))
                 .collectList()
