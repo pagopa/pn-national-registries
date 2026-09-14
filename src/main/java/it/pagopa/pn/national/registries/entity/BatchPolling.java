@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.ToString;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 import static it.pagopa.pn.national.registries.constant.BatchPollingConstant.*;
@@ -60,4 +61,14 @@ public class BatchPolling {
             @DynamoDbAttribute(COL_TIMESTAMP)
     }))
     private LocalDateTime createdAt;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_BATCH_SIZE)
+    }))
+    private Integer batchSize;
+
+    @Getter(onMethod = @__({
+            @DynamoDbAttribute(COL_FIRST_ATTEMPT_AFTER)
+    }))
+    private Instant firstAttemptAfter;
 }

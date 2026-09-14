@@ -202,9 +202,6 @@ Parameters:
 
   PnCxIdValidationEnabled:
     Type: String
-    AllowedValues:
-      - true
-      - false
     Description: 'Validazione del pn-national-registries cx id'
 
   PnNationalRegistriesQueryLimit:
@@ -326,6 +323,16 @@ Parameters:
     Type: String
     Description: ECS log group name
 
+  FirstAttemptDelaySecondsPerCf:
+    Type: Number
+    Description: 'Per-CF delay in seconds for the first polling attempt'
+    Default: 0.085
+
+  FirstAttemptFixedDelaySeconds:
+    Type: Number
+    Description: 'Minimum fixed delay in seconds before the first polling attempt'
+    Default: 300
+
   # Heath Check parameters
   HealthCheckInterval:
     Description: Seconds between two health check
@@ -362,6 +369,16 @@ Parameters:
     AllowedValues:
       - true
       - false
+
+  pfNewWorkflowStart:
+    Type: String
+    Description: 'Start date for new workflow'
+    Default: '2021-01-01T00:00:00Z'
+
+  pfNewWorkflowStop:
+    Type: String
+    Description: 'End date for new workflow'
+    Default: '2021-01-01T00:00:00Z'
 
   PnCronAnalyzer:
     Type: String
@@ -509,13 +526,6 @@ Parameters:
     Description: 'Whether retry on timeout errors for InfoCamere PEC api'
     Default: false
 
-  EnablePfPecFallbackFlow:
-    Type: String
-    Description: 'Enable INIPEC fallback when no PEC address is found in INAD. If disabled, only INAD is used.'
-    AllowedValues:
-      - true
-      - false
-
 Resources:
 
   # PN-National-Registry microservice
@@ -559,10 +569,10 @@ Resources:
         ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
         ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH=${InfoCamereAuth}'
         ContainerEnvEntry15: !Sub 'PN_NATIONAL_REGISTRY_OUTPUT_QUEUE_NAME=${NationalRegistryGatewayOutputsQueueName}'
-        ContainerEnvEntry16: !Sub 'PN_NATIONALREGISTRIES_VALCXIDENABLED=${PnCxIdValidationEnabled}'
+        ContainerEnvEntry16: !Sub 'PN_NATIONAL_REGISTRY_VAL_CX_ID_ENABLED=${PnCxIdValidationEnabled}'
         ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
         ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_IPA_SECRET=${IPASecret}'
-        ContainerEnvEntry19: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONALREGISTRIES_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
         ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_DELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
         ContainerEnvEntry22: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTRECOVERYAFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
@@ -586,8 +596,8 @@ Resources:
         ContainerEnvEntry40: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
         ContainerEnvEntry41: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
         ContainerEnvEntry42: !Sub 'SPRING_CODEC_MAXINMEMORYSIZE=${CodecMemorySize}'
-        ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_ENABLEPFPECFALLBACKFLOW=${EnablePfPecFallbackFlow}'
-        ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_QUERYLIMIT=${PnNationalRegistriesQueryLimit}'
+        ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTART=${pfNewWorkflowStart}'
+        ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_PFNEWWORKFLOWSTOP=${pfNewWorkflowStop}'
         ContainerEnvEntry45: !Sub 'PN_NATIONALREGISTRIES_DAO_SHEDLOCKTABLENAME=${ShedLockTableName}'
         ContainerEnvEntry46: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchRequestLockAtMost}'
         ContainerEnvEntry47: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchRequestLockAtLeast}'
@@ -604,6 +614,9 @@ Resources:
         ContainerEnvEntry58: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_READ_TIMEOUT_MILLIS=${IniPecReadTimeoutMillis}'
         ContainerEnvEntry59: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_RETRY_ATTEMPTS=${IniPecMaxRetryAttempts}'
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
+        ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_QUERYLIMIT=${PnNationalRegistriesQueryLimit}'
+        ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTDELAYSECONDSPERCF=${FirstAttemptDelaySecondsPerCf}'
+        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTFIXEDDELAYSECONDS=${FirstAttemptFixedDelaySeconds}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
