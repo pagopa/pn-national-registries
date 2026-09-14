@@ -1,12 +1,12 @@
 package it.pagopa.pn.national.registries.converter;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.junit.jupiter.api.Test;
@@ -25,9 +25,9 @@ import static org.mockito.Mockito.*;
 class InfoCamereConverterTest {
 
     private final GatewayUtils gatewayUtils = mock(GatewayUtils.class);
+    private final NationalRegistriesConfig nationalRegistriesConfig = mock(NationalRegistriesConfig.class);
 
-    private final InfoCamereConverter infoCamereConverter =
-            new InfoCamereConverter(0L, "~", gatewayUtils);
+    private final InfoCamereConverter infoCamereConverter = new InfoCamereConverter(nationalRegistriesConfig, gatewayUtils);
 
     @Test
     void testConvertToGetAddressIniPecOKDto() {
@@ -39,8 +39,16 @@ class InfoCamereConverterTest {
 
     @Test
     void testCreateBatchPollingByBatchIdAndPollingId() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+        inipec.setTtl(0);
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchPolling actualCreateBatchPollingByBatchIdAndPollingIdResult = infoCamereConverter
-                .createBatchPollingByBatchIdAndPollingId("batchId", "pollingId");
+                .createBatchPollingByBatchIdAndPollingId("batchId", "pollingId", 3);
         assertEquals("batchId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getBatchId());
         assertEquals("NOT_WORKED", actualCreateBatchPollingByBatchIdAndPollingIdResult.getStatus());
         assertEquals("pollingId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getPollingId());
@@ -48,6 +56,13 @@ class InfoCamereConverterTest {
 
     @Test
     void testConvertResponsePecToCodeSqsDtoCfNotFound() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCorrelationId("correlationId");
         batchRequest.setCf("cf");
@@ -63,6 +78,13 @@ class InfoCamereConverterTest {
 
     @Test
     void testConvertResponsePecToCodeSqsDto1() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCf("Cf");
         batchRequest.setCorrelationId("correlationId");
@@ -81,6 +103,13 @@ class InfoCamereConverterTest {
 
     @Test
     void testConvertResponsePecToCodeSqsDto2() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCf("cf");
         batchRequest.setCorrelationId("correlationId");
@@ -159,6 +188,13 @@ class InfoCamereConverterTest {
 
     @Test
     void testConvertIniPecRequestToSqsDto1() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCorrelationId("correlationId");
         batchRequest.setCf("cf");
@@ -170,6 +206,13 @@ class InfoCamereConverterTest {
 
     @Test
     void testConvertIniPecRequestToSqsDto2() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setBatchRequestPkSeparator("~");
+
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setCorrelationId("correlationId");
         batchRequest.setCf("cf");
@@ -322,7 +365,9 @@ class InfoCamereConverterTest {
         batchRequest.setCf("cf");
 
         LocalDateTime now = LocalDateTime.now();
-
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
         when(gatewayUtils.convertCodeSqsDtoToString(any(AddressSQSMessageDto.class)))
                 .thenReturn("serialized-message");
 
@@ -337,7 +382,7 @@ class InfoCamereConverterTest {
                 .assertNext(result -> {
                     assertSame(batchRequest, result);
                     assertEquals("serialized-message", result.getMessage());
-                    assertEquals(EService.INIPEC.name(), result.getEservice());
+                    assertEquals(GatewayDownstreamService.INIPEC.name(), result.getEservice());
                     assertEquals(BatchStatus.NOT_WORKED.getValue(), result.getStatus());
                     assertEquals(BatchSendStatus.NOT_SENT.getValue(), result.getSendStatus());
                     assertEquals(now, result.getLastReserved());

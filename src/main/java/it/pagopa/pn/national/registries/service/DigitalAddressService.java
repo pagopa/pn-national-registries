@@ -47,8 +47,8 @@ public class DigitalAddressService extends GatewayConverter {
     }
 
 
-    public Mono<Void> retrieveDigitalAddressFromInad(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
-        return callInad(addressRequestBodyDto)
+    public Mono<Void> retrieveDigitalAddressFromInadForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
+        return callInadForPF(addressRequestBodyDto)
                 .map(response -> inadToSqsDto(correlationId, response, DigitalAddressRecipientType.PERSONA_FISICA))
                 .flatMap(codeSqsDto -> sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId))
                 .onErrorResume(e -> {
@@ -61,8 +61,8 @@ public class DigitalAddressService extends GatewayConverter {
                 .then();
     }
 
-    public Mono<Void> retrieveDigitalAddressFromInadWithIniPecFallback(String pnNationalRegistriesCxId, AddressRequestBodyDto request, String correlationId) {
-        return callInad(request)
+    public Mono<Void> retrieveDigitalAddressForPFFromInadWithIniPecFallback(String pnNationalRegistriesCxId, AddressRequestBodyDto request, String correlationId) {
+        return callInadForPF(request)
                 .map(response -> inadToSqsDto(correlationId, response, DigitalAddressRecipientType.PERSONA_FISICA))
                 .onErrorResume(e -> {
                     if (isInadNotFound(e)) {
@@ -84,7 +84,7 @@ public class DigitalAddressService extends GatewayConverter {
         return e instanceof PnNationalRegistriesException pnNationalRegistriesException && pnNationalRegistriesException.getStatusCode().equals(HttpStatusCode.valueOf(404));
     }
 
-    private Mono<GetDigitalAddressINADOKDto> callInad(AddressRequestBodyDto request) {
+    private Mono<GetDigitalAddressINADOKDto> callInadForPF(AddressRequestBodyDto request) {
         String correlationId = request.getFilter().getCorrelationId();
         return inadService.callEService(convertToGetDigitalAddressInadRequest(request), PF)
                 .flatMap(DigitalAddressUtils::emailValidation)

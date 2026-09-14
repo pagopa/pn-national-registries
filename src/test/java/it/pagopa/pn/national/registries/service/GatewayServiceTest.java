@@ -262,7 +262,7 @@ class GatewayServiceTest {
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(false);
 
-        when(digitalAddressService.retrieveDigitalAddressFromInad(
+        when(digitalAddressService.retrieveDigitalAddressFromInadForPF(
                 CX_ID,
                 request,
                 C_ID
@@ -281,14 +281,14 @@ class GatewayServiceTest {
                 .verifyComplete();
 
         verify(digitalAddressService)
-                .retrieveDigitalAddressFromInad(
+                .retrieveDigitalAddressFromInadForPF(
                         CX_ID,
                         request,
                         C_ID
                 );
 
         verify(digitalAddressService, never())
-                .retrieveDigitalAddressFromInadWithIniPecFallback(
+                .retrieveDigitalAddressForPFFromInadWithIniPecFallback(
                         any(),
                         any(),
                         any()
@@ -308,7 +308,7 @@ class GatewayServiceTest {
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(true);
 
-        when(digitalAddressService.retrieveDigitalAddressFromInadWithIniPecFallback(
+        when(digitalAddressService.retrieveDigitalAddressForPFFromInadWithIniPecFallback(
                 CX_ID,
                 request,
                 C_ID
@@ -327,14 +327,14 @@ class GatewayServiceTest {
                 .verifyComplete();
 
         verify(digitalAddressService)
-                .retrieveDigitalAddressFromInadWithIniPecFallback(
+                .retrieveDigitalAddressForPFFromInadWithIniPecFallback(
                         CX_ID,
                         request,
                         C_ID
                 );
 
         verify(digitalAddressService, never())
-                .retrieveDigitalAddressFromInad(
+                .retrieveDigitalAddressFromInadForPF(
                         any(),
                         any(),
                         any()
@@ -459,7 +459,7 @@ class GatewayServiceTest {
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(false);
 
-        when(digitalAddressService.retrieveDigitalAddressFromInad(
+        when(digitalAddressService.retrieveDigitalAddressFromInadForPF(
                 CX_ID,
                 request,
                 C_ID

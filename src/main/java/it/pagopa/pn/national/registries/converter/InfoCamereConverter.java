@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
@@ -10,10 +9,9 @@ import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.EService;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
-import org.springframework.beans.factory.annotation.Value;
+import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -29,12 +27,11 @@ import java.util.*;
 import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.removeInvalidEmails;
 
 @Component
-public class InfoCamereConverter {
-    private final NationalRegistriesConfig nationalRegistriesConfig;
+@RequiredArgsConstructor
+public class InfoCamereConverter{
 
-    public InfoCamereConverter(NationalRegistriesConfig nationalRegistriesConfig) {
-        this.nationalRegistriesConfig = nationalRegistriesConfig;
-    }
+    private final NationalRegistriesConfig nationalRegistriesConfig;
+    private final GatewayUtils gatewayUtils;
 
     public Mono<BatchRequest> buildErrorBatchRequest(BatchStatus status, String error, BatchRequest batchRequest, LocalDateTime now) {
         AddressSQSMessageDto sqsDto = convertIniPecRequestToSqsDto(batchRequest, error);
@@ -51,7 +48,7 @@ public class InfoCamereConverter {
     private void populateBatchRequestSendFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, AddressSQSMessageDto codeSqsDto) {
         removeInvalidEmails(codeSqsDto);
         batchRequest.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
-        batchRequest.setEservice(EService.INIPEC.name());
+        batchRequest.setEservice(GatewayDownstreamService.INIPEC.name());
         batchRequest.setStatus(status.getValue());
         batchRequest.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
         batchRequest.setLastReserved(now);
@@ -94,13 +91,10 @@ public class InfoCamereConverter {
         return Instant.now().plusSeconds(delaySeconds).truncatedTo(ChronoUnit.SECONDS);
     }
 
-    public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
-        CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
-    public AddressSQSMessageDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
+  public AddressSQSMessageDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
         AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         codeSqsDto.setRegistry(GatewayDownstreamService.INIPEC.name());
-        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0]);
+        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
         codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
         codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
@@ -108,7 +102,7 @@ public class InfoCamereConverter {
 
     public AddressSQSMessageDto convertIniPecRequestToSqsDto(BatchRequest request, @Nullable String error) {
         AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
-        codeSqsDto.setCorrelationId(request.getCorrelationId().split(batchRequestPkSeparator)[0]);
+        codeSqsDto.setCorrelationId(request.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
         if (error != null) {
             codeSqsDto.setError(error);
         } else {

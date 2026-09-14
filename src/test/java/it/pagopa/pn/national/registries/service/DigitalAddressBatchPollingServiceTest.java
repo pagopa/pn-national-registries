@@ -11,11 +11,12 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.EService;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -32,7 +33,6 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -49,7 +49,7 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inipec.batch.polling.recovery.delay=30000",
         "pn.national-registries.inipec.batch.polling.max-retry=3",
         "pn.national-registries.inipec.batch.polling.inprogress.max-retry=24",
-        "pn.national.registries.inipec.batchrequest.pk.separator=~"
+        "pn.national-registries.inipec.batchrequest-pk-separator=~"
 })
 @ContextConfiguration(classes = DigitalAddressBatchPollingService.class)
 @ExtendWith(SpringExtension.class)
@@ -108,8 +108,8 @@ class DigitalAddressBatchPollingServiceTest {
 
         when(infoCamereClient.callEServiceRequestPec("pollingId1")).thenReturn(Mono.error(pnNationalRegistriesException));
 
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequest1)));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING, new HashMap<>()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest1))));
 
 
         AddressSQSMessageDto codeSqsDto = mock(AddressSQSMessageDto.class);
@@ -161,12 +161,12 @@ class DigitalAddressBatchPollingServiceTest {
 
         when(infoCamereClient.callEServiceRequestPec("pollingId1")).thenReturn(Mono.just(iniPecPollingResponse1));
         when(infoCamereConverter.checkIfResponseIsInfoCamereError((IniPecPollingResponse) any())).thenReturn(true);
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequest1, batchRequest2)));
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId2", BatchStatus.WORKING))
-                .thenReturn(Mono.just(Collections.emptyList()));
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequest3)));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING, new HashMap<>()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest1, batchRequest2))));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId2", BatchStatus.WORKING, new HashMap<>()))
+                .thenReturn(Mono.just(Page.create(Collections.emptyList())));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING, new HashMap<>()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest3))));
 
         when(batchPollingRepository.update(any()))
                 .thenReturn(Mono.just(batchPolling1));
@@ -247,13 +247,20 @@ class DigitalAddressBatchPollingServiceTest {
         emptySqs.setError(null);
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(emptySqs);
 
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId1", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequest1, batchRequest2)));
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId2", BatchStatus.WORKING))
-                .thenReturn(Mono.just(Collections.emptyList()));
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequest3)));
+        Map<String, AttributeValue> firstLastKey = new HashMap<>();
+        firstLastKey.put("k", AttributeValue.builder().s("v").build());
 
+        Page<BatchRequest> batch1Page1 = Page.create(List.of(batchRequest1), firstLastKey);
+        Page<BatchRequest> batch1Page2 = Page.create(List.of(batchRequest2));
+
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus(eq("batchId1"), eq(BatchStatus.WORKING), anyMap()))
+                .thenReturn(Mono.just(batch1Page1))
+                .thenReturn(Mono.just(batch1Page2));
+
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId2", BatchStatus.WORKING, new HashMap<>()))
+                .thenReturn(Mono.just(Page.create(Collections.emptyList())));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING, new HashMap<>()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest3))));
 
         GetDigitalAddressINADOKDto inadResp = new GetDigitalAddressINADOKDto();
         DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
@@ -325,8 +332,8 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.error(exception))
                 .thenReturn(Mono.just(iniPecPollingResponse));
 
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequest)));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
 
         AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         AddressSQSMessageDigitalAddressInnerDto digitalAddress = new AddressSQSMessageDigitalAddressInnerDto();
@@ -392,8 +399,8 @@ class DigitalAddressBatchPollingServiceTest {
 
         when(infoCamereConverter.checkIfResponseIsInfoCamereError((IniPecPollingResponse) any())).thenReturn(true);
 
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequest)));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
 
         AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
@@ -470,8 +477,8 @@ class DigitalAddressBatchPollingServiceTest {
         when(infoCamereClient.callEServiceRequestPec("pollingId"))
                 .thenReturn(Mono.just(iniPecPollingResponse));
 
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequest)));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
 
         AddressSQSMessageDto codeSqsDto = new AddressSQSMessageDto();
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any()))
@@ -531,8 +538,8 @@ class DigitalAddressBatchPollingServiceTest {
         BatchRequest batchRequest1 = new BatchRequest();
         BatchRequest batchRequest2 = new BatchRequest();
 
-        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING))
-                .thenReturn(Mono.just(List.of(batchRequest1, batchRequest2)));
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId", BatchStatus.WORKING, new HashMap<>()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest1, batchRequest2))));
         when(batchRequestRepository.update(same(batchRequest1)))
                 .thenReturn(Mono.just(batchRequest1));
         when(batchRequestRepository.update(same(batchRequest2)))

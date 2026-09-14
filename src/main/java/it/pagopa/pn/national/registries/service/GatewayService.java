@@ -67,17 +67,17 @@ public class GatewayService extends GatewayConverter {
 
         Mono<Void> operation = isPhysical(addressRequestBodyDto)
                 ? physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId)
-                : getDigitalAddress(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId);
+                : getDigitalAddressForPF(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId);
 
         return operation
                 .onErrorResume(e -> handleError(e, getOutputMessage(addressRequestBodyDto, correlationId, e), pnNationalRegistriesCxId, dlqMessage))
                 .thenReturn(mapToAddressesOKDto(correlationId));
     }
 
-    private Mono<Void> getDigitalAddress(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
+    private Mono<Void> getDigitalAddressForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return nationalRegistriesConfig.isEnablePfPecFallbackFlow()
-                ? digitalAddressService.retrieveDigitalAddressFromInadWithIniPecFallback(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId)
-                : digitalAddressService.retrieveDigitalAddressFromInad(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId);
+                ? digitalAddressService.retrieveDigitalAddressForPFFromInadWithIniPecFallback(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId)
+                : digitalAddressService.retrieveDigitalAddressFromInadForPF(pnNationalRegistriesCxId, addressRequestBodyDto, correlationId);
     }
 
     private AddressSQSMessageDto getOutputMessage(AddressRequestBodyDto addressRequestBodyDto, String correlationId, Throwable error) {
