@@ -36,7 +36,7 @@ public class InfocamereClientConfig extends CommonBaseClient {
 
     @Bean
     AuthenticationApi authenticationApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE"));
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE-AUTH"));
         apiClient.setBasePath(basePath);
         return new AuthenticationApi(apiClient);
     }
@@ -44,21 +44,21 @@ public class InfocamereClientConfig extends CommonBaseClient {
 
     @Bean
     LegalRepresentationApi legalRepresentationApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE"));
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE_LEGALE_RAPPRESENTATE"));
         apiClient.setBasePath(basePath);
         return new LegalRepresentationApi(apiClient);
     }
 
     @Bean
     SedeApi sedeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE"));
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE_SEDE"));
         apiClient.setBasePath(basePath);
         return new SedeApi(apiClient);
     }
 
     @Bean
     LegalRepresentativeApi legalRepresentativeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE"));
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE_LISTA_LEGALE_RAPPRESENTATE"));
         apiClient.setBasePath(basePath);
         return new LegalRepresentativeApi(apiClient);
     }

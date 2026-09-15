@@ -43,7 +43,7 @@ public class IniPecClientConfig extends CommonBaseClient {
 
     @Bean
     PecApi pecApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(builder, "INIPEC"));
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE_INIPEC"));
         apiClient.setBasePath(basePath);
         return new PecApi(apiClient);
     }
