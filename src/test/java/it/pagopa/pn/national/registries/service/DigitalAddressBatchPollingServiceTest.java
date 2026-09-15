@@ -16,6 +16,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressS
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
@@ -344,10 +345,10 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        AddressSQSMessageDigitalAddressInnerDto digitalAddress = new AddressSQSMessageDigitalAddressInnerDto();
+        DigitalAddress digitalAddress = new DigitalAddress();
         digitalAddress.setAddress("address@pec.it");
 
-        AddressSQSMessageDigitalAddressInnerDto digitalAddress2 = new AddressSQSMessageDigitalAddressInnerDto();
+        DigitalAddress digitalAddress2 = new DigitalAddress();
         digitalAddress2.setAddress("invalid_pec");
 
         codeSqsDto.setDigitalAddress(List.of(digitalAddress, digitalAddress2));

@@ -3,8 +3,8 @@ package it.pagopa.pn.national.registries.model;
 import com.fasterxml.jackson.annotation.JsonFilter;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressDto;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.utils.JsonFilterSpEL;
 import lombok.Data;
 import lombok.ToString;
@@ -26,7 +26,7 @@ public class CodeSqsDto {
 
     @JsonFilterSpEL("#? != null || (#this.error == null && #this.addressType == 'DIGITAL')")
     @ToString.Exclude
-    private List<AddressSQSMessageDigitalAddressInnerDto> digitalAddress;
+    private List<DigitalAddress> digitalAddress;
 
     @JsonFilterSpEL("#? != null")
     private String error;

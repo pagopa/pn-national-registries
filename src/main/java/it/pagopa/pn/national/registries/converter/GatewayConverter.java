@@ -12,6 +12,7 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
@@ -21,6 +22,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -54,10 +56,7 @@ public class GatewayConverter {
     protected CodeSqsDto errorAnprToSqsDto(String correlationId, Throwable throwable) {
         CodeSqsDto codeSqsDto = null;
         // per ANPR CF non trovato corrisponde a HTTP Status 404 e nel body codiceErroreAnomalia = "EN122"
-        if (throwable instanceof PnNationalRegistriesException exception
-                && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                && StringUtils.hasText(exception.getResponseBodyAsString())
-                && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find()) {
+        if (isAnprAddressNotFound.test(throwable)) {
             log.info("correlationId: {} - ANPR - CF non trovato", correlationId);
             // il physicalAddress rimane null, sarà compito di chi serializzerà il JSON occuparsi d'includere il campo
             codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.ANPR);
@@ -81,11 +80,7 @@ public class GatewayConverter {
     protected CodeSqsDto errorInadToSqsDto(String correlationId, Throwable throwable) {
         CodeSqsDto codeSqsDto = null;
         // per INAD CF non trovato corrisponde a HTTP Status 404 e nel body deve essere contenuta la stringa "CF non trovato"
-        if (throwable instanceof PnNationalRegistriesException exception
-                && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                && ((StringUtils.hasText(exception.getResponseBodyAsString())
-                && INAD_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find())
-        || CF_NOT_FOUND.equalsIgnoreCase(exception.getMessage()))) {
+        if (isInadAddressNotFound.test(throwable)) {
             log.info("correlationId: {} - INAD - CF non trovato", correlationId);
             codeSqsDto = newCodeSqsDto(correlationId,GatewayDownstreamService.INAD);
             codeSqsDto.setDigitalAddress(Collections.emptyList());
@@ -93,6 +88,20 @@ public class GatewayConverter {
         }
         return codeSqsDto;
     }
+
+    public final Predicate<Throwable> isAnprAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
+            && exception.getStatusCode() == HttpStatus.NOT_FOUND
+            && StringUtils.hasText(exception.getResponseBodyAsString())
+            && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
+
+    public final Predicate<Throwable> isInadAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
+            && exception.getStatusCode() == HttpStatus.NOT_FOUND
+            && (
+            (StringUtils.hasText(exception.getResponseBodyAsString())
+                    && INAD_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find())
+                    || CF_NOT_FOUND.equalsIgnoreCase(exception.getMessage())
+    );
+
 
     protected CodeSqsDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.REGISTRO_IMPRESE);
@@ -117,10 +126,10 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    private AddressSQSMessageDigitalAddressInnerDto convertIpaPecToDigitalAddress(IPAPecDto domicilioDigitale) {
-        AddressSQSMessageDigitalAddressInnerDto digitalAddress = new AddressSQSMessageDigitalAddressInnerDto();
+    private DigitalAddress convertIpaPecToDigitalAddress(IPAPecDto domicilioDigitale) {
+        DigitalAddress digitalAddress = new DigitalAddress();
         digitalAddress.setAddress(domicilioDigitale.getDomicilioDigitale());
-        digitalAddress.setRecipient(AddressSQSMessageDigitalAddressInnerDto.RecipientEnum.fromValue(DigitalAddressRecipientType.IMPRESA.getValue()));
+        digitalAddress.setRecipient(DigitalAddressRecipientType.IMPRESA.getValue());
         digitalAddress.setType(DigitalAddressType.PEC.getValue());
         return digitalAddress;
     }
@@ -146,10 +155,10 @@ public class GatewayConverter {
         return physicalAddress;
     }
 
-    protected AddressSQSMessageDigitalAddressInnerDto convertInadToDigitalAddress(DigitalAddressDto digitalAddressDto, DigitalAddressRecipientType digitalAddressRecipientType) {
-        AddressSQSMessageDigitalAddressInnerDto digitalAddress = new AddressSQSMessageDigitalAddressInnerDto();
+    protected DigitalAddress convertInadToDigitalAddress(DigitalAddressDto digitalAddressDto, DigitalAddressRecipientType digitalAddressRecipientType) {
+        DigitalAddress digitalAddress = new DigitalAddress();
         digitalAddress.setAddress(digitalAddressDto.getDigitalAddress());
-        digitalAddress.setRecipient(AddressSQSMessageDigitalAddressInnerDto.RecipientEnum.fromValue(digitalAddressRecipientType.getValue()));
+        digitalAddress.setRecipient(digitalAddressRecipientType.getValue());
         digitalAddress.setType(DigitalAddressType.PEC.getValue());
         return digitalAddress;
     }

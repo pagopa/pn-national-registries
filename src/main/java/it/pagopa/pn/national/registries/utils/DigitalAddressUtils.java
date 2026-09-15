@@ -5,6 +5,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressS
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
@@ -28,7 +29,7 @@ public class DigitalAddressUtils {
     private static final Logger log = LoggerFactory.getLogger(DigitalAddressUtils.class);
 
     public static void removeInvalidEmails(CodeSqsDto sqsDto) {
-        List<AddressSQSMessageDigitalAddressInnerDto> digitalAddresses = new ArrayList<>();
+        List<DigitalAddress> digitalAddresses = new ArrayList<>();
         if (!CollectionUtils.isEmpty(sqsDto.getDigitalAddress())) {
             digitalAddresses = sqsDto.getDigitalAddress().stream()
                     .filter(digitalAddress -> isValidEmail(digitalAddress.getAddress()))
