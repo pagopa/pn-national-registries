@@ -5,6 +5,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressS
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import reactor.test.StepVerifier;
@@ -17,12 +18,12 @@ class DigitalAddressUtilsTest {
 
     @Test
     void removeInvalidEmails_shouldKeepOnlyValidEmails() {
-        AddressSQSMessageDigitalAddressInnerDto validAddress =
-                new AddressSQSMessageDigitalAddressInnerDto();
+        DigitalAddress validAddress =
+                new DigitalAddress();
         validAddress.setAddress("valid@email.it");
 
-        AddressSQSMessageDigitalAddressInnerDto invalidAddress =
-                new AddressSQSMessageDigitalAddressInnerDto();
+        DigitalAddress invalidAddress =
+                new DigitalAddress();
         invalidAddress.setAddress("invalid-email");
 
         CodeSqsDto sqsDto = new CodeSqsDto();
@@ -40,12 +41,12 @@ class DigitalAddressUtilsTest {
 
     @Test
     void removeInvalidEmails_shouldRemoveAllInvalidEmails() {
-        AddressSQSMessageDigitalAddressInnerDto invalidAddress1 =
-                new AddressSQSMessageDigitalAddressInnerDto();
+        DigitalAddress invalidAddress1 =
+                new DigitalAddress();
         invalidAddress1.setAddress("invalid");
 
-        AddressSQSMessageDigitalAddressInnerDto invalidAddress2 =
-                new AddressSQSMessageDigitalAddressInnerDto();
+        DigitalAddress invalidAddress2 =
+                new DigitalAddress();
         invalidAddress2.setAddress("another-invalid-email");
 
         CodeSqsDto sqsDto = new CodeSqsDto();
