@@ -11,6 +11,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.lang.Nullable;
@@ -191,8 +192,8 @@ public class InfoCamereConverter{
         return dto;
     }
 
-    private List<AddressSQSMessageDigitalAddressInnerDto> convertToDigitalAddress(Pec pec) {
-        List<AddressSQSMessageDigitalAddressInnerDto> digitalAddress = new ArrayList<>();
+    private List<DigitalAddress> convertToDigitalAddress(Pec pec) {
+        List<DigitalAddress> digitalAddress = new ArrayList<>();
         if (Objects.nonNull(pec) && !StringUtils.isEmpty(pec.getPecImpresa())) {
             digitalAddress.add(toDigitalAddress(pec.getPecImpresa(), DigitalAddressRecipientType.IMPRESA, DigitalAddressType.PEC.getValue()));
         }
@@ -204,10 +205,10 @@ public class InfoCamereConverter{
         return digitalAddress;
     }
 
-    private AddressSQSMessageDigitalAddressInnerDto toDigitalAddress(String address, DigitalAddressRecipientType recipientType, String type) {
-        AddressSQSMessageDigitalAddressInnerDto digitalAddress = new AddressSQSMessageDigitalAddressInnerDto();
+    private DigitalAddress toDigitalAddress(String address, DigitalAddressRecipientType recipientType, String type) {
+        DigitalAddress digitalAddress = new DigitalAddress();
         digitalAddress.setAddress(address);
-        digitalAddress.setRecipient(AddressSQSMessageDigitalAddressInnerDto.RecipientEnum.fromValue(recipientType.getValue()));
+        digitalAddress.setRecipient(recipientType.getValue());
         digitalAddress.setType(type);
         return digitalAddress;
     }

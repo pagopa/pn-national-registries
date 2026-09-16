@@ -55,7 +55,7 @@
     "PnCronAnalyzer": "-",
     "WireTapLogActivation": "false",
     "MountEfs": "false",
-    "MetricFormatType": "",
+    "MetricFormatType": "EMF",
     "AddressCompositionMode": "MINIMAL",
     "IniPecReadTimeoutMillis": "15000",
     "EnablePfPecFallbackFlow": "true",

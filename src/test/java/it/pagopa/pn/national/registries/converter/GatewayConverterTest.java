@@ -10,6 +10,7 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
+import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.HttpStatus;
@@ -131,6 +132,7 @@ class GatewayConverterTest {
 
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
         response.setDigitalAddress(digitalAddress);
+        response.setTaxId(CF);
 
         CodeSqsDto result = gatewayConverter.inadToSqsDto(
                 C_ID,
@@ -151,7 +153,7 @@ class GatewayConverterTest {
         assertEquals("test@pec.it", result.getDigitalAddress().getFirst().getAddress());
         assertEquals(
                 DigitalAddressRecipientType.PERSONA_FISICA.getValue(),
-                result.getDigitalAddress().getFirst().getRecipient().getValue()
+                result.getDigitalAddress().getFirst().getRecipient()
         );
         assertEquals("PEC", result.getDigitalAddress().getFirst().getType());
     }
@@ -194,7 +196,7 @@ class GatewayConverterTest {
         assertEquals("ipa@pec.it", result.getDigitalAddress().getFirst().getAddress());
         assertEquals(
                 DigitalAddressRecipientType.IMPRESA.getValue(),
-                result.getDigitalAddress().getFirst().getRecipient().getValue()
+                result.getDigitalAddress().getFirst().getRecipient()
         );
         assertEquals("PEC", result.getDigitalAddress().getFirst().getType());
     }
@@ -296,7 +298,7 @@ class GatewayConverterTest {
         DigitalAddressDto source = new DigitalAddressDto();
         source.setDigitalAddress("test@pec.it");
 
-        AddressSQSMessageDigitalAddressInnerDto result =
+        DigitalAddress result =
                 gatewayConverter.convertInadToDigitalAddress(
                         source,
                         DigitalAddressRecipientType.PERSONA_FISICA
@@ -306,7 +308,7 @@ class GatewayConverterTest {
         assertEquals("test@pec.it", result.getAddress());
         assertEquals(
                 DigitalAddressRecipientType.PERSONA_FISICA.getValue(),
-                result.getRecipient().getValue()
+                result.getRecipient()
         );
         assertEquals("PEC", result.getType());
     }

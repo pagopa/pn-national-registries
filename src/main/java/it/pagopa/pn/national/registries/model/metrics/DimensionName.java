@@ -4,7 +4,10 @@ import lombok.Getter;
 
 @Getter
 public enum DimensionName {
-    STATUS("Status");
+    STATUS("Status"),
+    REGISTRY("Registry"),
+    DIGITAL_ADDRESS_SCOPE("DigitalAddressScope"),
+    NOTIFICATION_SCOPE("NotificationScope");
 
     private final String value;
 
