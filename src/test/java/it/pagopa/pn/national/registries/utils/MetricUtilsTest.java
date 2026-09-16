@@ -20,7 +20,7 @@ class MetricUtilsTest {
     void generateGeneralMetricWithOnlyMetricNameAndMetricValueSetsAllFieldsCorrectly() {
         GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.BATCH_SIZE, 42);
 
-        assertEquals("national-registries-inipec", metric.getNamespace());
+        assertEquals("PN-NationalRegistries-Downstream", metric.getNamespace());
         assertEquals(1, metric.getMetrics().size());
         assertEquals(MetricName.BATCH_SIZE.getValue(), metric.getMetrics().getFirst().getName());
         assertEquals(42, metric.getMetrics().getFirst().getValue());
@@ -56,7 +56,7 @@ class MetricUtilsTest {
         GeneralMetric metric = MetricUtils.generateGeneralMetric(MetricName.BATCH_SIZE, 3, dimensions);
 
         long after = System.currentTimeMillis();
-        assertEquals("national-registries-inipec", metric.getNamespace());
+        assertEquals("PN-NationalRegistries-Downstream", metric.getNamespace());
         assertEquals(dimensions, metric.getDimensions());
         assertTrue(metric.getTimestamp() >= before && metric.getTimestamp() <= after);
     }

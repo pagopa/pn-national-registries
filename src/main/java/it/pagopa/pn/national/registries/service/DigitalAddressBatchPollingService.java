@@ -7,7 +7,6 @@ import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
-import it.pagopa.pn.national.registries.converter.InadConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -53,7 +52,6 @@ import java.util.regex.Pattern;
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
-import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 
 @CustomLog
