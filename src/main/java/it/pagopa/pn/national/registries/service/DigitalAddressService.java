@@ -58,14 +58,14 @@ public class DigitalAddressService extends GatewayConverter {
 
     public Mono<Void> retrieveDigitalAddressFromInadForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return callInadForPF(addressRequestBodyDto)
-                .map(response -> inadToSqsDto(correlationId, response, DigitalAddressRecipientType.PERSONA_FISICA))
+                .map(response -> inadToSqsDto(correlationId, response))
                 .doOnNext(codeSqsDto -> {
                     if (CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
                         logCfWithAddressMetric(
                                 correlationId,
                                 GatewayDownstreamService.INAD,
                                 PF,
-                                DigitalAddressRecipientType.fromValue(codeSqsDto.getDigitalAddress().getFirst().getRecipient())
+                                DigitalAddressRecipientType.PERSONA_FISICA
                         );
                     }
                 })
@@ -75,7 +75,7 @@ public class DigitalAddressService extends GatewayConverter {
 
     public Mono<Void> retrieveDigitalAddressForPFFromInadWithIniPecFallback(String pnNationalRegistriesCxId, AddressRequestBodyDto request, String correlationId) {
         return callInadForPF(request)
-                .map(response -> inadToSqsDto(correlationId, response, DigitalAddressRecipientType.PERSONA_FISICA))
+                .map(response -> inadToSqsDto(correlationId, response))
                 .onErrorResume(e -> {
                     CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
                     if(codeSqsDto != null) {

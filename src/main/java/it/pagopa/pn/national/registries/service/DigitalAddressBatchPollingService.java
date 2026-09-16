@@ -312,7 +312,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(inadResponse -> {
-                    request.setMessage(gatewayUtils.convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, PF.equals(recipientType) ? DigitalAddressRecipientType.PERSONA_FISICA : DigitalAddressRecipientType.IMPRESA)));
+                    request.setMessage(gatewayUtils.convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse)));
                     request.setStatus(BatchStatus.WORKED.getValue());
                     request.setEservice(GatewayDownstreamService.INAD.name());
                 })
