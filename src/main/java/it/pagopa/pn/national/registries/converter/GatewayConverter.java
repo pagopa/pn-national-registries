@@ -104,6 +104,12 @@ public class GatewayConverter {
                 && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
     }
 
+    public final Predicate<Throwable> isAnprAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
+            && exception.getStatusCode() == HttpStatus.NOT_FOUND
+            && StringUtils.hasText(exception.getResponseBodyAsString())
+            && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
+
+
     private boolean isInadAddressNotFound(Throwable throwable) {
         return throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.NOT_FOUND
                 && (
@@ -112,6 +118,14 @@ public class GatewayConverter {
                         || CF_NOT_FOUND.equalsIgnoreCase(exception.getMessage())
         );
     }
+
+    public final Predicate<Throwable> isInadAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
+            && exception.getStatusCode() == HttpStatus.NOT_FOUND
+            && (
+            (StringUtils.hasText(exception.getResponseBodyAsString())
+                    && INAD_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find())
+                    || CF_NOT_FOUND.equalsIgnoreCase(exception.getMessage())
+    );
 
     protected CodeSqsDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.REGISTRO_IMPRESE);
