@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
@@ -10,13 +9,9 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
-import it.pagopa.pn.national.registries.model.StatusDimension;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
-import it.pagopa.pn.national.registries.model.metrics.DimensionName;
-import it.pagopa.pn.national.registries.model.metrics.MetricName;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-import it.pagopa.pn.national.registries.utils.MetricUtils;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -39,6 +34,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchRequestMetrics;
 
 @Service
 @CustomLog
@@ -139,25 +135,6 @@ public class IniPecBatchRequestService extends GatewayConverter {
                 .doOnError(e -> log.error("IniPEC - batchId {} - failed to execute batch", batchId, e))
                 .onErrorResume(e -> Mono.empty())
                 .then();
-    }
-
-    private static void logBatchRequestMetrics(String batchId, IniPecBatchRequest iniPecBatchRequest, boolean isError) {
-        StatusDimension status = isError ? StatusDimension.FAILURE : StatusDimension.OK;
-        String logMessage = "IniPEC - Logging batch request metrics for batchId: " + batchId + " - called EService and batch size is: " + iniPecBatchRequest.getElencoCf().size() + " with status: " + status;
-        List<GeneralMetric> requestMetrics = List.of(
-                MetricUtils.generateGeneralMetric(
-                        MetricName.BATCH_REQUEST_CREATION,
-                        1,
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
-                ),
-                MetricUtils.generateGeneralMetric(
-                        MetricName.BATCH_SIZE,
-                        iniPecBatchRequest.getElencoCf().size(),
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
-                )
-        );
-
-        log.logMetric(requestMetrics, logMessage);
     }
 
     private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {

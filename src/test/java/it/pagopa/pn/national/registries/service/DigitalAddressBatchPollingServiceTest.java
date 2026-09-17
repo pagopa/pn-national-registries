@@ -291,7 +291,6 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.just(batchRequest2));
         when(batchRequestRepository.update(same(batchRequest3)))
                 .thenReturn(Mono.just(batchRequest3));
-        when(gatewayUtils.retrieveRecipientType(any(), any())).thenReturn(PG);
 
         assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
 
@@ -581,7 +580,6 @@ class DigitalAddressBatchPollingServiceTest {
                 .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
         when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPollingToRecover2)))
                 .thenReturn(Mono.just(batchPollingToRecover2));
-        when(gatewayUtils.retrieveRecipientType(any(), any())).thenReturn(PG);
         testBatchPecPolling();
 
         assertDoesNotThrow(() -> digitalAddressBatchPollingService.recoveryBatchPolling());
@@ -608,7 +606,8 @@ class DigitalAddressBatchPollingServiceTest {
         pec.setStatoImpresa(null);
 
         BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
-        when(infoCamereConverter.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(Pec.class)))
+        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(new CodeSqsDto());
+        when(infoCamereConverter.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(CodeSqsDto.class)))
                 .thenAnswer(inv -> Mono.just(batchRequest));
 
         BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();

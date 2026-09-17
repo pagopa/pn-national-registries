@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
@@ -14,12 +13,8 @@ import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.StatusDimension;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
-import it.pagopa.pn.national.registries.model.metrics.DimensionName;
-import it.pagopa.pn.national.registries.model.metrics.MetricName;
-import it.pagopa.pn.national.registries.model.metrics.MetricUnit;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
@@ -41,7 +36,6 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.nio.charset.Charset;
-import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -52,7 +46,8 @@ import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
-import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.*;
 
 @CustomLog
 @Service
@@ -207,6 +202,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
+        logInipecCfRequestedMetric(polling.getBatchId(), GatewayDownstreamService.INIPEC, polling.getBatchSize());
         return updateBatchRequest(polling, BatchStatus.WORKED, response, null)
                 .thenReturn(polling)
                 .doOnNext(batchPolling -> batchPolling.setStatus(BatchStatus.WORKED.getValue()))
@@ -309,36 +305,16 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .orElse(null);
     }
 
-    private void logBatchEndingMetrics(BatchPolling polling, BatchStatus batchStatus) {
-        StatusDimension status = batchStatus == BatchStatus.ERROR ? StatusDimension.FAILURE : StatusDimension.OK;
-        long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
-        int batchClosureDurationSeconds = (int) (batchClosureDurationMillis / 1000);
-
-        List<GeneralMetric> batchEndingMetrics = List.of(
-                MetricUtils.generateGeneralMetric(
-                        MetricName.BATCH,
-                        1,
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
-                ),
-                MetricUtils.generateGeneralMetric(
-                        MetricName.BATCH_CLOSURE_DURATION,
-                        batchClosureDurationSeconds,
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name())),
-                        MetricUnit.SECONDS
-                )
-        );
-
-        log.logMetric(batchEndingMetrics, "IniPEC - Logging batch ending metrics for batchId: " + polling.getBatchId() + " with status: " + status);
-    }
-
     private Mono<Void> callInadEservice(BatchRequest request) {
-        RecipientType recipientType = gatewayUtils.retrieveRecipientType(request.getCf(), request.getRecipientType());
+        RecipientType recipientType = retrieveRecipientType(request.getCf(), request.getRecipientType());
         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
         return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType)
                 .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(inadResponse -> {
-                    request.setMessage(gatewayUtils.convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse)));
+                    CodeSqsDto codeSqsDto = inadToSqsDto(correlationId, inadResponse);
+                    logCfWithAddressMetricFromBatchRequest(codeSqsDto, request, GatewayDownstreamService.INAD);
+                    request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
                     request.setStatus(BatchStatus.WORKED.getValue());
                     request.setEservice(GatewayDownstreamService.INAD.name());
                 })
@@ -372,7 +348,9 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
         if (Objects.isNull(pec.getStatoImpresa())) {
             log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
-            return infoCamereConverter.updateBatchRequestFields(batchRequest, status, now, pec);
+            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+            MetricUtils.logCfWithAddressMetricFromBatchRequest(codeSqsDto, batchRequest, GatewayDownstreamService.INIPEC);
+            return infoCamereConverter.updateBatchRequestFields(batchRequest, status, now, codeSqsDto);
         }
 
         return Mono.fromCallable(pec::getStatoImpresa)

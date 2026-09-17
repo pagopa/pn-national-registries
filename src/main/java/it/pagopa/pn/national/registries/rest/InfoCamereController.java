@@ -3,7 +3,6 @@ package it.pagopa.pn.national.registries.rest;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.InfoCamereApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
-import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -13,21 +12,21 @@ import reactor.core.scheduler.Scheduler;
 
 import java.util.Date;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
+
 
 @RestController
 @lombok.CustomLog
 public class InfoCamereController implements InfoCamereApi {
 
     private final InfoCamereService infoCamereService;
-    private final GatewayUtils gatewayUtils;
 
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
 
-    public InfoCamereController(InfoCamereService infoCamereService, GatewayUtils gatewayUtils, Scheduler scheduler) {
+    public InfoCamereController(InfoCamereService infoCamereService, Scheduler scheduler) {
         this.infoCamereService = infoCamereService;
-        this.gatewayUtils = gatewayUtils;
         this.scheduler = scheduler;
     }
 
@@ -45,7 +44,7 @@ public class InfoCamereController implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(Mono<GetDigitalAddressIniPECRequestBodyDto> getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
-        return getDigitalAddressIniPECRequestBodyDto.flatMap(requestBody -> infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, requestBody, new Date(), gatewayUtils.retrieveRecipientType(requestBody.getFilter().getTaxId(), null)))
+        return getDigitalAddressIniPECRequestBodyDto.flatMap(requestBody -> infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, requestBody, new Date(), retrieveRecipientType(requestBody.getFilter().getTaxId(), null)))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

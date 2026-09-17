@@ -1,8 +1,10 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,6 +44,10 @@ class IniPecBatchSqsServiceTest {
     private IniPecBatchRequestRepository batchRequestRepository;
     @MockitoBean
     private SqsService sqsService;
+    @MockitoBean
+    private GatewayUtils gatewayUtils;
+    @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
 
     @Test
     void testRecoveryBatchSendToSqs() {
@@ -81,7 +87,9 @@ class IniPecBatchSqsServiceTest {
         batchRequest.setMessage("message");
         batchRequest.setClientId("clientId");
         batchRequest.setCf("cf");
-
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
         when(batchRequestRepository.setNewReservationIdToBatchRequest(same(batchRequest)))
                 .thenReturn(Mono.just(batchRequest));
         when(batchRequestRepository.update(same(batchRequest)))
@@ -106,7 +114,9 @@ class IniPecBatchSqsServiceTest {
         batchRequest3.setMessage("message");
         batchRequest3.setClientId("clientId");
         batchRequest3.setCf("cf");
-
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
         when(batchRequestRepository.setNewReservationIdToBatchRequest(any()))
                 .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()))
                 .thenReturn(Mono.just(batchRequest2))
@@ -129,6 +139,9 @@ class IniPecBatchSqsServiceTest {
 
     @Test
     void redriveToDLQqueue() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
         BatchRequest request = new BatchRequest();
         request.setCorrelationId("correlationId");
         request.setReferenceRequestDate(LocalDateTime.now());
@@ -139,6 +152,9 @@ class IniPecBatchSqsServiceTest {
 
     @Test
     void redriveToqueue() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
         BatchRequest request = new BatchRequest();
         request.setCorrelationId("correlationId");
         request.setReferenceRequestDate(LocalDateTime.now());
