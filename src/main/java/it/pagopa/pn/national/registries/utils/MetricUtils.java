@@ -20,7 +20,7 @@ import java.util.Objects;
 
 @CustomLog
 public class MetricUtils {
-    private final static String METRIC_NAMESPACE = "PN-NationalRegistries-Downstream";
+    private static final String METRIC_NAMESPACE = "PN-NationalRegistries-Downstream";
 
 
     private MetricUtils() {
