@@ -7,16 +7,24 @@ import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
+import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
-import it.pagopa.pn.national.registries.model.metrics.*;
+import it.pagopa.pn.national.registries.model.metrics.DimensionName;
+import it.pagopa.pn.national.registries.model.metrics.MetricName;
+import it.pagopa.pn.national.registries.model.metrics.MetricUnit;
+import it.pagopa.pn.national.registries.model.metrics.StatusDimension;
 import lombok.CustomLog;
+import org.springframework.util.CollectionUtils;
 
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
 
 @CustomLog
 public class MetricUtils {
@@ -57,7 +65,6 @@ public class MetricUtils {
 
     public static void logCfRequestedMetric(String correlationId, GatewayDownstreamService registry, Integer count) {
         String logMessage = "Logging CF_REQUESTED metrics for correlationId: " + correlationId + " - called EService:  " + registry;
-
         List<GeneralMetric> requestMetrics = new ArrayList<>();
         requestMetrics.add(
                 generateGeneralMetric(
@@ -83,9 +90,12 @@ public class MetricUtils {
 
     private static List<Dimension> generateDimensionForCfWithAddress(GatewayDownstreamService registry, RecipientType recipientType, DigitalAddressRecipientType digitalAddressRecipientType) {
         List<Dimension> dimensions = new ArrayList<>();
-        dimensions.add(generateDimension(DimensionName.REGISTRY, registry.name()));
-        dimensions.add(generateDimension(DimensionName.NOTIFICATION_SCOPE, recipientType.name()));
-
+        if(Objects.nonNull(registry)) {
+            dimensions.add(generateDimension(DimensionName.REGISTRY, registry.name()));
+        }
+        if(Objects.nonNull(recipientType)) {
+            dimensions.add(generateDimension(DimensionName.NOTIFICATION_SCOPE, recipientType.name()));
+        }
         if (Objects.nonNull(digitalAddressRecipientType)) {
             dimensions.add(generateDimension(DimensionName.DIGITAL_ADDRESS_SCOPE, digitalAddressRecipientType.getValue()));
         }
@@ -133,4 +143,26 @@ public class MetricUtils {
         log.logMetric(batchEndingMetrics, "IniPEC - Logging batch ending metrics for batchId: " + polling.getBatchId() + " with status: " + status);
     }
 
+    public static void logInipecCfRequestedMetric(String batchId, GatewayDownstreamService registry, Integer count) {
+        String logMessage = "Logging CF_REQUESTED metrics for batchId: " + batchId + " - called EService:  " + registry;
+        if (Objects.nonNull(count)) {
+            List<GeneralMetric> requestMetrics = new ArrayList<>();
+            requestMetrics.add(
+                    generateGeneralMetric(
+                            MetricName.CF_REQUESTED,
+                            count,
+                            List.of(generateDimension(DimensionName.REGISTRY, registry.name()))
+                    )
+            );
+            log.logMetric(requestMetrics, logMessage);
+        }
+    }
+
+    public static void logCfWithAddressMetricFromBatchRequest(CodeSqsDto codeSqsDto, BatchRequest batchRequest, GatewayDownstreamService registry) {
+        if(Objects.nonNull(batchRequest) && Objects.nonNull(codeSqsDto) && !CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())){
+            RecipientType recipientType = retrieveRecipientType(batchRequest.getCf(), batchRequest.getRecipientType());
+            DigitalAddressRecipientType digitalAddressRecipientType = DigitalAddressRecipientType.fromValue(codeSqsDto.getDigitalAddress().getFirst().getRecipient());
+            logCfWithAddressMetric(batchRequest.getCorrelationId(), registry, recipientType, digitalAddressRecipientType);
+        }
+    }
 }

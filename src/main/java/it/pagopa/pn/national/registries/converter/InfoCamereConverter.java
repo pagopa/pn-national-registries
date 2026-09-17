@@ -41,8 +41,7 @@ public class InfoCamereConverter{
         return Mono.just(batchRequest);
     }
 
-    public Mono<BatchRequest> updateBatchRequestFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, Pec pec) {
-        CodeSqsDto codeSqsDto = convertResponsePecToCodeSqsDto(batchRequest, pec);
+    public Mono<BatchRequest> updateBatchRequestFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, CodeSqsDto codeSqsDto) {
         populateBatchRequestSendFields(batchRequest, status, now, codeSqsDto);
         return Mono.just(batchRequest);
     }

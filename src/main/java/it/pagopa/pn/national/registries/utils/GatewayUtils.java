@@ -45,7 +45,7 @@ public class GatewayUtils {
         }
     }
 
-    public RecipientType retrieveRecipientType(String cf, String recipientType) {
+    public static RecipientType retrieveRecipientType(String cf, String recipientType) {
         if(Objects.nonNull(recipientType)){
             return RecipientType.fromString(recipientType);
         }
