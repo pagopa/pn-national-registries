@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.List;
 
 public class MetricUtils {
-    private final static String METRIC_NAMESPACE = "national-registries-inipec";
+    private static final String METRIC_NAMESPACE = "national-registries-inipec";
 
 
     private MetricUtils() {
