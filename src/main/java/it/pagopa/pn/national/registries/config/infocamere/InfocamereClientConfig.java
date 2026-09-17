@@ -44,7 +44,7 @@ public class InfocamereClientConfig extends CommonBaseClient {
 
     @Bean
     LegalRepresentationApi legalRepresentationApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE-LEGALE_RAPPRESENTATE"));
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE-LEGALE_RAPPRESENTANTE"));
         apiClient.setBasePath(basePath);
         return new LegalRepresentationApi(apiClient);
     }
@@ -58,7 +58,7 @@ public class InfocamereClientConfig extends CommonBaseClient {
 
     @Bean
     LegalRepresentativeApi legalRepresentativeApi(@Value("${pn.national.registries.infocamere.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE-LISTA_LEGALE_RAPPRESENTATE"));
+        var apiClient = new ApiClient(initWebClient(builder, "INFOCAMERE-LISTA_LEGALE_RAPPRESENTANTE"));
         apiClient.setBasePath(basePath);
         return new LegalRepresentativeApi(apiClient);
     }
