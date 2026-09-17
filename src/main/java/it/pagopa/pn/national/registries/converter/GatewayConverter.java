@@ -22,6 +22,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
 @Slf4j
@@ -64,16 +65,25 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto, DigitalAddressRecipientType digitalAddressRecipientType) {
+    protected CodeSqsDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.INAD);
         if (inadDto != null && inadDto.getDigitalAddress() != null) {
-            codeSqsDto.setDigitalAddress(List.of(convertInadToDigitalAddress(inadDto.getDigitalAddress(), digitalAddressRecipientType)));
+            codeSqsDto.setDigitalAddress(List.of(convertInadToDigitalAddress(inadDto.getDigitalAddress(), evaluteDigitalAddressRecipientType(inadDto))));
         } else {
             log.info("correlationId: {} - INAD - indirizzi non presenti", correlationId);
             codeSqsDto.setDigitalAddress(Collections.emptyList());
         }
         codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
+    }
+
+    private static DigitalAddressRecipientType evaluteDigitalAddressRecipientType(GetDigitalAddressINADOKDto response) {
+        if (StringUtils.hasText(response.getTaxId()) && response.getTaxId().length() == 11 && !StringUtils.hasText(response.getDigitalAddress().getPracticedProfession())) {
+            return DigitalAddressRecipientType.IMPRESA;
+        } else if(StringUtils.hasText(response.getTaxId())){
+            return StringUtils.hasText(response.getDigitalAddress().getPracticedProfession()) ? DigitalAddressRecipientType.PROFESSIONISTA : DigitalAddressRecipientType.PERSONA_FISICA;
+        }
+        return null;
     }
 
     protected CodeSqsDto errorInadToSqsDto(String correlationId, Throwable throwable) {
@@ -94,6 +104,12 @@ public class GatewayConverter {
                 && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
     }
 
+    public final Predicate<Throwable> isAnprAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
+            && exception.getStatusCode() == HttpStatus.NOT_FOUND
+            && StringUtils.hasText(exception.getResponseBodyAsString())
+            && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
+
+
     private boolean isInadAddressNotFound(Throwable throwable) {
         return throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.NOT_FOUND
                 && (
@@ -102,6 +118,14 @@ public class GatewayConverter {
                         || CF_NOT_FOUND.equalsIgnoreCase(exception.getMessage())
         );
     }
+
+    public final Predicate<Throwable> isInadAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
+            && exception.getStatusCode() == HttpStatus.NOT_FOUND
+            && (
+            (StringUtils.hasText(exception.getResponseBodyAsString())
+                    && INAD_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find())
+                    || CF_NOT_FOUND.equalsIgnoreCase(exception.getMessage())
+    );
 
     protected CodeSqsDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.REGISTRO_IMPRESE);

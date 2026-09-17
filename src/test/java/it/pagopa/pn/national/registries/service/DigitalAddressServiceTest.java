@@ -210,6 +210,7 @@ class DigitalAddressServiceTest {
         GetDigitalAddressINADOKDto inadResponse =
                 new GetDigitalAddressINADOKDto();
         inadResponse.setDigitalAddress(digitalAddress);
+        inadResponse.setTaxId(TAX_ID);
 
         when(inadService.callEService(
                 any(GetDigitalAddressINADRequestBodyDto.class),
@@ -295,6 +296,7 @@ class DigitalAddressServiceTest {
         GetDigitalAddressINADOKDto inadResponse =
                 new GetDigitalAddressINADOKDto();
         inadResponse.setDigitalAddress(digitalAddress);
+        inadResponse.setTaxId(TAX_ID);
 
         when(inadService.callEService(
                 any(GetDigitalAddressINADRequestBodyDto.class),

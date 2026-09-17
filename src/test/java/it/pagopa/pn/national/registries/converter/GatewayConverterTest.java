@@ -136,8 +136,7 @@ class GatewayConverterTest {
 
         CodeSqsDto result = gatewayConverter.inadToSqsDto(
                 C_ID,
-                response,
-                DigitalAddressRecipientType.PERSONA_FISICA
+                response
         );
 
         assertNotNull(result);
@@ -162,8 +161,7 @@ class GatewayConverterTest {
     void testInadToSqsDtoWithNullResponse() {
         CodeSqsDto result = gatewayConverter.inadToSqsDto(
                 C_ID,
-                null,
-                DigitalAddressRecipientType.PERSONA_FISICA
+                null
         );
 
         assertNotNull(result);

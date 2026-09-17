@@ -4,7 +4,6 @@ import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
-import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -53,6 +52,7 @@ import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
 
 @CustomLog
 @Service
@@ -335,9 +335,10 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         RecipientType recipientType = gatewayUtils.retrieveRecipientType(request.getCf(), request.getRecipientType());
         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
         return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType)
+                .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(inadResponse -> {
-                    request.setMessage(gatewayUtils.convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse, PF.equals(recipientType) ? DigitalAddressRecipientType.PERSONA_FISICA : DigitalAddressRecipientType.IMPRESA)));
+                    request.setMessage(gatewayUtils.convertCodeSqsDtoToString(inadToSqsDto(correlationId, inadResponse)));
                     request.setStatus(BatchStatus.WORKED.getValue());
                     request.setEservice(GatewayDownstreamService.INAD.name());
                 })
@@ -349,6 +350,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                         request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
                         request.setStatus(BatchStatus.WORKED.getValue());
                     }else{
+                        logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
                         request.setStatus(BatchStatus.ERROR.getValue());
                     }
                     return Mono.empty();
