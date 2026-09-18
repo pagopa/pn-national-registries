@@ -364,7 +364,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     public Mono<BatchRequest> handlePecNotFoundResponse(BatchRequest request, BatchStatus status, LocalDateTime now) {
         if(PF.name().equalsIgnoreCase(request.getRecipientType())) {
-            return infoCamereConverter.updateBatchRequestFields(request, status, now, null);
+            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(request, null);
+            return infoCamereConverter.updateBatchRequestFields(request, status, now, codeSqsDto);
         }
         return callInadEservice(request)
                 .thenReturn(request);
