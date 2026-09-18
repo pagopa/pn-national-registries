@@ -846,6 +846,14 @@ Resources:
             Type: PLAINTEXT
             Value: !Sub ${InfoCamereAuth}-next
 
+  InfocamereCertRenewalCodebuildAlarms:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/codebuild-alarms.yaml"
+      Parameters:
+        CodeBuildProjectName: !Ref InfocamereCertRenewalCodebuildProject
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
+
   AdeCertRenewalCodebuildProject:
     Type: 'AWS::CodeBuild::Project'
     Properties:
@@ -897,6 +905,14 @@ Resources:
           - Name: PARAM_NAME
             Type: PLAINTEXT
             Value: !Sub ${AdESSL}-next
+
+  AdeCertRenewalCodebuildAlarms:
+    Type: AWS::CloudFormation::Stack
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/codebuild-alarms.yaml"
+      Parameters:
+        CodeBuildProjectName: !Ref AdeCertRenewalCodebuildProject
+        AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
 
   CertificateRenewalCodeBuildRole:
     Type: AWS::IAM::Role
