@@ -31,11 +31,9 @@ public class CodeSqsDto {
     @JsonFilterSpEL("#? != null")
     private String error;
 
-    @JsonIgnore
     @ToString.Exclude
     private String addressType;
 
-    @JsonIgnore
     @ToString.Exclude
     private String registry;
 }
