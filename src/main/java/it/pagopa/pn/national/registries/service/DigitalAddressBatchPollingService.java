@@ -46,6 +46,7 @@ import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
+import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.removeInvalidEmails;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.*;
 
@@ -308,6 +309,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private Mono<Void> callInadEservice(BatchRequest request) {
         RecipientType recipientType = retrieveRecipientType(request.getCf(), request.getRecipientType());
         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
+        request.setEservice(GatewayDownstreamService.INAD.name());
         return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType)
                 .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .flatMap(DigitalAddressUtils::emailValidation)
@@ -316,17 +318,16 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     logCfWithAddressMetricFromBatchRequest(codeSqsDto, request, GatewayDownstreamService.INAD);
                     request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
                     request.setStatus(BatchStatus.WORKED.getValue());
-                    request.setEservice(GatewayDownstreamService.INAD.name());
                 })
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
                 .onErrorResume(e -> {
                     logEServiceError(e, "can not retrieve digital address from INAD: {}");
                     CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
                     if(codeSqsDto != null) {
+                        logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
                         request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
                         request.setStatus(BatchStatus.WORKED.getValue());
                     }else{
-                        logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
                         request.setStatus(BatchStatus.ERROR.getValue());
                     }
                     return Mono.empty();
@@ -349,7 +350,12 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         if (Objects.isNull(pec.getStatoImpresa())) {
             log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
             CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
-            MetricUtils.logCfWithAddressMetricFromBatchRequest(codeSqsDto, batchRequest, GatewayDownstreamService.INIPEC);
+            removeInvalidEmails(codeSqsDto);
+            if(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
+                log.info("IniPEC - correlationId {} - no valid digital address found in pec response", batchRequest.getCorrelationId());
+                return handlePecNotFoundResponse(batchRequest, status, now);
+            }
+            logCfWithAddressMetricFromBatchRequest(codeSqsDto, batchRequest, GatewayDownstreamService.INIPEC);
             return infoCamereConverter.updateBatchRequestFields(batchRequest, status, now, codeSqsDto);
         }
 

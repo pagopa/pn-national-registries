@@ -47,7 +47,6 @@ public class InfoCamereConverter{
     }
 
     private void populateBatchRequestSendFields(BatchRequest batchRequest, BatchStatus status, LocalDateTime now, CodeSqsDto codeSqsDto) {
-        removeInvalidEmails(codeSqsDto);
         batchRequest.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
         batchRequest.setEservice(GatewayDownstreamService.INIPEC.name());
         batchRequest.setStatus(status.getValue());
