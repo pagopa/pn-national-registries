@@ -4,7 +4,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
-import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -12,10 +11,9 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
@@ -599,14 +597,42 @@ class DigitalAddressBatchPollingServiceTest {
     }
 
     @Test
-    void testStatoImpresaNull() {
+    void testStatoImpresaNullWithPec() {
         BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("testCorrelationId");
         batchRequest.setStatus(BatchStatus.WORKING.getValue());
         Pec pec = new Pec();
+        pec.setPecImpresa("pec@pec.it");
         pec.setStatoImpresa(null);
 
         BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
-        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(new CodeSqsDto());
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        DigitalAddress address = new DigitalAddress();
+        address.setAddress("pec@pec.it");
+        codeSqsDto.setDigitalAddress(List.of(address));
+        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(codeSqsDto);
+        when(infoCamereConverter.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(CodeSqsDto.class)))
+                .thenAnswer(inv -> Mono.just(batchRequest));
+
+        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
+        assertSame(batchRequest, result);
+    }
+
+    @Test
+    void testStatoImpresaNullWithoutPec() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("testCorrelationId");
+        batchRequest.setStatus(BatchStatus.WORKING.getValue());
+        Pec pec = new Pec();
+        pec.setPecImpresa("2026-08-10T00:00:00Z");
+        pec.setStatoImpresa(null);
+        when(inadService.callEService(any(), any())).thenReturn(Mono.empty());
+        BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        DigitalAddress address = new DigitalAddress();
+        address.setAddress("2026-08-10T00:00:00Z");
+        codeSqsDto.setDigitalAddress(List.of(address));
+        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(), any())).thenReturn(codeSqsDto);
         when(infoCamereConverter.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(CodeSqsDto.class)))
                 .thenAnswer(inv -> Mono.just(batchRequest));
 
