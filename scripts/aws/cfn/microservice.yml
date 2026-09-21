@@ -530,6 +530,9 @@ Parameters:
     Type: String
     Default: 'ARM'
     Description: CPU architecture for the Fargate tasks
+    AllowedValues:
+      - 'ARM'
+      - 'AMD'
 
   JavaToolOptions:
     Type: String
