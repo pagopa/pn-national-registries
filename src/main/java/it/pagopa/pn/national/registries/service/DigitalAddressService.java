@@ -60,7 +60,7 @@ public class DigitalAddressService extends GatewayConverter {
         return callInadForPF(addressRequestBodyDto)
                 .map(response -> inadToSqsDto(correlationId, response))
                 .doOnNext(codeSqsDto -> {
-                    if (CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
+                    if (!CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
                         logCfWithAddressMetric(
                                 correlationId,
                                 GatewayDownstreamService.INAD,
