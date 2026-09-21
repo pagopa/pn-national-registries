@@ -248,7 +248,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<Void> processPageRecursively(String batchId, Page<BatchRequest> page, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, String error, LocalDateTime now) {
-        log.debug("IniPEC - batchId {} - pageSize {}, hasNextPage {}", batchId, page.items().size(), hasNextPage(page));
+        log.info("IniPEC - batchId {} - pageSize {}, hasNextPage {}", batchId, page.items().size(), hasNextPage(page));
         Map<String, AttributeValue> nextPageKey = page.lastEvaluatedKey();
 
         return processSinglePage(page, status, iniPecPollingResponse, error, now, batchId)
