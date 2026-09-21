@@ -60,6 +60,7 @@
     "IniPecReadTimeoutMillis": "15000",
     "EnablePfPecFallbackFlow": "false",
     "FirstAttemptDelaySecondsPerCf": "0.085",
-    "FirstAttemptFixedDelaySeconds": "300"
+    "FirstAttemptFixedDelaySeconds": "300",
+    "CpuArchitecture": "AMD"
   }
 }
