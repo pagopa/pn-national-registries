@@ -58,7 +58,7 @@
     "MetricFormatType": "EMF",
     "AddressCompositionMode": "MINIMAL",
     "IniPecReadTimeoutMillis": "15000",
-    "EnablePfPecFallbackFlow": "false",
+    "EnablePfPecFallbackFlow": "true",
     "FirstAttemptDelaySecondsPerCf": "0.085",
     "FirstAttemptFixedDelaySeconds": "300"
   }
