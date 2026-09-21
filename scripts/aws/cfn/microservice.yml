@@ -526,16 +526,6 @@ Parameters:
       - true
       - false
 
-  CpuArchitecture:
-    Type: String
-    Default: 'ARM'
-    Description: CPU architecture for the Fargate tasks
-
-  JavaToolOptions:
-    Type: String
-    Default: ''
-    Description: Java tool options for the Fargate tasks
-
 Resources:
 
   # PN-National-Registry microservice
@@ -638,8 +628,6 @@ Resources:
         TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskManagedPolicy
         EcsLogGroup: !Ref EcsLogGroup
         LogAlarmStrategyV1: !Ref LogAlarmStrategy
-        JavaToolOptions: !Ref JavaToolOptions
-        CpuArchitecture: !Ref CpuArchitecture
 
   NationalRegistryMicroserviceTaskManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
