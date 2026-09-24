@@ -272,7 +272,7 @@ class DigitalAddressBatchPollingServiceTest {
         DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
         digitalAddressDto.setDigitalAddress("inad@pec.it");
         inadResp.setDigitalAddress(digitalAddressDto);
-        when(inadService.callEService(any(), any())).thenReturn(Mono.just(inadResp));
+        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(inadResp));
 
         when(iniPecBatchSqsService.batchSendToSqs(anyList()))
                 .thenReturn(Mono.empty().then());
@@ -626,7 +626,7 @@ class DigitalAddressBatchPollingServiceTest {
         Pec pec = new Pec();
         pec.setPecImpresa("2026-08-10T00:00:00Z");
         pec.setStatoImpresa(null);
-        when(inadService.callEService(any(), any())).thenReturn(Mono.empty());
+        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.empty());
         BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         DigitalAddress address = new DigitalAddress();
@@ -698,7 +698,7 @@ class DigitalAddressBatchPollingServiceTest {
         digitalAddressDto.setDigitalAddress("inad@pec.it");
         inadResp.setDigitalAddress(digitalAddressDto);
 
-        when(inadService.callEService(any(), any()))
+        when(inadService.callEService(any(), any(), any()))
                 .thenReturn(Mono.just(inadResp));
 
         BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();

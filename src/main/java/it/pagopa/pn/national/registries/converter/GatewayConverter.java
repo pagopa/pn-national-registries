@@ -81,7 +81,7 @@ public class GatewayConverter {
         if (StringUtils.hasText(response.getTaxId()) && response.getTaxId().length() == 11 && !StringUtils.hasText(response.getDigitalAddress().getPracticedProfession())) {
             return DigitalAddressRecipientType.IMPRESA;
         } else if(StringUtils.hasText(response.getTaxId())){
-            return StringUtils.hasText(response.getDigitalAddress().getPracticedProfession()) ? DigitalAddressRecipientType.PROFESSIONISTA : DigitalAddressRecipientType.PERSONA_FISICA;
+            return StringUtils.hasText(response.getDigitalAddress().getPracticedProfession()) ? DigitalAddressRecipientType.PROFESSIONISTA : DigitalAddressRecipientType.PERSONALE;
         }
         return null;
     }

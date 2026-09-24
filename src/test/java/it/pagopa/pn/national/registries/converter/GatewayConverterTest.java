@@ -151,7 +151,7 @@ class GatewayConverterTest {
         assertEquals(1, result.getDigitalAddress().size());
         assertEquals("test@pec.it", result.getDigitalAddress().getFirst().getAddress());
         assertEquals(
-                DigitalAddressRecipientType.PERSONA_FISICA.getValue(),
+                DigitalAddressRecipientType.PERSONALE.getValue(),
                 result.getDigitalAddress().getFirst().getRecipient()
         );
         assertEquals("PEC", result.getDigitalAddress().getFirst().getType());
@@ -299,13 +299,13 @@ class GatewayConverterTest {
         DigitalAddress result =
                 gatewayConverter.convertInadToDigitalAddress(
                         source,
-                        DigitalAddressRecipientType.PERSONA_FISICA
+                        DigitalAddressRecipientType.PERSONALE
                 );
 
         assertNotNull(result);
         assertEquals("test@pec.it", result.getAddress());
         assertEquals(
-                DigitalAddressRecipientType.PERSONA_FISICA.getValue(),
+                DigitalAddressRecipientType.PERSONALE.getValue(),
                 result.getRecipient()
         );
         assertEquals("PEC", result.getType());

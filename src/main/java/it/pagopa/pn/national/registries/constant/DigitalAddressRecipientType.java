@@ -8,7 +8,7 @@ public enum DigitalAddressRecipientType {
 
     IMPRESA("IMPRESA"),
     PROFESSIONISTA("PROFESSIONISTA"),
-    PERSONA_FISICA("PERSONA_FISICA"),
+    PERSONALE("PERSONALE"),
     PERSONA_GIURIDICA("PERSONA_GIURIDICA");
 
     private final String value;

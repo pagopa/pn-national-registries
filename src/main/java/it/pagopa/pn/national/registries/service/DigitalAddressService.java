@@ -65,7 +65,7 @@ public class DigitalAddressService extends GatewayConverter {
                                 correlationId,
                                 GatewayDownstreamService.INAD,
                                 PF,
-                                DigitalAddressRecipientType.PERSONA_FISICA
+                                DigitalAddressRecipientType.PERSONALE
                         );
                     }
                 })
@@ -101,7 +101,7 @@ public class DigitalAddressService extends GatewayConverter {
 
     private Mono<GetDigitalAddressINADOKDto> callInadForPF(AddressRequestBodyDto request) {
         String correlationId = request.getFilter().getCorrelationId();
-        return inadService.callEService(convertToGetDigitalAddressInadRequest(request), PF)
+        return inadService.callEService(convertToGetDigitalAddressInadRequest(request), PF, request.getFilter().getCorrelationId())
                 .doOnNext(response -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(response -> log.info("retrieved digital address from INAD for correlationId: {}", correlationId))
