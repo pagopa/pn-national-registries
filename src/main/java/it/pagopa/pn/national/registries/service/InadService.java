@@ -23,9 +23,9 @@ public class InadService{
     private final ValidateTaxIdUtils validateTaxIdUtils;
     private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request, RecipientType recipientType) {
+    public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request, RecipientType recipientType, String correlationId) {
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INAD_ADDRESS, false);
         return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference())
-                .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, request.getFilter().getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow()));
+                .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, request.getFilter().getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow(), correlationId));
     }
 }
