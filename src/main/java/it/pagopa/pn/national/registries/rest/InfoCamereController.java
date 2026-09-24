@@ -1,7 +1,9 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.InfoCamereApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
@@ -11,8 +13,11 @@ import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
 import java.util.Date;
+import java.util.Objects;
 
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetric;
 
 
 @RestController
@@ -64,6 +69,17 @@ public class InfoCamereController implements InfoCamereApi {
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
         return getAddressRegistroImpreseRequestBodyDto.flatMap(infoCamereService::getRegistroImpreseLegalAddress)
+                .doOnNext(responseDto -> {
+                    logCfRequestedMetric(null, GatewayDownstreamService.REGISTRO_IMPRESE, 1);
+                    if(Objects.nonNull(responseDto.getProfessionalAddress())){
+                        logCfWithAddressMetric(
+                                null,
+                                GatewayDownstreamService.REGISTRO_IMPRESE,
+                                RecipientType.PG,
+                                null
+                        );
+                    }
+                })
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }
