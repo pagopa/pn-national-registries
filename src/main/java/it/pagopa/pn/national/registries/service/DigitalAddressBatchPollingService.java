@@ -378,6 +378,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<BatchRequest> handleERState(BatchRequest batchRequest) {
+        logCfWithErrorMetric(batchRequest.getCorrelationId(), GatewayDownstreamService.INIPEC, retrieveRecipientType(batchRequest.getCf(), batchRequest.getRecipientType()));
         batchRequest.setStatus(TAKEN_CHARGE.getValue());
         return iniPecBatchRequestService.handleRetryAndCheckDlq(List.of(batchRequest), null, batchRequest.getBatchId())
                 .thenReturn(batchRequest);
