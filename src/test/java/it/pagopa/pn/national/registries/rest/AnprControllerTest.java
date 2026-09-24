@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyFilterDto;
@@ -9,6 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
@@ -31,6 +33,9 @@ class AnprControllerTest {
 
     @Mock
     ValidateTaxIdUtils validateTaxIdUtils;
+
+    @Spy
+    GatewayConverter gatewayConverter;
 
     @Test
     void testGetAddressANPR() {
