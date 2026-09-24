@@ -1,12 +1,13 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.constant.RecipientType;
-import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AddressAnprApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.AnprService;
+import it.pagopa.pn.national.registries.service.GatewayService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
@@ -20,21 +21,16 @@ import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddres
 
 @RestController
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class AnprController implements AddressAnprApi {
 
     private final AnprService anprService;
-    private final GatewayConverter gatewayConverter;
+    private final GatewayService gatewayService;
 
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
 
 
-    
-    public AnprController(AnprService anprService, GatewayConverter gatewayConverter, Scheduler scheduler) {
-        this.anprService = anprService;
-        this.gatewayConverter = gatewayConverter;
-        this.scheduler = scheduler;
-    }
 
     /**
      * POST /national-registries-private/anpr/address : Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta
@@ -60,7 +56,7 @@ public class AnprController implements AddressAnprApi {
                         );
                     }
                 })
-                .doOnError(gatewayConverter.isAnprAddressNotFound, e -> logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1))
+                .doOnError(gatewayService.isAnprAddressNotFound, e -> logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

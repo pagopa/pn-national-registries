@@ -1,16 +1,15 @@
 package it.pagopa.pn.national.registries.rest;
 
-import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.service.AnprService;
+import it.pagopa.pn.national.registries.service.GatewayService;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
@@ -22,7 +21,7 @@ import java.util.ArrayList;
 @ExtendWith(MockitoExtension.class)
 class AnprControllerTest {
 
-    @InjectMocks
+
     AnprController anprController;
 
     @Mock
@@ -34,8 +33,11 @@ class AnprControllerTest {
     @Mock
     ValidateTaxIdUtils validateTaxIdUtils;
 
-    @Spy
-    GatewayConverter gatewayConverter;
+
+    @BeforeEach
+    void init() {
+        anprController = new AnprController(anprService, new GatewayService(null, null, null, null, null), null);
+    }
 
     @Test
     void testGetAddressANPR() {
