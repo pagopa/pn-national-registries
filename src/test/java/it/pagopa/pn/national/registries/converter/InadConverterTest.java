@@ -25,7 +25,7 @@ class InadConverterTest {
 
     @Test
     void mapToResponseOkShouldReturnEmptyResponseWhenInputIsNull() {
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(null, PF, VALID_CF, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(null, PF, VALID_CF, false, "correlationID");
         assertNotNull(result);
         assertNull(result.getDigitalAddress());
         assertNull(result.getTaxId());
@@ -36,7 +36,7 @@ class InadConverterTest {
     void mapToResponseOkShouldMapSinceAndTaxId() {
         Date since = new Date();
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, since, createPersonalAddress("personal@pec.it"));
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
         assertNotNull(result);
         assertEquals(VALID_CF, result.getTaxId());
         assertEquals(since, result.getSince());
@@ -46,7 +46,7 @@ class InadConverterTest {
     void mapToResponseOkShouldReturnPersonalAddressForPf() {
         ElementDigitalAddress personalAddress = createPersonalAddress("personal@pec.it");
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), personalAddress);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertEquals("personal@pec.it", result.getDigitalAddress().getDigitalAddress());
         assertNull(result.getDigitalAddress().getPracticedProfession());
@@ -57,7 +57,7 @@ class InadConverterTest {
         ElementDigitalAddress personalAddress = createPersonalAddress("personal@pec.it");
         ElementDigitalAddress professionalAddress = createProfessionalAddress("professional@pec.it", "INGEGNERE");
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), professionalAddress, personalAddress);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, true);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, true, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertEquals("personal@pec.it", result.getDigitalAddress().getDigitalAddress());
     }
@@ -66,7 +66,7 @@ class InadConverterTest {
     void mapToResponseOkShouldUseProfessionalAddressForPfWhenFallbackEnabledAndPersonalMissing() {
         ElementDigitalAddress professionalAddress = createProfessionalAddress("professional@pec.it", "INGEGNERE");
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), professionalAddress);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, true);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, true, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertEquals("professional@pec.it", result.getDigitalAddress().getDigitalAddress());
         assertEquals("INGEGNERE", result.getDigitalAddress().getPracticedProfession());
@@ -76,20 +76,20 @@ class InadConverterTest {
     void mapToResponseOkShouldThrowForPfWhenOnlyProfessionalAddressExistsAndFallbackDisabled() {
         ElementDigitalAddress professionalAddress = createProfessionalAddress("professional@pec.it", "INGEGNERE");
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), professionalAddress);
-        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(input, PF, VALID_CF, false));
+        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationId"));
     }
 
     @Test
     void mapToResponseOkShouldThrowForPfWhenNoAddressExists() {
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date());
-        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(input, PF, VALID_CF, false));
+        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationId"));
     }
 
     @Test
     void mapToResponseOkShouldReturnSingleNonProfessionalAddressForPgWithPiva() {
         ElementDigitalAddress address = createPersonalAddress("company@pec.it");
         ResponseRequestDigitalAddress input = createResponse(VALID_PIVA, new Date(), address);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PG, VALID_PIVA, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PG, VALID_PIVA, false, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertEquals("company@pec.it", result.getDigitalAddress().getDigitalAddress());
     }
@@ -99,7 +99,7 @@ class InadConverterTest {
         ElementDigitalAddress personalAddress = createPersonalAddress("personal@pec.it");
         ElementDigitalAddress professionalAddress = createProfessionalAddress("professional@pec.it", "AVVOCATO");
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), personalAddress, professionalAddress);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PG, VALID_CF, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PG, VALID_CF, false, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertEquals("professional@pec.it", result.getDigitalAddress().getDigitalAddress());
         assertEquals("AVVOCATO", result.getDigitalAddress().getPracticedProfession());
@@ -110,7 +110,7 @@ class InadConverterTest {
         ElementDigitalAddress firstAddress = createPersonalAddress("first@pec.it");
         ElementDigitalAddress secondAddress = createPersonalAddress("second@pec.it");
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), firstAddress, secondAddress);
-        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(input, PG, VALID_CF, false));
+        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(input, PG, VALID_CF, false, "correlationId"));
     }
 
     @Test
@@ -118,7 +118,7 @@ class InadConverterTest {
         ElementDigitalAddress expiredAddress = createAddress("expired@pec.it", null, daysFromNow(-1), MotivationTermination.CESSAZIONE_UFFICIO);
         ElementDigitalAddress validAddress = createPersonalAddress("valid@pec.it");
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), expiredAddress, validAddress);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertEquals("valid@pec.it", result.getDigitalAddress().getDigitalAddress());
     }
@@ -131,7 +131,7 @@ class InadConverterTest {
         address.setDigitalAddress("valid@pec.it");
         address.setUsageInfo(usageInfo);
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), address);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertEquals("valid@pec.it", result.getDigitalAddress().getDigitalAddress());
     }
@@ -141,7 +141,7 @@ class InadConverterTest {
         ElementDigitalAddress address = new ElementDigitalAddress();
         address.setDigitalAddress("valid@pec.it");
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), address);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertEquals("valid@pec.it", result.getDigitalAddress().getDigitalAddress());
         assertNotNull(result.getDigitalAddress().getUsageInfo());
@@ -153,7 +153,7 @@ class InadConverterTest {
     void mapToResponseOkShouldMapCessazioneUfficioMotivation() {
         ElementDigitalAddress address = createAddress("valid@pec.it", null, daysFromNow(1), MotivationTermination.CESSAZIONE_UFFICIO);
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), address);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertNotNull(result.getDigitalAddress().getUsageInfo());
         assertEquals(UsageInfoDto.MotivationEnum.CESSAZIONE_UFFICIO, result.getDigitalAddress().getUsageInfo().getMotivation());
@@ -163,7 +163,7 @@ class InadConverterTest {
     void mapToResponseOkShouldMapCessazioneVolontariaMotivation() {
         ElementDigitalAddress address = createAddress("valid@pec.it", null, daysFromNow(1), MotivationTermination.CESSAZIONE_VOLONTARIA);
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), address);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertNotNull(result.getDigitalAddress().getUsageInfo());
         assertEquals(UsageInfoDto.MotivationEnum.CESSAZIONE_VOLONTARIA, result.getDigitalAddress().getUsageInfo().getMotivation());
@@ -173,7 +173,7 @@ class InadConverterTest {
     void mapToResponseOkShouldMapNullMotivation() {
         ElementDigitalAddress address = createAddress("valid@pec.it", null, daysFromNow(1), null);
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), address);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
         assertNotNull(result.getDigitalAddress());
         assertNotNull(result.getDigitalAddress().getUsageInfo());
         assertNull(result.getDigitalAddress().getUsageInfo().getMotivation());
@@ -185,7 +185,7 @@ class InadConverterTest {
         input.setCodiceFiscale(VALID_CF);
         input.setSince(new Date());
         input.setDigitalAddress(null);
-        GetDigitalAddressINADOKDto result = assertDoesNotThrow(() -> InadConverter.mapToResponseOk(input, PF, VALID_CF, false));
+        GetDigitalAddressINADOKDto result = assertDoesNotThrow(() -> InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationId"));
         assertEquals(VALID_CF, result.getTaxId());
         assertNull(result.getDigitalAddress());
     }

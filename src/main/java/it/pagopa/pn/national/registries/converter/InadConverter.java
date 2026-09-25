@@ -35,7 +35,7 @@ public class InadConverter {
     private InadConverter() {
     }
 
-    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, RecipientType recipientType, String taxId, boolean isEnablePfPecFallbackFlow) {
+    public static GetDigitalAddressINADOKDto mapToResponseOk(ResponseRequestDigitalAddress elementDigitalAddress, RecipientType recipientType, String taxId, boolean isEnablePfPecFallbackFlow, String correlationId) {
         GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
         if (elementDigitalAddress != null) {
             response.setSince(elementDigitalAddress.getSince());
@@ -45,6 +45,7 @@ public class InadConverter {
                         .filter(InadConverter::isValid)
                         .map(InadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
                         .toList();
+                log.info("Found [{}] pec from INAD for correlationId [{}]", digitalAddressDtoList.size(), correlationId);
                 switch (recipientType) {
                     case PF -> mapToPfAddress(digitalAddressDtoList, response, isEnablePfPecFallbackFlow);
                     case PG -> mapToPgAddress(digitalAddressDtoList, taxId, response);

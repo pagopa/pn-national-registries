@@ -214,7 +214,8 @@ class DigitalAddressServiceTest {
 
         when(inadService.callEService(
                 any(GetDigitalAddressINADRequestBodyDto.class),
-                eq(PF)
+                eq(PF),
+                any()
         )).thenReturn(Mono.just(inadResponse));
 
         when(sqsService.pushToOutputQueue(
@@ -239,7 +240,8 @@ class DigitalAddressServiceTest {
                                 req.getFilter().getPracticalReference()
                         )
                 ),
-                eq(PF)
+                eq(PF),
+                any()
         );
 
         verify(sqsService).pushToOutputQueue(
@@ -264,7 +266,8 @@ class DigitalAddressServiceTest {
 
         when(inadService.callEService(
                 any(GetDigitalAddressINADRequestBodyDto.class),
-                eq(PF)
+                eq(PF),
+                any()
         )).thenReturn(Mono.error(exception));
 
         StepVerifier.create(
@@ -300,7 +303,8 @@ class DigitalAddressServiceTest {
 
         when(inadService.callEService(
                 any(GetDigitalAddressINADRequestBodyDto.class),
-                eq(PF)
+                eq(PF),
+                any()
         )).thenReturn(Mono.just(inadResponse));
 
         when(sqsService.pushToOutputQueue(
@@ -343,7 +347,8 @@ class DigitalAddressServiceTest {
 
         when(inadService.callEService(
                 any(GetDigitalAddressINADRequestBodyDto.class),
-                eq(PF)
+                eq(PF),
+                any()
         )).thenReturn(Mono.just(inadResponse));
 
         when(infoCamereService.getIniPecDigitalAddress(
@@ -391,7 +396,8 @@ class DigitalAddressServiceTest {
 
         when(inadService.callEService(
                 any(GetDigitalAddressINADRequestBodyDto.class),
-                eq(PF)
+                eq(PF),
+                any()
         )).thenReturn(Mono.error(exception));
 
         when(infoCamereService.getIniPecDigitalAddress(
@@ -411,7 +417,8 @@ class DigitalAddressServiceTest {
 
         verify(inadService).callEService(
                 any(GetDigitalAddressINADRequestBodyDto.class),
-                eq(PF)
+                eq(PF),
+                any()
         );
 
         verify(infoCamereService).getIniPecDigitalAddress(
@@ -437,7 +444,8 @@ class DigitalAddressServiceTest {
 
         when(inadService.callEService(
                 any(GetDigitalAddressINADRequestBodyDto.class),
-                eq(PF)
+                eq(PF),
+                any()
         )).thenReturn(Mono.error(exception));
 
         StepVerifier.create(

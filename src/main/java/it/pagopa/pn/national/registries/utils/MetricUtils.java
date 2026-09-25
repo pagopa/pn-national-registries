@@ -88,6 +88,17 @@ public class MetricUtils {
         log.logMetric(requestMetrics, logMessage);
     }
 
+    public static void logCfWithErrorMetric(String correlationId, GatewayDownstreamService registry, RecipientType recipientType) {
+        String logMessage = "Logging CF_WITH_ERROR metrics for correlationId: " + correlationId + " - called EService:  " + registry + " for recipientType: " + recipientType;
+        List<GeneralMetric> requestMetrics = List.of(
+                generateGeneralMetric(
+                        MetricName.CF_WITH_ERROR,
+                        1,
+                        List.of(generateDimension(DimensionName.REGISTRY, registry.name()), generateDimension(DimensionName.NOTIFICATION_SCOPE, recipientType.name()))));
+
+        log.logMetric(requestMetrics, logMessage);
+    }
+
     private static List<Dimension> generateDimensionForCfWithAddress(GatewayDownstreamService registry, RecipientType recipientType, DigitalAddressRecipientType digitalAddressRecipientType) {
         List<Dimension> dimensions = new ArrayList<>();
         if(Objects.nonNull(registry)) {

@@ -310,7 +310,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         RecipientType recipientType = retrieveRecipientType(request.getCf(), request.getRecipientType());
         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
         request.setEservice(GatewayDownstreamService.INAD.name());
-        return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType)
+        return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType, correlationId)
                 .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(inadResponse -> {
@@ -378,6 +378,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<BatchRequest> handleERState(BatchRequest batchRequest) {
+        logCfWithErrorMetric(batchRequest.getCorrelationId(), GatewayDownstreamService.INIPEC, retrieveRecipientType(batchRequest.getCf(), batchRequest.getRecipientType()));
         batchRequest.setStatus(TAKEN_CHARGE.getValue());
         return iniPecBatchRequestService.handleRetryAndCheckDlq(List.of(batchRequest), null, batchRequest.getBatchId())
                 .thenReturn(batchRequest);
