@@ -576,6 +576,7 @@ components:
           example: AAAZZZ00H00T000Z
         isValid:
           type: boolean
+          description: true se il codice fiscale/partita IVA risulta valido; false negli altri casi.
         errorCode:
           type: string
           enum: [B001_CHECK_TAX_ID_ERR01, B001_CHECK_TAX_ID_ERR02, B001_CHECK_TAX_ID_ERR03]
@@ -737,6 +738,7 @@ components:
         since:
           type: string
           format: date-time
+          description: Data/ora di decorrenza del domicilio digitale restituita da INAD.
         digitalAddress:
           $ref: '#/components/schemas/DigitalAddress'
     DigitalAddress:
@@ -748,6 +750,7 @@ components:
           format: password
         practicedProfession:
           type: string
+          description: Professione esercitata associata al domicilio digitale.
         usageInfo:
           $ref: '#/components/schemas/UsageInfo'
     UsageInfo:
@@ -759,6 +762,7 @@ components:
         dateEndValidity:
           type: string
           format: date-time
+          description: Data di fine validità del domicilio digitale.
     GetDigitalAddressINADError:
       type: object
       properties:
@@ -1052,6 +1056,7 @@ components:
           example: BBBCCC00H00T000Z
         verificationResult:
           type: boolean
+          description: true solo quando InfoCamere restituisce esitoVerifica = OK; in caso contrario valorizzato con false.
     InfoCamereLegalError:
       type: object
       properties:
@@ -1114,12 +1119,40 @@ components:
       properties:
         verificationResult:
           type: boolean
+          description: Risultato della verifica, presente solo per richiesta correttamente eseguita (resultCode 00) e per richiesta effettuata per P.IVA dell'ente (resultCode 03).
         resultDetail:
           type: string
+          description: >
+            Valori supportati:
+            - XX00: richiesta corretta;
+
+            - XX01: codice fiscale Ente e/o Rappresentante errato;
+
+            - XX02: codice fiscale Ente non di soggetto diverso da persona fisica;
+
+            - XX0A: errore nell’elaborazione;
+
+            - XX03: timeout interno all'elaborazione;
+
+            - XX04: errore di autenticazione;
+
+            - XXXX: errore non codificato.
         resultDetailMessage:
           type: string
+          description: Messaggio testuale derivato dal resultDetail.
         resultCode:
           type: string
+          description: >
+            Valori supportati:
+            - 00: richiesta correttamente eseguita;
+
+            - 01: richiesta andata in errore;
+
+            - 02: formato dati in input non corretto;
+
+            - 03: il codice fiscale Ente indicato risulta essere una Partita IVA;
+
+            - UNKNOWN: valore fallback usato per codici non riconosciuti.
     ADELegalError:
       type: object
       properties:
@@ -1197,7 +1230,7 @@ components:
                 format: password
               recipient:
                 type: string
-                enum: [IMPRESA, PROFESSIONISTA, PERSONA_FISICA]
+                enum: [IMPRESA, PROFESSIONISTA, PERSONALE]
                 description: >
                   Values:
                   
@@ -1208,7 +1241,7 @@ components:
                   _'PROFESSIONISTA'_: Indica che l'indirizzo digitale corrente è riferito ad un professionista
                   
                   
-                  _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica
+                  _'PERSONALE'_: Indica che l'indirizzo digitale corrente è riferito ad una pec personale
         physicalAddress:
           $ref: '#/components/schemas/PhysicalAddress'
         registry:
