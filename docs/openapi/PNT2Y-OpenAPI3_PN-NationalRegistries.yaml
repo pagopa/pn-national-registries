@@ -32,24 +32,36 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/IPAPec'
         "401":
           description: Unauthorized
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/IPAPecError'
         "500":
           description: Internal server error
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/IPAPecError'
         "503":
           description: Service Unavailable
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -70,24 +82,36 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ADELegalOK'
         "401":
           description: Unauthorized
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ADELegalError'
         "500":
           description: Internal server error
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ADELegalError'
         "503":
           description: Service Unavailable
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -108,36 +132,54 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalOK'
         "400":
           description: Bad request
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalError'
         "401":
           description: Unauthorized
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalError'
         "404":
           description: Not Found
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalError'
         "500":
           description: Internal server error
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalError'
         "503":
           description: Service Unavailable
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -158,36 +200,54 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalInstitutionsOK'
         "400":
           description: Bad request
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalInstitutionsError'
         "401":
           description: Unauthorized
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalInstitutionsError'
         "404":
           description: Not Found
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalInstitutionsError'
         "500":
           description: Internal server error
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InfoCamereLegalInstitutionsError'
         "503":
           description: Service Unavailable
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -252,24 +312,36 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/PhysicalAddressesResponse'
         "400":
           description: Bad request
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddressError'
         "404":
           description: Not Found
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddressError'
         "500":
           description: Internal server error
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -291,18 +363,27 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CheckTaxIdOK'
         "400":
           description: Bad request
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CheckTaxIdError'
         "500":
           description: Internal server error
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -324,24 +405,36 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressANPROK'
         "400":
           description: Caso d'uso invalido
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressANPRError'
         "404":
           description: Caso d'uso non trovato
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressANPRError'
         "500":
           description: Internal server error
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -365,42 +458,63 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressINADOK'
         "400":
           description: Bad Request
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressINADError'
         "401":
           description: Unauthorized
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressINADError'
         "403":
           description: Forbidden
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressINADError'
         "404":
           description: Not found
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressINADError'
         "500":
           description: Internal server error
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressINADError'
         "503":
           description: Service Unavailable
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -427,36 +541,54 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressIniPECOK'
         "400":
           description: Bad Request
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressIniPECError'
         "401":
           description: Unauthorized
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressIniPECError'
         "404":
           description: Not found
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressIniPECError'
         "500":
           description: Internal server error
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetDigitalAddressIniPECError'
         "503":
           description: Service Unavailable
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
@@ -478,41 +610,64 @@ paths:
       responses:
         "200":
           description: OK
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressRegistroImpreseOK'
         "400":
           description: Caso d'uso invalido
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressRegistroImpreseError'
         "401":
           description: Unauthorized
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressRegistroImpreseError'
         "404":
           description: Caso d'uso non trovato
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressRegistroImpreseError'
         "500":
           description: Internal server error
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressRegistroImpreseError'
         "503":
           description: Service Unavailable
+          headers:
+            X-Request-ID:
+              $ref: '#/components/headers/RequestId'
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/GetAddressRegistroImpreseError'
 components:
+  headers:
+    RequestId:
+      description: Identificativo univoco della richiesta
+      schema:
+        type: string
   parameters:
     pathRecipientType:
       description: >-
@@ -1197,7 +1352,7 @@ components:
                 format: password
               recipient:
                 type: string
-                enum: [IMPRESA, PROFESSIONISTA, PERSONA_FISICA]
+                enum: [IMPRESA, PROFESSIONISTA, PERSONA_FISICA, PERSONALE]
                 description: >
                   Values:
                   
@@ -1208,7 +1363,10 @@ components:
                   _'PROFESSIONISTA'_: Indica che l'indirizzo digitale corrente è riferito ad un professionista
                   
                   
-                  _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica
+                  _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica ("deprecato a favore di PERSONALE")
+            
+                  
+                  _'PERSONALE'_: Indica che l'indirizzo digitale corrente è riferito alla pec persionale di una Persona Fisica
         physicalAddress:
           $ref: '#/components/schemas/PhysicalAddress'
         registry:

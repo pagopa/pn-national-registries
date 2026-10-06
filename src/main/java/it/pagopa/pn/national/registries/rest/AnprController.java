@@ -7,6 +7,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddre
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.AnprService;
 import it.pagopa.pn.national.registries.service.GatewayService;
+import it.pagopa.pn.national.registries.utils.RequestIdUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
@@ -44,7 +45,10 @@ public class AnprController implements AddressAnprApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(Mono<GetAddressANPRRequestBodyDto> getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
-        return getAddressANPRRequestBodyDto.flatMap(anprService::getAddressANPR)
+        return getAddressANPRRequestBodyDto.flatMap(requestBody -> {
+                    RequestIdUtils.putRequestIdToMDC(null);
+                    return anprService.getAddressANPR(requestBody);
+                })
                 .doOnNext(getAddressANPROKDto -> {
                     logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1);
                     if(!CollectionUtils.isEmpty(getAddressANPROKDto.getResidentialAddresses())){

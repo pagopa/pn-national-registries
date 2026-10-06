@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressR
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressesRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressesResponseDto;
 import it.pagopa.pn.national.registries.service.GatewayService;
+import it.pagopa.pn.national.registries.utils.RequestIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -58,7 +59,10 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<PhysicalAddressesResponseDto>> getPhysicalAddresses(Mono<PhysicalAddressesRequestBodyDto> physicalAddressesRequestBodyDto, final ServerWebExchange exchange) {
-        return  physicalAddressesRequestBodyDto.flatMap(gatewayService::retrieveSyncPhysicalAddresses)
+        return  physicalAddressesRequestBodyDto.flatMap(requestBody -> {
+                    RequestIdUtils.putRequestIdToMDC(requestBody.getCorrelationId());
+                    return gatewayService.retrieveSyncPhysicalAddresses(requestBody);
+                })
                 .map(s -> ResponseEntity.ok().body(s))
                 .publishOn(scheduler);
     }

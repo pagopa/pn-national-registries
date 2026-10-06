@@ -4,6 +4,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.IpaApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
+import it.pagopa.pn.national.registries.utils.RequestIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -37,8 +38,11 @@ public class IpaController implements IpaApi {
      */
     @Override
     public Mono<ResponseEntity<IPAPecDto>> ipaPec(Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
-        return ipARequestBodyDto.flatMap(ipaService::getIpaPec)
-            .map(t -> ResponseEntity.ok().body(t))
-            .publishOn(scheduler);
+        return ipARequestBodyDto.flatMap(requestBody -> {
+                    RequestIdUtils.putRequestIdToMDC(null);
+                    return ipaService.getIpaPec(requestBody);
+                })
+                .map(t -> ResponseEntity.ok().body(t))
+                .publishOn(scheduler);
     }
 }
