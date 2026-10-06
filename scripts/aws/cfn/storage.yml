@@ -343,6 +343,20 @@ Resources:
         MaxReceiveCount: 10
         DelaySeconds: 1
 
+  #pn-national_registries_polling
+  PnNationalRegistriesPollingQueue:
+    Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
+      Parameters:
+        QueueName: !Sub '${ProjectName}-national_registries_polling'
+        AlarmSNSTopicName: !Ref AlarmSNSTopicName
+        VisibilityTimeout: 300
+        MaxReceiveCount: 10
+        DelaySeconds: 1
+
 #Necessario a causa di bug script deploy
 Outputs:
   PnBatchRequestEncryptKeyARN:
@@ -410,3 +424,9 @@ Outputs:
     Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueURL
   NationalRegistryGatewayInputsDLQARN:
     Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueARN
+
+  # PnNationalRegistriesPolling Queue
+  NationalRegistriesPollingQueueName:
+    Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueName
+  NationalRegistriesPollingQueueARN:
+    Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueARN
