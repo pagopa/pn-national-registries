@@ -1197,7 +1197,7 @@ components:
                 format: password
               recipient:
                 type: string
-                enum: [IMPRESA, PROFESSIONISTA, PERSONA_FISICA]
+                enum: [IMPRESA, PROFESSIONISTA, PERSONA_FISICA, PERSONALE]
                 description: >
                   Values:
                   
@@ -1208,7 +1208,10 @@ components:
                   _'PROFESSIONISTA'_: Indica che l'indirizzo digitale corrente è riferito ad un professionista
                   
                   
-                  _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica
+                  _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica ("deprecato a favore di PERSONALE")
+            
+                  
+                  _'PERSONALE'_: Indica che l'indirizzo digitale corrente è riferito alla pec persionale di una Persona Fisica
         physicalAddress:
           $ref: '#/components/schemas/PhysicalAddress'
         registry:
