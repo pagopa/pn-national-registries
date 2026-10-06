@@ -33,7 +33,7 @@ paths:
         "200":
           description: OK
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -42,7 +42,7 @@ paths:
         "401":
           description: Unauthorized
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -51,7 +51,7 @@ paths:
         "500":
           description: Internal server error
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -60,7 +60,7 @@ paths:
         "503":
           description: Service Unavailable
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -83,7 +83,7 @@ paths:
         "200":
           description: OK
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -92,7 +92,7 @@ paths:
         "401":
           description: Unauthorized
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -101,7 +101,7 @@ paths:
         "500":
           description: Internal server error
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -110,7 +110,7 @@ paths:
         "503":
           description: Service Unavailable
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -133,7 +133,7 @@ paths:
         "200":
           description: OK
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -142,7 +142,7 @@ paths:
         "400":
           description: Bad request
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -151,7 +151,7 @@ paths:
         "401":
           description: Unauthorized
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -160,7 +160,7 @@ paths:
         "404":
           description: Not Found
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -169,7 +169,7 @@ paths:
         "500":
           description: Internal server error
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -178,7 +178,7 @@ paths:
         "503":
           description: Service Unavailable
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -201,7 +201,7 @@ paths:
         "200":
           description: OK
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -210,7 +210,7 @@ paths:
         "400":
           description: Bad request
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -219,7 +219,7 @@ paths:
         "401":
           description: Unauthorized
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -228,7 +228,7 @@ paths:
         "404":
           description: Not Found
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -237,7 +237,7 @@ paths:
         "500":
           description: Internal server error
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -246,7 +246,7 @@ paths:
         "503":
           description: Service Unavailable
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -313,7 +313,7 @@ paths:
         "200":
           description: OK
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -322,7 +322,7 @@ paths:
         "400":
           description: Bad request
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -331,7 +331,7 @@ paths:
         "404":
           description: Not Found
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -340,7 +340,7 @@ paths:
         "500":
           description: Internal server error
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -364,7 +364,7 @@ paths:
         "200":
           description: OK
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -373,7 +373,7 @@ paths:
         "400":
           description: Bad request
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -382,7 +382,7 @@ paths:
         "500":
           description: Internal server error
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -406,7 +406,7 @@ paths:
         "200":
           description: OK
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -415,7 +415,7 @@ paths:
         "400":
           description: Caso d'uso invalido
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -424,7 +424,7 @@ paths:
         "404":
           description: Caso d'uso non trovato
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -433,7 +433,7 @@ paths:
         "500":
           description: Internal server error
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -459,7 +459,7 @@ paths:
         "200":
           description: OK
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -468,7 +468,7 @@ paths:
         "400":
           description: Bad Request
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -477,7 +477,7 @@ paths:
         "401":
           description: Unauthorized
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -486,7 +486,7 @@ paths:
         "403":
           description: Forbidden
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -495,7 +495,7 @@ paths:
         "404":
           description: Not found
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -504,7 +504,7 @@ paths:
         "500":
           description: Internal server error
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -513,7 +513,7 @@ paths:
         "503":
           description: Service Unavailable
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -542,7 +542,7 @@ paths:
         "200":
           description: OK
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -551,7 +551,7 @@ paths:
         "400":
           description: Bad Request
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -560,7 +560,7 @@ paths:
         "401":
           description: Unauthorized
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -569,7 +569,7 @@ paths:
         "404":
           description: Not found
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -578,7 +578,7 @@ paths:
         "500":
           description: Internal server error
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -587,7 +587,7 @@ paths:
         "503":
           description: Service Unavailable
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -611,7 +611,7 @@ paths:
         "200":
           description: OK
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -620,7 +620,7 @@ paths:
         "400":
           description: Caso d'uso invalido
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -629,7 +629,7 @@ paths:
         "401":
           description: Unauthorized
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -638,7 +638,7 @@ paths:
         "404":
           description: Caso d'uso non trovato
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -647,7 +647,7 @@ paths:
         "500":
           description: Internal server error
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -656,7 +656,7 @@ paths:
         "503":
           description: Service Unavailable
           headers:
-            Ctx-Request-Id:
+            X-Request-ID:
               $ref: '#/components/headers/RequestId'
           content:
             application/json:
@@ -1352,7 +1352,7 @@ components:
                 format: password
               recipient:
                 type: string
-                enum: [IMPRESA, PROFESSIONISTA, PERSONA_FISICA]
+                enum: [IMPRESA, PROFESSIONISTA, PERSONA_FISICA, PERSONALE]
                 description: >
                   Values:
                   
@@ -1363,7 +1363,10 @@ components:
                   _'PROFESSIONISTA'_: Indica che l'indirizzo digitale corrente è riferito ad un professionista
                   
                   
-                  _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica
+                  _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica ("deprecato a favore di PERSONALE")
+            
+                  
+                  _'PERSONALE'_: Indica che l'indirizzo digitale corrente è riferito alla pec persionale di una Persona Fisica
         physicalAddress:
           $ref: '#/components/schemas/PhysicalAddress'
         registry:
