@@ -18,9 +18,11 @@ public class NationalRegistriesConfig {
     private Dao dao;
     private Integer queryLimit;
     private Inipec inipec;
-
+    private Inad inad;
 
     private String addressCompositionMode;
+
+    private Integer ttl;
 
     @Data
     public static class Dao {
@@ -33,9 +35,21 @@ public class NationalRegistriesConfig {
         private Integer batchRequestMaxRetry;
         private String batchRequestPkSeparator;
         private Integer batchRequestRecoveryAfter;
-        private Double firstAttemptDelaySecondsPerCf;
-        private Integer firstAttemptFixedDelaySeconds;
-        private Integer ttl;
+        private Double pollingFirstAttemptDelaySecondsPerCf;
+        private Integer pollingFirstAttemptFixedDelaySeconds;
+        private Integer pollingRetryAfter;
+        private Integer pollingInProgressRetryAfter;
     }
 
+    @Data
+    public static class Inad {
+        private Integer maxBatchRequestSize;
+        private Integer oldestRequestMaxWaitingSeconds;
+        private Integer batchPollingInProgressMaxRetry;
+        private Integer batchPollingMaxRetry;
+        private Double pollingFirstAttemptDelaySecondsPerCf;
+        private Integer pollingFirstAttemptFixedDelaySeconds;
+        private Integer pollingRetryAfter;
+        private Integer pollingInProgressRetryAfter;
+    }
 }

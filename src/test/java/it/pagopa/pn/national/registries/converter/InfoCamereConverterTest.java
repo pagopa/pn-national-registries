@@ -41,10 +41,10 @@ class InfoCamereConverterTest {
     @Test
     void testCreateBatchPollingByBatchIdAndPollingId() {
         NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
-        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
-        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setPollingFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setPollingFirstAttemptFixedDelaySeconds(300);
         inipec.setBatchRequestPkSeparator("~");
-        inipec.setTtl(0);
+        when(nationalRegistriesConfig.getTtl()).thenReturn(0);
 
         when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
 
@@ -58,8 +58,8 @@ class InfoCamereConverterTest {
     @Test
     void testConvertResponsePecToCodeSqsDtoCfNotFound() {
         NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
-        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
-        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setPollingFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setPollingFirstAttemptFixedDelaySeconds(300);
         inipec.setBatchRequestPkSeparator("~");
 
         when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
@@ -80,8 +80,8 @@ class InfoCamereConverterTest {
     @Test
     void testConvertResponsePecToCodeSqsDto1() {
         NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
-        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
-        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setPollingFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setPollingFirstAttemptFixedDelaySeconds(300);
         inipec.setBatchRequestPkSeparator("~");
 
         when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
@@ -105,8 +105,8 @@ class InfoCamereConverterTest {
     @Test
     void testConvertResponsePecToCodeSqsDto2() {
         NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
-        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
-        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setPollingFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setPollingFirstAttemptFixedDelaySeconds(300);
         inipec.setBatchRequestPkSeparator("~");
 
         when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
@@ -190,8 +190,8 @@ class InfoCamereConverterTest {
     @Test
     void testConvertIniPecRequestToSqsDto1() {
         NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
-        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
-        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setPollingFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setPollingFirstAttemptFixedDelaySeconds(300);
         inipec.setBatchRequestPkSeparator("~");
 
         when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
@@ -208,8 +208,8 @@ class InfoCamereConverterTest {
     @Test
     void testConvertIniPecRequestToSqsDto2() {
         NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
-        inipec.setFirstAttemptDelaySecondsPerCf(0.085);
-        inipec.setFirstAttemptFixedDelaySeconds(300);
+        inipec.setPollingFirstAttemptDelaySecondsPerCf(0.085);
+        inipec.setPollingFirstAttemptFixedDelaySeconds(300);
         inipec.setBatchRequestPkSeparator("~");
 
         when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
