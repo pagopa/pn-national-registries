@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.DigitalAddressInadApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
@@ -43,11 +44,13 @@ public class InadController implements DigitalAddressInadApi {
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
         RecipientType recipientTypeEnum = RecipientType.fromString(recipientType);
         String requestId = RequestIdUtils.putRequestIdToMDC();
-        return extractDigitalAddressINADRequestBodyDto
+        var mono = extractDigitalAddressINADRequestBodyDto
                 .flatMap(requestBody -> inadService.callEService(requestBody, recipientTypeEnum, null))
                 .map(t -> ResponseEntity.ok()
                         .header("X-Request-ID", requestId)
                         .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 }

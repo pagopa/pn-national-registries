@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AgenziaEntrateApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
@@ -41,12 +42,14 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
         String requestId = RequestIdUtils.putRequestIdToMDC();
-        return checkTaxIdRequestBodyDto
+        var mono = checkTaxIdRequestBodyDto
                 .flatMap(agenziaEntrateService::callEService)
                 .map(t -> ResponseEntity.ok()
                         .header(X_REQUEST_ID, requestId)
                         .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 
     /**
@@ -63,11 +66,13 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
     @Override
     public Mono<ResponseEntity<ADELegalOKDto>> adeLegal(Mono<ADELegalRequestBodyDto> adELegalRequestBodyDto, final ServerWebExchange exchange) {
         String requestId = RequestIdUtils.putRequestIdToMDC();
-        return adELegalRequestBodyDto
+        var mono = adELegalRequestBodyDto
                 .flatMap(agenziaEntrateService::checkTaxIdAndVatNumber)
                 .map(t -> ResponseEntity.ok()
                         .header(X_REQUEST_ID, requestId)
                         .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 }

@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AddressAnprApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
@@ -46,7 +47,7 @@ public class AnprController implements AddressAnprApi {
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(Mono<GetAddressANPRRequestBodyDto> getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
         String requestId = RequestIdUtils.putRequestIdToMDC();
-        return getAddressANPRRequestBodyDto
+        var mono = getAddressANPRRequestBodyDto
                 .flatMap(anprService::getAddressANPR)
                 .doOnNext(getAddressANPROKDto -> {
                     logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1);
@@ -64,5 +65,7 @@ public class AnprController implements AddressAnprApi {
                         .header("X-Request-ID", requestId)
                         .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 }

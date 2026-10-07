@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.IpaApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
@@ -39,11 +40,13 @@ public class IpaController implements IpaApi {
     @Override
     public Mono<ResponseEntity<IPAPecDto>> ipaPec(Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
         String requestId = RequestIdUtils.putRequestIdToMDC();
-        return ipARequestBodyDto
+        var mono = ipARequestBodyDto
                 .flatMap(ipaService::getIpaPec)
                 .map(t -> ResponseEntity.ok()
                         .header("X-Request-ID", requestId)
                         .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 }
