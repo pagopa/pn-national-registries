@@ -2,21 +2,21 @@ package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.dto.VerificaCodiceFiscale;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
-import javax.validation.Valid;
-
 @RestController
 @lombok.CustomLog
-public class AgenziaEntrateController {
+public class AgenziaEntrateController{
 
     private final AgenziaEntrateService agenziaEntrateService;
     private final Scheduler scheduler;
@@ -34,7 +34,7 @@ public class AgenziaEntrateController {
             produces = { "application/json" },
             consumes = { "application/json" }
     )
-    public  Mono<ResponseEntity<CheckValidityRappresentanteResp>> adeLegal(  @Valid @RequestBody Mono<ADELegalRequestBodyDto> adELegalRequestBodyDto, final ServerWebExchange exchange) {
+    public  Mono<ResponseEntity<CheckValidityRappresentanteResp>> adeLegal(@Valid @RequestBody Mono<ADELegalRequestBodyDto> adELegalRequestBodyDto, final ServerWebExchange exchange) {
         return adELegalRequestBodyDto.flatMap(agenziaEntrateService::checkTaxIdAndVatNumber)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
@@ -45,7 +45,7 @@ public class AgenziaEntrateController {
             produces = { "application/json" },
             consumes = { "application/json" }
     )
-    public Mono<ResponseEntity<VerificaCodiceFiscale>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
+    public Mono<ResponseEntity<VerificaCodiceFiscale>> checkTaxId(@Valid @RequestBody Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
         return checkTaxIdRequestBodyDto.flatMap(agenziaEntrateService::callEService)
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);

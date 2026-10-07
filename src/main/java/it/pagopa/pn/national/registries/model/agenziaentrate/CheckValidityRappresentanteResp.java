@@ -1,6 +1,6 @@
 package it.pagopa.pn.national.registries.model.agenziaentrate;
 
-import javax.xml.bind.annotation.*;
+import jakarta.xml.bind.annotation.*;
 
 @XmlRootElement(name = "checkValidityRappresentanteResp", namespace = "http://anagrafica.verifica.rappresentante.ente")
 public class CheckValidityRappresentanteResp {

@@ -34,7 +34,7 @@ public class AnprClientConfig extends CommonBaseClient {
 
     @Bean
     E002ServiceApi e002ServiceApi(@Value("${pn.national.registries.anpr.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(this.builder));
+        var apiClient = new ApiClient(initWebClient(builder, "ANPR"));
         apiClient.setBasePath(basePath);
         return new E002ServiceApi(apiClient);
     }

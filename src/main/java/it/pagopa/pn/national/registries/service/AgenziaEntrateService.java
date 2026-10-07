@@ -7,17 +7,16 @@ import it.pagopa.pn.national.registries.exceptions.RuntimeJAXBException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.dto.Richiesta;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.dto.VerificaCodiceFiscale;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.model.agenziaentrate.CheckValidityRappresentanteResp;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Unmarshaller;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Unmarshaller;
 import java.io.StringReader;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -45,7 +44,7 @@ public class AgenziaEntrateService {
                     .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID, false, throwable.getMessage()));
         } else {
             log.logCheckingOutcome(PROCESS_CHECKING_AGENZIA_ENTRATE_CHECK_TAX_ID, true);
-            return Mono.just(new VerificaCodiceFiscale().codiceFiscale(cf).valido(true));
+            return Mono.empty();
         }
     }
 
@@ -64,11 +63,9 @@ public class AgenziaEntrateService {
         return adELegalClient.checkTaxIdAndVatNumberAdE(request.getFilter())
                 .map(response -> {
                     try {
-                        CheckValidityRappresentanteResp checkValidityRappresentanteResp = unmarshaller(response);
-                        log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL,true);
-                        return checkValidityRappresentanteResp;
+                        return unmarshaller(response);
                     } catch (JAXBException e) {
-                        log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL,false,e.getMessage());
+                        log.logCheckingOutcome(PROCESS_CHECKING_AGENZIAN_ENTRATE_LEGAL, false, e.getMessage());
                         throw new RuntimeJAXBException(e.getMessage());
                     }
                 });

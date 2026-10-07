@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.service;
 
-import com.amazonaws.util.StringUtils;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RichiestaE002;
@@ -16,6 +15,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.utils.StringUtils;
 
 import java.nio.charset.Charset;
 
@@ -27,19 +27,15 @@ public class AnprService {
 
     private final AnprClient anprClient;
     private final CounterRepositoryImpl counterRepository;
-    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     public AnprService(AnprClient anprClient,
-                       CounterRepositoryImpl counterRepository,
-                       ValidateTaxIdUtils validateTaxIdUtils) {
+                       CounterRepositoryImpl counterRepository) {
         this.anprClient = anprClient;
         this.counterRepository = counterRepository;
-        this.validateTaxIdUtils = validateTaxIdUtils;
     }
 
     public Mono<RispostaE002OK> getAddressANPR(GetAddressANPRRequestBodyDto request) {
-
-        if (StringUtils.isNullOrEmpty(request.getFilter().getReferenceRequestDate())) {
+        if (StringUtils.isEmpty(request.getFilter().getReferenceRequestDate())) {
             throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null,
                     Charset.defaultCharset(), AnprResponseKO.class);

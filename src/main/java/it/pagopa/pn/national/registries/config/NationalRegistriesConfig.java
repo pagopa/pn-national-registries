@@ -16,4 +16,6 @@ public class NationalRegistriesConfig {
 
     private String pfNewWorkflowStop;
 
+    private String addressCompositionMode;
+
 }

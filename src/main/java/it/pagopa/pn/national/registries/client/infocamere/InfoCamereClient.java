@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
+import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -39,67 +40,28 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 public class InfoCamereClient {
     private final AccessTokenExpiringMap accessTokenExpiringMap;
     private final String clientId;
-    private final ObjectMapper mapper;
     private static final String TRAKING_ID = "X-Tracking-trackingId";
 
     private final LegalRepresentationApi legalRepresentationApi;
     private final LegalRepresentativeApi legalRepresentativeApi;
-    private final PecApi pecApi;
     private final SedeApi sedeApi;
 
     protected InfoCamereClient(@Value("${pn.national.registries.infocamere.client-id}") String clientId,
                                AccessTokenExpiringMap accessTokenExpiringMap,
-                               ObjectMapper mapper,
                                LegalRepresentationApi legalRepresentationApi,
                                LegalRepresentativeApi legalRepresentativeApi,
-                               PecApi pecApi,
                                SedeApi sedeApi
     ) {
         this.clientId = clientId;
         this.accessTokenExpiringMap = accessTokenExpiringMap;
-        this.mapper = mapper;
 
         this.legalRepresentationApi = legalRepresentationApi;
         this.legalRepresentativeApi = legalRepresentativeApi;
-        this.pecApi = pecApi;
         this.sedeApi = sedeApi;
     }
 
-    public Mono<IniPecBatchResponse> callEServiceRequestId(IniPecBatchRequest request) {
-        String requestJson = convertToJson(request);
-        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value())
-                .flatMap(token -> callRichiestaElencoPec(requestJson, token.getTokenValue()))
-                .retryWhen(Retry.max(1).filter(this::shouldRetry)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
-                );
-    }
-
-    private Mono<IniPecBatchResponse> callRichiestaElencoPec(String body, String token) {
-        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, "Retrieving correlationId [INFOCAMERE]");
-
-        var apiClient = pecApi.getApiClient();
-        apiClient.setBearerToken(token);
-        return pecApi.callRichiestaElencoPec(InipecScopeEnum.PEC.value(), body, clientId)
-                .doOnError(handleErrorCall());
-    }
-
-    public Mono<IniPecPollingResponse> callEServiceRequestPec(String correlationId) {
-        return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.PEC.value())
-                .flatMap(token -> callGetElencoPec(correlationId, token.getTokenValue()))
-                .retryWhen(Retry.max(1).filter(this::shouldRetry)
-                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
-                                new PnInternalException(ERROR_MESSAGE_INFOCAMERE_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED, retrySignal.failure()))
-                );
-    }
-
-    private Mono<IniPecPollingResponse> callGetElencoPec(String correlationId, String token) {
-        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, "Getting elencoPec InfoCamere for correlationId");
-
-        ApiClient apiClient = pecApi.getApiClient();
-        apiClient.setBearerToken(token);
-        return pecApi.callGetElencoPec(correlationId, InipecScopeEnum.PEC.value(), clientId)
-                .doOnError(handleErrorCall());
+    private void logJwt(String token) {
+        log.debug("Using jwt = {}", token);
     }
 
     public Mono<AddressRegistroImprese> getLegalAddress(String taxId) {
@@ -113,13 +75,11 @@ public class InfoCamereClient {
 
     private Mono<AddressRegistroImprese> callGetLegalAddress(String taxId, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_REGISTRO_IMPRESE_ADDRESS);
+        this.logJwt(token);
 
         ApiClient apiClient = sedeApi.getApiClient();
         apiClient.setBearerToken(token);
-
-        return sedeApi.
-
-                getAddressByTaxIdWithHttpInfo(taxId, InipecScopeEnum.SEDE.value(), clientId)
+        return sedeApi.getAddressByTaxIdWithHttpInfo(taxId, InipecScopeEnum.SEDE.value(), clientId)
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
                     log.info("callGetLegalAddress - responded with tracking ID: {}", trackingId);
@@ -139,10 +99,16 @@ public class InfoCamereClient {
 
     public Mono<InfoCamereLegalInstituionsResponse> callGetLegalInstitutions(String taxId, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL_INSTITUTIONS);
+        this.logJwt(token);
 
         ApiClient apiClient = legalRepresentativeApi.getApiClient();
         apiClient.setBearerToken(token);
-        return legalRepresentativeApi.getLegalRepresentativeListByTaxId(taxId, InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+        return legalRepresentativeApi.getLegalRepresentativeListByTaxIdWithHttpInfo(taxId, InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+                .doOnNext(responseEntity -> {
+                    String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
+                    log.info("callGetLegalInstitutions - responded with tracking ID: {}", trackingId);
+                })
+                .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
     }
 
@@ -157,9 +123,15 @@ public class InfoCamereClient {
 
     private Mono<InfoCamereVerification> callCheckTaxId(InfoCamereLegalRequestBodyFilterDto filterDto, String token) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, PROCESS_SERVICE_INFO_CAMERE_LEGAL);
+        this.logJwt(token);
 
         legalRepresentationApi.getApiClient().setBearerToken(token);
-        return legalRepresentationApi.checkTaxIdForLegalRepresentation(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+        return legalRepresentationApi.checkTaxIdForLegalRepresentationWithHttpInfo(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+                .doOnNext(responseEntity -> {
+                    String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
+                    log.info("callCheckTaxId - responded with tracking ID: {}", trackingId);
+                })
+                .map(ResponseEntity::getBody)
                 .doOnError(handleErrorCall());
     }
 
@@ -172,12 +144,16 @@ public class InfoCamereClient {
             String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
                     .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
                     .orElse("Unknown error");
-            log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage);
             if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                 log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
+                String exceptionMessage = MaskTaxIdInPathUtils.maskTaxIdInPath(CommonBaseClient.elabExceptionMessage(e));
+                log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, exceptionMessage, throwable);
                 throw new PnNationalRegistriesException(maskedErrorMessage, e.getStatusCode().value(),
                         e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                         Charset.defaultCharset(), InfocamereResponseKO.class);
+            } else {
+                log.debug("Unhandled exception during call to InfoCamere", throwable);
+                log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage, throwable);
             }
         };
     }
@@ -187,13 +163,5 @@ public class InfoCamereClient {
             return exception.getStatusCode() == HttpStatus.UNAUTHORIZED;
         }
         return false;
-    }
-
-    private String convertToJson(IniPecBatchRequest iniPecBatchRequest) {
-        try {
-            return mapper.writeValueAsString(iniPecBatchRequest);
-        } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, e);
-        }
     }
 }

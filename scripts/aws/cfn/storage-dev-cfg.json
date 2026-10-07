@@ -1,0 +1,7 @@
+{
+  "Parameters" : {
+    "NotificationCostToUpdateOnCallQueueOldestAgeLimit": "7200",
+    "NotificationCostToUpdateQueueOldestAgeLimit": "3600",
+    "EnableDownstreamSubscriptionFilter": "true"
+  }
+}

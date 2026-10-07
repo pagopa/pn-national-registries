@@ -19,7 +19,7 @@ public class PdndClientConfig extends CommonBaseClient {
 
     @Bean
     AuthApi authApi(@Value("${pn.national.registries.pdnd.base-path}") String basePath) {
-        var apiClient = new ApiClient(initWebClient(this.builder));
+        var apiClient = new ApiClient(initWebClient(this.builder, "PDND"));
         apiClient.setBasePath(basePath);
         return new AuthApi(apiClient);
     }

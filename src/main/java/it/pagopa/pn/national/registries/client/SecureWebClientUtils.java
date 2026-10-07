@@ -1,6 +1,5 @@
 package it.pagopa.pn.national.registries.client;
 
-import com.amazonaws.util.StringUtils;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import it.pagopa.pn.national.registries.config.adecheckcf.CheckCfSecretConfig;
@@ -9,6 +8,7 @@ import it.pagopa.pn.national.registries.utils.X509CertificateUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.utils.StringUtils;
 
 import javax.net.ssl.SSLException;
 import java.io.ByteArrayInputStream;
@@ -24,7 +24,7 @@ public class SecureWebClientUtils {
     private final X509CertificateUtils x509CertificateUtils;
 
     public final SslContext getSslContext(SslContextBuilder sslContextBuilder, String trust) throws SSLException {
-        boolean notHasTrust = StringUtils.isNullOrEmpty(trust);
+        boolean notHasTrust = StringUtils.isEmpty(trust);
         if (notHasTrust) {
             return sslContextBuilder.build();
         }
@@ -32,7 +32,7 @@ public class SecureWebClientUtils {
     }
 
     public final SslContext getSslContextForAde(SslContextBuilder sslContextBuilder, String trust ) throws SSLException {
-        boolean notHasTrust = StringUtils.isNullOrEmpty(trust);
+        boolean notHasTrust = StringUtils.isEmpty(trust);
         if (notHasTrust) {
             return sslContextBuilder.build();
         }

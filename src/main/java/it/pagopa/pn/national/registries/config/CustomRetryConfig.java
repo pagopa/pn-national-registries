@@ -17,7 +17,8 @@ import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.UnknownHostException;
 import java.time.Duration;
-import java.util.Objects;
+import java.util.Optional;
+import java.util.function.Predicate;
 
 @Slf4j
 @Component
@@ -31,6 +32,14 @@ public class CustomRetryConfig {
     }
 
     public ExchangeFilterFunction buildRetryExchangeFilterFunction() {
+        return buildRetryExchangeFilterFunction(defaultRetryCondition, this.retryMaxAttempts);
+    }
+
+    public ExchangeFilterFunction buildRetryExchangeFilterFunction(Predicate<Throwable> retryCondition) {
+        return buildRetryExchangeFilterFunction(retryCondition, this.retryMaxAttempts);
+    }
+
+    public ExchangeFilterFunction buildRetryExchangeFilterFunction(Predicate<Throwable> retryCondition, int maxRetryAttempts) {
         return (request, next) ->
                 next.exchange(request).flatMap((clientResponse) ->
                                 Mono.just(clientResponse).filter((response) ->
@@ -38,18 +47,30 @@ public class CustomRetryConfig {
                                                 clientResponse.createException())
                                         .flatMap(Mono::error)
                                         .thenReturn(clientResponse))
-                        .retryWhen(Retry.backoff(this.retryMaxAttempts, Duration.ofMillis(25L))
+                        .retryWhen(Retry.backoff(maxRetryAttempts, Duration.ofMillis(25L))
                                 .jitter(0.75)
-                                .filter(this::isRetryableException)
+                                .filter(throwable -> {
+                                    boolean retryable = retryCondition.test(throwable);
+                                    if(retryable) {
+                                        String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
+                                                .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
+                                                .orElse("Unknown error");
+                                        log.warn("Exception {} caught by retry: {}", throwable.getClass().getName(), maskedErrorMessage);
+                                    }
+                                    return retryable;
+                                })
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> {
                                     Throwable lastExceptionInRetry = retrySignal.failure();
-                                    log.warn("Retries exhausted {}, with last Exception: {}", retrySignal.totalRetries(), MaskTaxIdInPathUtils.maskTaxIdInPath(lastExceptionInRetry.getMessage()));
+                                    String maskedErrorMessage = Optional.ofNullable(lastExceptionInRetry.getMessage())
+                                            .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
+                                            .orElse("Unknown error");
+                                    log.warn("Retries exhausted {}, with last Exception {}: {}", retrySignal.totalRetries(), lastExceptionInRetry.getClass().getName(), maskedErrorMessage);
                                     return lastExceptionInRetry;
                                 }));
     }
 
-    private boolean isRetryableException(Throwable throwable) {
-        boolean retryable = throwable instanceof TimeoutException ||
+    public static final Predicate<Throwable> defaultRetryCondition =
+            throwable ->  throwable instanceof TimeoutException ||
                 throwable instanceof SocketException ||
                 throwable instanceof SocketTimeoutException ||
                 throwable instanceof SSLHandshakeException ||
@@ -58,11 +79,5 @@ public class CustomRetryConfig {
                 throwable instanceof WebClientResponseException.TooManyRequests ||
                 throwable instanceof WebClientResponseException.GatewayTimeout ||
                 throwable instanceof WebClientResponseException.BadGateway ||
-                throwable instanceof WebClientResponseException.ServiceUnavailable
-                ;
-        if(retryable) {
-            log.warn("Exception caught by retry: {}", MaskTaxIdInPathUtils.maskTaxIdInPath(Objects.requireNonNull(throwable.getMessage())));
-        }
-        return retryable;
-    }
+                throwable instanceof WebClientResponseException.ServiceUnavailable;
 }

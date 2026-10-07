@@ -35,14 +35,12 @@ public class PdndAssertionGenerator {
 
             SignRequest signRequest = ClientUtils.createSignRequest(jwtContent, jwtCfg.getKeyId());
 
-            log.info("START - KmsClient.sign Request: {}", signRequest);
             long startTimeKms = System.currentTimeMillis();
             SignResponse signResult = kmsClient.sign(signRequest);
             log.info("END - KmsClient.sign Timelapse: {} ms", System.currentTimeMillis() - startTimeKms);
 
             String signatureString = ClientUtils.createSignature(signResult);
             log.info("END - PdndAssertionGenerator.generateClientAssertion Timelapse: {} ms", System.currentTimeMillis() - startTime);
-            log.info("PdndAssertionGenerator: {}", jwtContent + "." + signatureString);
             return jwtContent + "." + signatureString;
 
         } catch (Exception e) {

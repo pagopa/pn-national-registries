@@ -236,6 +236,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AddressError'
+  /national-registries-private/physical-addresses:
+    post:
+      tags:
+        - address
+      summary: 'Questo servizio si occupa di smistare le richieste in ingresso al fine di fornire uno o più indirizzi fisici per la PF o la PG indicata'
+      description: 'Questo servizio si occupa di smistare le richieste in ingresso al fine di fornire uno o più indirizzi fisici per la PF o la PG indicata'
+      operationId: getPhysicalAddresses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PhysicalAddressesRequestBody'
+        required: true
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PhysicalAddressesResponse'
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressError'
+        "404":
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressError'
+        "500":
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddressError'
   /national-registries-private/agenzia-entrate/tax-id:
     post:
       tags:
@@ -500,6 +538,7 @@ components:
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: AAAZZZ00H00T000Z
             referenceRequestDate:
               type: string
@@ -525,6 +564,7 @@ components:
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: AAAZZZ00H00T000Z
     CheckTaxIdOK:
       type: object
@@ -532,6 +572,7 @@ components:
         taxId:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
           example: AAAZZZ00H00T000Z
         isValid:
           type: boolean
@@ -587,6 +628,7 @@ components:
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: AAAZZZ00H00T000Z
             referenceRequestDate:
               type: string
@@ -607,30 +649,39 @@ components:
         description:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         at:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         address:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         addressDetail:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         zip:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         municipality:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         municipalityDetails:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         province:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         foreignState:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
     GetAddressANPRError:
       type: object
       properties:
@@ -670,6 +721,7 @@ components:
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: AAAZZZ00H00T000Z
             practicalReference:
               type: string
@@ -680,6 +732,7 @@ components:
         taxId:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
           example: AAAZZZ00H00T000Z
         since:
           type: string
@@ -692,6 +745,7 @@ components:
         digitalAddress:
           x-field-extra-annotation: "@lombok.ToString.Exclude"
           type: string
+          format: password
         practicedProfession:
           type: string
         usageInfo:
@@ -742,6 +796,7 @@ components:
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: AAAZZZ00H00T000Z
             correlationId:
               type: string
@@ -786,6 +841,7 @@ components:
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: AAAZZZ00H00T0
     IPAPec:
       type: object
@@ -793,6 +849,7 @@ components:
         domicilioDigitale:
           x-field-extra-annotation: "@lombok.ToString.Exclude"
           type: string
+          format: password
         tipo:
           type: string
         codEnte:
@@ -808,6 +865,7 @@ components:
         taxId:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
           example: AAAZZZ00H00T000Z
         professionalAddress:
           type: object
@@ -815,18 +873,27 @@ components:
             description:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
             municipality:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
             province:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
             address:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
             zip:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
+            stato:
+              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+              type: string
+              format: password # NO EXTERNAL
     GetAddressRegistroImpreseError:
       type: object
       properties:
@@ -890,6 +957,7 @@ components:
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: AAAZZZ00H00T000Z
     InfoCamereLegalInstitutionsOK:
       type: object
@@ -899,6 +967,7 @@ components:
         legalTaxId:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
           example: AAAZZZ00H00T000Z
         businessList:
           type: array
@@ -918,6 +987,7 @@ components:
         businessTaxId:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         businessName:
           type: string
     InfoCamereLegalInstitutionsError:
@@ -957,10 +1027,12 @@ components:
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: AAAZZZ00H00T000Z
             vatNumber:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: 12345678901
     InfoCamereLegalOK:
       type: object
@@ -971,10 +1043,12 @@ components:
         taxId:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
           example: AAAZZZ00H00T000Z
         vatNumber:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
           example: BBBCCC00H00T000Z
         verificationResult:
           type: boolean
@@ -1014,6 +1088,7 @@ components:
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: AAAZZZ00H00T000Z
     ADELegalRequestBody:
       type: object
@@ -1027,10 +1102,12 @@ components:
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: AAAZZZ00H00T000Z
             vatNumber:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
+              format: password # NO EXTERNAL
               example: BBBCCC00H00T000Z
     ADELegalOK:
       type: object
@@ -1101,6 +1178,7 @@ components:
         taxId:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         error:
           type: string
           description: Se presente indica che si è verificato un errore durante l'esecuzione dell'operazione richiesta.
@@ -1116,6 +1194,7 @@ components:
               address:
                 x-field-extra-annotation: "@lombok.ToString.Exclude"
                 type: string
+                format: password
               recipient:
                 type: string
                 enum: [IMPRESA, PROFESSIONISTA, PERSONA_FISICA]
@@ -1131,34 +1210,44 @@ components:
                   
                   _'PERSONA FISICA'_: Indica che l'indirizzo digitale corrente è riferito ad una Persona Fisica
         physicalAddress:
-          description: >
-            Rappresenta il domicilio fisico
-          type: object
-          properties:
-            at:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            address:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            addressDetails:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            zip:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            municipality:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            municipalityDetails:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            province:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-            foreignState:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
+          $ref: '#/components/schemas/PhysicalAddress'
+    PhysicalAddress:
+      description: >
+        Rappresenta il domicilio fisico
+      type: object
+      properties:
+        at:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
+        address:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
+        addressDetails:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
+        zip:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
+        municipality:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
+        municipalityDetails:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
+        province:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
+        foreignState:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
     GetDigitalAddressIniPECSQSMessage:
       type: object
       properties:
@@ -1167,6 +1256,7 @@ components:
         taxId:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
+          format: password # NO EXTERNAL
         error:
           type: string
           description: Se presente indica che si è verificato un errore durante l'esecuzione dell'operazione richiesta.
@@ -1182,6 +1272,7 @@ components:
               address:
                 x-field-extra-annotation: "@lombok.ToString.Exclude"
                 type: string
+                format: password
               recipient:
                 type: string
                 enum: [IMPRESA, PROFESSIONISTA]
@@ -1193,3 +1284,90 @@ components:
                   
                   
                   _'PROFESSIONISTA'_: Indica che l'indirizzo digitale corrente è riferito ad un professionista
+    PhysicalAddressesRequestBody:
+      type: object
+      required:
+        - correlationId
+        - addresses
+        - referenceRequestDate
+      properties:
+        correlationId:
+          type: string
+        referenceRequestDate:
+          type: string
+          format: date-time
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecipientAddressRequestBody'
+    RecipientAddressRequestBody:
+      type: object
+      required:
+        - taxId
+        - recIndex
+        - recipientType
+      properties:
+        taxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
+          example: AAAZZZ00H00T000Z
+        recIndex:
+          type: integer
+          description: Index destinatario notifica digitale
+          format: int32
+        recipientType:
+          type: string
+          enum: [ PG , PF ]
+    PhysicalAddressesResponse:
+      type: object
+      required:
+        - correlationId
+        - addresses
+      properties:
+        correlationId:
+          type: string
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/PhysicalAddressResponse'
+    PhysicalAddressResponse:
+      type: object
+      required:
+        - recIndex
+        - taxId
+      properties:
+        recIndex:
+          type: integer
+          description: Index destinatario notifica digitale
+          format: int32
+        taxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
+          example: AAAZZZ00H00T000Z
+        error:
+          type: string
+          description: >
+            Se presente indica che si è verificato un errore durante l'esecuzione dell'operazione richiesta.
+            Possibili errori:
+            - 'DOWNSTREAM_REQUEST_ERROR' Non è stato possibile comunicare con i servizi di downstream (400)
+            - 'DOWNSTREAM_TOO_MANY_REQUESTS' Sovraccarico dei servizi di donwstream (429)
+        errorStatus:
+          type: integer
+          description: HttpStatus dell'errore
+          format: int32
+        physicalAddress:
+          $ref: '#/components/schemas/PhysicalAddress'
+        registry:
+          $ref: '#/components/schemas/Registry'
+    Registry:
+      type: string
+      description: >
+        Rappresenta il registro consultato per ottenere l'indirizzo.
+        Può assumere i seguenti valori:
+        - ANPR
+        - REGISTRO_IMPRESE
+        - INIPEC
+        - INAD
+    

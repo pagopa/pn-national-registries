@@ -29,9 +29,10 @@ public class ValidateTaxIdUtils {
         log.logChecking(PROCESS_CHECKING_VALIDATION_TAX_ID);
         if (!validateUtils.validate(taxId, skipWhiteList)) {
             log.logCheckingOutcome(PROCESS_CHECKING_VALIDATION_TAX_ID, false, "TaxId not valid");
-            log.logEndingProcess(processName, false, " TaxId not valid");
-            throw new PnNationalRegistriesException("TaxId not valid", HttpStatus.BAD_REQUEST.value(),
+            PnNationalRegistriesException ex = new PnNationalRegistriesException("TaxId not valid", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class);
+            log.logEndingProcess(processName, false, " TaxId not valid", ex);
+            throw ex;
         }
         log.logCheckingOutcome(PROCESS_CHECKING_VALIDATION_TAX_ID, true);
     }
