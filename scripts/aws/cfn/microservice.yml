@@ -494,6 +494,14 @@ Parameters:
     Type: String
     Description: 'DLQ ARN for NationalRegistryGatewayInputs'
 
+  NationalRegistriesPollingQueueName:
+    Type: String
+    Description: 'Name for NationalRegistriesPolling'
+
+  NationalRegistriesPollingQueueARN:
+    Type: String
+    Description: 'ARN for NationalRegistriesPolling'
+
   AddressCompositionMode:
     Type: String
     Description: "Mode for address and addressDetail, it can be OLD, FULL, OLD_MINIMAL, MINIMAL"
@@ -629,6 +637,8 @@ Resources:
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
         ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTDELAYSECONDSPERCF=${FirstAttemptDelaySecondsPerCf}'
         ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTFIXEDDELAYSECONDS=${FirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_POLLING_QUEUE_NAME=${NationalRegistriesPollingQueueName}'
+
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
@@ -692,6 +702,7 @@ Resources:
               - !Ref NationalRegistryGatewayOutputsQueueARN
               - !Ref NationalRegistryGatewayInputsQueueARN
               - !Ref NationalRegistryGatewayInputsDLQARN
+              - !Ref NationalRegistriesPollingQueueARN
           - Effect: Allow
             Action:
               - ssm:GetParameter
