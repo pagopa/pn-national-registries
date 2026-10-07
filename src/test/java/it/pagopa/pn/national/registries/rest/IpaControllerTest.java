@@ -12,14 +12,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.slf4j.MDC;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(SpringExtension.class)
 class IpaControllerTest {
@@ -61,7 +61,11 @@ class IpaControllerTest {
                 }));
 
         StepVerifier.create(ipaController.ipaPec(Mono.just(ipaRequestBodyDto), null))
-                .expectNext(ResponseEntity.ok().body(ipaPecDto))
+                .assertNext(response -> {
+                    assertEquals(200, response.getStatusCode().value());
+                    assertEquals(ipaPecDto, response.getBody());
+                    assertEquals(traceId, response.getHeaders().getFirst("X-Request-ID"));
+                })
                 .verifyComplete();
     }
 

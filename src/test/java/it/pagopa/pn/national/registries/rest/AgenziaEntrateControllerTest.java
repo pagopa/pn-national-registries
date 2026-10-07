@@ -12,7 +12,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -63,7 +62,11 @@ class AgenziaEntrateControllerTest {
                 })));
 
         StepVerifier.create(agenziaEntrateController.checkTaxId(Mono.just(checkTaxIdRequestBodyDto), serverWebExchange))
-                .expectNext(ResponseEntity.ok(checkTaxIdOKDto))
+                .assertNext(response -> {
+                    assertEquals(200, response.getStatusCode().value());
+                    assertEquals(checkTaxIdOKDto, response.getBody());
+                    assertEquals(traceId, response.getHeaders().getFirst("X-Request-ID"));
+                })
                 .verifyComplete();
     }
 
@@ -89,7 +92,11 @@ class AgenziaEntrateControllerTest {
                 })));
 
         StepVerifier.create(agenziaEntrateController.adeLegal(Mono.just(adeLegalRequestBodyDto), serverWebExchange))
-                .expectNext(ResponseEntity.ok(adeLegalOKDto))
+                .assertNext(response -> {
+                    assertEquals(200, response.getStatusCode().value());
+                    assertEquals(adeLegalOKDto, response.getBody());
+                    assertEquals(traceId, response.getHeaders().getFirst("X-Request-ID"));
+                })
                 .verifyComplete();
     }
 }

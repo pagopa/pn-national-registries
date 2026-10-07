@@ -79,7 +79,11 @@ class GatewayControllerTest {
                 }));
 
         StepVerifier.create(gatewayController.getPhysicalAddresses(Mono.just(physicalAddressesRequestBodyDto), serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(physicalAddressesResponseDto))
+                .assertNext(response -> {
+                    assertEquals(200, response.getStatusCode().value());
+                    assertEquals(physicalAddressesResponseDto, response.getBody());
+                    assertEquals(correlationId, response.getHeaders().getFirst("X-Request-ID"));
+                })
                 .verifyComplete();
     }
 

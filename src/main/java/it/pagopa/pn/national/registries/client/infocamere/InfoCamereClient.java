@@ -181,7 +181,7 @@ public class InfoCamereClient {
         this.logJwt(token);
 
         legalRepresentationApi.getApiClient().setBearerToken(token);
-        return legalRepresentationApi.checkTaxIdForLegalRepresentationWithHttpInfo(filterDto.getVatNumber(), filterDto.getTaxId(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
+        return legalRepresentationApi.checkTaxIdForLegalRepresentationWithHttpInfo(filterDto.getTaxId(), filterDto.getVatNumber(), InipecScopeEnum.LEGALE_RAPPRESENTANTE.value(), clientId)
                 .doOnNext(responseEntity -> {
                     String trackingId = responseEntity.getHeaders().getFirst(TRAKING_ID);
                     log.info("callCheckTaxId - responded with tracking ID: {}", trackingId);

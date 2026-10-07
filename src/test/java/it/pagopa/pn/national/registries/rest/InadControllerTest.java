@@ -14,7 +14,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -69,7 +68,11 @@ class InadControllerTest {
                 }));
 
         StepVerifier.create(inadController.digitalAddressINAD("PF", Mono.just(extractDigitalAddressINADRequestBodyDto), serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(getDigitalAddressINADOKDto))
+                .assertNext(response -> {
+                    assertEquals(200, response.getStatusCode().value());
+                    assertEquals(getDigitalAddressINADOKDto, response.getBody());
+                    assertEquals(traceId, response.getHeaders().getFirst("X-Request-ID"));
+                })
                 .verifyComplete();
     }
 }

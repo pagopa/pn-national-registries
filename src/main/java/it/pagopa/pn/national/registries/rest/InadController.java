@@ -42,11 +42,12 @@ public class InadController implements DigitalAddressInadApi {
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
         RecipientType recipientTypeEnum = RecipientType.fromString(recipientType);
-        return extractDigitalAddressINADRequestBodyDto.flatMap(requestBody -> {
-                    RequestIdUtils.putRequestIdToMDC(null);
-                    return inadService.callEService(requestBody, recipientTypeEnum, null);
-                })
-                .map(t -> ResponseEntity.ok().body(t))
+        String requestId = RequestIdUtils.putRequestIdToMDC();
+        return extractDigitalAddressINADRequestBodyDto
+                .flatMap(requestBody -> inadService.callEService(requestBody, recipientTypeEnum, null))
+                .map(t -> ResponseEntity.ok()
+                        .header("X-Request-ID", requestId)
+                        .body(t))
                 .publishOn(scheduler);
     }
 }

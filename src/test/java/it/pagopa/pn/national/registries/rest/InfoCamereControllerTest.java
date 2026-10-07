@@ -11,7 +11,6 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -19,6 +18,7 @@ import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
 import java.util.Date;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -66,7 +66,11 @@ class InfoCamereControllerTest {
                 }));
 
         StepVerifier.create(infoCamereController.digitalAddressIniPEC(Mono.just(requestBodyDto), "cxId", serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(getDigitalAddressINADOKDto))
+                .assertNext(response -> {
+                    assertEquals(200, response.getStatusCode().value());
+                    assertEquals(getDigitalAddressINADOKDto, response.getBody());
+                    assertEquals(correlationId, response.getHeaders().getFirst("X-Request-ID"));
+                })
                 .verifyComplete();
     }
 
@@ -90,7 +94,11 @@ class InfoCamereControllerTest {
                 }));
 
         StepVerifier.create(infoCamereController.addressRegistroImprese(Mono.just(body), serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(response))
+                .assertNext(res -> {
+                    assertEquals(200, res.getStatusCode().value());
+                    assertEquals(response, res.getBody());
+                    assertEquals(traceId, res.getHeaders().getFirst("X-Request-ID"));
+                })
                 .verifyComplete();
     }
 
@@ -116,7 +124,11 @@ class InfoCamereControllerTest {
                 }));
 
         StepVerifier.create(infoCamereController.infoCamereLegal(Mono.just(body), serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(response))
+                .assertNext(res -> {
+                    assertEquals(200, res.getStatusCode().value());
+                    assertEquals(response, res.getBody());
+                    assertEquals(traceId, res.getHeaders().getFirst("X-Request-ID"));
+                })
                 .verifyComplete();
     }
 
@@ -142,7 +154,11 @@ class InfoCamereControllerTest {
 
 
         StepVerifier.create(infoCamereController.infoCamereLegalInstitutions(Mono.just(body), serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(response))
+                .assertNext(res -> {
+                    assertEquals(200, res.getStatusCode().value());
+                    assertEquals(response, res.getBody());
+                    assertEquals(traceId, res.getHeaders().getFirst("X-Request-ID"));
+                })
                 .verifyComplete();
     }
 }

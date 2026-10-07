@@ -19,6 +19,7 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     private final AgenziaEntrateService agenziaEntrateService;
     private final Scheduler scheduler;
+    private static final String X_REQUEST_ID = "X-Request-ID";
 
 
 
@@ -39,11 +40,12 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        return checkTaxIdRequestBodyDto.flatMap(requestBody -> {
-                    RequestIdUtils.putRequestIdToMDC(null);
-                    return agenziaEntrateService.callEService(requestBody);
-                })
-                .map(t -> ResponseEntity.ok().body(t))
+        String requestId = RequestIdUtils.putRequestIdToMDC();
+        return checkTaxIdRequestBodyDto
+                .flatMap(agenziaEntrateService::callEService)
+                .map(t -> ResponseEntity.ok()
+                        .header(X_REQUEST_ID, requestId)
+                        .body(t))
                 .publishOn(scheduler);
     }
 
@@ -60,11 +62,12 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     @Override
     public Mono<ResponseEntity<ADELegalOKDto>> adeLegal(Mono<ADELegalRequestBodyDto> adELegalRequestBodyDto, final ServerWebExchange exchange) {
-        return adELegalRequestBodyDto.flatMap(requestBody -> {
-                    RequestIdUtils.putRequestIdToMDC(null);
-                    return agenziaEntrateService.checkTaxIdAndVatNumber(requestBody);
-                })
-                .map(t -> ResponseEntity.ok().body(t))
+        String requestId = RequestIdUtils.putRequestIdToMDC();
+        return adELegalRequestBodyDto
+                .flatMap(agenziaEntrateService::checkTaxIdAndVatNumber)
+                .map(t -> ResponseEntity.ok()
+                        .header(X_REQUEST_ID, requestId)
+                        .body(t))
                 .publishOn(scheduler);
     }
 }

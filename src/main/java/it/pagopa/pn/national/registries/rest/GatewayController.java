@@ -42,8 +42,12 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, Mono<AddressRequestBodyDto> monoAddressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
-        return monoAddressRequestBodyDto.flatMap(addressRequestBodyDto -> gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto))
-                .map(s -> ResponseEntity.ok().body(s))
+        return monoAddressRequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDC(requestBody.getFilter().getCorrelationId()))
+                .flatMap(addressRequestBodyDto -> gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto))
+                .map(s -> ResponseEntity.ok()
+                        .header("X-Request-ID", s.getCorrelationId())
+                        .body(s))
                 .publishOn(scheduler);
     }
 
@@ -59,11 +63,12 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<PhysicalAddressesResponseDto>> getPhysicalAddresses(Mono<PhysicalAddressesRequestBodyDto> physicalAddressesRequestBodyDto, final ServerWebExchange exchange) {
-        return  physicalAddressesRequestBodyDto.flatMap(requestBody -> {
-                    RequestIdUtils.putRequestIdToMDC(requestBody.getCorrelationId());
-                    return gatewayService.retrieveSyncPhysicalAddresses(requestBody);
-                })
-                .map(s -> ResponseEntity.ok().body(s))
+        return physicalAddressesRequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDC(requestBody.getCorrelationId()))
+                .flatMap(gatewayService::retrieveSyncPhysicalAddresses)
+                .map(s -> ResponseEntity.ok()
+                        .header("X-Request-ID", s.getCorrelationId())
+                        .body(s))
                 .publishOn(scheduler);
     }
 

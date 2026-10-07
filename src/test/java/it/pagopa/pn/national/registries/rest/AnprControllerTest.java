@@ -13,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -66,7 +65,11 @@ class AnprControllerTest {
                 }));
 
         StepVerifier.create(anprController.addressANPR(Mono.just(getAddressANPRRequestBodyDto), serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(getAddressANPROKDto))
+                .assertNext(response -> {
+                    assertEquals(200, response.getStatusCode().value());
+                    assertEquals(getAddressANPROKDto, response.getBody());
+                    assertEquals(traceId, response.getHeaders().getFirst("X-Request-ID"));
+                })
                 .verifyComplete();
     }
 }

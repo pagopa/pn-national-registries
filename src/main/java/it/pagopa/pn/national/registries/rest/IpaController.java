@@ -38,11 +38,12 @@ public class IpaController implements IpaApi {
      */
     @Override
     public Mono<ResponseEntity<IPAPecDto>> ipaPec(Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
-        return ipARequestBodyDto.flatMap(requestBody -> {
-                    RequestIdUtils.putRequestIdToMDC(null);
-                    return ipaService.getIpaPec(requestBody);
-                })
-                .map(t -> ResponseEntity.ok().body(t))
+        String requestId = RequestIdUtils.putRequestIdToMDC();
+        return ipARequestBodyDto
+                .flatMap(ipaService::getIpaPec)
+                .map(t -> ResponseEntity.ok()
+                        .header("X-Request-ID", requestId)
+                        .body(t))
                 .publishOn(scheduler);
     }
 }
