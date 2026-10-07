@@ -1,11 +1,13 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AddressApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressesRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressesResponseDto;
 import it.pagopa.pn.national.registries.service.GatewayService;
+import it.pagopa.pn.national.registries.utils.RequestIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -41,9 +43,15 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, Mono<AddressRequestBodyDto> monoAddressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
-        return monoAddressRequestBodyDto.flatMap(addressRequestBodyDto -> gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto))
-                .map(s -> ResponseEntity.ok().body(s))
+        var mono = monoAddressRequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDC(requestBody.getFilter().getCorrelationId()))
+                .flatMap(addressRequestBodyDto -> gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto))
+                .map(s -> ResponseEntity.ok()
+                        .header("X-Request-ID", s.getCorrelationId())
+                        .body(s))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 
     /**
@@ -58,9 +66,15 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<PhysicalAddressesResponseDto>> getPhysicalAddresses(Mono<PhysicalAddressesRequestBodyDto> physicalAddressesRequestBodyDto, final ServerWebExchange exchange) {
-        return  physicalAddressesRequestBodyDto.flatMap(gatewayService::retrieveSyncPhysicalAddresses)
-                .map(s -> ResponseEntity.ok().body(s))
+        var mono = physicalAddressesRequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDC(requestBody.getCorrelationId()))
+                .flatMap(gatewayService::retrieveSyncPhysicalAddresses)
+                .map(s -> ResponseEntity.ok()
+                        .header("X-Request-ID", s.getCorrelationId())
+                        .body(s))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 
 }

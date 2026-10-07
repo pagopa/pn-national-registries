@@ -1,10 +1,12 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.DigitalAddressInadApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.service.InadService;
+import it.pagopa.pn.national.registries.utils.RequestIdUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
@@ -41,8 +43,14 @@ public class InadController implements DigitalAddressInadApi {
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
         RecipientType recipientTypeEnum = RecipientType.fromString(recipientType);
-        return extractDigitalAddressINADRequestBodyDto.flatMap(request -> inadService.callEService(request, recipientTypeEnum, null))
-                .map(t -> ResponseEntity.ok().body(t))
+        String requestId = RequestIdUtils.putRequestIdToMDC();
+        var mono = extractDigitalAddressINADRequestBodyDto
+                .flatMap(requestBody -> inadService.callEService(requestBody, recipientTypeEnum, null))
+                .map(t -> ResponseEntity.ok()
+                        .header("X-Request-ID", requestId)
+                        .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 }
