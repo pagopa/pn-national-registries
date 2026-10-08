@@ -16,6 +16,7 @@ public class CheckEmailUtils {
 
     public static boolean isValidEmail(String email) {
         if (!StringUtils.hasText(email)) {
+            log.warn("Email {} contains no text", email);
             return false;
         }
         Matcher matcher = pattern.matcher(email);

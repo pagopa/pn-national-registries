@@ -310,7 +310,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<BatchRequest> oldWorkFlow(BatchRequest request) {
-        log.info("oldWorkFlow - digital Address not found for [{}] on {} - Step {} - nextSource: [{}]", request.getCorrelationId(), INIPEC, INIPEC.getStepNumber(), INIPEC.getNextStep());
+        log.info("oldWorkFlow - digital Address not found for [{}] on {} - nextSource: [{}]", request.getCorrelationId(), INIPEC, INAD);
         return callInadEservice(request)
                 .thenReturn(request);
     }
@@ -390,9 +390,13 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         if (Objects.isNull(pec.getStatoImpresa())) {
             log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
             CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+            int foundPecCount = CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()) ? 0 : codeSqsDto.getDigitalAddress().size();
             removeInvalidEmails(codeSqsDto);
-            if(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
-                log.info("IniPEC - correlationId {} - no valid digital address found in pec response", batchRequest.getCorrelationId());
+            int validPecCount = codeSqsDto.getDigitalAddress().size();
+            log.info("IniPEC - correlationId {} - statoImpresa is null - pec found: {}, valid pec: {}",
+                    batchRequest.getCorrelationId(), foundPecCount, validPecCount);
+            if (validPecCount == 0) {
+                log.info("IniPEC - correlationId {} - no valid digital address found in IniPEC response, starting fallback", batchRequest.getCorrelationId());
                 return handlePecNotFoundResponse(batchRequest);
             }
             return digitalAddressUtils.updateBatchRequestFields(batchRequest, status, now, codeSqsDto);
