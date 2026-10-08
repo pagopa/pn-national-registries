@@ -62,7 +62,7 @@ pn.national.registries.inad.base-path=http://localhost:1080/nationalregistriesmo
 pn.national.registries.pdnd.inad.secret=pn-national-registries/pdnd/INAD
 
 # InfoCamere
-pn.national.registries.infocamere.base-path=http://localhost:1080/nationalregistriesmock/ic/ce/wspa/wspa/rest/
+pn.national.registries.infocamere.base-path=https://icapiscl.infocamere.it/ic/ce/wspa/wspa/rest
 pn.national.registries.infocamere.client-id=a7e152cac460917f3123cc2410f5a8d2
 pn.national.registries.ssm.infocamere.auth-rest=/pn-national-registries/infocamere-cert
 pn.national.registries.infocamere.token.deadline=120000
