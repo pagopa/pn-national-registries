@@ -56,7 +56,7 @@ class DigitalAddressUtilsTest {
         when(gatewayService.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("serialized-message");
 
         BatchRequest result = digitalAddressUtils
-                .updateBatchRequestFields(request, status, now, pec)
+                .updateBatchRequestFields(request, status, now, codeSqsDto)
                 .block();
 
         assertNotNull(result);
@@ -68,10 +68,9 @@ class DigitalAddressUtilsTest {
         assertEquals(now, result.getLastReserved());
 
         assertNotNull(codeSqsDto.getDigitalAddress());
-        assertEquals(1, codeSqsDto.getDigitalAddress().size());
+        assertEquals(2, codeSqsDto.getDigitalAddress().size());
         assertEquals("valid@pec.it", codeSqsDto.getDigitalAddress().getFirst().getAddress());
 
-        verify(infoCamereConverter, times(1)).convertResponsePecToCodeSqsDto(request, pec);
         verify(gatewayService, times(1)).convertCodeSqsDtoToString(codeSqsDto);
     }
 
@@ -89,7 +88,7 @@ class DigitalAddressUtilsTest {
         when(gatewayService.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("serialized-message");
 
         BatchRequest result = digitalAddressUtils
-                .updateBatchRequestFields(request, status, now, pec)
+                .updateBatchRequestFields(request, status, now, codeSqsDto)
                 .block();
 
         assertNotNull(result);
@@ -100,10 +99,8 @@ class DigitalAddressUtilsTest {
         assertEquals(BatchSendStatus.NOT_SENT.getValue(), result.getSendStatus());
         assertEquals(now, result.getLastReserved());
 
-        assertNotNull(codeSqsDto.getDigitalAddress());
-        assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
+        assertNull(codeSqsDto.getDigitalAddress());
 
-        verify(infoCamereConverter, times(1)).convertResponsePecToCodeSqsDto(request, pec);
         verify(gatewayService, times(1)).convertCodeSqsDtoToString(codeSqsDto);
     }
 
@@ -134,7 +131,6 @@ class DigitalAddressUtilsTest {
     @Test
     void methodsReturnNonNullMono() {
         BatchRequest request = new BatchRequest();
-        Pec pec = new Pec();
 
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setDigitalAddress(new ArrayList<>());
@@ -144,7 +140,7 @@ class DigitalAddressUtilsTest {
         when(gatewayService.convertCodeSqsDtoToString(any())).thenReturn("msg");
 
         Mono<BatchRequest> updateMono = digitalAddressUtils.updateBatchRequestFields(
-                request, BatchStatus.WORKED, LocalDateTime.now(), pec
+                request, BatchStatus.WORKED, LocalDateTime.now(), codeSqsDto
         );
         Mono<BatchRequest> errorMono = digitalAddressUtils.buildErrorBatchRequest(
                 BatchStatus.ERROR, "err", request, LocalDateTime.now()
@@ -152,6 +148,74 @@ class DigitalAddressUtilsTest {
 
         assertNotNull(updateMono);
         assertNotNull(errorMono);
+    }
+
+    @Test
+    void removeInvalidEmailsFiltersOnlyValidEmails() {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+
+        DigitalAddress valid = new DigitalAddress();
+        valid.setAddress("valid@pec.it");
+
+        DigitalAddress invalid = new DigitalAddress();
+        invalid.setAddress("invalid_pec");
+
+        codeSqsDto.setDigitalAddress(new ArrayList<>(List.of(valid, invalid)));
+
+        DigitalAddressUtils.removeInvalidEmails(codeSqsDto);
+
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertEquals(1, codeSqsDto.getDigitalAddress().size());
+        assertEquals("valid@pec.it", codeSqsDto.getDigitalAddress().getFirst().getAddress());
+    }
+
+    @Test
+    void removeInvalidEmailsWithNullListKeepsEmptyList() {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setDigitalAddress(null);
+
+        DigitalAddressUtils.removeInvalidEmails(codeSqsDto);
+
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void removeInvalidEmailsWithAllInvalidEmailsReturnsEmptyList() {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+
+        DigitalAddress invalid1 = new DigitalAddress();
+        invalid1.setAddress("invalid_pec");
+
+        DigitalAddress invalid2 = new DigitalAddress();
+        invalid2.setAddress("not-an-email");
+
+        codeSqsDto.setDigitalAddress(new ArrayList<>(List.of(invalid1, invalid2)));
+
+        DigitalAddressUtils.removeInvalidEmails(codeSqsDto);
+
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void removeInvalidEmailsWithAlreadyValidListKeepsAllEmails() {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+
+        DigitalAddress valid1 = new DigitalAddress();
+        valid1.setAddress("valid1@pec.it");
+
+        DigitalAddress valid2 = new DigitalAddress();
+        valid2.setAddress("valid2@pec.it");
+
+        codeSqsDto.setDigitalAddress(new ArrayList<>(List.of(valid1, valid2)));
+
+        DigitalAddressUtils.removeInvalidEmails(codeSqsDto);
+
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertEquals(2, codeSqsDto.getDigitalAddress().size());
+        assertEquals("valid1@pec.it", codeSqsDto.getDigitalAddress().get(0).getAddress());
+        assertEquals("valid2@pec.it", codeSqsDto.getDigitalAddress().get(1).getAddress());
     }
 
 }

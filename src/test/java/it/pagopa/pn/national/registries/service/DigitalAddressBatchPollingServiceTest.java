@@ -778,21 +778,6 @@ class DigitalAddressBatchPollingServiceTest {
     }
 
     @Test
-    void testStatoImpresaNull() {
-        BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setStatus(BatchStatus.WORKING.getValue());
-        Pec pec = new Pec();
-        pec.setStatoImpresa(null);
-
-        BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
-        when(digitalAddressUtils.updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(Pec.class)))
-                .thenAnswer(inv -> Mono.just(batchRequest));
-
-        BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
-        assertSame(batchRequest, result);
-    }
-
-    @Test
     void testStatoImpresaER() {
         BatchRequest batchRequest = new BatchRequest();
         batchRequest.setBatchId("testBatchId");
@@ -856,6 +841,129 @@ class DigitalAddressBatchPollingServiceTest {
 
         assertSame(batchRequest, result);
         assertNotEquals(BatchStatus.TAKEN_CHARGE.getValue(), result.getStatus());
+        verifyNoInteractions(iniPecBatchRequestService);
+    }
+
+    @Test
+    void testStatoImpresaNullWithEmptyPecList() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setBatchId("testBatchId");
+        batchRequest.setCorrelationId("testCorrelationId");
+        batchRequest.setStatus(BatchStatus.WORKING.getValue());
+        batchRequest.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+
+        Pec pec = new Pec();
+        pec.setStatoImpresa(null);
+
+        BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
+
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setDigitalAddress(Collections.emptyList());
+
+        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(BatchRequest.class), any(Pec.class)))
+                .thenReturn(codeSqsDto);
+
+        when(featureEnabledUtils.isPfNewWorkflowEnabled(any(Instant.class)))
+                .thenReturn(false);
+
+        when(inadService.callEService(any(), any(), any()))
+                .thenReturn(Mono.just(new GetDigitalAddressINADOKDto()));
+
+        BatchRequest result = digitalAddressBatchPollingService
+                .evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now())
+                .block();
+
+        assertSame(batchRequest, result);
+    }
+
+    @Test
+    void testStatoImpresaNullWithOnlyInvalidPec() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setBatchId("testBatchId");
+        batchRequest.setCorrelationId("testCorrelationId");
+        batchRequest.setStatus(BatchStatus.WORKING.getValue());
+        batchRequest.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+
+        Pec pec = new Pec();
+        pec.setStatoImpresa(null);
+
+        BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
+
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setDigitalAddress(Collections.emptyList());
+
+        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(BatchRequest.class), any(Pec.class)))
+                .thenReturn(codeSqsDto);
+
+        when(featureEnabledUtils.isPfNewWorkflowEnabled(any(Instant.class)))
+                .thenReturn(false);
+
+        GetDigitalAddressINADOKDto inadResp = new GetDigitalAddressINADOKDto();
+        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        digitalAddressDto.setDigitalAddress("inad@pec.it");
+        inadResp.setDigitalAddress(digitalAddressDto);
+
+        when(inadService.callEService(any(), any(), any()))
+                .thenReturn(Mono.just(inadResp));
+
+        BatchRequest result = digitalAddressBatchPollingService
+                .evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now())
+                .block();
+
+        assertSame(batchRequest, result);
+        verify(infoCamereConverter, times(1))
+                .convertResponsePecToCodeSqsDto(any(BatchRequest.class), any(Pec.class));
+        verify(featureEnabledUtils, times(1))
+                .isPfNewWorkflowEnabled(any(Instant.class));
+        verify(inadService, times(1))
+                .callEService(any(), any(), any());
+    }
+
+    @Test
+    void testStatoImpresaNullWithValidPec() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setBatchId("testBatchId");
+        batchRequest.setCorrelationId("testCorrelationId");
+        batchRequest.setStatus(BatchStatus.WORKING.getValue());
+        batchRequest.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+
+        Pec pec = new Pec();
+        pec.setStatoImpresa(null);
+
+        BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
+
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        DigitalAddress validAddress1 = new DigitalAddress();
+        validAddress1.setAddress("azienda1@pec.it");
+
+        DigitalAddress validAddress2 = new DigitalAddress();
+        validAddress2.setAddress("azienda2@pec.it");
+
+        codeSqsDto.setDigitalAddress(List.of(validAddress1, validAddress2));
+
+        when(infoCamereConverter.convertResponsePecToCodeSqsDto(any(BatchRequest.class), any(Pec.class)))
+                .thenReturn(codeSqsDto);
+
+        when(featureEnabledUtils.isPfNewWorkflowEnabled(any(Instant.class)))
+                .thenReturn(false);
+
+        when(digitalAddressUtils.updateBatchRequestFields(
+                any(BatchRequest.class),
+                any(BatchStatus.class),
+                any(LocalDateTime.class),
+                any(CodeSqsDto.class)))
+                .thenAnswer(inv -> Mono.just(inv.getArgument(0)));
+
+        BatchRequest result = digitalAddressBatchPollingService
+                .evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now())
+                .block();
+
+        assertSame(batchRequest, result);
+        verify(infoCamereConverter, times(1))
+                .convertResponsePecToCodeSqsDto(any(BatchRequest.class), any(Pec.class));
+        verify(digitalAddressUtils, times(1))
+                .updateBatchRequestFields(any(BatchRequest.class), any(BatchStatus.class), any(LocalDateTime.class), any(CodeSqsDto.class));
+        verify(inadService, never()).callEService(any(), any(), any());
         verifyNoInteractions(iniPecBatchRequestService);
     }
 }

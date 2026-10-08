@@ -52,6 +52,7 @@ import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 import static it.pagopa.pn.national.registries.model.EService.*;
+import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.removeInvalidEmails;
 
 @CustomLog
 @Service
@@ -388,7 +389,13 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
         if (Objects.isNull(pec.getStatoImpresa())) {
             log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
-            return digitalAddressUtils.updateBatchRequestFields(batchRequest, status, now, pec);
+            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+            removeInvalidEmails(codeSqsDto);
+            if(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
+                log.info("IniPEC - correlationId {} - no valid digital address found in pec response", batchRequest.getCorrelationId());
+                return handlePecNotFoundResponse(batchRequest);
+            }
+            return digitalAddressUtils.updateBatchRequestFields(batchRequest, status, now, codeSqsDto);
         }
 
         return Mono.fromCallable(pec::getStatoImpresa)
