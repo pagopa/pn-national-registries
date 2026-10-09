@@ -18,6 +18,8 @@ public class NationalRegistriesConfig {
     private Dao dao;
     private Integer queryLimit;
     private Inipec inipec;
+    private Inad inad;
+    private Integer ttl;
 
 
     private String addressCompositionMode;
@@ -25,6 +27,7 @@ public class NationalRegistriesConfig {
     @Data
     public static class Dao {
         private String shedlockTableName;
+        private String nationalRegistriesBatchesTableName;
     }
 
     @Data
@@ -33,9 +36,25 @@ public class NationalRegistriesConfig {
         private Integer batchRequestMaxRetry;
         private String batchRequestPkSeparator;
         private Integer batchRequestRecoveryAfter;
-        private Double firstAttemptDelaySecondsPerCf;
-        private Integer firstAttemptFixedDelaySeconds;
-        private Integer ttl;
+        private Double pollingFirstAttemptDelaySecondsPerCf;
+        private Integer pollingFirstAttemptFixedDelaySeconds;
     }
 
+    @Data
+    public static class Inad {
+        private Integer maxBatchRequestSize;
+        private Integer oldestRequestMaxWaitingSeconds;
+        private Integer batchRequestDelay;
+        private Integer batchRequestLockAtMost;
+        private Integer batchRequestLockAtLeast;
+        private Integer batchPollingDelay;
+        private Integer batchPollingLockAtMost;
+        private Integer batchPollingLockAtLeast;
+        private Double pollingFirstAttemptDelaySecondsPerCf;
+        private Integer pollingFirstAttemptFixedDelaySeconds;
+        private Integer pollingRetryAfter;
+        private Integer pollingInProgressRetryAfter;
+        private Integer batchPollingInProgressMaxRetry;
+        private Integer batchPollingMaxRetry;
+    }
 }

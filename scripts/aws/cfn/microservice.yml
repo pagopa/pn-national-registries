@@ -200,6 +200,14 @@ Parameters:
     Type: String
     Description: 'ARN of DynamoDB table ShedLock'
 
+  NationalRegistriesBatchesTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table NationalRegistriesBatches'
+
+  NationalRegistriesBatchesTableName:
+    Type: String
+    Description: Name of DynamoDB table used for storing information related to NationalRegistriesBatches
+
   PnCxIdValidationEnabled:
     Type: String
     AllowedValues:
@@ -212,9 +220,9 @@ Parameters:
     Description: 'Query limit for National Registries Tables'
     Default: 1000
 
-  PnNationalRegistriesInipecTtl:
+  PnNationalRegistriesTtl:
     Type: Number
-    Description: 'IniPEC TTL'
+    Description: 'batch TTL'
     Default: 1209600
 
   PnNationalRegistriesInipecBatchRequestDelay:
@@ -326,15 +334,95 @@ Parameters:
     Type: String
     Description: ECS log group name
 
-  FirstAttemptDelaySecondsPerCf:
+  PnNationalRegistriesInipecPollingFirstAttemptDelaySecondsPerCf:
     Type: Number
-    Description: 'Per-CF delay in seconds for the first polling attempt'
+    Description: 'IniPEC polling per-CF delay in seconds for the first attempt'
     Default: 0.085
 
-  FirstAttemptFixedDelaySeconds:
+  PnNationalRegistriesInipecPollingFirstAttemptFixedDelaySeconds:
     Type: Number
-    Description: 'Minimum fixed delay in seconds before the first polling attempt'
+    Description: 'IniPEC polling fixed delay in seconds for the first attempt'
     Default: 300
+
+  PnNationalRegistriesInipecPollingRetryAfter:
+    Type: Number
+    Description: 'IniPEC polling retry-after delay in seconds'
+    Default: 3600
+
+  PnNationalRegistriesInipecPollingInProgressRetryAfter:
+    Type: Number
+    Description: 'IniPEC polling in-progress retry-after delay in seconds'
+    Default: 3600
+
+  PnNationalRegistriesInadMaxBatchRequestSize:
+    Type: Number
+    Description: 'INAD maximum batch request size'
+    Default: 1000
+
+  PnNationalRegistriesInadOldestRequestMaxWaitingSeconds:
+    Type: Number
+    Description: 'INAD oldest request maximum waiting time in seconds'
+    Default: 300
+
+  PnNationalRegistriesInadBatchRequestDelay:
+    Type: Number
+    Description: 'INAD batch request delay'
+    Default: 5000
+
+  PnNationalRegistriesInadBatchRequestLockAtMost:
+    Type: Number
+    Description: 'INAD batch request lock at most'
+    Default: 27000
+
+  PnNationalRegistriesInadBatchRequestLockAtLeast:
+    Type: Number
+    Description: 'INAD batch request lock at least'
+    Default: 22000
+
+  PnNationalRegistriesInadBatchPollingDelay:
+    Type: Number
+    Description: 'INAD batch polling delay'
+    Default: 30000
+
+  PnNationalRegistriesInadBatchPollingLockAtMost:
+    Type: Number
+    Description: 'INAD batch polling lock at most'
+    Default: 30000
+
+  PnNationalRegistriesInadBatchPollingLockAtLeast:
+    Type: Number
+    Description: 'INAD batch polling lock at least'
+    Default: 1000
+
+  PnNationalRegistriesInadPollingFirstAttemptDelaySecondsPerCf:
+    Type: Number
+    Description: 'INAD polling per-CF delay in seconds for the first attempt'
+    Default: 0.085
+
+  PnNationalRegistriesInadPollingFirstAttemptFixedDelaySeconds:
+    Type: Number
+    Description: 'INAD polling fixed delay in seconds for the first attempt'
+    Default: 300
+
+  PnNationalRegistriesInadPollingRetryAfter:
+    Type: Number
+    Description: 'INAD polling retry-after delay in seconds'
+    Default: 3600
+
+  PnNationalRegistriesInadPollingInProgressRetryAfter:
+    Type: Number
+    Description: 'INAD polling in-progress retry-after delay in seconds'
+    Default: 3600
+
+  PnNationalRegistriesInadBatchPollingInProgressMaxRetry:
+    Type: Number
+    Description: 'INAD batch polling in-progress maximum retry count'
+    Default: 24
+
+  PnNationalRegistriesInadBatchPollingMaxRetry:
+    Type: Number
+    Description: 'INAD batch polling maximum retry count'
+    Default: 3
 
   # Heath Check parameters
   HealthCheckInterval:
@@ -585,7 +673,7 @@ Resources:
         ContainerEnvEntry16: !Sub 'PN_NATIONALREGISTRIES_VALCXIDENABLED=${PnCxIdValidationEnabled}'
         ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
         ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_IPA_SECRET=${IPASecret}'
-        ContainerEnvEntry19: !Sub 'PN_NATIONALREGISTRIES_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONALREGISTRIES_TTL=${PnNationalRegistriesTtl}'
         ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_DELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
         ContainerEnvEntry22: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTRECOVERYAFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
@@ -627,8 +715,26 @@ Resources:
         ContainerEnvEntry58: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_READ_TIMEOUT_MILLIS=${IniPecReadTimeoutMillis}'
         ContainerEnvEntry59: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_RETRY_ATTEMPTS=${IniPecMaxRetryAttempts}'
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
-        ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTDELAYSECONDSPERCF=${FirstAttemptDelaySecondsPerCf}'
-        ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTFIXEDDELAYSECONDS=${FirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${PnNationalRegistriesInipecPollingFirstAttemptDelaySecondsPerCf}'
+        ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${PnNationalRegistriesInipecPollingFirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGRETRYAFTER=${PnNationalRegistriesInipecPollingRetryAfter}'
+        ContainerEnvEntry64: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGINPROGRESSRETRYAFTER=${PnNationalRegistriesInipecPollingInProgressRetryAfter}'
+        ContainerEnvEntry65: !Sub 'PN_NATIONALREGISTRIES_INAD_MAXBATCHREQUESTSIZE=${PnNationalRegistriesInadMaxBatchRequestSize}'
+        ContainerEnvEntry66: !Sub 'PN_NATIONALREGISTRIES_INAD_OLDESTREQUESTMAXWAITINGSECONDS=${PnNationalRegistriesInadOldestRequestMaxWaitingSeconds}'
+        ContainerEnvEntry67: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTDELAY=${PnNationalRegistriesInadBatchRequestDelay}'
+        ContainerEnvEntry68: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTLOCKATMOST=${PnNationalRegistriesInadBatchRequestLockAtMost}'
+        ContainerEnvEntry69: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTLOCKATLEAST=${PnNationalRegistriesInadBatchRequestLockAtLeast}'
+        ContainerEnvEntry70: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGDELAY=${PnNationalRegistriesInadBatchPollingDelay}'
+        ContainerEnvEntry71: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGLOCKATMOST=${PnNationalRegistriesInadBatchPollingLockAtMost}'
+        ContainerEnvEntry72: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGLOCKATLEAST=${PnNationalRegistriesInadBatchPollingLockAtLeast}'
+        ContainerEnvEntry73: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${PnNationalRegistriesInadPollingFirstAttemptDelaySecondsPerCf}'
+        ContainerEnvEntry74: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${PnNationalRegistriesInadPollingFirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry75: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGRETRYAFTER=${PnNationalRegistriesInadPollingRetryAfter}'
+        ContainerEnvEntry76: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGINPROGRESSRETRYAFTER=${PnNationalRegistriesInadPollingInProgressRetryAfter}'
+        ContainerEnvEntry77: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGINPROGRESSMAXRETRY=${PnNationalRegistriesInadBatchPollingInProgressMaxRetry}'
+        ContainerEnvEntry78: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInadBatchPollingMaxRetry}'
+        ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_DAO_NATIONALREGISTRIESBATCHESTABLENAME=${NationalRegistriesBatchesTableName}'
+
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
@@ -680,6 +786,9 @@ Resources:
               - !Ref ShedLockTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
+              - !Ref NationalRegistriesBatchesTableArn
+              - !Sub '${NationalRegistriesBatchesTableArn}/index/*'
+
           - Effect: Allow
             Action:
               - sqs:SendMessage
