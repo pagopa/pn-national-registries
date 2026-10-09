@@ -1,11 +1,3 @@
-#!/bin/bash
-
-apt -y install jq
-
-keyID=$(aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 kms create-key --key-spec RSA_2048 --key-usage SIGN_VERIFY | jq ".KeyMetadata.KeyId")
-
-echo "######## KeyId : " $keyID
-
 echo "### CREATE SECRET FOR NATIONAL-REGISTRY ###"
 aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     secretsmanager create-secret \
@@ -267,5 +259,32 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
         AttributeName=_id,KeyType=HASH \
     --provisioned-throughput \
         ReadCapacityUnits=10,WriteCapacityUnits=5
+
+echo "### CREATE NATIONAL REGISTRIES BATCHES TABLE ###"
+
+aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
+    dynamodb create-table \
+    --table-name pn-nationalRegistries-nationalRegistriesBatches \
+    --attribute-definitions \
+        AttributeName=batchId,AttributeType=S \
+        AttributeName=sk,AttributeType=S \
+        AttributeName=status,AttributeType=S \
+        AttributeName=attemptAfter,AttributeType=S \
+    --key-schema \
+        AttributeName=batchId,KeyType=HASH \
+        AttributeName=sk,KeyType=RANGE \
+    --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+    --global-secondary-indexes \
+    '[
+        {
+            "IndexName": "StatusAttemptAfterIndex",
+            "KeySchema": [
+                {"AttributeName": "status", "KeyType": "HASH"},
+                {"AttributeName": "attemptAfter", "KeyType": "RANGE"}
+            ],
+            "Projection": {"ProjectionType": "ALL"},
+            "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
+        }
+    ]'
 
 echo "Initialization terminated"
