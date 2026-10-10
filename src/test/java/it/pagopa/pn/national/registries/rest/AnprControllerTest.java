@@ -18,6 +18,8 @@ import reactor.test.StepVerifier;
 
 import java.util.ArrayList;
 
+import static org.mockito.Mockito.mock;
+
 @ExtendWith(MockitoExtension.class)
 class AnprControllerTest {
 
@@ -36,7 +38,7 @@ class AnprControllerTest {
 
     @BeforeEach
     void init() {
-        anprController = new AnprController(anprService, new GatewayService(null, null, null, null, null), null);
+        anprController = new AnprController(anprService, mock(GatewayService.class), null);
     }
 
     @Test

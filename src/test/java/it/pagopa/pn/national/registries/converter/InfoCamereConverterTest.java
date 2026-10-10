@@ -103,6 +103,31 @@ class InfoCamereConverterTest {
     }
 
     @Test
+    void convertResponsePecToCodeSqsDto_shouldPreserveImpresaThenProfessionistiOrdering() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId~2026-10-10T12:30:00");
+
+        Pec pec = new Pec();
+        pec.setPecImpresa("impresa@pec.it");
+        PecProfessionista professionista1 = new PecProfessionista();
+        professionista1.setPec("professionista1@pec.it");
+        PecProfessionista professionista2 = new PecProfessionista();
+        professionista2.setPec("professionista2@pec.it");
+        pec.setPecProfessionista(List.of(professionista1, professionista2));
+
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+
+        assertEquals(3, codeSqsDto.getDigitalAddress().size());
+        assertEquals("impresa@pec.it", codeSqsDto.getDigitalAddress().get(0).getAddress());
+        assertEquals("professionista1@pec.it", codeSqsDto.getDigitalAddress().get(1).getAddress());
+        assertEquals("professionista2@pec.it", codeSqsDto.getDigitalAddress().get(2).getAddress());
+    }
+
+    @Test
     void testConvertResponsePecToCodeSqsDto2() {
         NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
         inipec.setFirstAttemptDelaySecondsPerCf(0.085);
@@ -397,5 +422,80 @@ class InfoCamereConverterTest {
                                 && GatewayDownstreamService.INIPEC.name().equals(dto.getRegistry())
                 )
         );
+    }
+
+    @Test
+    void convertResponsePecToCodeSqsDto_shouldMapImpresaAndProfessionistaSeparatelyAndDiscardInvalidEmails() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId~2026-10-10T12:30:00");
+
+        Pec pec = new Pec();
+        pec.setPecImpresa("impresa@pec.it");
+        pec.setPecProfessionista(List.of(
+                buildProfessionista("professionista@pec.it"),
+                buildProfessionista("not-an-email"),
+                buildProfessionista("second@pec.it")
+        ));
+
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+
+        assertEquals(3, codeSqsDto.getDigitalAddress().size());
+        assertEquals("impresa@pec.it", codeSqsDto.getDigitalAddress().get(0).getAddress());
+        assertEquals("IMPRESA", codeSqsDto.getDigitalAddress().get(0).getRecipient());
+        assertEquals("professionista@pec.it", codeSqsDto.getDigitalAddress().get(1).getAddress());
+        assertEquals("PROFESSIONISTA", codeSqsDto.getDigitalAddress().get(1).getRecipient());
+        assertEquals("second@pec.it", codeSqsDto.getDigitalAddress().get(2).getAddress());
+        assertEquals("PROFESSIONISTA", codeSqsDto.getDigitalAddress().get(2).getRecipient());
+    }
+
+    @Test
+    void convertResponsePecToCodeSqsDto_shouldReturnOnlyProfessionistiWhenImpresaIsMissing() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId~2026-10-10T12:30:00");
+
+        Pec pec = new Pec();
+        pec.setPecProfessionista(List.of(
+                buildProfessionista("prof1@pec.it"),
+                buildProfessionista("prof2@pec.it")
+        ));
+
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+
+        assertEquals(2, codeSqsDto.getDigitalAddress().size());
+        assertEquals("PROFESSIONISTA", codeSqsDto.getDigitalAddress().get(0).getRecipient());
+        assertEquals("PROFESSIONISTA", codeSqsDto.getDigitalAddress().get(1).getRecipient());
+    }
+
+    @Test
+    void convertResponsePecToCodeSqsDto_shouldReturnOnlyImpresaWhenProfessionistiAreAbsent() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("correlationId~2026-10-10T12:30:00");
+
+        Pec pec = new Pec();
+        pec.setPecImpresa("impresa@pec.it");
+        pec.setPecProfessionista(Collections.emptyList());
+
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+
+        assertEquals(1, codeSqsDto.getDigitalAddress().size());
+        assertEquals("IMPRESA", codeSqsDto.getDigitalAddress().get(0).getRecipient());
+    }
+
+    private PecProfessionista buildProfessionista(String pec) {
+        PecProfessionista professionista = new PecProfessionista();
+        professionista.setPec(pec);
+        return professionista;
     }
 }

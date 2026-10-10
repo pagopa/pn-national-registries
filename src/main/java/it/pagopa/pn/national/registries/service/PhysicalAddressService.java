@@ -5,6 +5,7 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.model.AddressInternalResult;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
@@ -33,7 +34,6 @@ public class PhysicalAddressService extends GatewayConverter {
     private final InfoCamereService infoCamereService;
     private final AnprService anprService;
     private final GatewayUtils gatewayUtils;
-    private final SqsService sqsService;
 
     public Mono<PhysicalAddressesResponseDto> retrieveSyncPhysicalAddresses(PhysicalAddressesRequestBodyDto request) {
         log.info("Starting retrievePhysicalAddresses - request: {}", request);
@@ -101,11 +101,11 @@ public class PhysicalAddressService extends GatewayConverter {
                 .onErrorResume(t -> Mono.just(gatewayUtils.handleException(t, addressQueryRequest, GatewayDownstreamService.REGISTRO_IMPRESE)));
     }
 
-    public Mono<Void> retrieveAsyncPhysicalAddressFromAnpr(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
+    public Mono<AddressInternalResult> retrieveAsyncPhysicalAddressFromAnpr(AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
                 .doOnNext(getAddressANPROKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.ANPR, 1))
                 .map(getAddressANPROKDto -> anprToSqsDto(correlationId, getAddressANPROKDto))
-                .flatMap(addressSQSMessageDto -> {
+                .<AddressInternalResult>map(addressSQSMessageDto -> {
                     if(Objects.nonNull(addressSQSMessageDto.getPhysicalAddress())){
                         logCfWithAddressMetric(
                                 correlationId,
@@ -114,22 +114,21 @@ public class PhysicalAddressService extends GatewayConverter {
                                 null
                         );
                     }
-                    return sqsService.pushToOutputQueue(addressSQSMessageDto, pnNationalRegistriesCxId);
+                    return new AddressInternalResult.Found(addressSQSMessageDto);
                 })
                 .doOnError(isAnprAddressNotFound, e -> {
                     log.info("correlationId: {} - ANPR - indirizzo non presente", correlationId);
                     logCfRequestedMetric(correlationId, GatewayDownstreamService.ANPR, 1);
                 })
-                .doOnNext(sendMessageResponse -> log.info("retrieved physycal address from ANPR for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId()))
-                .then()
+                .doOnNext(result -> log.info("retrieved physical address from ANPR for correlationId: {}", correlationId))
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve physical address from ANPR: {}"));
     }
 
-    public Mono<Void> retrieveAsyncPhysicalAddressFromRegistroImprese(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
+    public Mono<AddressInternalResult> retrieveAsyncPhysicalAddressFromRegistroImprese(AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                 .doOnNext(getAddressRegistroImpreseOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.REGISTRO_IMPRESE, 1))
                 .map(registroImpreseResponse -> regImpToSqsDto(correlationId, registroImpreseResponse))
-                .flatMap(addressSQSMessageDto -> {
+                .<AddressInternalResult>map(addressSQSMessageDto -> {
                     if(Objects.nonNull(addressSQSMessageDto.getPhysicalAddress())){
                         logCfWithAddressMetric(
                                 correlationId,
@@ -138,9 +137,9 @@ public class PhysicalAddressService extends GatewayConverter {
                                 null
                         );
                     }
-                    return sqsService.pushToOutputQueue(addressSQSMessageDto, pnNationalRegistriesCxId);
+                    return new AddressInternalResult.Found(addressSQSMessageDto);
                 })
-                .then()
+                .doOnNext(result -> log.info("retrieved physical address from Registro Imprese for correlationId: {}", correlationId))
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve physical address from Registro Imprese: {}"));
     }
 

@@ -1,14 +1,20 @@
 package it.pagopa.pn.national.registries;
 
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
 import org.testcontainers.containers.BindMode;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.localstack.LocalStackContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.utility.DockerImageName;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 
 import java.io.IOException;
+import java.net.URI;
 import java.time.Duration;
 
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.*;
@@ -46,5 +52,19 @@ public class LocalStackTestConfig {
 
     }
 
-
+    @Bean
+    public SqsAsyncClient sqsAsyncClient() {
+        return SqsAsyncClient.builder()
+                .endpointOverride(localStack.getEndpointOverride(SQS))
+                .region(Region.of(localStack.getRegion()))
+                .credentialsProvider(
+                        StaticCredentialsProvider.create(
+                                AwsBasicCredentials.create(
+                                        localStack.getAccessKey(),
+                                        localStack.getSecretKey()
+                                )
+                        )
+                )
+                .build();
+    }
 }

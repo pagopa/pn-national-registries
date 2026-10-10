@@ -4,7 +4,7 @@ import it.pagopa.pn.commons.log.PnAuditLogEvent;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.AddressInternalResult;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
@@ -28,7 +28,6 @@ import static org.mockito.Mockito.*;
 class PhysicalAddressServiceTest {
 
     private static final String CORRELATION_ID = "correlation-id";
-    private static final String CX_ID = "cx-id";
     private static final String TAX_ID = "RSSMRA80A01H501U";
 
     @Mock
@@ -39,9 +38,6 @@ class PhysicalAddressServiceTest {
 
     @Mock
     private GatewayUtils gatewayUtils;
-
-    @Mock
-    private SqsService sqsService;
 
     @Mock
     private PnAuditLogEvent auditLogEvent;
@@ -416,7 +412,7 @@ class PhysicalAddressServiceTest {
 
 
     @Test
-    void retrieveAsyncPhysicalAddressFromAnpr_shouldPushToSqs() {
+    void retrieveAsyncPhysicalAddressFromAnpr_shouldReturnFoundResult() {
         AddressRequestBodyDto request =
                 buildAsyncRequest();
 
@@ -434,32 +430,20 @@ class PhysicalAddressServiceTest {
                 any(GetAddressANPRRequestBodyDto.class)
         )).thenReturn(Mono.just(response));
 
-        when(sqsService.pushToOutputQueue(
-                any(CodeSqsDto.class),
-                eq(CX_ID)
-        )).thenReturn(Mono.empty());
-
         StepVerifier.create(
                         physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(
-                                CX_ID,
                                 request,
                                 CORRELATION_ID
                         )
                 )
+                .assertNext(result -> {
+                    AddressInternalResult.Found found = assertInstanceOf(AddressInternalResult.Found.class, result);
+                    assertEquals(CORRELATION_ID, found.codeSqsDto().getCorrelationId());
+                    assertEquals(GatewayDownstreamService.ANPR.name(), found.codeSqsDto().getRegistry());
+                    assertNotNull(found.codeSqsDto().getPhysicalAddress());
+                    assertEquals("Via Roma", found.codeSqsDto().getPhysicalAddress().getAddress());
+                })
                 .verifyComplete();
-
-        verify(sqsService).pushToOutputQueue(
-                argThat(dto ->
-                        CORRELATION_ID.equals(dto.getCorrelationId())
-                                && GatewayDownstreamService.ANPR.name()
-                                .equals(dto.getRegistry())
-                                && dto.getPhysicalAddress() != null
-                                && "Via Roma".equals(
-                                dto.getPhysicalAddress().getAddress()
-                        )
-                ),
-                eq(CX_ID)
-        );
     }
 
 
@@ -477,7 +461,6 @@ class PhysicalAddressServiceTest {
 
         StepVerifier.create(
                         physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(
-                                CX_ID,
                                 request,
                                 CORRELATION_ID
                         )
@@ -490,12 +473,11 @@ class PhysicalAddressServiceTest {
                 eq("can not retrieve physical address from ANPR: {}")
         );
 
-        verifyNoInteractions(sqsService);
     }
 
 
     @Test
-    void retrieveAsyncPhysicalAddressFromRegistroImprese_shouldPushToSqs() {
+    void retrieveAsyncPhysicalAddressFromRegistroImprese_shouldReturnFoundResult() {
         AddressRequestBodyDto request =
                 buildAsyncRequest();
 
@@ -513,33 +495,21 @@ class PhysicalAddressServiceTest {
                 any(GetAddressRegistroImpreseRequestBodyDto.class)
         )).thenReturn(Mono.just(response));
 
-        when(sqsService.pushToOutputQueue(
-                any(CodeSqsDto.class),
-                eq(CX_ID)
-        )).thenReturn(Mono.empty());
-
         StepVerifier.create(
                         physicalAddressService
                                 .retrieveAsyncPhysicalAddressFromRegistroImprese(
-                                        CX_ID,
                                         request,
                                         CORRELATION_ID
                                 )
                 )
+                .assertNext(result -> {
+                    AddressInternalResult.Found found = assertInstanceOf(AddressInternalResult.Found.class, result);
+                    assertEquals(CORRELATION_ID, found.codeSqsDto().getCorrelationId());
+                    assertEquals(GatewayDownstreamService.REGISTRO_IMPRESE.name(), found.codeSqsDto().getRegistry());
+                    assertNotNull(found.codeSqsDto().getPhysicalAddress());
+                    assertEquals("Via Impresa", found.codeSqsDto().getPhysicalAddress().getAddress());
+                })
                 .verifyComplete();
-
-        verify(sqsService).pushToOutputQueue(
-                argThat(dto ->
-                        CORRELATION_ID.equals(dto.getCorrelationId())
-                                && GatewayDownstreamService.REGISTRO_IMPRESE.name()
-                                .equals(dto.getRegistry())
-                                && dto.getPhysicalAddress() != null
-                                && "Via Impresa".equals(
-                                dto.getPhysicalAddress().getAddress()
-                        )
-                ),
-                eq(CX_ID)
-        );
     }
 
 
@@ -558,7 +528,6 @@ class PhysicalAddressServiceTest {
         StepVerifier.create(
                         physicalAddressService
                                 .retrieveAsyncPhysicalAddressFromRegistroImprese(
-                                        CX_ID,
                                         request,
                                         CORRELATION_ID
                                 )
@@ -571,7 +540,6 @@ class PhysicalAddressServiceTest {
                 eq("can not retrieve physical address from Registro Imprese: {}")
         );
 
-        verifyNoInteractions(sqsService);
     }
 
 

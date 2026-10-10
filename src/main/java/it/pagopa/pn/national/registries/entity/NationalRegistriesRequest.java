@@ -19,6 +19,7 @@ public class NationalRegistriesRequest {
     public static final String COL_CREATED_AT = "createdAt";
     public static final String COL_TAX_ID = "taxId";
     public static final String COL_RECIPIENT_TYPE = "recipientType";
+    public static final String COL_DOMICILE_TYPE = "domicileType";
     public static final String COL_CLIENT_ID = "clientId";
     public static final String COL_REGISTRY = "registry";
     public static final String COL_STATUS = "status";
@@ -43,6 +44,9 @@ public class NationalRegistriesRequest {
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_RECIPIENT_TYPE)}))
     private String recipientType;
+
+    @Getter(onMethod = @__({@DynamoDbAttribute(COL_DOMICILE_TYPE)}))
+    private String domicileType;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_CLIENT_ID)}))
     private String clientId;

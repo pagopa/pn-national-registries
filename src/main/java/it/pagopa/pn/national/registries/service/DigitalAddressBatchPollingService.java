@@ -1,13 +1,16 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.RecipientType;
+import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
@@ -20,7 +23,6 @@ import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
-import it.pagopa.pn.national.registries.utils.MetricUtils;
 import lombok.CustomLog;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +38,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.nio.charset.Charset;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
@@ -44,6 +47,7 @@ import java.util.regex.Pattern;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE;
+import static it.pagopa.pn.national.registries.constant.DomicileType.DIGITAL;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
 import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.removeInvalidEmails;
@@ -64,12 +68,14 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final int maxRetry;
     private final int inProgressMaxRetry;
     private final String batchRequestPkSeparator;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     private final IniPecBatchRequestService iniPecBatchRequestService;
     private final GatewayUtils gatewayUtils;
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
     private static final Pattern PEC_REQUEST_IN_PROGRESS_PATTERN = Pattern.compile(".*(List PEC in progress).*");
+    private final GatewayService gatewayService;
 
     public DigitalAddressBatchPollingService(InfoCamereConverter infoCamereConverter,
                                              IniPecBatchRequestRepository batchRequestRepository,
@@ -79,8 +85,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                                              InadService inadService,
                                              @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
                                              @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry,
-                                             @Value("${pn.national-registries.inipec.batchrequest-pk-separator}") String batchRequestPkSeparator,
-                                             IniPecBatchRequestService iniPecBatchRequestService, GatewayUtils gatewayUtils) {
+                                             @Value("${pn.national-registries.inipec.batchrequest-pk-separator}") String batchRequestPkSeparator, NationalRegistriesConfig nationalRegistriesConfig,
+                                             IniPecBatchRequestService iniPecBatchRequestService, GatewayUtils gatewayUtils, GatewayService gatewayService) {
         this.infoCamereConverter = infoCamereConverter;
         this.batchRequestRepository = batchRequestRepository;
         this.batchPollingRepository = batchPollingRepository;
@@ -90,8 +96,10 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         this.maxRetry = maxRetry;
         this.inProgressMaxRetry = inProgressMaxRetry;
         this.batchRequestPkSeparator = batchRequestPkSeparator;
+        this.nationalRegistriesConfig = nationalRegistriesConfig;
         this.iniPecBatchRequestService = iniPecBatchRequestService;
         this.gatewayUtils = gatewayUtils;
+        this.gatewayService = gatewayService;
     }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
@@ -310,6 +318,10 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         RecipientType recipientType = retrieveRecipientType(request.getCf(), request.getRecipientType());
         String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
         request.setEservice(GatewayDownstreamService.INAD.name());
+        if(nationalRegistriesConfig.isInadBatchEnabled()){
+            NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(request, recipientType, GatewayDownstreamService.INAD);
+            return gatewayService.inizializeBatchRequest(nationalRegistriesRequest).then();
+        }
         return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType, correlationId)
                 .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .flatMap(DigitalAddressUtils::emailValidation)
@@ -333,6 +345,23 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     return Mono.empty();
                 })
                 .then();
+    }
+
+    private NationalRegistriesRequest constructNationalRegistriesRequest(BatchRequest request, RecipientType recipientType, GatewayDownstreamService registry){
+        NationalRegistriesRequest nationalRegistriesRequest = new NationalRegistriesRequest();
+
+        nationalRegistriesRequest.setCreatedAt(Instant.now());
+        nationalRegistriesRequest.setCorrelationId(request.getCorrelationId());
+        nationalRegistriesRequest.setReferenceRequestDate(request.getReferenceRequestDate().toString());
+        nationalRegistriesRequest.setDomicileType(DIGITAL.name());
+        nationalRegistriesRequest.setTaxId(request.getCf());
+        nationalRegistriesRequest.setRecipientType(recipientType.name());
+        nationalRegistriesRequest.setClientId(request.getClientId());
+        nationalRegistriesRequest.setRegistry(registry);
+        nationalRegistriesRequest.setStatus(RequestStatusEnum.NOT_WORKED);
+        nationalRegistriesRequest.setRegistryStatus(String.join("#", registry.name(), RequestStatusEnum.NOT_WORKED.name()));
+
+        return nationalRegistriesRequest;
     }
 
     private void logEServiceError(Throwable throwable, String message) {

@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Import;
 public class NationalRegistriesConfig {
 
     private boolean enablePfPecFallbackFlow;
+    private boolean inadBatchEnabled;
     private boolean valCxIdEnabled;
 
     private Dao dao;

@@ -22,15 +22,22 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.time.OffsetDateTime;
 import java.util.Date;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.argThat;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @Slf4j
 @TestPropertySource(properties = {
-        "pn.national-registries.inipec.ttl=0"
+        "pn.national-registries.inipec.ttl=0",
+        "pn.national-registries.inipec.batchrequest-pk-separator=~"
 })
 @ContextConfiguration(classes = {InfoCamereService.class})
 @ExtendWith(SpringExtension.class)
@@ -71,6 +78,40 @@ class InfoCamereServiceTest {
         StepVerifier.create(infoCamereService.getIniPecDigitalAddress("clientId", requestBodyDto, new Date(), RecipientType.PG))
                 .expectNext(getDigitalAddressIniPECOKDto)
                 .verifyComplete();
+    }
+
+    @Test
+    void createBatchRequestByCf_shouldPersistRecipientTypeClientIdAndReferenceRequestDate() {
+        GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
+        GetDigitalAddressIniPECRequestBodyFilterDto dto = new GetDigitalAddressIniPECRequestBodyFilterDto();
+        dto.setCorrelationId("correlationId");
+        dto.setTaxId("taxId");
+        requestBodyDto.setFilter(dto);
+
+        Date referenceRequestDate = Date.from(LocalDateTime.of(2026, 10, 10, 12, 30).toInstant(ZoneOffset.UTC));
+
+        when(batchRequestRepository.create(any())).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        StepVerifier.create(infoCamereService.createBatchRequestByCf("clientId", requestBodyDto, "awsMessageId", referenceRequestDate, RecipientType.PF))
+                .assertNext(batchRequest -> {
+                    assertNotNull(batchRequest.getCreatedAt());
+                    assertEquals("taxId", batchRequest.getCf());
+                    assertEquals("clientId", batchRequest.getClientId());
+                    assertEquals("awsMessageId", batchRequest.getAwsMessageId());
+                    assertEquals(RecipientType.PF.name(), batchRequest.getRecipientType());
+                    assertEquals(referenceRequestDate.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime(), batchRequest.getReferenceRequestDate());
+                    assertNotNull(batchRequest.getCorrelationId());
+                })
+                .verifyComplete();
+
+        verify(batchRequestRepository).create(argThat(batchRequest ->
+                batchRequest.getCorrelationId().startsWith("correlationId~")
+                        && "taxId".equals(batchRequest.getCf())
+                        && "clientId".equals(batchRequest.getClientId())
+                        && "awsMessageId".equals(batchRequest.getAwsMessageId())
+                        && RecipientType.PF.name().equals(batchRequest.getRecipientType())
+                        && referenceRequestDate.toInstant().atZone(ZoneOffset.UTC).toLocalDateTime().equals(batchRequest.getReferenceRequestDate())
+        ));
     }
 
     @Test
