@@ -3,7 +3,9 @@ package it.pagopa.pn.national.registries.converter;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DomicileType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
+import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
@@ -671,6 +673,38 @@ class GatewayConverterTest {
         );
         assertEquals(referenceDate, result.getReferenceRequestDate());
         assertEquals("cx-id", result.getPnNationalRegistriesCxId());
+    }
+
+    @Test
+    void testConstructNationalRegistriesRequest() {
+        Date referenceDate = new Date();
+
+        AddressRequestBodyFilterDto filter = new AddressRequestBodyFilterDto();
+        filter.setCorrelationId(C_ID);
+        filter.setTaxId(CF);
+        filter.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+        filter.setReferenceRequestDate(referenceDate);
+
+        AddressRequestBodyDto request = new AddressRequestBodyDto();
+        request.setFilter(filter);
+
+        NationalRegistriesRequest result = gatewayConverter.constructNationalRegistriesRequest(
+                request,
+                RecipientType.PF,
+                "cx-id",
+                GatewayDownstreamService.INAD
+        );
+
+        assertNotNull(result.getCreatedAt());
+        assertEquals(C_ID, result.getCorrelationId());
+        assertEquals(referenceDate.toString(), result.getReferenceRequestDate());
+        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue(), result.getDomicileType());
+        assertEquals(CF, result.getTaxId());
+        assertEquals(RecipientType.PF.name(), result.getRecipientType());
+        assertEquals("cx-id", result.getClientId());
+        assertEquals(GatewayDownstreamService.INAD, result.getRegistry());
+        assertEquals(RequestStatusEnum.NOT_WORKED, result.getStatus());
+        assertEquals("INAD#NOT_WORKED", result.getRegistryStatus());
     }
 
     @Test

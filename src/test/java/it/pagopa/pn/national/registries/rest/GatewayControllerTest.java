@@ -2,48 +2,58 @@ package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.service.GatewayService;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import java.util.List;
 
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class GatewayControllerTest {
 
-    @InjectMocks
-    GatewayController gatewayController;
-
     @Mock
     GatewayService gatewayService;
+
     @Mock
     ServerWebExchange serverWebExchange;
 
-    @Mock
-    ValidateTaxIdUtils validateTaxIdUtils;
-
     @Test
-    void testGetAddress() {
+    void getAddresses_shouldDelegateAsyncRequestAndReturnAcceptedCorrelationId() {
+        GatewayController gatewayController = new GatewayController(gatewayService, Schedulers.immediate());
+
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         AddressRequestBodyFilterDto addressRequestBodyFilterDto = new AddressRequestBodyFilterDto();
         addressRequestBodyFilterDto.setTaxId("PPPPLT80A01H501V");
+        addressRequestBodyFilterDto.setCorrelationId("correlationId");
+        addressRequestBodyFilterDto.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
         addressRequestBodyDto.setFilter(addressRequestBodyFilterDto);
+
         AddressOKDto addressOKDto = new AddressOKDto();
-        StepVerifier.create(gatewayController.getAddresses("",Mono.just(addressRequestBodyDto), "clientId", serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(addressOKDto));
+        addressOKDto.setCorrelationId("correlationId");
+
+        when(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PF", "clientId", addressRequestBodyDto))
+                .thenReturn(Mono.just(addressOKDto));
+
+        StepVerifier.create(gatewayController.getAddresses("PF", Mono.just(addressRequestBodyDto), "clientId", serverWebExchange))
+                .expectNext(ResponseEntity.ok(addressOKDto))
+                .verifyComplete();
+
+        verify(gatewayService).retrieveDigitalOrPhysicalAddressAsync("PF", "clientId", addressRequestBodyDto);
     }
 
     @Test
-    void testGetPhysicalAddresses() {
-        // Set Request
+    void getPhysicalAddresses_shouldDelegateToGatewayService() {
+        GatewayController gatewayController = new GatewayController(gatewayService, Schedulers.immediate());
+
         RecipientAddressRequestBodyDto recipientAddressRequestBodyDto = new RecipientAddressRequestBodyDto();
         recipientAddressRequestBodyDto.setTaxId("PPPPLT80A01H501V");
         recipientAddressRequestBodyDto.setRecIndex(0);
@@ -53,12 +63,16 @@ class GatewayControllerTest {
         physicalAddressesRequestBodyDto.setCorrelationId("correlationId");
         physicalAddressesRequestBodyDto.setAddresses(List.of(recipientAddressRequestBodyDto));
 
-        // Set Response
-
         PhysicalAddressesResponseDto physicalAddressesResponseDto = getPhysicalAddressesResponseDto();
 
+        when(gatewayService.retrieveSyncPhysicalAddresses(physicalAddressesRequestBodyDto))
+                .thenReturn(Mono.just(physicalAddressesResponseDto));
+
         StepVerifier.create(gatewayController.getPhysicalAddresses(Mono.just(physicalAddressesRequestBodyDto), serverWebExchange))
-                .expectNext(ResponseEntity.ok().body(physicalAddressesResponseDto));
+                .expectNext(ResponseEntity.ok(physicalAddressesResponseDto))
+                .verifyComplete();
+
+        verify(gatewayService).retrieveSyncPhysicalAddresses(physicalAddressesRequestBodyDto);
     }
 
     private static PhysicalAddressesResponseDto getPhysicalAddressesResponseDto() {

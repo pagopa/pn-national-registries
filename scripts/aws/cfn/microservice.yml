@@ -200,6 +200,14 @@ Parameters:
     Type: String
     Description: 'ARN of DynamoDB table ShedLock'
 
+  PnNationalRegistriesRequestsTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table Requests'
+
+  PnNationalRegistriesRequestsTableName:
+    Type: String
+    Description: 'Name of DynamoDB table Requests'
+
   PnCxIdValidationEnabled:
     Type: String
     AllowedValues:
@@ -526,6 +534,13 @@ Parameters:
       - true
       - false
 
+  EnableInadBatch:
+    Type: String
+    Description: 'Enable INAD batch processing. If disabled, only single INAD requests are processed.'
+    AllowedValues:
+      - true
+      - false
+
   CpuArchitecture:
     Type: String
     Default: 'ARM'
@@ -538,6 +553,8 @@ Parameters:
     Type: String
     Default: ''
     Description: Java tool options for the Fargate tasks
+
+
 
 Resources:
 
@@ -629,6 +646,8 @@ Resources:
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
         ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTDELAYSECONDSPERCF=${FirstAttemptDelaySecondsPerCf}'
         ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTFIXEDDELAYSECONDS=${FirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${PnNationalRegistriesRequestsTableName}'
+        ContainerEnvEntry64: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADBATCH=${EnableInadBatch}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
@@ -678,8 +697,10 @@ Resources:
               - !Ref BatchRequestTableArn
               - !Ref BatchPollingTableArn
               - !Ref ShedLockTableArn
+              - !Ref PnNationalRegistriesRequestsTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
+              - !Sub '${PnNationalRegistriesRequestsTableArn}/index/*'
           - Effect: Allow
             Action:
               - sqs:SendMessage

@@ -59,6 +59,7 @@
     "AddressCompositionMode": "MINIMAL",
     "IniPecReadTimeoutMillis": "15000",
     "EnablePfPecFallbackFlow": "true",
+    "EnableInadBatch": "true",
     "FirstAttemptDelaySecondsPerCf": "0.085",
     "FirstAttemptFixedDelaySeconds": "300",
     "CpuArchitecture": "AMD"

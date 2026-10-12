@@ -13,6 +13,7 @@ import org.springframework.context.annotation.Import;
 public class NationalRegistriesConfig {
 
     private boolean enablePfPecFallbackFlow;
+    private boolean enableInadBatch;
     private boolean valCxIdEnabled;
 
     private Dao dao;
@@ -25,6 +26,7 @@ public class NationalRegistriesConfig {
     @Data
     public static class Dao {
         private String shedlockTableName;
+        private String requestsTableName;
     }
 
     @Data
