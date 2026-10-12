@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
@@ -28,6 +29,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
 
 @Slf4j
 @Service
@@ -37,7 +39,6 @@ public class IniPecBatchSqsService {
     private final SqsService sqsService;
 
     private static final int MAX_BATCH_REQUEST_SIZE = 100;
-    private static final String RECIPIENT_TYPE = "PG";
     private static final String DOMICILE_TYPE = "DIGITAL";
     private final String batchRequestPkSeparator;
 
@@ -110,13 +111,14 @@ public class IniPecBatchSqsService {
                                 .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {}", item.getCorrelationId(), e))
                                 .onErrorResume(e -> Mono.empty());
                     } else {
+                        RecipientType recipientType = retrieveRecipientType(item.getCf(), item.getRecipientType());
                         return sqsService.pushToInputDlqQueue(InternalCodeSqsDto.builder()
                                         .taxId(item.getCf())
                                         .correlationId(item.getCorrelationId().split(batchRequestPkSeparator)[0])
                                         .referenceRequestDate(java.util.Date.from(item.getReferenceRequestDate().atZone(ZoneId.systemDefault()).toInstant()))
                                         .pnNationalRegistriesCxId(item.getClientId())
                                         .domicileType(DOMICILE_TYPE)
-                                        .recipientType(RECIPIENT_TYPE)
+                                        .recipientType(recipientType.name())
                                         .build(), item.getClientId())
                                 .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
                                         item.getCorrelationId().split(batchRequestPkSeparator)[0],
@@ -157,9 +159,10 @@ public class IniPecBatchSqsService {
     }
 
     private InternalCodeSqsDto toInternalCodeSqsDto(BatchRequest batchRequest) {
+        RecipientType recipientType = retrieveRecipientType(batchRequest.getCf(), batchRequest.getRecipientType());
         return InternalCodeSqsDto.builder()
                 .taxId(batchRequest.getCf())
-                .recipientType(RECIPIENT_TYPE)
+                .recipientType(recipientType.name())
                 .domicileType(DOMICILE_TYPE)
                 .pnNationalRegistriesCxId(batchRequest.getClientId())
                 .correlationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0])
