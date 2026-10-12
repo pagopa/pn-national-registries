@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.component;
+package it.pagopa.pn.national.registries.integration;
 
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;

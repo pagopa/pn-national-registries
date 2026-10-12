@@ -1,7 +1,8 @@
-package it.pagopa.pn.national.registries.component;
+package it.pagopa.pn.national.registries.integration;
 
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import reactor.core.publisher.Mono;
@@ -79,14 +80,21 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
                 ))));
 
         AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
-        RuntimeException thrown = processNextGatewayInputMessageExpectingFailure();
+        processNextGatewayInputMessage();
 
         assertEquals(correlationId, response.getCorrelationId());
-        assertNotNull(thrown);
-        assertNull(receiveSingleMessage(OUTPUT_QUEUE));
+        Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
+        assertNotNull(outputMessage);
+
+        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getCorrelationId());
+        assertEquals("INAD", payload.getRegistry());
+        assertTrue(payload.getDigitalAddress().isEmpty());
+
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         verify(inadClient).callEService(VALID_PF_CF, correlationId);
+        verifyNoInteractions(ipaClient, anprClient);
     }
 
     @Test
@@ -128,12 +136,70 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
-        assertEquals("valid@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        assertEquals(correlationId, response.getCorrelationId());
 
+        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getCorrelationId());
+        assertEquals("INAD", payload.getRegistry());
+        assertTrue(payload.getDigitalAddress().isEmpty());
+
+        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
+        assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         verify(inadClient).callEService(VALID_PF_CF, correlationId);
+        verifyNoInteractions(ipaClient, anprClient);
+    }
+
+    @Test
+    void PF_Digital_INAD_MultipleProfessionals_fallbackDisabled() {
+        String correlationId = "pf-digital-multiple-prof-disabled-" + UUID.randomUUID();
+        when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId)))
+                .thenReturn(Mono.just(inadResponse(VALID_PF_CF, List.of(
+                        inadAddress("prof1@pec.it", "INGEGNERE"),
+                        inadAddress("prof2@pec.it", "ARCHITETTO")
+                ))));
+
+        AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        assertEquals(correlationId, response.getCorrelationId());
+        Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
+        assertNotNull(outputMessage);
+
+        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        assertTrue(payload.getDigitalAddress().isEmpty());
+
+        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
+        assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
+        verify(inadClient).callEService(VALID_PF_CF, correlationId);
+        verifyNoInteractions(ipaClient, anprClient);
+    }
+
+    @Test
+    void PF_Digital_INAD_EmptyList_fallbackDisabled() {
+        String correlationId = "pf-digital-empty-list-disabled-" + UUID.randomUUID();
+        ResponseRequestDigitalAddress emptyResponse = new ResponseRequestDigitalAddress();
+        emptyResponse.setCodiceFiscale(VALID_PF_CF);
+        emptyResponse.setSince(java.util.Date.from(java.time.Instant.parse("2026-10-10T10:15:30Z")));
+        emptyResponse.setDigitalAddress(List.of());
+
+        when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId))).thenReturn(Mono.just(emptyResponse));
+
+        AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        assertEquals(correlationId, response.getCorrelationId());
+        Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
+        assertNotNull(outputMessage);
+
+        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getCorrelationId());
+        assertEquals("INAD", payload.getRegistry());
+        assertTrue(payload.getDigitalAddress().isEmpty());
+
+        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
+        assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
+        verify(inadClient).callEService(VALID_PF_CF, correlationId);
+        verifyNoInteractions(ipaClient, anprClient);
     }
 
     @Test

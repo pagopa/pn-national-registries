@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.isValidEmail;
+
 
 @Slf4j
 @Component
@@ -78,8 +80,8 @@ public class InadConverter {
     private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response, boolean isEnablePfPecFallbackFlow) {
 
         Optional<DigitalAddressDto> digitalAddress = retrievePersonalAddress(digitalAddressDtoList, response);
-        if (isEnablePfPecFallbackFlow) {
-            digitalAddress = digitalAddress.or(() -> retrieveProfessionalAddress(digitalAddressDtoList));
+        if (isEnablePfPecFallbackFlow && (digitalAddress.isEmpty() || !isValidEmail(digitalAddress.get().getDigitalAddress()))) {
+            digitalAddress = retrieveProfessionalAddress(digitalAddressDtoList);
         }
 
         digitalAddress.ifPresentOrElse(

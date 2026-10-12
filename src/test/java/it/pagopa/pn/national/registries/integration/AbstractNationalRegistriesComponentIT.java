@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.component;
+package it.pagopa.pn.national.registries.integration;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -14,6 +14,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.Ve
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RispostaE002OK;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoCodiceFiscale;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoComune;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoCivicoInterno;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoDatiSoggettiEnte;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoGeneralita;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo;
@@ -41,7 +42,6 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigit
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressIniPECRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.GatewayInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
-import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.service.DigitalAddressBatchPollingService;
 import it.pagopa.pn.national.registries.service.IniPecBatchRequestService;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,6 +73,7 @@ import java.util.UUID;
 
 @TestPropertySource(properties = {
         "spring.cloud.aws.sqs.enabled=false",
+        "pn.national-registries.address-composition-mode=MINIMAL",
         "pn.national-registries.val-cx-id-enabled=true",
         "pn.national-registries.query-limit=20",
         "pn.national.registries.anpr.table=pn-counter",
@@ -402,6 +403,10 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
     }
 
     protected AddressRegistroImprese registroImpreseAddress(String taxId, String toponimo, String via, String civico, String municipality, String province, String zip) {
+        return registroImpreseAddress(taxId, toponimo, via, civico, municipality, province, zip, "IT");
+    }
+
+    protected AddressRegistroImprese registroImpreseAddress(String taxId, String toponimo, String via, String civico, String municipality, String province, String zip, String stato) {
         LegalAddress legalAddress = new LegalAddress();
         legalAddress.setToponimo(toponimo);
         legalAddress.setVia(via);
@@ -409,7 +414,7 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
         legalAddress.setComune(municipality);
         legalAddress.setProvincia(province);
         legalAddress.setCap(zip);
-        legalAddress.setStato("IT");
+        legalAddress.setStato(stato);
 
         AddressRegistroImprese response = new AddressRegistroImprese();
         response.setCf(taxId);
@@ -418,6 +423,27 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
     }
 
     protected RispostaE002OK anprResponse(String taxId, String species, String street, String civicNumber, String municipality, String province, String zip) {
+        return anprResponse(taxId, species, street, civicNumber, null, null, null, null, null, null, null, null, municipality, province, zip);
+    }
+
+    protected RispostaE002OK anprResponse(String taxId, String species, String street, String civicNumber, String municipality, String province, String zip,
+                                         String addressDetail, String at, String municipalityDetails) {
+        String scala = null;
+        String scalaEsterna = null;
+        if (addressDetail != null) {
+            if (addressDetail.startsWith("Scala est. ")) {
+                scalaEsterna = addressDetail.substring("Scala est. ".length());
+            } else if (addressDetail.startsWith("Scala ")) {
+                scala = addressDetail.substring("Scala ".length());
+            }
+        }
+        return anprResponse(taxId, species, street, civicNumber, null, null, null, null, scala, scalaEsterna, at, municipalityDetails, municipality, province, zip);
+    }
+
+    protected RispostaE002OK anprResponse(String taxId, String species, String street, String civicNumber,
+                                          String civicLetter, String metric, String progSnc, String color,
+                                          String scala, String scalaEsterna, String at, String municipalityDetails,
+                                          String municipality, String province, String zip) {
         TipoCodiceFiscale codiceFiscale = new TipoCodiceFiscale();
         codiceFiscale.setCodFiscale(taxId);
 
@@ -430,6 +456,17 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
 
         TipoNumeroCivico numeroCivico = new TipoNumeroCivico();
         numeroCivico.setNumero(civicNumber);
+        numeroCivico.setLettera(civicLetter);
+        numeroCivico.setMetrico(metric);
+        numeroCivico.setProgSNC(progSnc);
+        numeroCivico.setColore(color);
+
+        if (scala != null || scalaEsterna != null) {
+            TipoCivicoInterno civicoInterno = new TipoCivicoInterno();
+            civicoInterno.setScala(scala);
+            civicoInterno.setScalaEsterna(scalaEsterna);
+            numeroCivico.setCivicoInterno(civicoInterno);
+        }
 
         TipoComune comune = new TipoComune();
         comune.setNomeComune(municipality);
@@ -440,11 +477,13 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
         indirizzo.setNumeroCivico(numeroCivico);
         indirizzo.setComune(comune);
         indirizzo.setCap(zip);
+        indirizzo.setFrazione(municipalityDetails);
 
         TipoResidenza residenza = new TipoResidenza();
         residenza.setIndirizzo(indirizzo);
         residenza.setTipoIndirizzo("RESIDENZA");
         residenza.setDataDecorrenzaResidenza("2026-10-10");
+        residenza.setPresso(at);
 
         TipoDatiSoggettiEnte soggetto = new TipoDatiSoggettiEnte();
         soggetto.setGeneralita(generalita);
