@@ -200,6 +200,18 @@ Parameters:
     Type: String
     Description: 'ARN of DynamoDB table ShedLock'
 
+  PnNationalRegistriesRequestsTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table Requests'
+
+  PnNationalRegistriesRequestsTableName:
+    Type: String
+    Description: 'Name of DynamoDB table Requests'
+
+  PnNationalRegistriesRequestsTableStreamArn:
+    Type: String
+    Description: 'ARN of DynamoDB Stream for Requests table (StreamViewType NEW_AND_OLD_IMAGES)'
+
   PnCxIdValidationEnabled:
     Type: String
     AllowedValues:
@@ -629,6 +641,7 @@ Resources:
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
         ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTDELAYSECONDSPERCF=${FirstAttemptDelaySecondsPerCf}'
         ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTFIXEDDELAYSECONDS=${FirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${PnNationalRegistriesRequestsTableName}'
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
@@ -678,8 +691,10 @@ Resources:
               - !Ref BatchRequestTableArn
               - !Ref BatchPollingTableArn
               - !Ref ShedLockTableArn
+              - !Ref PnNationalRegistriesRequestsTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
+              - !Sub '${PnNationalRegistriesRequestsTableArn}/index/*'
           - Effect: Allow
             Action:
               - sqs:SendMessage
@@ -699,6 +714,84 @@ Resources:
             Resource:
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SecretAndSSMPrefix}/*'
+
+  PnNationalRegistriesBatchRequestErrorPipeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-batch-request-error-pipe-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pipes.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: batch-request-error-pipe-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadBatchRequestDynamoDbStream
+                Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource:
+                  - !Ref BatchRequestTableStreamArn
+              - Sid: SendToNationalRegistryGatewayInputsDlq
+                Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !Ref NationalRegistryGatewayInputsDLQARN
+
+  PnNationalRegistriesBatchRequestErrorPipe:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: pn-national-registries-batch-request-error-pipe
+      RoleArn: !GetAtt PnNationalRegistriesBatchRequestErrorPipeRole.Arn
+      Source: !Ref BatchRequestTableStreamArn
+      SourceParameters:
+        DynamoDBStreamParameters:
+          StartingPosition: LATEST
+          BatchSize: 1
+        FilterCriteria:
+          Filters:
+            - Pattern: >-
+                {
+                  "eventName": ["MODIFY"],
+                  "dynamodb": {
+                    "NewImage": {
+                      "status": {
+                        "S": ["ERROR"]
+                      }
+                    },
+                    "OldImage": {
+                      "status": {
+                        "S": [
+                          {
+                            "anything-but": "ERROR"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+      Target: !Ref NationalRegistryGatewayInputsDLQARN
+      TargetParameters:
+        InputTemplate: >-
+          {
+            "taxId": "<$.dynamodb.NewImage.taxId.S>",
+            "correlationId": "<$.dynamodb.NewImage.correlationId.S>",
+            "recipientType": "<$.dynamodb.NewImage.recipientType.S>",
+            "domicileType": "<$.dynamodb.NewImage.domicileType.S>",
+            "referenceRequestDate": "<$.dynamodb.NewImage.referenceRequestDate.S>",
+            "pnNationalRegistriesCxId": "<$.dynamodb.NewImage.clientId.S>"
+          }
 
   NationalRegistryApiGateway:
     Type: AWS::CloudFormation::Stack
