@@ -71,7 +71,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         Instant baseTime = Instant.parse("2026-10-07T10:00:00Z");
 
-        List<NationalRegistriesRequest> requests = IntStream.range(0, numberOfItems)
+        List<NationalRegistriesRequest> requests = new java.util.ArrayList<>(IntStream.range(0, numberOfItems)
                 .mapToObj(i -> buildRequest(
                         "CORRELATION-" + UUID.randomUUID(),
                         baseTime.plus(i, ChronoUnit.SECONDS),
@@ -79,18 +79,26 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         GatewayDownstreamService.INAD,
                         RequestStatusEnum.NOT_WORKED
                 ))
-                .toList();
+                .toList());
+
+        requests.add(buildRequest(
+                "CORRELATION-" + UUID.randomUUID(),
+                baseTime.plus(numberOfItems, ChronoUnit.SECONDS),
+                batchId,
+                GatewayDownstreamService.INAD,
+                RequestStatusEnum.WORKING
+        ));
 
         requests.forEach(request -> repository.putRequest(request).block());
 
-        Page<NationalRegistriesRequest> firstPage = repository.getRequestsBatchId(batchId, null).block();
+        Page<NationalRegistriesRequest> firstPage = repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING, null).block();
 
         Assertions.assertNotNull(firstPage);
         Assertions.assertEquals(5, firstPage.items().size());
         Assertions.assertTrue(firstPage.items().stream().allMatch(item -> batchId.equals(item.getBatchId())));
         Assertions.assertFalse(firstPage.lastEvaluatedKey().isEmpty());
 
-        Page<NationalRegistriesRequest> secondPage = repository.getRequestsBatchId(batchId, firstPage.lastEvaluatedKey()).block();
+        Page<NationalRegistriesRequest> secondPage = repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING, firstPage.lastEvaluatedKey()).block();
 
         Assertions.assertNotNull(secondPage);
         Assertions.assertEquals(2, secondPage.items().size());
@@ -516,7 +524,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
     }
 
     private NationalRegistriesRequest getRequestByBatchId(String batchId ) {
-        Page<NationalRegistriesRequest> page = repository.getRequestsBatchId(batchId, null).block();
+        Page<NationalRegistriesRequest> page = repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING, null).block();
         Assertions.assertNotNull(page);
         Assertions.assertEquals(1, page.items().size());
         return page.items().getFirst();

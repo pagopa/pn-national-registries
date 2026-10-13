@@ -273,16 +273,20 @@ Resources:
           AttributeType: "S"
         - AttributeName: "registryStatus"
           AttributeType: "S"
+        - AttributeName: "status"
+          AttributeType: "S"
       KeySchema:
         - AttributeName: "correlationId"
           KeyType: "HASH"
         - AttributeName: "createdAt"
           KeyType: "RANGE"
       GlobalSecondaryIndexes:
-        - IndexName: "batchId-index"
+        - IndexName: "batchId-status-index"
           KeySchema:
             - AttributeName: batchId
               KeyType: HASH
+            - AttributeName: status
+              KeyType: RANGE
           Projection:
             ProjectionType: ALL
         - IndexName: "registryStatus-index"

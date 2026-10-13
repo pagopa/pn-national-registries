@@ -25,10 +25,7 @@ import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.*;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
@@ -58,10 +55,16 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      *
      */
     @Override
-    public Mono<Page<NationalRegistriesRequest>> getRequestsBatchId(String batchId, Map<String, AttributeValue> lastEvaluatedKey) {
+    public Mono<Page<NationalRegistriesRequest>> getRequestsBatchId(String batchId, RequestStatusEnum status, Map<String, AttributeValue> lastEvaluatedKey) {
+        Key key;
+        if(Objects.isNull(status)) {
+            key = Key.builder().partitionValue(batchId).build();
+        }else{
+            key = Key.builder().partitionValue(batchId).sortValue(status.name()).build();
+        }
 
         QueryEnhancedRequest.Builder builder = QueryEnhancedRequest.builder()
-                .queryConditional(QueryConditional.keyEqualTo(Key.builder().partitionValue(batchId).build()))
+                .queryConditional(QueryConditional.keyEqualTo(key))
                 .limit(nationalRegistriesConfig.getQueryLimit());
 
         if (!CollectionUtils.isEmpty(lastEvaluatedKey)) {

@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import reactor.core.publisher.Mono;
@@ -12,7 +13,7 @@ public interface NationalRegistriesRequestsRepository {
 
     Mono<NationalRegistriesRequest> putRequest(NationalRegistriesRequest nationalRegistriesRequest);
 
-    Mono<Page<NationalRegistriesRequest>> getRequestsBatchId(String batchId, Map<String, AttributeValue> lastEvaluatedKey);
+    Mono<Page<NationalRegistriesRequest>> getRequestsBatchId(String batchId, RequestStatusEnum status, Map<String, AttributeValue> lastEvaluatedKey);
 
     Mono<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, Map<String, AttributeValue> lastEvaluatedKey, int limit);
 
