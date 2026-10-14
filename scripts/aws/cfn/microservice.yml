@@ -200,11 +200,19 @@ Parameters:
     Type: String
     Description: 'ARN of DynamoDB table ShedLock'
 
-  NationalRegistriesBatchesTableArn:
+  PnNationalRegistriesRequestsTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table Requests'
+
+  PnNationalRegistriesRequestsTableName:
+    Type: String
+    Description: 'Name of DynamoDB table Requests'
+
+  PnNationalRegistriesBatchesTableArn:
     Type: String
     Description: 'ARN of DynamoDB table NationalRegistriesBatches'
 
-  NationalRegistriesBatchesTableName:
+  PnNationalRegistriesBatchesTableName:
     Type: String
     Description: Name of DynamoDB table used for storing information related to NationalRegistriesBatches
 
@@ -742,7 +750,8 @@ Resources:
         ContainerEnvEntry77: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGINPROGRESSMAXRETRY=${PnNationalRegistriesInadBatchPollingInProgressMaxRetry}'
         ContainerEnvEntry78: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInadBatchPollingMaxRetry}'
         ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_SQS_POLLINGQUEUENAME=${NationalRegistriesPollingQueueName}'
-        ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${NationalRegistriesBatchesTableName}'
+        ContainerEnvEntry80: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${PnNationalRegistriesRequestsTableName}'
+        ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${PnNationalRegistriesBatchesTableName}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -793,10 +802,12 @@ Resources:
               - !Ref BatchRequestTableArn
               - !Ref BatchPollingTableArn
               - !Ref ShedLockTableArn
+              - !Ref PnNationalRegistriesRequestsTableArn
+              - !Ref PnNationalRegistriesBatchesTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
-              - !Ref NationalRegistriesBatchesTableArn
-              - !Sub '${NationalRegistriesBatchesTableArn}/index/*'
+              - !Sub '${PnNationalRegistriesRequestsTableArn}/index/*'
+              - !Sub '${PnNationalRegistriesBatchesTableArn}/index/*'
 
           - Effect: Allow
             Action:

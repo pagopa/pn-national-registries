@@ -29,6 +29,7 @@ public class NationalRegistriesConfig {
     public static class Dao {
         private String shedlockTableName;
         private String batchesTableName;
+        private String requestsTableName;
     }
 
     @Data
