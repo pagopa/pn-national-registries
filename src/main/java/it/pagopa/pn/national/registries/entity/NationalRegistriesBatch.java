@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.entity;
 
+import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -47,7 +48,7 @@ public class NationalRegistriesBatch {
     private String registry;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_STATUS), @DynamoDbSecondaryPartitionKey(indexNames = STATUS_ATTEMPTAFTER_INDEX)}))
-    private String status;
+    private BatchesStatusEnum status;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_POLLINGID)}))
     private String pollingId;

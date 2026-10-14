@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfClient;
 import it.pagopa.pn.national.registries.client.anpr.AnprClient;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.VerificheApi;
 import it.pagopa.pn.national.registries.service.SqsService;
@@ -16,10 +17,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+
+import static it.pagopa.pn.national.registries.constant.BatchesStatusEnum.*;
 
 @Slf4j
 @SpringBootTest(properties = {
@@ -31,11 +35,6 @@ import java.util.List;
         "pn.national-registries.inipec.ttl=3600"
 })
 class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
-
-    private static final String READY_STATUS = "IT_READY";
-    private static final String PROCESSING_STATUS = "IT_PROCESSING";
-    private static final String STORED_STATUS = "IT_STORED";
-    private static final String RETRY_READY_STATUS = "IT_RETRY_READY";
 
     @Autowired
     NationalRegistriesBatchesRepository nationalRegistriesBatchesRepository;
@@ -63,7 +62,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
 
     @Test
     void putAndGetBatchTest() {
-        NationalRegistriesBatch batch = batch("put-get", STORED_STATUS, Instant.parse("2026-10-09T10:00:00Z"));
+        NationalRegistriesBatch batch = batch("put-get", REQUEST_SENT, Instant.parse("2026-10-09T10:00:00Z"));
         batch.setRegistry("INAD");
         batch.setBatchSize(10);
 
@@ -81,27 +80,27 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
     @Test
     void getBatchesToProcessFiltersByStatusAndAttemptAfterAndPaginatesTest() {
         Instant now = Instant.parse("2026-10-09T10:00:00Z");
-        NationalRegistriesBatch firstBatch = batch("query-1", READY_STATUS, now.minus(2, ChronoUnit.MINUTES));
-        NationalRegistriesBatch secondBatch = batch("query-2", READY_STATUS, now.minus(1, ChronoUnit.MINUTES));
-        NationalRegistriesBatch thirdBatch = batch("query-3", READY_STATUS, now);
-        NationalRegistriesBatch futureBatch = batch("query-future", READY_STATUS, now.plus(1, ChronoUnit.MINUTES));
-        NationalRegistriesBatch otherStatusBatch = batch("query-other-status", "IT_OTHER", now.minus(1, ChronoUnit.MINUTES));
+        NationalRegistriesBatch firstBatch = batch("query-1", REQUEST_SENT, now.minus(2, ChronoUnit.MINUTES));
+        NationalRegistriesBatch secondBatch = batch("query-2", REQUEST_SENT, now.minus(1, ChronoUnit.MINUTES));
+        NationalRegistriesBatch thirdBatch = batch("query-3", REQUEST_SENT, now);
+        NationalRegistriesBatch futureBatch = batch("query-future", REQUEST_SENT, now.plus(1, ChronoUnit.MINUTES));
+        NationalRegistriesBatch otherStatusBatch = batch("query-other-status", WORKING, now.minus(1, ChronoUnit.MINUTES));
 
         List.of(firstBatch, secondBatch, thirdBatch, futureBatch, otherStatusBatch)
                 .forEach(batch -> nationalRegistriesBatchesRepository.putBatch(batch).block());
 
         Page<NationalRegistriesBatch> firstPage = nationalRegistriesBatchesRepository
-                .getBatchesToProcess(READY_STATUS, now, null)
+                .getBatchesToProcess(REQUEST_SENT, now, null)
                 .block();
 
         Assertions.assertNotNull(firstPage);
         Assertions.assertEquals(2, firstPage.items().size());
         Assertions.assertTrue(firstPage.items().stream()
-                .allMatch(batch -> READY_STATUS.equals(batch.getStatus()) && !batch.getAttemptAfter().isAfter(now)));
+                .allMatch(batch -> REQUEST_SENT.equals(batch.getStatus()) && !batch.getAttemptAfter().isAfter(now)));
         Assertions.assertNotNull(firstPage.lastEvaluatedKey());
 
         Page<NationalRegistriesBatch> secondPage = nationalRegistriesBatchesRepository
-                .getBatchesToProcess(READY_STATUS, now, firstPage.lastEvaluatedKey())
+                .getBatchesToProcess(REQUEST_SENT, now, firstPage.lastEvaluatedKey())
                 .block();
 
         Assertions.assertNotNull(secondPage);
@@ -111,41 +110,37 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
     }
 
     @Test
-    void updateStatusAndAttemptAfterWithTechnicalErrorTest() {
-        NationalRegistriesBatch batch = batch("update-technical-error", PROCESSING_STATUS, Instant.parse("2026-10-09T10:00:00Z"));
+    void updateItemTest() {
+        NationalRegistriesBatch batch = batch("update-technical-error", WORKING, Instant.parse("2026-10-09T10:00:00Z"));
         nationalRegistriesBatchesRepository.putBatch(batch).block();
-        Instant beforeUpdate = Instant.now();
+        batch.setStatus(WORKED);
 
         NationalRegistriesBatch updatedBatch = nationalRegistriesBatchesRepository
-                .updateStatusAndAttemptAfter(batch, PROCESSING_STATUS, RETRY_READY_STATUS, "tecnico", true)
+                .updateItem(batch, WORKING)
                 .block();
         NationalRegistriesBatch retrievedBatch = nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block();
 
         Assertions.assertNotNull(updatedBatch);
         Assertions.assertNotNull(retrievedBatch);
-        Assertions.assertEquals(RETRY_READY_STATUS, retrievedBatch.getStatus());
+        Assertions.assertEquals(WORKED, retrievedBatch.getStatus());
         Assertions.assertNotNull(retrievedBatch.getUpdatedAt());
-        Assertions.assertTrue(retrievedBatch.getAttemptAfter().compareTo(beforeUpdate.plusSeconds(60)) >= 0);
+        Assertions.assertTrue(retrievedBatch.getAttemptAfter().equals(Instant.parse("2026-10-09T10:00:00Z")));
     }
 
     @Test
-    void updateStatusWithoutErrorPreservesAttemptAfterTest() {
+    void updateItemWithInvalidFromStatus() {
         Instant attemptAfter = Instant.parse("2026-10-10T10:00:00Z");
-        NationalRegistriesBatch batch = batch("update-without-error", PROCESSING_STATUS, attemptAfter);
+        NationalRegistriesBatch batch = batch("update-without-error", REQUEST_SENT, attemptAfter);
         nationalRegistriesBatchesRepository.putBatch(batch).block();
 
-        nationalRegistriesBatchesRepository
-                .updateStatusAndAttemptAfter(batch, PROCESSING_STATUS, "IT_COMPLETED", null, false)
-                .block();
-        NationalRegistriesBatch retrievedBatch = nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block();
+        batch.setStatus(WORKED);
 
-        Assertions.assertNotNull(retrievedBatch);
-        Assertions.assertEquals("IT_COMPLETED", retrievedBatch.getStatus());
-        Assertions.assertEquals(attemptAfter, retrievedBatch.getAttemptAfter());
-        Assertions.assertNotNull(retrievedBatch.getUpdatedAt());
+        Assertions.assertThrows(ConditionalCheckFailedException.class, () -> nationalRegistriesBatchesRepository
+                .updateItem(batch, WORKING)
+                .block());
     }
 
-    private NationalRegistriesBatch batch(String batchId, String status, Instant attemptAfter) {
+    private NationalRegistriesBatch batch(String batchId, BatchesStatusEnum status, Instant attemptAfter) {
         NationalRegistriesBatch batch = new NationalRegistriesBatch();
         batch.setBatchId(batchId);
         batch.setStatus(status);

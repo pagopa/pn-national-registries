@@ -1,18 +1,23 @@
 package it.pagopa.pn.national.registries.repository;
 
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
+import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
+import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import lombok.CustomLog;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.*;
-import software.amazon.awssdk.enhanced.dynamodb.model.*;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
+import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
+import software.amazon.awssdk.enhanced.dynamodb.model.UpdateItemEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 @Component
 @CustomLog
@@ -21,8 +26,6 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
     private static final String SORT_KEY_VALUE = "-";
     private static final String STATUS_ALIAS = "#status";
     private static final String EXPECTED_STATUS_PLACEHOLDER = ":expectedStatus";
-    private static final String TECHNICAL_ERROR = "tecnico";
-    private static final String IN_PROGRESS_ERROR = "inProgress";
 
     private final NationalRegistriesConfig nationalRegistriesConfig;
     private final DynamoDbAsyncTable<NationalRegistriesBatch> table;
@@ -35,9 +38,8 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
 
     @Override
     public Mono<NationalRegistriesBatch> putBatch(NationalRegistriesBatch batch) {
-        log.debug("Inserting data {} in DynamoDB table {}", batch, table);
+        log.debug("Inserting batch with batchId: {} ", batch.getBatchId());
         return Mono.fromFuture(table.putItem(batch))
-                .doOnNext(unused -> log.info("Inserted data in DynamoDB table {}", table))
                 .thenReturn(batch);
     }
 
@@ -50,11 +52,8 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
     }
 
     @Override
-    public Mono<Page<NationalRegistriesBatch>> getBatchesToProcess(String status, Instant now, Map<String, AttributeValue> lastEvaluatedKey) {
-        Key key = Key.builder()
-                .partitionValue(status)
-                .sortValue(now.toString())
-                .build();
+    public Mono<Page<NationalRegistriesBatch>> getBatchesToProcess(BatchesStatusEnum status, Instant now, Map<String, AttributeValue> lastEvaluatedKey) {
+        Key key = Key.builder().partitionValue(status.name()).sortValue(now.toString()).build();
 
         QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
                 .queryConditional(QueryConditional.sortLessThanOrEqualTo(key))
@@ -68,48 +67,62 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
                 .query(queryEnhancedRequestBuilder.build()));
     }
 
-
     @Override
-    public Mono<NationalRegistriesBatch> updateStatusAndAttemptAfter(NationalRegistriesBatch batch, String fromStatus, String toStatus, String errorType, Boolean isError) {
-        if(isError){
-            batch.setAttemptAfter(calculateAttemptAfter(errorType));
+    public Mono<NationalRegistriesBatch> updateItem(NationalRegistriesBatch batch, BatchesStatusEnum fromStatus) {
+        Instant now = Instant.now();
+        batch.setUpdatedAt(now);
+
+        UpdateItemEnhancedRequest.Builder<NationalRegistriesBatch> updateRequest = UpdateItemEnhancedRequest.builder(NationalRegistriesBatch.class)
+                .item(batch);
+
+        if(Objects.nonNull(fromStatus)) {
+            Map<String, String> expressionNames = Map.of(STATUS_ALIAS, NationalRegistriesBatch.COL_STATUS);
+            Map<String, AttributeValue> expressionValues = Map.of(EXPECTED_STATUS_PLACEHOLDER, AttributeValue.builder().s(fromStatus.name()).build());
+            Expression conditionExpression = Expression.builder()
+                    .expression(STATUS_ALIAS + " = " + EXPECTED_STATUS_PLACEHOLDER)
+                    .expressionNames(expressionNames)
+                    .expressionValues(expressionValues)
+                    .build();
+            updateRequest.conditionExpression(conditionExpression);
         }
 
-        batch.setStatus(toStatus);
-        batch.setUpdatedAt(Instant.now());
-
-        Map<String, String> expressionNames = new HashMap<>();
-        expressionNames.put(STATUS_ALIAS, "status");
-
-        Map<String, AttributeValue> expressionValues = new HashMap<>();
-        expressionValues.put(EXPECTED_STATUS_PLACEHOLDER, AttributeValue.builder().s(fromStatus).build());
-
-        Expression conditionExpression = Expression.builder()
-                .expression(STATUS_ALIAS + " = " + EXPECTED_STATUS_PLACEHOLDER)
-                .expressionNames(expressionNames)
-                .expressionValues(expressionValues)
-                .build();
-
-        UpdateItemEnhancedRequest<NationalRegistriesBatch> updateItemEnhancedRequest = UpdateItemEnhancedRequest
-                .builder(NationalRegistriesBatch.class)
-                .item(batch)
-                .conditionExpression(conditionExpression)
-                .build();
-
-        return Mono.fromFuture(table.updateItem(updateItemEnhancedRequest))
-                .doOnError(error -> log.warn("Unable to update batch {} after {} error", batch.getBatchId(), errorType, error));
-
+        return Mono.fromFuture(table.updateItem(updateRequest.build()))
+                .doOnSuccess(updated -> log.info(
+                        "Updated batch {} from status {} to status {}, registry {}, attemptAfter {}",
+                        batch.getBatchId(),
+                        fromStatus,
+                        batch.getStatus(),
+                        batch.getRegistry(),
+                        batch.getAttemptAfter()
+                ))
+                .doOnError(error -> log.warn(
+                        "Unable to update batch {} from status {} to status {}, registry {}",
+                        batch.getBatchId(),
+                        fromStatus,
+                        batch.getStatus(),
+                        batch.getRegistry(),
+                        error
+                ));
     }
 
-    private Instant calculateAttemptAfter(String errorType) {
-        NationalRegistriesConfig.Inad inadConfig = nationalRegistriesConfig.getInad();
 
-        int retryAfter = switch (errorType) {
-            case TECHNICAL_ERROR -> inadConfig.getPollingRetryAfter();
-            case IN_PROGRESS_ERROR -> inadConfig.getPollingInProgressRetryAfter();
-            default -> throw new IllegalArgumentException("Unsupported batch error type: " + errorType);
+    private Instant calculateAttemptAfter(GatewayDownstreamService registry, boolean inProgressRetry, Instant now) {
+        int retryAfter = switch (registry) {
+            case INIPEC -> getInipecRetryAfter(inProgressRetry);
+            case INAD -> getInadRetryAfter(inProgressRetry);
+            default -> throw new IllegalArgumentException("Polling retry configuration not supported for registry: " + registry);
         };
 
-        return Instant.now().plusSeconds(retryAfter);
+        return now.plusSeconds(retryAfter);
+    }
+
+    private int getInipecRetryAfter(boolean inProgressRetry) {
+        NationalRegistriesConfig.Inipec inipecConfig = nationalRegistriesConfig.getInipec();
+        return inProgressRetry ? inipecConfig.getPollingInProgressRetryAfter() : inipecConfig.getPollingRetryAfter();
+    }
+
+    private int getInadRetryAfter(boolean inProgressRetry) {
+        NationalRegistriesConfig.Inad inadConfig = nationalRegistriesConfig.getInad();
+        return inProgressRetry ? inadConfig.getPollingInProgressRetryAfter() : inadConfig.getPollingRetryAfter();
     }
 }

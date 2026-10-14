@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.repository;
 
+import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -15,7 +16,7 @@ public interface NationalRegistriesBatchesRepository {
 
     Mono<NationalRegistriesBatch> getBatch(String batchId);
 
-    Mono<Page<NationalRegistriesBatch>> getBatchesToProcess(String status, Instant now, Map<String, AttributeValue> lastEvaluatedKey);
+    Mono<Page<NationalRegistriesBatch>> getBatchesToProcess(BatchesStatusEnum status, Instant now, Map<String, AttributeValue> lastEvaluatedKey);
 
-    Mono<NationalRegistriesBatch> updateStatusAndAttemptAfter(NationalRegistriesBatch batch, String fromStatus, String toStatus, String errorType, Boolean isError);
+    Mono<NationalRegistriesBatch> updateItem(NationalRegistriesBatch batch, BatchesStatusEnum fromStatus);
 }

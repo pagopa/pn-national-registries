@@ -355,7 +355,7 @@ echo "### CREATE NATIONAL REGISTRIES BATCHES TABLE ###"
 
 aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     dynamodb create-table \
-    --table-name pn-nationalRegistries-nationalRegistriesBatches \
+    --table-name pn-NationalRegistriesBatches \
     --attribute-definitions \
         AttributeName=batchId,AttributeType=S \
         AttributeName=sk,AttributeType=S \
@@ -368,7 +368,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     --global-secondary-indexes \
     '[
         {
-            "IndexName": "StatusAttemptAfterIndex",
+            "IndexName": "status-attemptAfter-Index",
             "KeySchema": [
                 {"AttributeName": "status", "KeyType": "HASH"},
                 {"AttributeName": "attemptAfter", "KeyType": "RANGE"}

@@ -355,12 +355,12 @@ Resources:
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
 
-  NationalRegistriesBatchesTable:
+  PnNationalRegistriesBatchesTable:
     Type: AWS::DynamoDB::Table
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
     Properties:
-      TableName: !Sub '${ProjectName}-NationalRegistries-Batches'
+      TableName: !Sub '${ProjectName}-NationalRegistriesBatches'
       AttributeDefinitions:
         - AttributeName: "batchId"
           AttributeType: "S"
@@ -491,6 +491,11 @@ Outputs:
   PnNationalRegistriesRequestsTableName:
     Description: Name of the PnNationalRegistriesRequestsTable
     Value: !Ref PnNationalRegistriesRequestsTable
+  # NationalRegistriesBatches Table
+  PnNationalRegistriesBatchesTableArn:
+    Value: !Sub '${PnNationalRegistriesBatchesTable.Arn}'
+  PnNationalRegistriesBatchesTableName:
+    Value: !Ref PnNationalRegistriesBatchesTable
 
   # Log group exports
   EcsLogGroup:
@@ -524,8 +529,3 @@ Outputs:
     Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueName
   NationalRegistriesPollingQueueARN:
     Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueARN
-  # NationalRegistriesBatches Table
-  NationalRegistriesBatchesTableArn:
-    Value: !Sub '${NationalRegistriesBatchesTable.Arn}'
-  NationalRegistriesBatchesTableName:
-    Value: !Ref NationalRegistriesBatchesTable
