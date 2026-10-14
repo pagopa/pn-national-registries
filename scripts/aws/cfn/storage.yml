@@ -263,7 +263,7 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
     Properties:
-      TableName: !Sub '${ProjectName}-NationalRegistries-Requests'
+      TableName: !Sub '${ProjectName}-NationalRegistriesRequests'
       AttributeDefinitions:
         - AttributeName: "correlationId"
           AttributeType: "S"

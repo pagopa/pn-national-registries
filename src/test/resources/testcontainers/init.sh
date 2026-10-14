@@ -149,7 +149,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
 
 echo "### CREATE QUEUES FOR NATIONAL REGISTRIES ###"
 
-queues="pn-national_registry_gateway_inputs_DLQ pn-national_registry_gateway_inputs pn-national_registry_gateway_outputs"
+queues="pn-national_registry_gateway_inputs_DLQ pn-national_registry_gateway_inputs pn-national_registry_gateway_outputs pn-national_registries_polling"
 
 for qn in $(echo "$queues" | tr " " "\n"); do
   echo "creating queue $qn"
@@ -290,7 +290,7 @@ echo "### CREATE PN-NATIONAL-REGISTRIES REQUESTS TABLE ###"
 
 aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
   dynamodb create-table \
-  --table-name pn-NationalRegistries-Requests \
+  --table-name pn-NationalRegistriesRequests \
   --attribute-definitions \
     AttributeName=correlationId,AttributeType=S \
     AttributeName=createdAt,AttributeType=S \
