@@ -295,6 +295,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     AttributeName=correlationId,AttributeType=S \
     AttributeName=createdAt,AttributeType=S \
     AttributeName=batchId,AttributeType=S \
+    AttributeName=status,AttributeType=S \
     AttributeName=registryStatus,AttributeType=S \
   --key-schema \
     AttributeName=correlationId,KeyType=HASH \
@@ -303,11 +304,15 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
   --global-secondary-indexes \
   '[
     {
-      "IndexName": "batchIdIndex",
+      "IndexName": "batchId-status-index",
       "KeySchema": [
         {
           "AttributeName": "batchId",
           "KeyType": "HASH"
+        },
+        {
+          "AttributeName": "status",
+          "KeyType": "RANGE"
         }
       ],
       "Projection": {
@@ -315,7 +320,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
       }
     },
     {
-      "IndexName": "registryStatusCreatedAtIndex",
+      "IndexName": "registryStatus-index",
       "KeySchema": [
         {
           "AttributeName": "registryStatus",

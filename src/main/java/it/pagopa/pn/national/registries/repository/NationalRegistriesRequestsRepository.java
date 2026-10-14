@@ -17,9 +17,12 @@ public interface NationalRegistriesRequestsRepository {
 
     Mono<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, Map<String, AttributeValue> lastEvaluatedKey, int limit);
 
-    Mono<NationalRegistriesRequest> updateStatusToWorking(String pk, String sk, String batchId);
+    Mono<NationalRegistriesRequest> updateStatusToWorking(String pk, String sk, String batchId, GatewayDownstreamService registry);
 
-    Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload);
+    Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload, GatewayDownstreamService registry);
 
-    Mono<NationalRegistriesRequest> updateStatusToError(String pk, String sk);
+    Mono<NationalRegistriesRequest> resetStatusForRetry(String pk, String sk, Integer retry, GatewayDownstreamService registry);
+
+    Mono<NationalRegistriesRequest> updateStatusToError(String pk, String sk, GatewayDownstreamService registry);
+
 }
