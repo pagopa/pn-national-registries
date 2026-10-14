@@ -491,6 +491,8 @@ Outputs:
   PnNationalRegistriesRequestsTableName:
     Description: Name of the PnNationalRegistriesRequestsTable
     Value: !Ref PnNationalRegistriesRequestsTable
+  PnNationalRegistriesRequestsTableStreamArn:
+    Value: !GetAtt PnNationalRegistriesRequestsTable.StreamArn
   # NationalRegistriesBatches Table
   PnNationalRegistriesBatchesTableArn:
     Value: !Sub '${PnNationalRegistriesBatchesTable.Arn}'
