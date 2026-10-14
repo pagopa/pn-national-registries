@@ -263,7 +263,7 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
     Properties:
-      TableName: !Sub '${ProjectName}-NationalRegistries-Requests'
+      TableName: !Sub '${ProjectName}-NationalRegistriesRequests'
       AttributeDefinitions:
         - AttributeName: "correlationId"
           AttributeType: "S"
@@ -273,16 +273,20 @@ Resources:
           AttributeType: "S"
         - AttributeName: "registryStatus"
           AttributeType: "S"
+        - AttributeName: "status"
+          AttributeType: "S"
       KeySchema:
         - AttributeName: "correlationId"
           KeyType: "HASH"
         - AttributeName: "createdAt"
           KeyType: "RANGE"
       GlobalSecondaryIndexes:
-        - IndexName: "batchId-index"
+        - IndexName: "batchId-status-index"
           KeySchema:
             - AttributeName: batchId
               KeyType: HASH
+            - AttributeName: status
+              KeyType: RANGE
           Projection:
             ProjectionType: ALL
         - IndexName: "registryStatus-index"
@@ -351,6 +355,42 @@ Resources:
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
 
+  PnNationalRegistriesBatchesTable:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub '${ProjectName}-NationalRegistriesBatches'
+      AttributeDefinitions:
+        - AttributeName: "batchId"
+          AttributeType: "S"
+        - AttributeName: "sk"
+          AttributeType: "S"
+        - AttributeName: "status"
+          AttributeType: "S"
+        - AttributeName: "attemptAfter"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "batchId"
+          KeyType: "HASH"
+        - AttributeName: "sk"
+          KeyType: "RANGE"
+      GlobalSecondaryIndexes:
+        - IndexName: "status-attemptAfter-index"
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: attemptAfter
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      BillingMode: "PAY_PER_REQUEST"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
   PnNationalRegistriesLogGroup:
     Type: AWS::CloudFormation::Stack
     UpdateReplacePolicy: Retain
@@ -386,6 +426,20 @@ Resources:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
       Parameters:
         QueueName: !Sub '${ProjectName}-national_registry_gateway_inputs'
+        AlarmSNSTopicName: !Ref AlarmSNSTopicName
+        VisibilityTimeout: 300
+        MaxReceiveCount: 10
+        DelaySeconds: 1
+
+  #pn-national_registries_polling
+  PnNationalRegistriesPollingQueue:
+    Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
+      Parameters:
+        QueueName: !Sub '${ProjectName}-national_registries_polling'
         AlarmSNSTopicName: !Ref AlarmSNSTopicName
         VisibilityTimeout: 300
         MaxReceiveCount: 10
@@ -439,6 +493,11 @@ Outputs:
     Value: !Ref PnNationalRegistriesRequestsTable
   PnNationalRegistriesRequestsTableStreamArn:
     Value: !GetAtt PnNationalRegistriesRequestsTable.StreamArn
+  # NationalRegistriesBatches Table
+  PnNationalRegistriesBatchesTableArn:
+    Value: !Sub '${PnNationalRegistriesBatchesTable.Arn}'
+  PnNationalRegistriesBatchesTableName:
+    Value: !Ref PnNationalRegistriesBatchesTable
 
   # Log group exports
   EcsLogGroup:
@@ -466,3 +525,9 @@ Outputs:
     Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueURL
   NationalRegistryGatewayInputsDLQARN:
     Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueARN
+
+  # PnNationalRegistriesPolling Queue
+  NationalRegistriesPollingQueueName:
+    Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueName
+  NationalRegistriesPollingQueueARN:
+    Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueARN

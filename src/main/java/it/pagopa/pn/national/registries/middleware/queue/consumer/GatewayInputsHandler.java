@@ -18,7 +18,7 @@ public class GatewayInputsHandler {
 
     private static final String HANDLER_PROCESS = "pnNationalRegistriesGatewayRequestConsumer";
 
-    @SqsListener(value = "${pn.national.registries.sqs.input.queue.name}")
+    @SqsListener(value = "${pn.national-registries.sqs.inputqueuename}")
     public void pnNationalRegistriesGatewayRequestConsumer(Message<PnAddressGatewayEvent.Payload> message) {
         log.logStartingProcess(HANDLER_PROCESS);
         log.debug(HANDLER_PROCESS + "- message received for correlationId: {}", message.getPayload().getCorrelationId());

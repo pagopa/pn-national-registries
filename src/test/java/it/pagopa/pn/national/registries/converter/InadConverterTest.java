@@ -63,6 +63,16 @@ class InadConverterTest {
     }
 
     @Test
+    void mapToResponseOkShouldPreferProfessionalAddressForPfWhenFallbackIsEnabledAndPersonalIsInvalid() {
+        ElementDigitalAddress personalAddress = createPersonalAddress("2026-01-01");
+        ElementDigitalAddress professionalAddress = createProfessionalAddress("professional@pec.it", "INGEGNERE");
+        ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), professionalAddress, personalAddress);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, true, "correlationid");
+        assertNotNull(result.getDigitalAddress());
+        assertEquals("professional@pec.it", result.getDigitalAddress().getDigitalAddress());
+    }
+
+    @Test
     void mapToResponseOkShouldUseProfessionalAddressForPfWhenFallbackEnabledAndPersonalMissing() {
         ElementDigitalAddress professionalAddress = createProfessionalAddress("professional@pec.it", "INGEGNERE");
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), professionalAddress);
