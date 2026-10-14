@@ -630,6 +630,13 @@ Parameters:
       - true
       - false
 
+  EnableInadMassiveApi:
+    Type: String
+    Description: 'Enable INAD massive API. If disabled, only sync APIs are used.'
+    AllowedValues:
+      - true
+      - false
+
   CpuArchitecture:
     Type: String
     Default: 'ARM'
@@ -752,6 +759,7 @@ Resources:
         ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_SQS_POLLINGQUEUENAME=${NationalRegistriesPollingQueueName}'
         ContainerEnvEntry80: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${PnNationalRegistriesRequestsTableName}'
         ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${PnNationalRegistriesBatchesTableName}'
+        ContainerEnvEntry82: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADMASSIVEAPI=${EnableInadMassiveApi}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'

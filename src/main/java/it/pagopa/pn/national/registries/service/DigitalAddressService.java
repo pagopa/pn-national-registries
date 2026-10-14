@@ -5,6 +5,7 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.model.AddressInternalResult;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
@@ -41,12 +42,7 @@ public class DigitalAddressService extends GatewayConverter {
 
                     }
                     log.info("retrieved digital address from IPA for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId());
-                    logCfWithAddressMetric(
-                            correlationId,
-                            GatewayDownstreamService.IPA,
-                            PG,
-                            DigitalAddressRecipientType.IMPRESA
-                    );
+                    logCfWithAddressMetric(correlationId, GatewayDownstreamService.IPA, PG, DigitalAddressRecipientType.IMPRESA);
                     return new AddressInternalResult.Found(ipaToSqsDto(correlationId, response));
                 })
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve digital address from IPA: {}"));
@@ -57,18 +53,22 @@ public class DigitalAddressService extends GatewayConverter {
                 .doOnNext(response -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(response -> log.info("retrieved digital address from INAD for correlationId: {}", correlationId))
-                .doOnError(isInadAddressNotFound, e -> {
-                    log.info("correlationId: {} - INAD - indirizzo non presente", correlationId);
-                    logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
-                })
                 .map(response -> inadToSqsDto(correlationId, response))
                 .<AddressInternalResult>map(codeSqsDto -> {
                     if (!CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
                         logCfWithAddressMetric(correlationId, GatewayDownstreamService.INAD, recipientType, DigitalAddressRecipientType.fromValue(codeSqsDto.getDigitalAddress().getFirst().getRecipient()));
                         return new AddressInternalResult.Found(codeSqsDto);
                     }
-
                     return new AddressInternalResult.NotFound(codeSqsDto);
+                })
+                .onErrorResume(e -> {
+                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
+                    if (codeSqsDto != null) {
+                        log.info("correlationId: {} - INAD - indirizzo non presente", correlationId);
+                        logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
+                        return Mono.just(new AddressInternalResult.NotFound(codeSqsDto));
+                    }
+                    return Mono.error(e);
                 })
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve digital address from INAD: {}"));
     }

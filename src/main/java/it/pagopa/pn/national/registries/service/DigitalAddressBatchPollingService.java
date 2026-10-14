@@ -20,10 +20,12 @@ import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
@@ -56,18 +58,17 @@ import static it.pagopa.pn.national.registries.utils.MetricUtils.*;
 
 @CustomLog
 @Service
+@RequiredArgsConstructor
 public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository batchRequestRepository;
     private final IniPecBatchPollingRepository batchPollingRepository;
+    private final NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
     private final InfoCamereClient infoCamereClient;
     private final IniPecBatchSqsService iniPecBatchSqsService;
     private final InadService inadService;
 
-    private final int maxRetry;
-    private final int inProgressMaxRetry;
-    private final String batchRequestPkSeparator;
     private final NationalRegistriesConfig nationalRegistriesConfig;
 
     private final IniPecBatchRequestService iniPecBatchRequestService;
@@ -75,32 +76,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
     private static final Pattern PEC_REQUEST_IN_PROGRESS_PATTERN = Pattern.compile(".*(List PEC in progress).*");
-    private final GatewayService gatewayService;
 
-    public DigitalAddressBatchPollingService(InfoCamereConverter infoCamereConverter,
-                                             IniPecBatchRequestRepository batchRequestRepository,
-                                             IniPecBatchPollingRepository batchPollingRepository,
-                                             InfoCamereClient infoCamereClient,
-                                             IniPecBatchSqsService iniPecBatchSqsService,
-                                             InadService inadService,
-                                             @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
-                                             @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry,
-                                             @Value("${pn.national-registries.inipec.batchrequest-pk-separator}") String batchRequestPkSeparator, NationalRegistriesConfig nationalRegistriesConfig,
-                                             IniPecBatchRequestService iniPecBatchRequestService, GatewayUtils gatewayUtils, GatewayService gatewayService) {
-        this.infoCamereConverter = infoCamereConverter;
-        this.batchRequestRepository = batchRequestRepository;
-        this.batchPollingRepository = batchPollingRepository;
-        this.infoCamereClient = infoCamereClient;
-        this.iniPecBatchSqsService = iniPecBatchSqsService;
-        this.inadService = inadService;
-        this.maxRetry = maxRetry;
-        this.inProgressMaxRetry = inProgressMaxRetry;
-        this.batchRequestPkSeparator = batchRequestPkSeparator;
-        this.nationalRegistriesConfig = nationalRegistriesConfig;
-        this.iniPecBatchRequestService = iniPecBatchRequestService;
-        this.gatewayUtils = gatewayUtils;
-        this.gatewayService = gatewayService;
-    }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
     @SchedulerLock(name = "batchPecPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.polling.lock-at-most}",
@@ -227,7 +203,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         }else{
             polling.setRetry(polling.getRetry() != null ? polling.getRetry() + 1 : 1);
         }
-        if (maxRetry <= Optional.ofNullable(polling.getRetry()).orElse(0) || inProgressMaxRetry <= Optional.ofNullable(polling.getInProgressRetry()).orElse(0) ||
+        if ( nationalRegistriesConfig.getInipec().getBatchPollingMaxRetry() <= Optional.ofNullable(polling.getRetry()).orElse(0) || nationalRegistriesConfig.getInipec().getBatchPollingInProgressMaxRetry() <= Optional.ofNullable(polling.getInProgressRetry()).orElse(0) ||
                 (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
             polling.setStatus(BatchStatus.ERROR.getValue());
             log.debug("IniPEC - batchId {} - polling {} status in {} (retry: {})", polling.getBatchId(), polling.getPollingId(), polling.getStatus(), polling.getRetry());
@@ -316,11 +292,13 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private Mono<Void> callInadEservice(BatchRequest request) {
         RecipientType recipientType = retrieveRecipientType(request.getCf(), request.getRecipientType());
-        String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
+        String correlationId = request.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0];
         request.setEservice(GatewayDownstreamService.INAD.name());
-        if(nationalRegistriesConfig.isEnableInadBatch()){
+        if(nationalRegistriesConfig.isEnableInadMassiveApi()){
             NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(request, recipientType, GatewayDownstreamService.INAD);
-            return gatewayService.inizializeBatchRequest(nationalRegistriesRequest).then();
+            return nationalRegistriesRequestsRepository.putRequest(nationalRegistriesRequest)
+                    .doOnNext(batchRequest -> log.info("CreatedRequest for correlationId: {} for registry INAD", nationalRegistriesRequest.getCorrelationId()))
+                    .then();
         }
         return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType, correlationId)
                 .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))

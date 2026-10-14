@@ -16,7 +16,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 
 @SpringBootTest(properties = {
         "pn.national-registries.enable-pf-pec-fallback-flow=false",
-        "pn.national-registries.inad-batch-enabled=true"
+        "pn.national-registries.enable-inad-massive-api=true"
 })
 class NationalRegistriesInadBatchIT extends AbstractNationalRegistriesComponentIT {
 

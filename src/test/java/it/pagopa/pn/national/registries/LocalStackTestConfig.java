@@ -14,7 +14,6 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 
 import java.io.IOException;
-import java.net.URI;
 import java.time.Duration;
 
 import static org.testcontainers.containers.localstack.LocalStackContainer.Service.*;

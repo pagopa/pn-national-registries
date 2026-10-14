@@ -173,7 +173,7 @@ class DigitalAddressServiceTest {
     }
 
     @Test
-    void retrieveDigitalAddressFromInadSync_shouldPropagateRecognizedNotFoundWhenSelectedEmailIsInvalid() {
+    void retrieveDigitalAddressFromInadSync_shouldReturnNotFoundWhenSelectedEmailIsInvalid() {
         AddressRequestBodyDto request = buildRequest();
         DigitalAddressDto digitalAddress = new DigitalAddressDto();
         digitalAddress.setDigitalAddress("not-an-email");
@@ -186,13 +186,12 @@ class DigitalAddressServiceTest {
                 .thenReturn(Mono.just(inadResponse));
 
         StepVerifier.create(digitalAddressService.retrieveDigitalAddressFromInadSync(request, CORRELATION_ID, PF))
-                .expectErrorSatisfies(error -> {
-                    assertInstanceOf(PnNationalRegistriesException.class, error);
-                    PnNationalRegistriesException exception = (PnNationalRegistriesException) error;
-                    assertEquals(org.springframework.http.HttpStatus.NOT_FOUND, exception.getStatusCode());
-                    assertEquals("CF non trovato", exception.getMessage());
+                .assertNext(result -> {
+                    assertInstanceOf(AddressInternalResult.NotFound.class, result);
+                    AddressInternalResult.NotFound notFound = (AddressInternalResult.NotFound) result;
+                    assertNotNull(notFound.codeSqsDto());
                 })
-                .verify();
+                .verifyComplete();
     }
 
     @Test

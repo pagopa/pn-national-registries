@@ -20,8 +20,10 @@ import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,25 +45,20 @@ import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.util.*;
 
-import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
+import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@TestPropertySource(properties = {
-        "pn.national.registries.inipec.batch.polling.delay=30000",
-        "pn.national-registries.inipec.batch.polling.recovery.delay=30000",
-        "pn.national-registries.inipec.batch.polling.max-retry=3",
-        "pn.national-registries.inipec.batch.polling.inprogress.max-retry=24",
-        "pn.national-registries.inipec.batchrequest-pk-separator=~"
-})
 @ContextConfiguration(classes = DigitalAddressBatchPollingService.class)
 @ExtendWith(SpringExtension.class)
 class DigitalAddressBatchPollingServiceTest {
 
     @MockitoBean
     private IniPecBatchPollingRepository batchPollingRepository;
+    @MockitoBean
+    private NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
     @MockitoBean
     private IniPecBatchRequestRepository batchRequestRepository;
     @MockitoBean
@@ -91,12 +88,17 @@ class DigitalAddressBatchPollingServiceTest {
 
     @MockitoBean
     private NationalRegistriesConfig nationalRegistriesConfig;
-
-    @MockitoBean
-    private GatewayService gatewayService;
-
     @MockitoBean
     private DigitalAddressUtils digitalAddressUtils;
+
+    @BeforeEach
+    void setup(){
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        inipec.setBatchPollingMaxRetry(3);
+        inipec.setBatchPollingInProgressMaxRetry(24);
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+    }
 
     @Test
     void testBatchPecPollingIncrementAndCheckRetryError() {
@@ -950,23 +952,14 @@ class DigitalAddressBatchPollingServiceTest {
         batchRequest.setCf("12345678901");
         batchRequest.setClientId("clientId");
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(true);
-        when(gatewayService.inizializeBatchRequest(any(NationalRegistriesRequest.class)))
-                .thenAnswer(invocation -> Mono.just((NationalRegistriesRequest) invocation.getArgument(0)));
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(true);
+        when(nationalRegistriesRequestsRepository.putRequest(any())).thenReturn(Mono.just(new NationalRegistriesRequest()));
 
         BatchRequest result = digitalAddressBatchPollingService
                 .handlePecNotFoundResponse(batchRequest, BatchStatus.WORKED, LocalDateTime.now())
                 .block();
 
         assertSame(batchRequest, result);
-        verify(gatewayService).inizializeBatchRequest(argThat(request ->
-                batchRequest.getCorrelationId().equals(request.getCorrelationId())
-                        && batchRequest.getReferenceRequestDate().toString().equals(request.getReferenceRequestDate())
-                        && "DIGITAL".equals(request.getDomicileType())
-                        && batchRequest.getCf().equals(request.getTaxId())
-                        && PG.name().equals(request.getRecipientType())
-                        && batchRequest.getClientId().equals(request.getClientId())
-        ));
         verifyNoInteractions(inadService);
     }
 
@@ -993,7 +986,6 @@ class DigitalAddressBatchPollingServiceTest {
         verify(infoCamereConverter).convertResponsePecToCodeSqsDto(batchRequest, null);
         verify(infoCamereConverter).updateBatchRequestFields(eq(batchRequest), eq(BatchStatus.WORKED), any(LocalDateTime.class), same(emptyInipecResult));
         verifyNoInteractions(inadService);
-        verify(gatewayService, never()).inizializeBatchRequest(any());
     }
 
     @Test
@@ -1009,7 +1001,7 @@ class DigitalAddressBatchPollingServiceTest {
         digitalAddressDto.setDigitalAddress("pg@pec.it");
         inadResponse.setDigitalAddress(digitalAddressDto);
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(inadService.callEService(any(), eq(PG), eq("correlationId"))).thenReturn(Mono.just(inadResponse));
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("serialized-message");
 
@@ -1022,7 +1014,6 @@ class DigitalAddressBatchPollingServiceTest {
         assertEquals("serialized-message", batchRequest.getMessage());
         assertEquals("INAD", batchRequest.getEservice());
         verify(inadService).callEService(any(), eq(PG), eq("correlationId"));
-        verify(gatewayService, never()).inizializeBatchRequest(any());
     }
 
     @Test
@@ -1038,7 +1029,7 @@ class DigitalAddressBatchPollingServiceTest {
         digitalAddressDto.setDigitalAddress("pf@pec.it");
         inadResponse.setDigitalAddress(digitalAddressDto);
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(inadService.callEService(any(), eq(PF), eq("correlationId"))).thenReturn(Mono.just(inadResponse));
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("serialized-message");
 
@@ -1075,7 +1066,7 @@ class DigitalAddressBatchPollingServiceTest {
         inadResponse.setDigitalAddress(digitalAddressDto);
 
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec)).thenReturn(codeSqsDto);
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(inadService.callEService(any(), eq(PG), eq("correlationId"))).thenReturn(Mono.just(inadResponse));
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("serialized-message");
 

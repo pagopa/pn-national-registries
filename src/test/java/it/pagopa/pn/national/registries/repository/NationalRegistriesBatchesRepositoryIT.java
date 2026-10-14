@@ -130,7 +130,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
     @Test
     void updateItemWithInvalidFromStatus() {
         Instant attemptAfter = Instant.parse("2026-10-10T10:00:00Z");
-        NationalRegistriesBatch batch = batch("update-without-error", REQUEST_SENT, attemptAfter);
+        NationalRegistriesBatch batch = batch("update-without-error", ERROR, attemptAfter);
         nationalRegistriesBatchesRepository.putBatch(batch).block();
 
         batch.setStatus(WORKED);

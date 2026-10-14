@@ -77,7 +77,7 @@ import java.util.UUID;
         "pn.national-registries.val-cx-id-enabled=true",
         "pn.national-registries.query-limit=20",
         "pn.national.registries.anpr.table=pn-counter",
-        "pn.national-registries.dao.requestsTableName=pn-NationalRegistries-Requests",
+        "pn.national-registries.dao.requestsTableName=pn-NationalRegistriesRequests",
         "pn.national-registries.dao.shedlockTableName=pn-nationalRegistries-ShedLock",
         "pn.national-registries.inipec.ttl=1209600",
         "pn.national-registries.inipec.batchrequest-pk-separator=~",
@@ -118,7 +118,7 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
     protected static final String INPUT_DLQ_QUEUE = "pn-national_registry_gateway_inputs_DLQ";
     protected static final String BATCH_REQUESTS_TABLE = "pn-batchRequests";
     protected static final String BATCH_POLLING_TABLE = "pn-batchPolling";
-    protected static final String NATIONAL_REGISTRIES_REQUESTS_TABLE = "pn-NationalRegistries-Requests";
+    protected static final String NATIONAL_REGISTRIES_REQUESTS_TABLE = "pn-NationalRegistriesRequests";
     protected static final String COUNTER_TABLE = "pn-counter";
     protected static final String CX_ID = "pn-delivery";
     protected static final String VALID_PF_CF = "PPPPLT80A01H501V";

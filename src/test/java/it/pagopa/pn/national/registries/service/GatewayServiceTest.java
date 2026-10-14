@@ -161,7 +161,7 @@ class GatewayServiceTest {
     void retrieveDigitalOrPhysicalAddress_shouldPushInadAddressForPfWhenFound() {
         AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.INAD, false)));
         when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
@@ -180,7 +180,7 @@ class GatewayServiceTest {
     void retrieveDigitalOrPhysicalAddress_shouldPushNotFoundInadMessageForPfWhenFallbackDisabled() {
         AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(false);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.just(notFoundResult()));
@@ -203,7 +203,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
         String expectedReferenceRequestDate = request.getFilter().getReferenceRequestDate().toString();
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.just(notFoundResult()));
@@ -232,7 +232,7 @@ class GatewayServiceTest {
     void retrieveDigitalOrPhysicalAddress_shouldInitializeInadBatchRequestForPfWhenInadBatchEnabled() {
         AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(true);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(true);
         when(nationalRegistriesRequestsRepository.putRequest(any(NationalRegistriesRequest.class)))
                 .thenAnswer(invocation -> Mono.just((NationalRegistriesRequest) invocation.getArgument(0)));
 
@@ -262,7 +262,7 @@ class GatewayServiceTest {
                 null
         );
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(false);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.error(exception));
@@ -284,7 +284,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
         RuntimeException technicalError = new RuntimeException("INAD unavailable");
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.error(technicalError));
@@ -311,7 +311,7 @@ class GatewayServiceTest {
                 null
         );
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.error(exception));
@@ -348,7 +348,7 @@ class GatewayServiceTest {
                 null
         );
 
-        when(nationalRegistriesConfig.isEnableInadBatch()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.error(exception));

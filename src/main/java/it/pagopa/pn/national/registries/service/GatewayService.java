@@ -95,49 +95,30 @@ public class GatewayService extends GatewayConverter {
 
     private Mono<Void> getPhysicalAddressForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(addressRequestBodyDto, correlationId)
-                .flatMap(result -> {
-                    AddressInternalResult.Found found = (AddressInternalResult.Found) result;
-                    return sqsService.pushToOutputQueue(found.codeSqsDto(), pnNationalRegistriesCxId);
-                })
+                .flatMap(result -> sqsService.pushToOutputQueue(result.codeSqsDto(), pnNationalRegistriesCxId))
                 .then();
     }
 
     private Mono<Void> getDigitalAddressForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
-        if(nationalRegistriesConfig.isEnableInadBatch()){
+        if (nationalRegistriesConfig.isEnableInadMassiveApi()) {
             NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(addressRequestBodyDto, PF, pnNationalRegistriesCxId, GatewayDownstreamService.INAD);
             return inizializeBatchRequest(nationalRegistriesRequest).then();
         }
 
         return digitalAddressService.retrieveDigitalAddressFromInadSync(addressRequestBodyDto, correlationId, PF)
-                .onErrorResume(e -> {
-                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
-                    if (codeSqsDto != null) {
-                        return Mono.just(new AddressInternalResult.NotFound(codeSqsDto));
-                    }
-                    return Mono.error(e);
-                })
                 .flatMap(result -> {
-                    if (result instanceof AddressInternalResult.Found(CodeSqsDto codeSqsDto)) {
-                        return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId).then();
-                    }
-
-                    AddressInternalResult.NotFound notFound = (AddressInternalResult.NotFound) result;
-                    if (nationalRegistriesConfig.isEnablePfPecFallbackFlow()) {
+                    if (result instanceof AddressInternalResult.NotFound && nationalRegistriesConfig.isEnablePfPecFallbackFlow()) {
                         log.info("correlationId: {} - PEC not found on INAD, fallback to INI-PEC", correlationId);
                         NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(addressRequestBodyDto, PF, pnNationalRegistriesCxId, GatewayDownstreamService.INIPEC);
                         return inizializeBatchRequest(nationalRegistriesRequest).then();
                     }
-
-                    return sqsService.pushToOutputQueue(notFound.codeSqsDto(), pnNationalRegistriesCxId).then();
+                    return sqsService.pushToOutputQueue(result.codeSqsDto(), pnNationalRegistriesCxId).then();
                 });
     }
 
     private Mono<Void> getPhysicalAddressForPG(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return physicalAddressService.retrieveAsyncPhysicalAddressFromRegistroImprese(addressRequestBodyDto, correlationId)
-                .flatMap(result -> {
-                    AddressInternalResult.Found found = (AddressInternalResult.Found) result;
-                    return sqsService.pushToOutputQueue(found.codeSqsDto(), pnNationalRegistriesCxId);
-                })
+                .flatMap(result -> sqsService.pushToOutputQueue(result.codeSqsDto(), pnNationalRegistriesCxId))
                 .then();
     }
 

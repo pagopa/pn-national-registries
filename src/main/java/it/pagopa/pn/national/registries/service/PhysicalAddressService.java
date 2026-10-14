@@ -107,14 +107,10 @@ public class PhysicalAddressService extends GatewayConverter {
                 .map(getAddressANPROKDto -> anprToSqsDto(correlationId, getAddressANPROKDto))
                 .<AddressInternalResult>map(addressSQSMessageDto -> {
                     if(Objects.nonNull(addressSQSMessageDto.getPhysicalAddress())){
-                        logCfWithAddressMetric(
-                                correlationId,
-                                GatewayDownstreamService.ANPR,
-                                RecipientType.PF,
-                                null
-                        );
+                        logCfWithAddressMetric(correlationId, GatewayDownstreamService.ANPR, RecipientType.PF, null);
+                        return new AddressInternalResult.Found(addressSQSMessageDto);
                     }
-                    return new AddressInternalResult.Found(addressSQSMessageDto);
+                    return new AddressInternalResult.NotFound(addressSQSMessageDto);
                 })
                 .doOnError(isAnprAddressNotFound, e -> {
                     log.info("correlationId: {} - ANPR - indirizzo non presente", correlationId);
@@ -130,14 +126,10 @@ public class PhysicalAddressService extends GatewayConverter {
                 .map(registroImpreseResponse -> regImpToSqsDto(correlationId, registroImpreseResponse))
                 .<AddressInternalResult>map(addressSQSMessageDto -> {
                     if(Objects.nonNull(addressSQSMessageDto.getPhysicalAddress())){
-                        logCfWithAddressMetric(
-                                correlationId,
-                                GatewayDownstreamService.REGISTRO_IMPRESE,
-                                RecipientType.PG,
-                                null
-                        );
+                        logCfWithAddressMetric(correlationId, GatewayDownstreamService.REGISTRO_IMPRESE, RecipientType.PG, null);
+                        return new AddressInternalResult.Found(addressSQSMessageDto);
                     }
-                    return new AddressInternalResult.Found(addressSQSMessageDto);
+                    return new AddressInternalResult.NotFound(addressSQSMessageDto);
                 })
                 .doOnNext(result -> log.info("retrieved physical address from Registro Imprese for correlationId: {}", correlationId))
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve physical address from Registro Imprese: {}"));
