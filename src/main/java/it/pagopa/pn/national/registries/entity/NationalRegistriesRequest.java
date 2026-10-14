@@ -28,10 +28,11 @@ public class NationalRegistriesRequest {
     public static final String COL_REFERENCE_REQUEST_DATE = "referenceRequestDate";
     public static final String COL_RESULT_PAYLOAD = "resultPayload";
     public static final String COL_UPDATED_AT = "updatedAt";
+    public static final String COL_RETRY_COUNT = "retryCount";
     public static final String COL_TTL = "ttl";
 
-    public static final String BATCH_ID_INDEX = "batchIdIndex";
-    public static final String REGISTRY_STATUS_CREATED_AT_INDEX = "registryStatusCreatedAtIndex";
+    public static final String BATCH_ID_INDEX = "batchId-status-index";
+    public static final String REGISTRY_STATUS_CREATED_AT_INDEX = "registryStatus-index";
 
     @Getter(onMethod = @__({@DynamoDbPartitionKey, @DynamoDbAttribute(COL_CORRELATION_ID)}))
     private String correlationId;
@@ -54,7 +55,7 @@ public class NationalRegistriesRequest {
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_REGISTRY)}))
     private GatewayDownstreamService registry;
 
-    @Getter(onMethod = @__({@DynamoDbAttribute(COL_STATUS)}))
+    @Getter(onMethod = @__({@DynamoDbAttribute(COL_STATUS), @DynamoDbSecondarySortKey(indexNames = BATCH_ID_INDEX)}))
     private RequestStatusEnum status;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_REGISTRY_STATUS), @DynamoDbSecondaryPartitionKey(indexNames = REGISTRY_STATUS_CREATED_AT_INDEX)}))
@@ -71,6 +72,9 @@ public class NationalRegistriesRequest {
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_UPDATED_AT)}))
     private Instant updatedAt;
+
+    @Getter(onMethod = @__({@DynamoDbAttribute(COL_RETRY_COUNT)}))
+    private Integer retryCount;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_TTL)}))
     private Long ttl;

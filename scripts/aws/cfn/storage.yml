@@ -263,7 +263,7 @@ Resources:
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
     Properties:
-      TableName: !Sub '${ProjectName}-NationalRegistries-Requests'
+      TableName: !Sub '${ProjectName}-NationalRegistriesRequests'
       AttributeDefinitions:
         - AttributeName: "correlationId"
           AttributeType: "S"
@@ -273,16 +273,20 @@ Resources:
           AttributeType: "S"
         - AttributeName: "registryStatus"
           AttributeType: "S"
+        - AttributeName: "status"
+          AttributeType: "S"
       KeySchema:
         - AttributeName: "correlationId"
           KeyType: "HASH"
         - AttributeName: "createdAt"
           KeyType: "RANGE"
       GlobalSecondaryIndexes:
-        - IndexName: "batchId-index"
+        - IndexName: "batchId-status-index"
           KeySchema:
             - AttributeName: batchId
               KeyType: HASH
+            - AttributeName: status
+              KeyType: RANGE
           Projection:
             ProjectionType: ALL
         - IndexName: "registryStatus-index"
@@ -391,6 +395,20 @@ Resources:
         MaxReceiveCount: 10
         DelaySeconds: 1
 
+  #pn-national_registries_polling
+  PnNationalRegistriesPollingQueue:
+    Type: AWS::CloudFormation::Stack
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
+      Parameters:
+        QueueName: !Sub '${ProjectName}-national_registries_polling'
+        AlarmSNSTopicName: !Ref AlarmSNSTopicName
+        VisibilityTimeout: 300
+        MaxReceiveCount: 10
+        DelaySeconds: 1
+
 #Necessario a causa di bug script deploy
 Outputs:
   PnBatchRequestEncryptKeyARN:
@@ -464,3 +482,9 @@ Outputs:
     Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueURL
   NationalRegistryGatewayInputsDLQARN:
     Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueARN
+
+  # PnNationalRegistriesPolling Queue
+  NationalRegistriesPollingQueueName:
+    Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueName
+  NationalRegistriesPollingQueueARN:
+    Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueARN

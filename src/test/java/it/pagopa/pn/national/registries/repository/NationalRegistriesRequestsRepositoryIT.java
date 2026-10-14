@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
-
 @Slf4j
 @SpringBootTest(properties = {
         "spring.cloud.aws.sqs.enabled=false",
@@ -71,26 +69,34 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         Instant baseTime = Instant.parse("2026-10-07T10:00:00Z");
 
-        List<NationalRegistriesRequest> requests = IntStream.range(0, numberOfItems)
+        List<NationalRegistriesRequest> requests = new java.util.ArrayList<>(IntStream.range(0, numberOfItems)
                 .mapToObj(i -> buildRequest(
                         "CORRELATION-" + UUID.randomUUID(),
                         baseTime.plus(i, ChronoUnit.SECONDS),
                         batchId,
                         GatewayDownstreamService.INAD,
-                        RequestStatusEnum.NOT_WORKED
+                        RequestStatusEnum.WORKING
                 ))
-                .toList();
+                .toList());
+
+        requests.add(buildRequest(
+                "CORRELATION-" + UUID.randomUUID(),
+                baseTime.plus(numberOfItems, ChronoUnit.SECONDS),
+                batchId,
+                GatewayDownstreamService.INAD,
+                RequestStatusEnum.WORKED
+        ));
 
         requests.forEach(request -> repository.putRequest(request).block());
 
-        Page<NationalRegistriesRequest> firstPage = repository.getRequestsBatchId(batchId, null).block();
+        Page<NationalRegistriesRequest> firstPage = repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING, null).block();
 
         Assertions.assertNotNull(firstPage);
         Assertions.assertEquals(5, firstPage.items().size());
         Assertions.assertTrue(firstPage.items().stream().allMatch(item -> batchId.equals(item.getBatchId())));
         Assertions.assertFalse(firstPage.lastEvaluatedKey().isEmpty());
 
-        Page<NationalRegistriesRequest> secondPage = repository.getRequestsBatchId(batchId, firstPage.lastEvaluatedKey()).block();
+        Page<NationalRegistriesRequest> secondPage = repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING, firstPage.lastEvaluatedKey()).block();
 
         Assertions.assertNotNull(secondPage);
         Assertions.assertEquals(2, secondPage.items().size());
@@ -163,9 +169,9 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         String batchId = UUID.randomUUID().toString();
 
-        repository.updateStatusToWorking(request.getCorrelationId(), request.getCreatedAt().toString(), batchId).block();
+        repository.updateStatusToWorking(request.getCorrelationId(), request.getCreatedAt().toString(), batchId, GatewayDownstreamService.INAD).block();
 
-        NationalRegistriesRequest updated = getRequestByBatchId(batchId);
+        NationalRegistriesRequest updated = getRequestByBatchId(batchId, RequestStatusEnum.WORKING);
         Assertions.assertEquals(RequestStatusEnum.WORKING, updated.getStatus());
         Assertions.assertEquals(batchId, updated.getBatchId());
         Assertions.assertNotNull(updated.getUpdatedAt());
@@ -193,10 +199,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 () -> repository.updateStatusToWorking(
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
-                        batchId
+                        batchId,
+                        GatewayDownstreamService.INAD
                 ).block()
         );
 
+        Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to WORKING"));
         Assertions.assertTrue(exception.getProblem().getDetail().contains("the current status is not NOT_WORKED"));
     }
@@ -222,10 +230,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 () -> repository.updateStatusToWorking(
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
-                        batchId
+                        batchId,
+                        GatewayDownstreamService.INAD
                 ).block()
         );
 
+        Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to WORKING"));
 
         Assertions.assertTrue(
@@ -246,7 +256,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 "CORRELATION-" + UUID.randomUUID(),
                 createdAt,
                 batchId,
-                GatewayDownstreamService.INAD,
+                GatewayDownstreamService.INIPEC,
                 RequestStatusEnum.WORKING
         );
 
@@ -257,11 +267,49 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         repository.updateStatusToWorked(
                 request.getCorrelationId(),
                 request.getCreatedAt().toString(),
-                resultPayload
+                resultPayload,
+                GatewayDownstreamService.INIPEC
         ).block();
 
-        NationalRegistriesRequest updated = getRequestByBatchId(batchId);
+        NationalRegistriesRequest updated = getRequestByBatchId(batchId, RequestStatusEnum.WORKED);
         Assertions.assertEquals(RequestStatusEnum.WORKED, updated.getStatus());
+        Assertions.assertEquals(resultPayload, updated.getResultPayload());
+        Assertions.assertEquals(GatewayDownstreamService.INIPEC, updated.getRegistry());
+        Assertions.assertEquals(GatewayDownstreamService.INIPEC.name() + "#" + RequestStatusEnum.WORKED.name(), updated.getRegistryStatus());
+        Assertions.assertNotNull(updated.getTtl());
+        Assertions.assertNotNull(updated.getUpdatedAt());
+        Assertions.assertTrue(updated.getTtl() > Instant.now().getEpochSecond());
+    }
+
+    @Test
+    void updateStatusToWorkedWithDifferentRegistryTest() {
+
+        Instant createdAt = Instant.parse("2026-10-07T12:10:00Z");
+        String batchId = UUID.randomUUID().toString();
+
+        NationalRegistriesRequest request = buildRequest(
+                "CORRELATION-" + UUID.randomUUID(),
+                createdAt,
+                batchId,
+                GatewayDownstreamService.INIPEC,
+                RequestStatusEnum.WORKING
+        );
+
+        request.setTtl(null);
+        repository.putRequest(request).block();
+        String resultPayload = "{\"digitalAddress\":\"test@pec.it\"}";
+
+        repository.updateStatusToWorked(
+                request.getCorrelationId(),
+                request.getCreatedAt().toString(),
+                resultPayload,
+                GatewayDownstreamService.INAD
+        ).block();
+
+        NationalRegistriesRequest updated = getRequestByBatchId(batchId, RequestStatusEnum.WORKED);
+        Assertions.assertEquals(RequestStatusEnum.WORKED, updated.getStatus());
+        Assertions.assertEquals(GatewayDownstreamService.INAD, updated.getRegistry());
+        Assertions.assertEquals(GatewayDownstreamService.INAD.name() + "#" + RequestStatusEnum.WORKED.name(), updated.getRegistryStatus());
         Assertions.assertEquals(resultPayload, updated.getResultPayload());
         Assertions.assertNotNull(updated.getTtl());
         Assertions.assertNotNull(updated.getUpdatedAt());
@@ -287,10 +335,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 () -> repository.updateStatusToWorked(
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
-                        "payload"
+                        "payload",
+                        null
                 ).block()
         );
 
+        Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to WORKED"));
         Assertions.assertTrue(exception.getProblem().getDetail().contains("the current status is not WORKING"));
     }
@@ -314,10 +364,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 () -> repository.updateStatusToWorked(
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
-                        "resultPayload"
+                        "resultPayload",
+                        null
                 ).block()
         );
 
+        Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to WORKED"));
         Assertions.assertTrue(exception.getProblem().getDetail().contains("the current status is not WORKING"));
     }
@@ -342,10 +394,11 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         repository.updateStatusToError(
                 request.getCorrelationId(),
-                request.getCreatedAt().toString()
+                request.getCreatedAt().toString(),
+                GatewayDownstreamService.INAD
         ).block();
 
-        NationalRegistriesRequest updated = getRequestByBatchId(batchId);
+        NationalRegistriesRequest updated = getRequestByBatchId(batchId, RequestStatusEnum.ERROR);
         Assertions.assertEquals(RequestStatusEnum.ERROR, updated.getStatus());
         Assertions.assertNotNull(updated.getTtl());
         Assertions.assertNotNull(updated.getUpdatedAt());
@@ -370,10 +423,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 PnInternalException.class,
                 () -> repository.updateStatusToError(
                         request.getCorrelationId(),
-                        request.getCreatedAt().toString()
+                        request.getCreatedAt().toString(),
+                        GatewayDownstreamService.INAD
                 ).block()
         );
 
+        Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to ERROR"));
         Assertions.assertTrue(exception.getProblem().getDetail().contains("the current status is not WORKING"));
     }
@@ -396,10 +451,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 PnInternalException.class,
                 () -> repository.updateStatusToError(
                         request.getCorrelationId(),
-                        request.getCreatedAt().toString()
+                        request.getCreatedAt().toString(),
+                        GatewayDownstreamService.INAD
                 ).block()
         );
 
+        Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to ERROR"));
         Assertions.assertTrue(exception.getProblem().getDetail().contains("the current status is not WORKING"));
     }
@@ -425,10 +482,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 () -> repository.updateStatusToWorking(
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
-                        null
+                        null,
+                        GatewayDownstreamService.INAD
                 ).block()
         );
 
+        Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("BatchId is required"));
     }
 
@@ -452,10 +511,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 () -> repository.updateStatusToWorking(
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
-                        " "
+                        " ",
+                        GatewayDownstreamService.INAD
                 ).block()
         );
 
+        Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("BatchId is required"));
     }
 
@@ -480,10 +541,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 () -> repository.updateStatusToWorked(
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
+                        null,
                         null
                 ).block()
         );
 
+        Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("ResultPayload is required"));
     }
 
@@ -508,15 +571,17 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 () -> repository.updateStatusToWorked(
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
-                        " "
+                        " ",
+                        null
                 ).block()
         );
 
+        Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("ResultPayload is required"));
     }
 
-    private NationalRegistriesRequest getRequestByBatchId(String batchId ) {
-        Page<NationalRegistriesRequest> page = repository.getRequestsBatchId(batchId, null).block();
+    private NationalRegistriesRequest getRequestByBatchId(String batchId, RequestStatusEnum status ) {
+        Page<NationalRegistriesRequest> page = repository.getRequestsBatchId(batchId, status, null).block();
         Assertions.assertNotNull(page);
         Assertions.assertEquals(1, page.items().size());
         return page.items().getFirst();

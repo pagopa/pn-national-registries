@@ -75,15 +75,15 @@ public class InfoCamereConverter{
         batchPolling.setRetry(0);
         batchPolling.setInProgressRetry(0);
         batchPolling.setCreatedAt(now);
-        batchPolling.setTtl(now.plusSeconds(nationalRegistriesConfig.getInipec().getTtl()).toEpochSecond(ZoneOffset.UTC));
+        batchPolling.setTtl(now.plusSeconds(nationalRegistriesConfig.getTtl()).toEpochSecond(ZoneOffset.UTC));
         batchPolling.setBatchSize(iniPecBatchRequestSize);
         batchPolling.setFirstAttemptAfter(calculateFirstAttemptAfter(iniPecBatchRequestSize));
         return batchPolling;
     }
 
     private Instant calculateFirstAttemptAfter(Integer iniPecBatchRequestSize) {
-        double delaySecondsPerCf = nationalRegistriesConfig.getInipec().getFirstAttemptDelaySecondsPerCf();
-        int fixedDelaySeconds = nationalRegistriesConfig.getInipec().getFirstAttemptFixedDelaySeconds();
+        double delaySecondsPerCf = nationalRegistriesConfig.getInipec().getPollingFirstAttemptDelaySecondsPerCf();
+        int fixedDelaySeconds = nationalRegistriesConfig.getInipec().getPollingFirstAttemptFixedDelaySeconds();
         int batchSize = Optional.ofNullable(iniPecBatchRequestSize).orElse(0);
 
         long delaySeconds = Math.round((delaySecondsPerCf * batchSize) + fixedDelaySeconds);
