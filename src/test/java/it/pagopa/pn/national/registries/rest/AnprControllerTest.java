@@ -36,7 +36,7 @@ class AnprControllerTest {
 
     @BeforeEach
     void init() {
-        anprController = new AnprController(anprService, new GatewayService(null, null, null, null, null), null);
+        anprController = new AnprController(anprService, new GatewayService(null, null, null, null, null, null), null);
     }
 
     @Test

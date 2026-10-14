@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
+import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -34,6 +35,10 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.*;
 
 @TestPropertySource(properties = {
@@ -415,5 +420,33 @@ class IniPecBatchSqsServiceTest {
         batchRequest.setRecipientType(recipientType);
 
         return batchRequest;
+    }
+
+    @Test
+    void sendToDlqQueue_shouldUseCurrentPgRedriveContractAndSplitCorrelationId() {
+        BatchRequest request = new BatchRequest();
+        request.setCf("RSSMRA80A01H501U");
+        request.setClientId("clientId");
+        request.setCorrelationId("correlationId~2026-10-10T10:15:30");
+        request.setRecipientType("PF");
+        request.setReferenceRequestDate(LocalDateTime.of(2026, 10, 10, 12, 30));
+
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq("clientId")))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        StepVerifier.create(iniPecBatchSqsService.sendToDlqQueue(request))
+                .verifyComplete();
+
+        verify(sqsService).pushToInputDlqQueue(
+                argThat(message ->
+                        "RSSMRA80A01H501U".equals(message.getTaxId())
+                                && "clientId".equals(message.getPnNationalRegistriesCxId())
+                                && "correlationId".equals(message.getCorrelationId())
+                                && "PF".equals(message.getRecipientType())
+                                && "DIGITAL".equals(message.getDomicileType())
+                                && message.getReferenceRequestDate() != null
+                ),
+                eq("clientId")
+        );
     }
 }

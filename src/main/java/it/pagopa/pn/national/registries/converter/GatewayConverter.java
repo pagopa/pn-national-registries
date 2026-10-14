@@ -1,10 +1,8 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
-import it.pagopa.pn.national.registries.constant.DigitalAddressType;
-import it.pagopa.pn.national.registries.constant.DomicileType;
-import it.pagopa.pn.national.registries.constant.RecipientType;
+import it.pagopa.pn.national.registries.constant.*;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
@@ -18,6 +16,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -368,5 +367,23 @@ public class GatewayConverter {
                 .referenceRequestDate(filter.getReferenceRequestDate())
                 .pnNationalRegistriesCxId(pnNationalRegistriesCxId)
                 .build();
+    }
+
+
+    protected NationalRegistriesRequest constructNationalRegistriesRequest(AddressRequestBodyDto addressRequestBodyDto, RecipientType recipientType, String pnNationalRegistriesCxId, GatewayDownstreamService registry) {
+        NationalRegistriesRequest nationalRegistriesRequest = new NationalRegistriesRequest();
+
+        nationalRegistriesRequest.setCreatedAt(Instant.now());
+        nationalRegistriesRequest.setCorrelationId(addressRequestBodyDto.getFilter().getCorrelationId());
+        nationalRegistriesRequest.setReferenceRequestDate(addressRequestBodyDto.getFilter().getReferenceRequestDate().toString());
+        nationalRegistriesRequest.setDomicileType(addressRequestBodyDto.getFilter().getDomicileType().getValue());
+        nationalRegistriesRequest.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
+        nationalRegistriesRequest.setRecipientType(recipientType.name());
+        nationalRegistriesRequest.setClientId(pnNationalRegistriesCxId);
+        nationalRegistriesRequest.setRegistry(registry);
+        nationalRegistriesRequest.setStatus(RequestStatusEnum.NOT_WORKED);
+        nationalRegistriesRequest.setRegistryStatus(String.join("#", registry.name(), RequestStatusEnum.NOT_WORKED.name()));
+
+        return nationalRegistriesRequest;
     }
 }
