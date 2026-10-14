@@ -18,6 +18,7 @@ public class NationalRegistriesConfig {
     private Dao dao;
     private Integer queryLimit;
     private Inipec inipec;
+    private Sqs sqs;
     private Inad inad;
 
     private String addressCompositionMode;
@@ -28,6 +29,15 @@ public class NationalRegistriesConfig {
     public static class Dao {
         private String shedlockTableName;
     }
+
+    @Data
+    public static class Sqs {
+        private String outputQueueName;
+        private String inputDlqQueueName;
+        private String inputQueueName;
+        private String pollingQueueName;
+    }
+
 
     @Data
     public static class Inipec {
