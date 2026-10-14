@@ -376,7 +376,7 @@ Resources:
         - AttributeName: "sk"
           KeyType: "RANGE"
       GlobalSecondaryIndexes:
-        - IndexName: "status-attemptAfter-Index"
+        - IndexName: "status-attemptAfter-index"
           KeySchema:
             - AttributeName: status
               KeyType: HASH
