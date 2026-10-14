@@ -355,6 +355,42 @@ Resources:
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
 
+  PnNationalRegistriesBatchesTable:
+    Type: AWS::DynamoDB::Table
+    UpdateReplacePolicy: Retain
+    DeletionPolicy: Retain
+    Properties:
+      TableName: !Sub '${ProjectName}-NationalRegistriesBatches'
+      AttributeDefinitions:
+        - AttributeName: "batchId"
+          AttributeType: "S"
+        - AttributeName: "sk"
+          AttributeType: "S"
+        - AttributeName: "status"
+          AttributeType: "S"
+        - AttributeName: "attemptAfter"
+          AttributeType: "S"
+      KeySchema:
+        - AttributeName: "batchId"
+          KeyType: "HASH"
+        - AttributeName: "sk"
+          KeyType: "RANGE"
+      GlobalSecondaryIndexes:
+        - IndexName: "status-attemptAfter-index"
+          KeySchema:
+            - AttributeName: status
+              KeyType: HASH
+            - AttributeName: attemptAfter
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      BillingMode: "PAY_PER_REQUEST"
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
   PnNationalRegistriesLogGroup:
     Type: AWS::CloudFormation::Stack
     UpdateReplacePolicy: Retain
@@ -455,6 +491,11 @@ Outputs:
   PnNationalRegistriesRequestsTableName:
     Description: Name of the PnNationalRegistriesRequestsTable
     Value: !Ref PnNationalRegistriesRequestsTable
+  # NationalRegistriesBatches Table
+  PnNationalRegistriesBatchesTableArn:
+    Value: !Sub '${PnNationalRegistriesBatchesTable.Arn}'
+  PnNationalRegistriesBatchesTableName:
+    Value: !Ref PnNationalRegistriesBatchesTable
 
   # Log group exports
   EcsLogGroup:
