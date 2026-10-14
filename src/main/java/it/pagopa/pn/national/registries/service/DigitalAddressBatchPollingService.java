@@ -349,9 +349,13 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
         if (Objects.isNull(pec.getStatoImpresa())) {
             log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
             CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+            int foundPecCount = CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()) ? 0 : codeSqsDto.getDigitalAddress().size();
             removeInvalidEmails(codeSqsDto);
-            if(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
-                log.info("IniPEC - correlationId {} - no valid digital address found in pec response", batchRequest.getCorrelationId());
+            int validPecCount = codeSqsDto.getDigitalAddress().size();
+            log.info("IniPEC - correlationId {} - statoImpresa is null - pec found: {}, valid pec: {}",
+                    batchRequest.getCorrelationId(), foundPecCount, validPecCount);
+            if (validPecCount == 0) {
+                log.info("IniPEC - correlationId {} - no valid digital address found in IniPEC response, starting fallback", batchRequest.getCorrelationId());
                 return handlePecNotFoundResponse(batchRequest, status, now);
             }
             logCfWithAddressMetricFromBatchRequest(codeSqsDto, batchRequest, GatewayDownstreamService.INIPEC);

@@ -1,15 +1,15 @@
 package it.pagopa.pn.national.registries.utils;
 
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressSQSMessageDigitalAddressInnerDto;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import reactor.test.StepVerifier;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -231,5 +231,73 @@ class DigitalAddressUtilsTest {
         assertFalse(
                 DigitalAddressUtils.isValidEmail("   ")
         );
+    }
+
+    @Test
+    void removeInvalidEmailsFiltersOnlyValidEmails() {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+
+        DigitalAddress valid = new DigitalAddress();
+        valid.setAddress("valid@pec.it");
+
+        DigitalAddress invalid = new DigitalAddress();
+        invalid.setAddress("invalid_pec");
+
+        codeSqsDto.setDigitalAddress(new ArrayList<>(List.of(valid, invalid)));
+
+        DigitalAddressUtils.removeInvalidEmails(codeSqsDto);
+
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertEquals(1, codeSqsDto.getDigitalAddress().size());
+        assertEquals("valid@pec.it", codeSqsDto.getDigitalAddress().getFirst().getAddress());
+    }
+
+    @Test
+    void removeInvalidEmailsWithNullListKeepsEmptyList() {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        codeSqsDto.setDigitalAddress(null);
+
+        DigitalAddressUtils.removeInvalidEmails(codeSqsDto);
+
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void removeInvalidEmailsWithAllInvalidEmailsReturnsEmptyList() {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+
+        DigitalAddress invalid1 = new DigitalAddress();
+        invalid1.setAddress("invalid_pec");
+
+        DigitalAddress invalid2 = new DigitalAddress();
+        invalid2.setAddress("not-an-email");
+
+        codeSqsDto.setDigitalAddress(new ArrayList<>(List.of(invalid1, invalid2)));
+
+        DigitalAddressUtils.removeInvalidEmails(codeSqsDto);
+
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void removeInvalidEmailsWithAlreadyValidListKeepsAllEmails() {
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+
+        DigitalAddress valid1 = new DigitalAddress();
+        valid1.setAddress("valid1@pec.it");
+
+        DigitalAddress valid2 = new DigitalAddress();
+        valid2.setAddress("valid2@pec.it");
+
+        codeSqsDto.setDigitalAddress(new ArrayList<>(List.of(valid1, valid2)));
+
+        DigitalAddressUtils.removeInvalidEmails(codeSqsDto);
+
+        assertNotNull(codeSqsDto.getDigitalAddress());
+        assertEquals(2, codeSqsDto.getDigitalAddress().size());
+        assertEquals("valid1@pec.it", codeSqsDto.getDigitalAddress().get(0).getAddress());
+        assertEquals("valid2@pec.it", codeSqsDto.getDigitalAddress().get(1).getAddress());
     }
 }
