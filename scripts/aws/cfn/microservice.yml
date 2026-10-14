@@ -208,6 +208,14 @@ Parameters:
     Type: String
     Description: 'Name of DynamoDB table Requests'
 
+  PnNationalRegistriesBatchesTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table NationalRegistriesBatches'
+
+  PnNationalRegistriesBatchesTableName:
+    Type: String
+    Description: Name of DynamoDB table used for storing information related to NationalRegistriesBatches
+
   PnCxIdValidationEnabled:
     Type: String
     AllowedValues:
@@ -743,6 +751,7 @@ Resources:
         ContainerEnvEntry78: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInadBatchPollingMaxRetry}'
         ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_SQS_POLLINGQUEUENAME=${NationalRegistriesPollingQueueName}'
         ContainerEnvEntry80: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${PnNationalRegistriesRequestsTableName}'
+        ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${PnNationalRegistriesBatchesTableName}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -794,9 +803,12 @@ Resources:
               - !Ref BatchPollingTableArn
               - !Ref ShedLockTableArn
               - !Ref PnNationalRegistriesRequestsTableArn
+              - !Ref PnNationalRegistriesBatchesTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
               - !Sub '${PnNationalRegistriesRequestsTableArn}/index/*'
+              - !Sub '${PnNationalRegistriesBatchesTableArn}/index/*'
+
           - Effect: Allow
             Action:
               - sqs:SendMessage

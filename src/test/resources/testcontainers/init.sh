@@ -351,4 +351,31 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
   --provisioned-throughput \
     ReadCapacityUnits=10,WriteCapacityUnits=5
 
+echo "### CREATE NATIONAL REGISTRIES BATCHES TABLE ###"
+
+aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
+    dynamodb create-table \
+    --table-name pn-NationalRegistriesBatches \
+    --attribute-definitions \
+        AttributeName=batchId,AttributeType=S \
+        AttributeName=sk,AttributeType=S \
+        AttributeName=status,AttributeType=S \
+        AttributeName=attemptAfter,AttributeType=S \
+    --key-schema \
+        AttributeName=batchId,KeyType=HASH \
+        AttributeName=sk,KeyType=RANGE \
+    --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
+    --global-secondary-indexes \
+    '[
+        {
+            "IndexName": "status-attemptAfter-Index",
+            "KeySchema": [
+                {"AttributeName": "status", "KeyType": "HASH"},
+                {"AttributeName": "attemptAfter", "KeyType": "RANGE"}
+            ],
+            "Projection": {"ProjectionType": "ALL"},
+            "ProvisionedThroughput": {"ReadCapacityUnits": 5, "WriteCapacityUnits": 5}
+        }
+    ]'
+
 echo "Initialization terminated"
