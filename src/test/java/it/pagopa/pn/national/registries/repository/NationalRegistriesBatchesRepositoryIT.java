@@ -62,7 +62,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
 
     @Test
     void putAndGetBatchTest() {
-        NationalRegistriesBatch batch = batch("put-get", REQUEST_SENT, Instant.parse("2026-10-09T10:00:00Z"));
+        NationalRegistriesBatch batch = batch("put-get", REQUEST_SENT, Instant.parse("2099-10-09T10:00:00Z"));
         batch.setRegistry("INAD");
         batch.setBatchSize(10);
 
