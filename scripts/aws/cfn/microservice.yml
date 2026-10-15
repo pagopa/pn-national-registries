@@ -13,6 +13,10 @@ Parameters:
     Type: String
     Description: 'Identify the resource that the policy applies to.'
 
+  NationalRegistriesGatewayResponsesQueueARN:
+    Type: String
+    Description: 'Identify the resource that the policy applies to.'
+
   ProjectName:
     Type: String
     Description: 'Usually pn can be pnXYZ where XYZ are the feature number, useful to create
@@ -998,6 +1002,86 @@ Resources:
             "batchId": "<$.dynamodb.NewImage.batchId.S>",
             "pollingId": "<$.dynamodb.NewImage.pollingId.S>"
           }
+
+  PnNationalRegistriesCompletedRequestPipe:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: pn-national-registries-completed-request-pipe
+      RoleArn: !GetAtt PnNationalRegistriesCompletedRequestPipeRole.Arn
+      Source: !Ref PnNationalRegistriesRequestsStreamArn
+
+      SourceParameters:
+        DynamoDBStreamParameters:
+          StartingPosition: LATEST
+          BatchSize: 1
+
+        FilterCriteria:
+          Filters:
+            - Pattern: >
+                {
+                  "eventName": ["MODIFY"],
+                  "dynamodb": {
+                    "NewImage": {
+                      "status": {
+                        "S": ["WORKED"]
+                      },
+                      "resultPayload": {
+                        "S": [
+                          {
+                            "exists": true
+                          }
+                        ]
+                      }
+                    },
+                    "OldImage": {
+                      "status": {
+                        "S": [
+                          {
+                            "anything-but": "WORKED"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+
+      Target: !Ref NationalRegistriesGatewayResponsesQueueARN
+      TargetParameters:
+        InputTemplate: >
+          <$.dynamodb.NewImage.resultPayload.S>
+
+  PnNationalRegistriesCompletedRequestPipeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pipes.amazonaws.com
+            Action:
+              - sts:AssumeRole
+
+      Policies:
+        - PolicyName: pn-national-registries-completed-request-pipe-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource:
+                  - !GetAtt PnNationalRegistriesRequestsTableStreamArn
+
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !Ref NationalRegistriesGatewayResponsesQueueARN
 
   NationalRegistryApiGateway:
     Type: AWS::CloudFormation::Stack
