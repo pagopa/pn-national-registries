@@ -220,6 +220,10 @@ Parameters:
     Type: String
     Description: Name of DynamoDB table used for storing information related to NationalRegistriesBatches
 
+  PnNationalRegistriesBatchesTableStreamArn:
+    Type: String
+    Description: 'ARN of DynamoDB Stream for Batches table (StreamViewType NEW_AND_OLD_IMAGES)'
+
   PnCxIdValidationEnabled:
     Type: String
     AllowedValues:
@@ -842,10 +846,10 @@ Resources:
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SecretAndSSMPrefix}/*'
 
-  PnNationalRegistriesBatchRequestErrorPipeRole:
+  PnNationalRegistriesRequestErrorPipeRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: !Sub '${ProjectName}-batch-request-error-pipe-role'
+      RoleName: !Sub '${ProjectName}-national-registries-request-error-pipe-role'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:
@@ -856,11 +860,11 @@ Resources:
             Action:
               - sts:AssumeRole
       Policies:
-        - PolicyName: batch-request-error-pipe-policy
+        - PolicyName: pn-national-registries-request-error-pipe-policy
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              - Sid: ReadBatchRequestDynamoDbStream
+              - Sid: ReadRequestDynamoDbStream
                 Effect: Allow
                 Action:
                   - dynamodb:DescribeStream
@@ -876,11 +880,11 @@ Resources:
                 Resource:
                   - !Ref NationalRegistryGatewayInputsDLQARN
 
-  PnNationalRegistriesBatchRequestErrorPipe:
+  PnNationalRegistriesRequestErrorPipe:
     Type: AWS::Pipes::Pipe
     Properties:
-      Name: pn-national-registries-batch-request-error-pipe
-      RoleArn: !GetAtt PnNationalRegistriesBatchRequestErrorPipeRole.Arn
+      Name: pn-national-registries-request-error-pipe
+      RoleArn: !GetAtt PnNationalRegistriesRequestErrorPipeRole.Arn
       Source: !Ref PnNationalRegistriesRequestsTableStreamArn
       SourceParameters:
         DynamoDBStreamParameters:
@@ -918,6 +922,81 @@ Resources:
             "domicileType": "<$.dynamodb.NewImage.domicileType.S>",
             "referenceRequestDate": "<$.dynamodb.NewImage.referenceRequestDate.S>",
             "pnNationalRegistriesCxId": "<$.dynamodb.NewImage.clientId.S>"
+          }
+
+  PnNationalRegistriesPollingPipeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-national-registries-polling-pipe'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pipes.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Policies:
+        - PolicyName: pn-national-registries-polling-pipe-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadBatchDynamoDbStream
+                Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource:
+                  - !Ref PnNationalRegistriesBatchesTableStreamArn
+              - Sid: SendToNationalRegistryPollingQueue
+                Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !Ref NationalRegistriesPollingQueueARN
+
+  PnNationalRegistriesPollingPipe:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: pn-national-registries-polling-pipe
+      RoleArn: !GetAtt PnNationalRegistriesPollingPipeRole.Arn
+      Source: !Ref PnNationalRegistriesBatchesTableStreamArn
+      SourceParameters:
+        DynamoDBStreamParameters:
+          StartingPosition: LATEST
+          BatchSize: 1
+        FilterCriteria:
+          Filters:
+            - Pattern: >-
+                {
+                  "eventName": ["MODIFY"],
+                  "dynamodb": {
+                    "NewImage": {
+                      "status": {
+                        "S": ["WORKING"]
+                      }
+                    },
+                    "OldImage": {
+                      "status": {
+                        "S": [
+                          {
+                            "anything-but": "WORKING"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+      Target: !Ref NationalRegistriesPollingQueueARN
+      TargetParameters:
+        InputTemplate: >-
+          {
+            "registry": "<$.dynamodb.NewImage.registry.S>",
+            "batchId": "<$.dynamodb.NewImage.batchId.S>",
+            "pollingId": "<$.dynamodb.NewImage.pollingId.S>"
           }
 
   NationalRegistryApiGateway:

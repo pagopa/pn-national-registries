@@ -390,6 +390,8 @@ Resources:
       BillingMode: "PAY_PER_REQUEST"
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
 
   PnNationalRegistriesLogGroup:
     Type: AWS::CloudFormation::Stack
@@ -498,6 +500,8 @@ Outputs:
     Value: !Sub '${PnNationalRegistriesBatchesTable.Arn}'
   PnNationalRegistriesBatchesTableName:
     Value: !Ref PnNationalRegistriesBatchesTable
+  PnNationalRegistriesBatchesTableStreamArn:
+    Value: !GetAtt PnNationalRegistriesBatchesTable.StreamArn
 
   # Log group exports
   EcsLogGroup:
