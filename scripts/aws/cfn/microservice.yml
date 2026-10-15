@@ -391,17 +391,17 @@ Parameters:
     Description: 'INAD batch request lock at least'
     Default: 22000
 
-  PnNationalRegistriesInadBatchPollingDelay:
+  PnNationalRegistriesPollingDelay:
     Type: Number
     Description: 'INAD batch polling delay'
     Default: 30000
 
-  PnNationalRegistriesInadBatchPollingLockAtMost:
+  PnNationalRegistriesPollingLockAtMost:
     Type: Number
     Description: 'INAD batch polling lock at most'
     Default: 30000
 
-  PnNationalRegistriesInadBatchPollingLockAtLeast:
+  PnNationalRegistriesPollingLockAtLeast:
     Type: Number
     Description: 'INAD batch polling lock at least'
     Default: 1000
@@ -751,9 +751,9 @@ Resources:
         ContainerEnvEntry67: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTDELAY=${PnNationalRegistriesInadBatchRequestDelay}'
         ContainerEnvEntry68: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTLOCKATMOST=${PnNationalRegistriesInadBatchRequestLockAtMost}'
         ContainerEnvEntry69: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTLOCKATLEAST=${PnNationalRegistriesInadBatchRequestLockAtLeast}'
-        ContainerEnvEntry70: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGDELAY=${PnNationalRegistriesInadBatchPollingDelay}'
-        ContainerEnvEntry71: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGLOCKATMOST=${PnNationalRegistriesInadBatchPollingLockAtMost}'
-        ContainerEnvEntry72: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGLOCKATLEAST=${PnNationalRegistriesInadBatchPollingLockAtLeast}'
+        ContainerEnvEntry70: !Sub 'PN_NATIONALREGISTRIES_POLLINGDELAY=${PnNationalRegistriesPollingDelay}'
+        ContainerEnvEntry71: !Sub 'PN_NATIONALREGISTRIES_POLLINGLOCKATMOST=${PnNationalRegistriesPollingLockAtMost}'
+        ContainerEnvEntry72: !Sub 'PN_NATIONALREGISTRIES_POLLINGLOCKATLEAST=${PnNationalRegistriesPollingLockAtLeast}'
         ContainerEnvEntry73: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${PnNationalRegistriesInadPollingFirstAttemptDelaySecondsPerCf}'
         ContainerEnvEntry74: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${PnNationalRegistriesInadPollingFirstAttemptFixedDelaySeconds}'
         ContainerEnvEntry75: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGRETRYAFTER=${PnNationalRegistriesInadPollingRetryAfter}'
