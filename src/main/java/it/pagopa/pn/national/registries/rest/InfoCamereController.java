@@ -1,10 +1,12 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.InfoCamereApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
+import it.pagopa.pn.national.registries.utils.RequestIdUtils;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -25,6 +27,7 @@ import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddres
 public class InfoCamereController implements InfoCamereApi {
 
     private final InfoCamereService infoCamereService;
+    private static final String X_REQUEST_ID = "X-Request-ID";
 
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
@@ -48,10 +51,18 @@ public class InfoCamereController implements InfoCamereApi {
      *         or Service Unavailable (status code 503)
      */
     @Override
-    public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(Mono<GetDigitalAddressIniPECRequestBodyDto> getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId,  final ServerWebExchange exchange) {
-        return getDigitalAddressIniPECRequestBodyDto.flatMap(requestBody -> infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, requestBody, new Date(), retrieveRecipientType(requestBody.getFilter().getTaxId(), null)))
-                .map(t -> ResponseEntity.ok().body(t))
+    public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(Mono<GetDigitalAddressIniPECRequestBodyDto> getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
+        var mono = getDigitalAddressIniPECRequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDC(requestBody.getFilter().getCorrelationId()))
+                .flatMap(requestBody -> infoCamereService.getIniPecDigitalAddress(
+                        pnNationalRegistriesCxId, requestBody, new Date(),
+                        retrieveRecipientType(requestBody.getFilter().getTaxId(), null)))
+                        .map(t -> ResponseEntity.ok()
+                            .header(X_REQUEST_ID, t.getCorrelationId())
+                            .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 
     /**
@@ -68,7 +79,9 @@ public class InfoCamereController implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
-        return getAddressRegistroImpreseRequestBodyDto.flatMap(infoCamereService::getRegistroImpreseLegalAddress)
+        String requestId = RequestIdUtils.putRequestIdToMDC();
+        var mono = getAddressRegistroImpreseRequestBodyDto
+                .flatMap(infoCamereService::getRegistroImpreseLegalAddress)
                 .doOnNext(responseDto -> {
                     logCfRequestedMetric(null, GatewayDownstreamService.REGISTRO_IMPRESE, 1);
                     if(Objects.nonNull(responseDto.getProfessionalAddress())){
@@ -80,8 +93,12 @@ public class InfoCamereController implements InfoCamereApi {
                         );
                     }
                 })
-                .map(t -> ResponseEntity.ok().body(t))
+                .map(t -> ResponseEntity.ok()
+                        .header(X_REQUEST_ID, requestId)
+                        .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 
 
@@ -100,9 +117,15 @@ public class InfoCamereController implements InfoCamereApi {
 
     @Override
     public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(Mono<InfoCamereLegalRequestBodyDto> infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
-        return infoCamereLegalRequestBodyDto.flatMap(infoCamereService::checkTaxIdAndVatNumber)
-                .map(t -> ResponseEntity.ok().body(t))
+        String requestId = RequestIdUtils.putRequestIdToMDC();
+        var mono = infoCamereLegalRequestBodyDto
+                .flatMap(infoCamereService::checkTaxIdAndVatNumber)
+                .map(t -> ResponseEntity.ok()
+                        .header(X_REQUEST_ID, requestId)
+                        .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 
     /**
@@ -119,10 +142,15 @@ public class InfoCamereController implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<InfoCamereLegalInstitutionsOKDto>> infoCamereLegalInstitutions(Mono<InfoCamereLegalInstitutionsRequestBodyDto> infoCamereLegalInstitutionsRequestBodyDto, final ServerWebExchange exchange) {
-        return infoCamereLegalInstitutionsRequestBodyDto
+        String requestId = RequestIdUtils.putRequestIdToMDC();
+        var mono = infoCamereLegalInstitutionsRequestBodyDto
                 .flatMap(infoCamereService::getLegalInstitutions)
-                .map(t -> ResponseEntity.ok().body(t))
+                .map(t -> ResponseEntity.ok()
+                        .header(X_REQUEST_ID, requestId)
+                        .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 
 }

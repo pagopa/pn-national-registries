@@ -1,11 +1,13 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AgenziaEntrateApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.ADELegalRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyDto;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
+import it.pagopa.pn.national.registries.utils.RequestIdUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
@@ -18,6 +20,7 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     private final AgenziaEntrateService agenziaEntrateService;
     private final Scheduler scheduler;
+    private static final String X_REQUEST_ID = "X-Request-ID";
 
 
 
@@ -38,9 +41,15 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        return checkTaxIdRequestBodyDto.flatMap(agenziaEntrateService::callEService)
-                .map(t -> ResponseEntity.ok().body(t))
+        String requestId = RequestIdUtils.putRequestIdToMDC();
+        var mono = checkTaxIdRequestBodyDto
+                .flatMap(agenziaEntrateService::callEService)
+                .map(t -> ResponseEntity.ok()
+                        .header(X_REQUEST_ID, requestId)
+                        .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 
     /**
@@ -56,8 +65,14 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     @Override
     public Mono<ResponseEntity<ADELegalOKDto>> adeLegal(Mono<ADELegalRequestBodyDto> adELegalRequestBodyDto, final ServerWebExchange exchange) {
-        return adELegalRequestBodyDto.flatMap(agenziaEntrateService::checkTaxIdAndVatNumber)
-                .map(t -> ResponseEntity.ok().body(t))
+        String requestId = RequestIdUtils.putRequestIdToMDC();
+        var mono = adELegalRequestBodyDto
+                .flatMap(agenziaEntrateService::checkTaxIdAndVatNumber)
+                .map(t -> ResponseEntity.ok()
+                        .header(X_REQUEST_ID, requestId)
+                        .body(t))
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 }
