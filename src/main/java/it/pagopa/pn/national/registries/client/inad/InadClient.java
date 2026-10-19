@@ -6,14 +6,18 @@ import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniMultipleApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.RequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -33,6 +37,7 @@ public class InadClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
     private final ApiEstrazioniPuntualiApi apiEstrazioniPuntualiApi;
+    private final ApiEstrazioniMultipleApi apiEstrazioniMultipleApi;
     private final InadSecretConfig inadSecretConfig;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
@@ -48,10 +53,38 @@ public class InadClient {
                 );
     }
 
+    public Mono<ResponseEntity<ResponseRequestListDigitalAddress>> callMassiveEService(RequestListDigitalAddress request) {
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(inadSecretConfig.getPdndSecret());
+        return accessTokenExpiringMap.getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, false)
+                .flatMap(tokenEntry -> callMassiveExtract(request, tokenEntry))
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
+                                new PnInternalException(ERROR_MESSAGE_INAD_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED))
+                );
+    }
+
     private Mono<ResponseRequestDigitalAddress> callExtract(String taxId, String practicalReference, AccessTokenCacheEntry tokenEntry) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INAD, PROCESS_SERVICE_INAD_ADDRESS);
         apiEstrazioniPuntualiApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
         return apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(taxId, practicalReference)
+                .doOnError(throwable -> {
+                    String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
+                            .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
+                            .orElse("Unknown error");
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, maskedErrorMessage, throwable);
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
+                        throw new PnNationalRegistriesException(maskedErrorMessage, ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), InadResponseKO.class);
+                    }
+                });
+    }
+
+    private Mono<ResponseEntity<ResponseRequestListDigitalAddress>> callMassiveExtract(RequestListDigitalAddress request,
+                                                                                         AccessTokenCacheEntry tokenEntry) {
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INAD, PROCESS_SERVICE_INAD_ADDRESS);
+        apiEstrazioniMultipleApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
+        return apiEstrazioniMultipleApi.richiestaElencoDomiciliDigitaliWithHttpInfo(request)
                 .doOnError(throwable -> {
                     String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
                             .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
