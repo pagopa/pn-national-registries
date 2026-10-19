@@ -90,11 +90,11 @@ import java.util.UUID;
         "pn.national-registries.inipec.batch.polling.inprogress.max-retry=24",
         "pn.national-registries.inipec.first-attempt-delay-seconds-per-cf=0",
         "pn.national-registries.inipec.first-attempt-fixed-delay-seconds=0",
-        "pn.national.registries.pdnd.base-path=http://localhost:1080/nationalregistriesmock/",
+        "pn.national-registries.pdnd-base-url=http://localhost:1080/nationalregistriesmock/",
         "pn.national.registries.anpr.base-path=http://localhost:1080/nationalregistriesmock/",
         "pn.national.registries.ade-legal.base-path=http://localhost:1080/nationalregistriesmock/",
         "pn.national.registries.ade-check-cf.base-path=http://localhost:1080/nationalregistriesmock/",
-        "pn.national.registries.inad.base-path=http://localhost:1080/nationalregistriesmock/",
+        "pn.national-registries.inad-base-url=http://localhost:1080/nationalregistriesmock/",
         "pn.national.registries.infocamere.base-path=http://localhost:1080/nationalregistriesmock/ic/ce/wspa/wspa/rest/",
         "pn.national.registries.ipa.base-path=http://localhost:1080/nationalregistriesmock/",
         "pn.national.registries.pdnd.anpr.secret=pn-national-registries/pdnd/ANPR",
@@ -547,4 +547,3 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
         return pec;
     }
 }
-

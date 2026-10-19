@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.config.inad;
 
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ class InadClientConfigTest {
     private WebClient webClient;
 
     private InadClientConfig inadClientConfig;
+    private NationalRegistriesConfig nationalRegistriesConfig;
 
 
     @BeforeEach
@@ -39,19 +41,21 @@ class InadClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        inadClientConfig = new InadClientConfig(webClientBuilder, new CustomRetryConfig(1));
+        nationalRegistriesConfig = new NationalRegistriesConfig();
+        nationalRegistriesConfig.setInadBaseURL("http://example.com");
+        inadClientConfig = new InadClientConfig(webClientBuilder, new CustomRetryConfig(1), nationalRegistriesConfig);
     }
 
     @Test
     void apiEstrazioniPuntualiApi_ShouldReturnValidApiInstance_WhenBasePathIsProvided() {
-        ApiEstrazioniPuntualiApi result = inadClientConfig.apiEstrazioniPuntualiApi("http://example.com");
+        ApiEstrazioniPuntualiApi result = inadClientConfig.apiEstrazioniPuntualiApi();
         assertNotNull(result, "Expected a non-null ApiEstrazioniPuntualiApi instance");
     }
 
     @Test
     void apiEstrazioniPuntualiApi_ShouldConfigureApiClientWithProvidedBasePath() {
         String expectedBasePath = "http://example.com";
-        ApiEstrazioniPuntualiApi api = inadClientConfig.apiEstrazioniPuntualiApi(expectedBasePath);
+        ApiEstrazioniPuntualiApi api = inadClientConfig.apiEstrazioniPuntualiApi();
         String actualBasePath = api.getApiClient().getBasePath();
         assertNotNull(actualBasePath, "Base path should not be null");
         assertEquals(expectedBasePath, actualBasePath, "Base path should match the provided value");

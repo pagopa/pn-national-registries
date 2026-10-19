@@ -53,7 +53,7 @@ public class InadClient {
                 );
     }
 
-    public Mono<ResponseEntity<ResponseRequestListDigitalAddress>> callMassiveEService(RequestListDigitalAddress request) {
+    public Mono<ResponseRequestListDigitalAddress> callMassiveEService(RequestListDigitalAddress request) {
         PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(inadSecretConfig.getPdndSecret());
         return accessTokenExpiringMap.getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, false)
                 .flatMap(tokenEntry -> callMassiveExtract(request, tokenEntry))
@@ -80,11 +80,15 @@ public class InadClient {
                 });
     }
 
-    private Mono<ResponseEntity<ResponseRequestListDigitalAddress>> callMassiveExtract(RequestListDigitalAddress request,
-                                                                                         AccessTokenCacheEntry tokenEntry) {
+    private Mono<ResponseRequestListDigitalAddress> callMassiveExtract(RequestListDigitalAddress request,
+                                                                        AccessTokenCacheEntry tokenEntry) {
         log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INAD, PROCESS_SERVICE_INAD_ADDRESS);
         apiEstrazioniMultipleApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
         return apiEstrazioniMultipleApi.richiestaElencoDomiciliDigitaliWithHttpInfo(request)
+                .doOnNext(response -> log.info("INAD massive request accepted: id={}, location={}",
+                        response.getBody() == null ? null : response.getBody().getId(),
+                        response.getHeaders().getLocation()))
+                .map(ResponseEntity::getBody)
                 .doOnError(throwable -> {
                     String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
                             .map(MaskTaxIdInPathUtils::maskTaxIdInPath)

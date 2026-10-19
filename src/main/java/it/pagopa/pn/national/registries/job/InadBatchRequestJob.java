@@ -13,7 +13,6 @@ import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRep
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.springframework.http.ResponseEntity;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -21,11 +20,11 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 @Component
@@ -39,7 +38,7 @@ public class InadBatchRequestJob {
     private final NationalRegistriesConfig nationalRegistriesConfig;
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inad.batch-request.delay}")
-    @SchedulerLock(name = "inadBatchRequest",
+    @SchedulerLock(name = "inadRequests",
             lockAtMostFor = "${pn.national-registries.inad.batch-request.lock-at-most}",
             lockAtLeastFor = "${pn.national-registries.inad.batch-request.lock-at-least}")
     public void batchRequest() {
@@ -84,10 +83,7 @@ public class InadBatchRequestJob {
     }
 
     private Mono<Void> submitBatch(List<NationalRegistriesRequest> requests, Instant now) {
-        String batchId = UUID.nameUUIDFromBytes(String.join(":",
-                        requests.stream().map(NationalRegistriesRequest::getCorrelationId).toList())
-                        .getBytes(StandardCharsets.UTF_8))
-                .toString();
+        String batchId = UUID.randomUUID().toString();
         RequestListDigitalAddress request = new RequestListDigitalAddress();
         request.setCodiciFiscali(requests.stream().map(NationalRegistriesRequest::getTaxId).toList());
         // INAD persists this reference with the provider request, making retries traceable to this batch.
@@ -98,41 +94,42 @@ public class InadBatchRequestJob {
                 .doOnError(error -> log.error("INAD batch {} failed", batchId, error));
     }
 
-    private Mono<Void> persistBatch(ResponseEntity<ResponseRequestListDigitalAddress> response,
+    private Mono<Void> persistBatch(ResponseRequestListDigitalAddress providerResponse,
                                     String batchId,
                                     List<NationalRegistriesRequest> requests,
                                     Instant now) {
-        ResponseRequestListDigitalAddress providerResponse = response.getBody();
-        if (providerResponse == null || providerResponse.getId() == null) {
+        if (!Objects.nonNull(providerResponse) || !Objects.nonNull(providerResponse.getId())) {
             return Mono.error(new IllegalStateException("INAD returned no polling identifier for batch " + batchId));
         }
 
+        NationalRegistriesBatch batch = getBatch(batchId, requests, now, providerResponse);
+
+        return nationalRegistriesBatchesRepository.putBatch(batch)
+                .thenMany(reactor.core.publisher.Flux.fromIterable(requests)
+                        // The repository conditionally accepts only NOT_WORKED -> WORKING transitions.
+                        .flatMap(request -> nationalRegistriesRequestsRepository.updateStatusToWorking(
+                                request.getCorrelationId(),
+                                request.getCreatedAt().toString(),
+                                batchId,
+                                GatewayDownstreamService.INAD)))
+                .then();
+    }
+
+    private NationalRegistriesBatch getBatch(String batchId, List<NationalRegistriesRequest> requests,
+                                             Instant now, ResponseRequestListDigitalAddress providerResponse) {
         NationalRegistriesBatch batch = new NationalRegistriesBatch();
         batch.setBatchId(batchId);
         batch.setCreatedAt(now);
         batch.setUpdatedAt(now);
         batch.setRegistry(GatewayDownstreamService.INAD.name());
         batch.setPollingId(providerResponse.getId());
-        batch.setProviderLocation(response.getHeaders().getLocation() == null
-                ? null
-                : response.getHeaders().getLocation().toString());
         batch.setPracticalReferenceValue(batchId);
         batch.setBatchSize(requests.size());
         batch.setAttemptAfter(calculateFirstPollingAttempt(requests.size(), now));
         batch.setStatus(BatchesStatusEnum.REQUEST_SENT);
         batch.setRetryCount(0);
         batch.setInProgressRetryCount(0);
-        batch.setTtl(now.plusSeconds(nationalRegistriesConfig.getTtl()).getEpochSecond());
-
-        return nationalRegistriesBatchesRepository.putBatch(batch)
-                .thenMany(reactor.core.publisher.Flux.fromIterable(requests)
-                        // The repository conditionally accepts only NOT_WORKED -> WORKING transitions.
-                        .concatMap(request -> nationalRegistriesRequestsRepository.updateStatusToWorking(
-                                request.getCorrelationId(),
-                                request.getCreatedAt().toString(),
-                                batchId,
-                                GatewayDownstreamService.INAD)))
-                .then();
+        return batch;
     }
 
     private Instant calculateFirstPollingAttempt(int batchSize, Instant now) {

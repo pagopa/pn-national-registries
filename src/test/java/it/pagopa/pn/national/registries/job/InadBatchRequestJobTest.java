@@ -16,7 +16,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.ResponseEntity;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
@@ -66,7 +65,7 @@ class InadBatchRequestJobTest {
         when(requestsRepository.getRequestsByRegistryStatus(eq(GatewayDownstreamService.INAD), isNull(), eq(2)))
                 .thenReturn(Mono.just(page), Mono.empty());
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.just(ResponseEntity.accepted().body(providerResponse)));
+                .thenReturn(Mono.just(providerResponse));
         when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
         when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
