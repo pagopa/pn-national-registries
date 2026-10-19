@@ -440,7 +440,7 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
       Parameters:
-        QueueName: !Sub '${ProjectName}-national_registries_polling'
+        QueueName: !Sub '${ProjectName}-national_registries_polling.fifo'
         SqsManagedSseEnabled: true
         FifoQueue: 'true'
         HasDLQ: 'true'
