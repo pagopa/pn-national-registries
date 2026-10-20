@@ -39,7 +39,7 @@ import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchRequest
 @Service
 @CustomLog
 @RequiredArgsConstructor
-public class IniPecBatchRequestService extends GatewayConverter {
+public class IniPecBatchRequestService {
 
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository batchRequestRepository;

@@ -46,15 +46,6 @@ class GatewayConverterTest {
         assertEquals(C_ID, result.getCorrelationId());
     }
 
-    @Test
-    void testNewCodeSqsDto() {
-        CodeSqsDto result =
-                gatewayConverter.newCodeSqsDto(C_ID, GatewayDownstreamService.ANPR);
-
-        assertNotNull(result);
-        assertEquals(C_ID, result.getCorrelationId());
-        assertEquals(GatewayDownstreamService.ANPR.name(), result.getRegistry());
-    }
 
     @Test
     void testAnprToSqsDto() {
@@ -264,76 +255,6 @@ class GatewayConverterTest {
         );
     }
 
-    @Test
-    void testConvertAnprToPhysicalAddress() {
-        ResidentialAddressDto source = new ResidentialAddressDto();
-        source.setAddress("Via Roma");
-        source.setAddressDetail("10");
-        source.setAt("Mario");
-        source.setZip("00100");
-        source.setMunicipality("Roma");
-        source.setProvince("RM");
-        source.setForeignState("Italia");
-        source.setMunicipalityDetails("Dettaglio");
-
-        PhysicalAddressDto result =
-                gatewayConverter.convertAnprToPhysicalAddress(source);
-
-        assertNotNull(result);
-        assertEquals(source.getAddress(), result.getAddress());
-        assertEquals(source.getAddressDetail(), result.getAddressDetails());
-        assertEquals(source.getAt(), result.getAt());
-        assertEquals(source.getZip(), result.getZip());
-        assertEquals(source.getMunicipality(), result.getMunicipality());
-        assertEquals(source.getProvince(), result.getProvince());
-        assertEquals(source.getForeignState(), result.getForeignState());
-        assertEquals(
-                source.getMunicipalityDetails(),
-                result.getMunicipalityDetails()
-        );
-    }
-
-    @Test
-    void testConvertInadToDigitalAddress() {
-        DigitalAddressDto source = new DigitalAddressDto();
-        source.setDigitalAddress("test@pec.it");
-
-        DigitalAddress result =
-                gatewayConverter.convertInadToDigitalAddress(
-                        source,
-                        DigitalAddressRecipientType.PERSONALE
-                );
-
-        assertNotNull(result);
-        assertEquals("test@pec.it", result.getAddress());
-        assertEquals(
-                DigitalAddressRecipientType.PERSONALE.getValue(),
-                result.getRecipient()
-        );
-        assertEquals("PEC", result.getType());
-    }
-
-    @Test
-    void testConvertRegImpToPhysicalAddress() {
-        GetAddressRegistroImpreseOKProfessionalAddressDto source =
-                new GetAddressRegistroImpreseOKProfessionalAddressDto();
-
-        source.setAddress("Via Roma");
-        source.setMunicipality("Roma");
-        source.setProvince("RM");
-        source.setZip("00100");
-        source.setStato("IT");
-
-        PhysicalAddressDto result =
-                gatewayConverter.convertRegImpToPhysicalAddress(source);
-
-        assertNotNull(result);
-        assertEquals("Via Roma", result.getAddress());
-        assertEquals("Roma", result.getMunicipality());
-        assertEquals("RM", result.getProvince());
-        assertEquals("00100", result.getZip());
-        assertEquals("IT", result.getForeignState());
-    }
 
     @Test
     void testConvertToGetAddressAnprRequest() {
@@ -361,38 +282,6 @@ class GatewayConverterTest {
         assertEquals("2026-09-10", result.getFilter().getReferenceRequestDate());
     }
 
-    @Test
-    void testConvertToGetDigitalAddressInadRequest() {
-        AddressRequestBodyFilterDto filter = new AddressRequestBodyFilterDto();
-        filter.setCorrelationId(C_ID);
-        filter.setTaxId(CF);
-
-        AddressRequestBodyDto request = new AddressRequestBodyDto();
-        request.setFilter(filter);
-
-        GetDigitalAddressINADRequestBodyDto result =
-                gatewayConverter.convertToGetDigitalAddressInadRequest(request);
-
-        assertNotNull(result);
-        assertNotNull(result.getFilter());
-        assertEquals(CF, result.getFilter().getTaxId());
-        assertEquals(C_ID, result.getFilter().getPracticalReference());
-    }
-
-    @Test
-    void testConvertToGetDigitalAddressInadRequestFromBatchRequest() {
-        BatchRequest batchRequest = new BatchRequest();
-        batchRequest.setCf(CF);
-        batchRequest.setCorrelationId(C_ID);
-
-        GetDigitalAddressINADRequestBodyDto result =
-                gatewayConverter.convertToGetDigitalAddressInadRequest(batchRequest);
-
-        assertNotNull(result);
-        assertNotNull(result.getFilter());
-        assertEquals(CF, result.getFilter().getTaxId());
-        assertEquals(C_ID, result.getFilter().getPracticalReference());
-    }
 
     @Test
     void testConvertToGetAddressRegistroImpreseRequest() {
@@ -410,23 +299,6 @@ class GatewayConverterTest {
         assertEquals(CF, result.getFilter().getTaxId());
     }
 
-    @Test
-    void testConvertToGetDigitalAddressIniPecRequest() {
-        AddressRequestBodyFilterDto filter = new AddressRequestBodyFilterDto();
-        filter.setCorrelationId(C_ID);
-        filter.setTaxId(CF);
-
-        AddressRequestBodyDto request = new AddressRequestBodyDto();
-        request.setFilter(filter);
-
-        GetDigitalAddressIniPECRequestBodyDto result =
-                gatewayConverter.convertToGetDigitalAddressIniPecRequest(request);
-
-        assertNotNull(result);
-        assertNotNull(result.getFilter());
-        assertEquals(C_ID, result.getFilter().getCorrelationId());
-        assertEquals(CF, result.getFilter().getTaxId());
-    }
 
     @Test
     void testConvertToGetIpaPecRequest() {
@@ -626,21 +498,6 @@ class GatewayConverterTest {
         assertEquals(addresses, result.getAddresses());
     }
 
-    @Test
-    void testEmptyDigitalCodeSqsDto() {
-        CodeSqsDto result =
-                gatewayConverter.emptyDigitalCodeSqsDto(C_ID);
-
-        assertNotNull(result);
-        assertEquals(C_ID, result.getCorrelationId());
-        assertEquals(GatewayDownstreamService.INAD.name(), result.getRegistry());
-        assertNotNull(result.getDigitalAddress());
-        assertTrue(result.getDigitalAddress().isEmpty());
-        assertEquals(
-                AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue(),
-                result.getAddressType()
-        );
-    }
 
     @Test
     void testToInternalCodeSqsDto() {

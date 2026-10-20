@@ -896,6 +896,17 @@ Resources:
           BatchSize: 1
         FilterCriteria:
           Filters:
+            - Pattern: >
+                {
+                  "eventName": ["INSERT"],
+                  "dynamodb": {
+                    "NewImage": {
+                      "status": {
+                        "S": ["ERROR"]
+                      }
+                    }
+                  }
+                }
             - Pattern: >-
                 {
                   "eventName": ["MODIFY"],
@@ -1017,6 +1028,24 @@ Resources:
 
         FilterCriteria:
           Filters:
+            - Pattern: >
+                {
+                  "eventName": ["INSERT"],
+                  "dynamodb": {
+                    "NewImage": {
+                      "status": {
+                        "S": ["WORKED"]
+                      },
+                      "resultPayload": {
+                        "S": [
+                          {
+                            "exists": true
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
             - Pattern: >
                 {
                   "eventName": ["MODIFY"],

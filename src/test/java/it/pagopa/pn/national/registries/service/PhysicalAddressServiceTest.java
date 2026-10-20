@@ -20,6 +20,7 @@ import reactor.test.StepVerifier;
 import java.util.Date;
 import java.util.List;
 
+import static it.pagopa.pn.national.registries.converter.GatewayConverter.isAnprAddressNotFound;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -555,7 +556,7 @@ class PhysicalAddressServiceTest {
                 .thenReturn("{\"codiceErroreAnomalia\":\"EN122\"}");
 
         assertTrue(
-                physicalAddressService.isAnprAddressNotFound.test(exception)
+                isAnprAddressNotFound.test(exception)
         );
     }
 
@@ -572,7 +573,7 @@ class PhysicalAddressServiceTest {
                 .thenReturn("{\"CODICEERROREANOMALIA\":\"en122\"}");
 
         assertTrue(
-                physicalAddressService.isAnprAddressNotFound.test(exception)
+                isAnprAddressNotFound.test(exception)
         );
     }
 
@@ -584,7 +585,7 @@ class PhysicalAddressServiceTest {
 
         when(exception.getStatusCode())
                 .thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
-        assertFalse(physicalAddressService.isAnprAddressNotFound.test(exception));
+        assertFalse(isAnprAddressNotFound.test(exception));
     }
 
 
@@ -600,7 +601,7 @@ class PhysicalAddressServiceTest {
                 .thenReturn("{\"codiceErroreAnomalia\":\"OTHER\"}");
 
         assertFalse(
-                physicalAddressService.isAnprAddressNotFound.test(exception)
+                isAnprAddressNotFound.test(exception)
         );
     }
 
@@ -617,7 +618,7 @@ class PhysicalAddressServiceTest {
                 .thenReturn(null);
 
         assertFalse(
-                physicalAddressService.isAnprAddressNotFound.test(exception)
+                isAnprAddressNotFound.test(exception)
         );
     }
 
@@ -625,7 +626,7 @@ class PhysicalAddressServiceTest {
     @Test
     void isAnprAddressNotFound_shouldReturnFalseForGenericException() {
         assertFalse(
-                physicalAddressService.isAnprAddressNotFound.test(
+                isAnprAddressNotFound.test(
                         new RuntimeException("error")
                 )
         );

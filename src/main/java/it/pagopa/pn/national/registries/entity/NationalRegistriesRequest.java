@@ -4,6 +4,8 @@ import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.springframework.util.StringUtils;
 import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.*;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -13,6 +15,7 @@ import java.util.Map;
 
 @DynamoDbBean
 @Data
+@NoArgsConstructor
 public class NationalRegistriesRequest {
 
     public static final String COL_CORRELATION_ID = "correlationId";
@@ -97,4 +100,22 @@ public class NationalRegistriesRequest {
         if (item == null || item.isEmpty()) return null;
         return SCHEMA.mapToItem(item);
     }
+
+    public NationalRegistriesRequest(NationalRegistriesRequest nationalRegistriesRequest, RequestStatusEnum status, GatewayDownstreamService registry, String resultPayload) {
+        correlationId = nationalRegistriesRequest.getCorrelationId();
+        taxId = nationalRegistriesRequest.getTaxId();
+        recipientType = nationalRegistriesRequest.getRecipientType();
+        domicileType = nationalRegistriesRequest.getDomicileType();
+        clientId = nationalRegistriesRequest.getClientId();
+        registryStatus = String.join("#", registry.name(), status.name());
+        referenceRequestDate = nationalRegistriesRequest.getReferenceRequestDate();
+
+        this.createdAt = Instant.now();
+        this.registry = registry;
+        this.status = status;
+        if(StringUtils.hasText(resultPayload)){
+            this.resultPayload = resultPayload;
+        }
+    }
+
 }

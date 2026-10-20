@@ -16,6 +16,7 @@ import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
 
 import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
+import static it.pagopa.pn.national.registries.converter.GatewayConverter.convertToGetDigitalAddressInadRequest;
 import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.isValidEmail;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetric;
@@ -23,14 +24,14 @@ import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddres
 @Component
 @RequiredArgsConstructor
 @CustomLog
-public class DigitalAddressService extends GatewayConverter {
+public class DigitalAddressService{
 
     private final IpaService ipaService;
     private final InadService inadService;
     private final GatewayUtils gatewayUtils;
 
     Mono<AddressInternalResult> retrieveDigitalAddressFromIpa(AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
-        return ipaService.getIpaPec(convertToGetIpaPecRequest(addressRequestBodyDto))
+        return ipaService.getIpaPec(GatewayConverter.convertToGetIpaPecRequest(addressRequestBodyDto))
                 .doOnNext(ipaPecDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.IPA, 1))
                 .<AddressInternalResult>map(response -> {
                     if ((response.getDomicilioDigitale() == null &&
@@ -43,17 +44,17 @@ public class DigitalAddressService extends GatewayConverter {
                     }
                     log.info("retrieved digital address from IPA for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId());
                     logCfWithAddressMetric(correlationId, GatewayDownstreamService.IPA, PG, DigitalAddressRecipientType.IMPRESA);
-                    return new AddressInternalResult.Found(ipaToSqsDto(correlationId, response));
+                    return new AddressInternalResult.Found(GatewayConverter.ipaToSqsDto(correlationId, response));
                 })
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve digital address from IPA: {}"));
     }
 
     public Mono<AddressInternalResult> retrieveDigitalAddressFromInadSync(AddressRequestBodyDto addressRequestBodyDto, String correlationId, RecipientType recipientType) {
-        return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto), recipientType, correlationId)
+        return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto.getFilter().getCorrelationId(), addressRequestBodyDto.getFilter().getTaxId()), recipientType, correlationId)
                 .doOnNext(response -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(response -> log.info("retrieved digital address from INAD for correlationId: {}", correlationId))
-                .map(response -> inadToSqsDto(correlationId, response))
+                .map(response -> GatewayConverter.inadToSqsDto(correlationId, response))
                 .<AddressInternalResult>map(codeSqsDto -> {
                     if (!CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
                         logCfWithAddressMetric(correlationId, GatewayDownstreamService.INAD, recipientType, DigitalAddressRecipientType.fromValue(codeSqsDto.getDigitalAddress().getFirst().getRecipient()));
@@ -62,7 +63,7 @@ public class DigitalAddressService extends GatewayConverter {
                     return new AddressInternalResult.NotFound(codeSqsDto);
                 })
                 .onErrorResume(e -> {
-                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
+                    CodeSqsDto codeSqsDto = GatewayConverter.errorInadToSqsDto(correlationId, e);
                     if (codeSqsDto != null) {
                         log.info("correlationId: {} - INAD - indirizzo non presente", correlationId);
                         logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
