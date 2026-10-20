@@ -16,7 +16,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.time.Instant;
@@ -43,27 +45,31 @@ class InadBatchRequestJobTest {
     @BeforeEach
     void setUp() {
         NationalRegistriesConfig.Inad inad = new NationalRegistriesConfig.Inad();
-        inad.setMaxBatchRequestSize(2);
+        inad.setMaxBatchRequestSize(3);
         inad.setOldestRequestMaxWaitingSeconds(60);
         inad.setPollingFirstAttemptDelaySecondsPerCf(1D);
         inad.setPollingFirstAttemptFixedDelaySeconds(10);
 
         NationalRegistriesConfig config = new NationalRegistriesConfig();
         config.setInad(inad);
+        config.setQueryLimit(2);
         config.setTtl(3600);
         job = new InadBatchRequestJob(requestsRepository, batchesRepository, inadClient, config);
     }
 
     @Test
-    void sendsEligibleBatchAndAssociatesRequests() {
+    void aggregatesRequestsAcrossPagesUntilBatchSizeIsReached() {
         NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.parse("2026-10-16T09:00:00Z"));
         NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.parse("2026-10-16T09:01:00Z"));
+        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.parse("2026-10-16T09:02:00Z"));
+        Page<NationalRegistriesRequest> secondPage = mock(Page.class);
         ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
         providerResponse.setId("polling-id");
 
-        when(page.items()).thenReturn(List.of(first, second));
-        when(requestsRepository.getRequestsByRegistryStatus(eq(GatewayDownstreamService.INAD), isNull(), eq(2)))
-                .thenReturn(Mono.just(page), Mono.empty());
+        when(page.items()).thenReturn(List.of(first));
+        when(secondPage.items()).thenReturn(List.of(second, third));
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, 2))
+                .thenReturn(SdkPublisher.adapt(Flux.just(page, secondPage)));
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
                 .thenReturn(Mono.just(providerResponse));
         when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
@@ -75,25 +81,47 @@ class InadBatchRequestJobTest {
 
         ArgumentCaptor<RequestListDigitalAddress> requestCaptor = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
         verify(inadClient).callMassiveEService(requestCaptor.capture());
-        assertEquals(List.of("RSSMRA80A01H501U", "VRDLGI80A01H501K"), requestCaptor.getValue().getCodiciFiscali());
+        assertEquals(List.of("RSSMRA80A01H501U", "VRDLGI80A01H501K", "BNCLRA80A01H501M"), requestCaptor.getValue().getCodiciFiscali());
 
         ArgumentCaptor<NationalRegistriesBatch> batchCaptor = ArgumentCaptor.forClass(NationalRegistriesBatch.class);
         verify(batchesRepository).putBatch(batchCaptor.capture());
         NationalRegistriesBatch batch = batchCaptor.getValue();
         assertEquals("polling-id", batch.getPollingId());
         assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
-        assertEquals(2, batch.getBatchSize());
-        verify(requestsRepository, times(2)).updateStatusToWorking(
+        assertEquals(3, batch.getBatchSize());
+        verify(requestsRepository, times(3)).updateStatusToWorking(
                 anyString(), anyString(), eq(batch.getBatchId()), eq(GatewayDownstreamService.INAD));
     }
 
     @Test
-    void leavesIncompleteRecentGroupAvailableForNextExecution() {
-        NationalRegistriesRequest request = request("first", "RSSMRA80A01H501U", Instant.now());
+    void sendsIncompleteBatchWhenOldestRequestHasReachedMaxWaitingTime() {
+        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now().minusSeconds(60));
+        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
+        providerResponse.setId("polling-id");
 
-        when(page.items()).thenReturn(List.of(request));
-        when(requestsRepository.getRequestsByRegistryStatus(eq(GatewayDownstreamService.INAD), isNull(), eq(2)))
-                .thenReturn(Mono.just(page));
+        when(page.items()).thenReturn(List.of(first));
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, 2))
+                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.just(providerResponse));
+        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
+                .thenReturn(Mono.just(first));
+
+        job.batchRequest();
+
+        verify(inadClient).callMassiveEService(any(RequestListDigitalAddress.class));
+        verify(requestsRepository).updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD));
+    }
+
+    @Test
+    void leavesIncompleteRecentRequestsAvailableAfterAllPagesAreRead() {
+        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
+
+        when(page.items()).thenReturn(List.of(first));
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, 2))
+                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
 
         job.batchRequest();
 
@@ -105,10 +133,11 @@ class InadBatchRequestJobTest {
     void propagatesProviderErrorWithoutPersistingTheBatchOrChangingRequests() {
         NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
         NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
+        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
 
-        when(page.items()).thenReturn(List.of(first, second));
-        when(requestsRepository.getRequestsByRegistryStatus(eq(GatewayDownstreamService.INAD), isNull(), eq(2)))
-                .thenReturn(Mono.just(page));
+        when(page.items()).thenReturn(List.of(first, second, third));
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, 2))
+                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
                 .thenReturn(Mono.error(new IllegalStateException("INAD unavailable")));
 
@@ -116,6 +145,37 @@ class InadBatchRequestJobTest {
 
         verifyNoInteractions(batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
+    }
+
+    @Test
+    void sendsEachCompleteBatchAndReadsRemainingPages() {
+        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
+        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
+        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
+        NationalRegistriesRequest fourth = request("fourth", "NCLMRA80A01H501N", Instant.now());
+        NationalRegistriesRequest fifth = request("fifth", "VRDGLI80A01H501P", Instant.now());
+        NationalRegistriesRequest sixth = request("sixth", "BNCGLI80A01H501Q", Instant.now());
+        Page<NationalRegistriesRequest> secondPage = mock(Page.class);
+        Page<NationalRegistriesRequest> thirdPage = mock(Page.class);
+        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
+        providerResponse.setId("polling-id");
+
+        when(page.items()).thenReturn(List.of(first, second));
+        when(secondPage.items()).thenReturn(List.of(third, fourth));
+        when(thirdPage.items()).thenReturn(List.of(fifth, sixth));
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, 2))
+                .thenReturn(SdkPublisher.adapt(Flux.just(page, secondPage, thirdPage)));
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.just(providerResponse));
+        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
+                .thenReturn(Mono.just(first));
+
+        job.batchRequest();
+
+        verify(inadClient, times(2)).callMassiveEService(any(RequestListDigitalAddress.class));
+        verify(thirdPage).items();
     }
 
     private NationalRegistriesRequest request(String correlationId, String taxId, Instant createdAt) {

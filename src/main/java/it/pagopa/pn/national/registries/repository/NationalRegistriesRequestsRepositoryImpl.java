@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -88,7 +89,7 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      * (stato = NOT_WORKED).
      */
     @Override
-    public Mono<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, Map<String, AttributeValue> lastEvaluatedKey, int limit) {
+    public SdkPublisher<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, int limit) {
 
         String registryStatus = String.join("#", registry.name(), NOT_WORKED.name());
 
@@ -96,11 +97,8 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
                 .queryConditional(QueryConditional.keyEqualTo(Key.builder().partitionValue(registryStatus).build()))
                 .limit(limit);
 
-        if (!CollectionUtils.isEmpty(lastEvaluatedKey)) {
-            builder.exclusiveStartKey(lastEvaluatedKey);
-        }
-
-        return Mono.from(table.index(NationalRegistriesRequest.REGISTRY_STATUS_CREATED_AT_INDEX).query(builder.build()));
+        SdkPublisher<Page<NationalRegistriesRequest>> query = table.index(NationalRegistriesRequest.REGISTRY_STATUS_CREATED_AT_INDEX).query(builder.build());
+        return query;
     }
 
     /**

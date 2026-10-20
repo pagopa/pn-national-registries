@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import reactor.core.publisher.Flux;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.time.Instant;
@@ -143,7 +144,10 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         List.of(inadNotWorked1, inadNotWorked2, inipecNotWorked, inadWorked).forEach(request -> repository.putRequest(request).block());
 
-        Page<NationalRegistriesRequest> result = repository.getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, null, 10).block();
+        Page<NationalRegistriesRequest> result = Flux.from(repository
+                        .getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, 10))
+                .single()
+                .block();
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(2, result.items().size());

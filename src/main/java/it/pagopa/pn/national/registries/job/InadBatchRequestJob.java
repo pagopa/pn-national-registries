@@ -16,14 +16,13 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -43,38 +42,31 @@ public class InadBatchRequestJob {
             lockAtLeastFor = "${pn.national-registries.inad.batch-request.lock-at-least}")
     public void batchRequest() {
         Instant now = Instant.now();
-        processNextBatch(now, null)
+        processNextBatch(now)
                 .doOnSuccess(ignored -> log.trace("INAD batch request job completed"))
                 .doOnError(error -> log.error("INAD batch request job failed", error))
                 .block();
     }
 
-    private Mono<Void> processNextBatch(Instant now, Map<String, AttributeValue> lastEvaluatedKey) {
+    private Mono<Void> processNextBatch(Instant now) {
         int maxBatchSize = nationalRegistriesConfig.getInad().getMaxBatchRequestSize();
-        return nationalRegistriesRequestsRepository
-                .getRequestsByRegistryStatus(GatewayDownstreamService.INAD, lastEvaluatedKey, maxBatchSize)
-                .flatMap(page -> processPage(now, page, maxBatchSize));
+        int queryLimit = nationalRegistriesConfig.getQueryLimit();
+
+        return Flux.from(nationalRegistriesRequestsRepository
+                        .getRequestsByRegistryStatus(GatewayDownstreamService.INAD, queryLimit))
+                .concatMapIterable(Page::items)
+                .buffer(maxBatchSize)
+                .concatMap(requests -> isEligible(requests, maxBatchSize, now)
+                        ? submitBatch(requests, now)
+                        : Mono.empty())
+                .then();
     }
 
-    private Mono<Void> processPage(Instant now, Page<NationalRegistriesRequest> page, int maxBatchSize) {
-        List<NationalRegistriesRequest> requests = page.items();
-        if (requests.isEmpty()) {
-            return CollectionUtils.isEmpty(page.lastEvaluatedKey())
-                    ? Mono.empty()
-                    : processNextBatch(now, page.lastEvaluatedKey());
+    private boolean isEligible(List<NationalRegistriesRequest> requests, int batchSize, Instant now) {
+        if (CollectionUtils.isEmpty(requests)) {
+            return false;
         }
-
-        if (!isEligible(requests, maxBatchSize, now)) {
-            return Mono.empty();
-        }
-
-        return submitBatch(requests, now)
-                // Requests have moved to WORKING, so a fresh query avoids skipping the next oldest records.
-                .then(Mono.defer(() -> processNextBatch(now, null)));
-    }
-
-    private boolean isEligible(List<NationalRegistriesRequest> requests, int maxBatchSize, Instant now) {
-        if (requests.size() == maxBatchSize) {
+        if (requests.size() == batchSize) {
             return true;
         }
         Instant oldestRequestDeadline = requests.getFirst().getCreatedAt()

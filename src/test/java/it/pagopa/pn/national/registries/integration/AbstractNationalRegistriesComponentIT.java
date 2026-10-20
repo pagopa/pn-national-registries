@@ -90,6 +90,10 @@ import java.util.UUID;
         "pn.national-registries.inipec.batch.polling.inprogress.max-retry=24",
         "pn.national-registries.inipec.first-attempt-delay-seconds-per-cf=0",
         "pn.national-registries.inipec.first-attempt-fixed-delay-seconds=0",
+        "pn.national-registries.inad.max-batch-request-size=2",
+        "pn.national-registries.inad.oldest-request-max-waiting-seconds=60",
+        "pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0",
+        "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0",
         "pn.national-registries.pdnd-base-url=http://localhost:1080/nationalregistriesmock/",
         "pn.national.registries.anpr.base-path=http://localhost:1080/nationalregistriesmock/",
         "pn.national.registries.ade-legal.base-path=http://localhost:1080/nationalregistriesmock/",
@@ -118,6 +122,7 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
     protected static final String INPUT_DLQ_QUEUE = "pn-national_registry_gateway_inputs_DLQ";
     protected static final String BATCH_REQUESTS_TABLE = "pn-batchRequests";
     protected static final String BATCH_POLLING_TABLE = "pn-batchPolling";
+    protected static final String NATIONAL_REGISTRIES_BATCHES_TABLE = "pn-NationalRegistriesBatches";
     protected static final String NATIONAL_REGISTRIES_REQUESTS_TABLE = "pn-NationalRegistriesRequests";
     protected static final String COUNTER_TABLE = "pn-counter";
     protected static final String CX_ID = "pn-delivery";
@@ -180,7 +185,9 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
         drainQueue(INPUT_DLQ_QUEUE);
         clearTable(BATCH_REQUESTS_TABLE, "correlationId");
         clearTable(BATCH_POLLING_TABLE, "batchId");
+        clearTable(NATIONAL_REGISTRIES_BATCHES_TABLE, "batchId", "sk");
         clearTable(NATIONAL_REGISTRIES_REQUESTS_TABLE, "correlationId", "createdAt");
+        clearTable("pn-nationalRegistries-ShedLock", "_id");
         clearTable(COUNTER_TABLE, "eservice");
     }
 
