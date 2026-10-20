@@ -29,7 +29,12 @@ public class PollingInputsHandler {
     @SqsListener(value = "${pn.national-registries.sqs.pollingqueuename}")
     public void pnNationalRegistriesPollingInputsConsumer(Message<PnPollingEvent.Payload> message) {
         log.logStartingProcess(HANDLER_PROCESS);
-        log.debug(HANDLER_PROCESS + "- message received for batchId: {}", message.getPayload().getBatchId());
+        if(log.isDebugEnabled()) {
+            log.debug(HANDLER_PROCESS + " - Message from pollingQueue, payload: {}", message.getPayload());
+        }
+        else {
+            log.info(HANDLER_PROCESS + "- Message from pollingQueue, batchId: {}", message.getPayload().getBatchId());
+        }
         ConsumerMDCUtils.addMessageHeadersToMDC(message.getHeaders());
         MDC.put(MDCUtils.MDC_PN_CTX_REQUEST_ID, message.getPayload().getBatchId());
 

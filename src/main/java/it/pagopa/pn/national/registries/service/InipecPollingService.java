@@ -30,6 +30,7 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.nio.charset.Charset;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -97,17 +98,18 @@ public class InipecPollingService {
 
     private Mono<Void> handleSuccessfulPolling(String batchId, Integer batchSize, IniPecPollingResponse response) {
         logInipecCfRequestedMetric(batchId, GatewayDownstreamService.INIPEC, batchSize);
+        Map<String, Pec> pecByTaxId = infoCamereConverter.mapPecByTaxId(response);
         return Flux.from(nationalRegistriesRequestsRepository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
                 .flatMapIterable(Page::items)
-                .flatMap(request -> processSuccessfulRequest(request, response))
+                .flatMap(request -> processSuccessfulRequest(request, pecByTaxId))
                 .then(nationalRegistriesBatchesRepository.updateToFinalStatus(batchId, SK, BatchesStatusEnum.WORKED))
                 .doOnSuccess(batch -> log.debug("IniPEC - batchId {} - updated status to WORKED", batchId))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to update status to WORKED", batchId, e))
                 .then();
     }
 
-    private Mono<Void> processSuccessfulRequest(NationalRegistriesRequest request, IniPecPollingResponse response) {
-        Pec pec = infoCamereConverter.retrieveBatchRequestPec(request.getTaxId(), response);
+    private Mono<Void> processSuccessfulRequest(NationalRegistriesRequest request, Map<String, Pec> pecByTaxId) {
+        Pec pec = infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId);
         if (Objects.isNull(pec)) {
             return handlePecNotFoundResponse(request);
         }

@@ -27,8 +27,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -265,6 +267,11 @@ public class InfoCamereConverter{
         return matcher.find();
     }
 
+    /**
+     * @deprecated Questo metodo appartiene al flusso legacy di INI-PEC
+     *             e sarà rimosso quando tale flusso verrà eliminato a favore del metodo retrievePec
+     */
+    @Deprecated(forRemoval = true)
     public Pec retrieveBatchRequestPec(String requestCf, IniPecPollingResponse iniPecPollingResponse) {
         return iniPecPollingResponse.getElencoPec().stream()
                 .filter(pec -> org.springframework.util.StringUtils.hasText(pec.getCf())
@@ -272,5 +279,26 @@ public class InfoCamereConverter{
                         && pec.getCf().equalsIgnoreCase(requestCf))
                 .findFirst()
                 .orElse(null);
+    }
+
+    public Pec retrievePec(String requestCf, Map<String, Pec> pecByTaxId) {
+        if (StringUtils.isBlank(requestCf)) {
+            return null;
+        }
+        return pecByTaxId.get(requestCf.toUpperCase(Locale.ROOT));
+    }
+
+    public Map<String, Pec> mapPecByTaxId(IniPecPollingResponse response) {
+        if (Objects.isNull(response) || CollectionUtils.isNullOrEmpty(response.getElencoPec())) {
+            return Collections.emptyMap();
+        }
+
+        return response.getElencoPec().stream()
+                .filter(pec -> org.springframework.util.StringUtils.hasText(pec.getCf()))
+                .collect(Collectors.toMap(
+                        pec -> pec.getCf().toUpperCase(Locale.ROOT),
+                        Function.identity(),
+                        (first, second) -> first
+                ));
     }
 }
