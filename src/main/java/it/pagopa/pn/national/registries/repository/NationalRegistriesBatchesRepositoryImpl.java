@@ -174,13 +174,10 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
                 .returnValues(ReturnValue.ALL_NEW)
                 .build();
 
-        try {
             return Mono.just(dynamoDbClient.updateItem(request))
-                    .map(updateItemResponse -> NationalRegistriesBatch.attributeValueMapToNationalRegistriesRequest(updateItemResponse.attributes()));
-        } catch (ConditionalCheckFailedException e) {
-            log.error("Unable to transition to {}: the current status is not {}", newStatus, expectedStatus);
-            throw new PnInternalException(String.format("Unable to transition to %s: the current status is not %s", newStatus, expectedStatus), 400, ERROR_CODE_NATIONAL_REGISTRIES_CONDITIONALCHECKFAILED);
-        }
+                    .map(updateItemResponse -> NationalRegistriesBatch.attributeValueMapToNationalRegistriesRequest(updateItemResponse.attributes()))
+                    .doOnSuccess(updated -> log.info("Updated batch {} from status {} to status {}", pk, expectedStatus, newStatus))
+                    .doOnError(error -> log.warn("Unable to update batch {} from status {} to status {}", pk, expectedStatus, newStatus, error));
     }
 
     private Instant calculateAttemptAfter(GatewayDownstreamService registry, boolean inProgressRetry, Instant now) {

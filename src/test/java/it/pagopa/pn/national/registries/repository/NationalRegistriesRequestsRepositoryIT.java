@@ -546,7 +546,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         );
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("ResultPayload is required"));
+        Assertions.assertTrue(exception.getProblem().getDetail().contains("Result payload is required"));
     }
 
     @Test
@@ -577,7 +577,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         );
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("ResultPayload is required"));
+        Assertions.assertTrue(exception.getProblem().getDetail().contains("Result payload is required"));
     }
 
     private NationalRegistriesRequest getRequestByBatchId(String batchId, RequestStatusEnum status ) {

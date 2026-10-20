@@ -23,5 +23,5 @@ public interface NationalRegistriesBatchesRepository {
 
     Mono<NationalRegistriesBatch> resetStatusForRetry(String pk, String sk, Integer retry, boolean isInProgressRetry, GatewayDownstreamService registry);
 
-    Mono<NationalRegistriesBatch> updateItem(NationalRegistriesBatch batch, BatchesStatusEnum fromStatus);
+    Mono<NationalRegistriesBatch> updateItem(NationalRegistriesBatch batch, BatchesStatusEnum newStatus);
 }
