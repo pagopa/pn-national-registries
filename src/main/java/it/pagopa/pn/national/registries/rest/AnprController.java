@@ -16,6 +16,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import static it.pagopa.pn.national.registries.converter.GatewayConverter.isAnprAddressNotFound;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetric;
 
@@ -56,7 +57,7 @@ public class AnprController implements AddressAnprApi {
                         );
                     }
                 })
-                .doOnError(gatewayService.isAnprAddressNotFound, e -> logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1))
+                .doOnError(isAnprAddressNotFound, e -> logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1))
                 .map(t -> ResponseEntity.ok().body(t))
                 .publishOn(scheduler);
     }

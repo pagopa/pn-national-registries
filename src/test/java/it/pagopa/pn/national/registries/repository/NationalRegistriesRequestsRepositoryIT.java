@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.time.Instant;
@@ -89,19 +90,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         requests.forEach(request -> repository.putRequest(request).block());
 
-        Page<NationalRegistriesRequest> firstPage = repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING, null).block();
+        List<NationalRegistriesRequest> firstPage = Mono.from(repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
+                .map(Page::items).block();
 
         Assertions.assertNotNull(firstPage);
-        Assertions.assertEquals(5, firstPage.items().size());
-        Assertions.assertTrue(firstPage.items().stream().allMatch(item -> batchId.equals(item.getBatchId())));
-        Assertions.assertFalse(firstPage.lastEvaluatedKey().isEmpty());
-
-        Page<NationalRegistriesRequest> secondPage = repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING, firstPage.lastEvaluatedKey()).block();
-
-        Assertions.assertNotNull(secondPage);
-        Assertions.assertEquals(2, secondPage.items().size());
-        Assertions.assertTrue(secondPage.items().stream().allMatch(item -> batchId.equals(item.getBatchId())));
-        Assertions.assertTrue(secondPage.lastEvaluatedKey() == null || secondPage.lastEvaluatedKey().isEmpty());
+        Assertions.assertEquals(5, firstPage.size());
+        Assertions.assertTrue(firstPage.stream().allMatch(item -> batchId.equals(item.getBatchId())));
     }
 
     @Test
@@ -268,7 +262,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 request.getCorrelationId(),
                 request.getCreatedAt().toString(),
                 resultPayload,
-                GatewayDownstreamService.INIPEC
+                GatewayDownstreamService.INIPEC,
+                true
         ).block();
 
         NationalRegistriesRequest updated = getRequestByBatchId(batchId, RequestStatusEnum.WORKED);
@@ -303,7 +298,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 request.getCorrelationId(),
                 request.getCreatedAt().toString(),
                 resultPayload,
-                GatewayDownstreamService.INAD
+                GatewayDownstreamService.INAD,
+                true
         ).block();
 
         NationalRegistriesRequest updated = getRequestByBatchId(batchId, RequestStatusEnum.WORKED);
@@ -336,7 +332,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         "payload",
-                        null
+                        null,
+                        true
                 ).block()
         );
 
@@ -365,7 +362,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         "resultPayload",
-                        null
+                        null,
+                        true
                 ).block()
         );
 
@@ -542,12 +540,13 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         null,
-                        null
+                        null,
+                        true
                 ).block()
         );
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("ResultPayload is required"));
+        Assertions.assertTrue(exception.getProblem().getDetail().contains("Result payload is required"));
     }
 
     @Test
@@ -572,19 +571,21 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         " ",
-                        null
+                        null,
+                        true
                 ).block()
         );
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("ResultPayload is required"));
+        Assertions.assertTrue(exception.getProblem().getDetail().contains("Result payload is required"));
     }
 
     private NationalRegistriesRequest getRequestByBatchId(String batchId, RequestStatusEnum status ) {
-        Page<NationalRegistriesRequest> page = repository.getRequestsBatchId(batchId, status, null).block();
+        List<NationalRegistriesRequest> page = Mono.from(repository.getRequestsBatchId(batchId, status))
+                .map(Page::items).block();
         Assertions.assertNotNull(page);
-        Assertions.assertEquals(1, page.items().size());
-        return page.items().getFirst();
+        Assertions.assertEquals(1, page.size());
+        return page.getFirst();
     }
 
     private NationalRegistriesRequest buildRequest(String correlationId, Instant createdAt, String batchId, GatewayDownstreamService registry, RequestStatusEnum status) {

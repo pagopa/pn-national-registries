@@ -54,15 +54,14 @@ class PollingJobTest {
         when(page.items()).thenReturn(List.of(batch));
         when(page.lastEvaluatedKey()).thenReturn(null);
         when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull())).thenReturn(Mono.just(page));
-        when(repository.updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.REQUEST_SENT))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(repository.updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         pollingJob.polling();
 
         ArgumentCaptor<NationalRegistriesBatch> captor = ArgumentCaptor.forClass(NationalRegistriesBatch.class);
-        verify(repository).updateItem(captor.capture(), eq(BatchesStatusEnum.REQUEST_SENT));
+        verify(repository).updateItem(captor.capture(), eq(BatchesStatusEnum.WORKING));
         NationalRegistriesBatch updatedBatch = captor.getValue();
         assertEquals("batch-1", updatedBatch.getBatchId());
-        assertEquals(BatchesStatusEnum.WORKING, updatedBatch.getStatus());
     }
 
     @Test
@@ -75,13 +74,13 @@ class PollingJobTest {
         when(page.items()).thenReturn(List.of(batch1, batch2, batch3));
         when(page.lastEvaluatedKey()).thenReturn(null);
         when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull())).thenReturn(Mono.just(page));
-        when(repository.updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.REQUEST_SENT)))
+        when(repository.updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         pollingJob.polling();
 
         ArgumentCaptor<NationalRegistriesBatch> captor = ArgumentCaptor.forClass(NationalRegistriesBatch.class);
-        verify(repository, times(3)).updateItem(captor.capture(), eq(BatchesStatusEnum.REQUEST_SENT));
+        verify(repository, times(3)).updateItem(captor.capture(), eq(BatchesStatusEnum.WORKING));
         assertEquals(
                 Set.of("batch-1", "batch-2", "batch-3"),
                 captor.getAllValues()
@@ -89,10 +88,6 @@ class PollingJobTest {
                         .map(NationalRegistriesBatch::getBatchId)
                         .collect(Collectors.toSet())
         );
-
-        assertTrue(captor.getAllValues()
-                        .stream()
-                        .allMatch(batch -> batch.getStatus() == BatchesStatusEnum.WORKING));
     }
 
     @Test
@@ -114,17 +109,17 @@ class PollingJobTest {
 
         when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull())).thenReturn(Mono.just(firstPage));
         when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), eq(nextKey))).thenReturn(Mono.just(secondPage));
-        when(repository.updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.REQUEST_SENT))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(repository.updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         pollingJob.polling();
 
         verify(repository).getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull());
         verify(repository).getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), eq(nextKey));
-        verify(repository, times(4)).updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.REQUEST_SENT));
+        verify(repository, times(4)).updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING));
 
 
         ArgumentCaptor<NationalRegistriesBatch> captor = ArgumentCaptor.forClass(NationalRegistriesBatch.class);
-        verify(repository, times(4)).updateItem(captor.capture(), eq(BatchesStatusEnum.REQUEST_SENT));
+        verify(repository, times(4)).updateItem(captor.capture(), eq(BatchesStatusEnum.WORKING));
         assertEquals(
                 Set.of("batch-1", "batch-2", "batch-3", "batch-4"),
                 captor.getAllValues()
@@ -132,10 +127,6 @@ class PollingJobTest {
                         .map(NationalRegistriesBatch::getBatchId)
                         .collect(Collectors.toSet())
         );
-
-        assertTrue(captor.getAllValues()
-                .stream()
-                .allMatch(batch -> batch.getStatus() == BatchesStatusEnum.WORKING));
     }
 
     @Test
@@ -154,7 +145,7 @@ class PollingJobTest {
                         batch != null &&
                                 "batch-1".equals(batch.getBatchId())
                 ),
-                eq(BatchesStatusEnum.REQUEST_SENT)
+                eq(BatchesStatusEnum.WORKING)
         )).thenReturn(Mono.error(ConditionalCheckFailedException.builder().message("Condition failed").build()));
 
         when(repository.updateItem(
@@ -165,12 +156,12 @@ class PollingJobTest {
                                                 "batch-3".equals(batch.getBatchId())
                                 )
                 ),
-                eq(BatchesStatusEnum.REQUEST_SENT)
+                eq(BatchesStatusEnum.WORKING)
         )).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         assertDoesNotThrow(() -> pollingJob.polling());
 
-        verify(repository, times(3)).updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.REQUEST_SENT));
+        verify(repository, times(3)).updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING));
     }
     private NationalRegistriesBatch batch(String id, BatchesStatusEnum status, Instant attemptAfter) {
         NationalRegistriesBatch nationalRegistriesBatch = new NationalRegistriesBatch();

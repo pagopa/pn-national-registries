@@ -27,7 +27,6 @@ import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -44,8 +43,6 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE;
@@ -59,7 +56,7 @@ import static it.pagopa.pn.national.registries.utils.MetricUtils.*;
 @CustomLog
 @Service
 @RequiredArgsConstructor
-public class DigitalAddressBatchPollingService extends GatewayConverter {
+public class DigitalAddressBatchPollingService{
 
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository batchRequestRepository;
@@ -75,7 +72,6 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private final GatewayUtils gatewayUtils;
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
-    private static final Pattern PEC_REQUEST_IN_PROGRESS_PATTERN = Pattern.compile(".*(List PEC in progress).*");
 
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
@@ -171,21 +167,6 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e));
     }
 
-    private boolean isPollingResponseNotReady(Throwable throwable) {
-        return throwable instanceof PnNationalRegistriesException exception
-                && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                && checkPecRequestInProgressPattern(exception.getMessage());
-    }
-
-    private boolean checkPecRequestInProgressPattern(String message) {
-        if(message == null) {
-            return false;
-        }
-
-        Matcher matcher = PEC_REQUEST_IN_PROGRESS_PATTERN.matcher(message);
-        return matcher.find();
-    }
-
     private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
         logInipecCfRequestedMetric(polling.getBatchId(), GatewayDownstreamService.INIPEC, polling.getBatchSize());
         return updateBatchRequest(polling, BatchStatus.WORKED, response, null)
@@ -198,7 +179,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<Void> incrementAndCheckRetry(BatchPolling polling, Throwable throwable) {
-        if(isPollingResponseNotReady(throwable)){
+        if(infoCamereConverter.isPollingResponseNotReady(throwable)){
             polling.setInProgressRetry(polling.getInProgressRetry() != null ? polling.getInProgressRetry() + 1 : 1);
         }else{
             polling.setRetry(polling.getRetry() != null ? polling.getRetry() + 1 : 1);
@@ -273,22 +254,13 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private Mono<BatchRequest> evaluateInipecResponse(BatchRequest batchRequest, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, LocalDateTime now) {
         batchRequest.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
         batchRequest.setLastReserved(now);
-        Pec pec = retrieveBatchRequestPec(batchRequest, iniPecPollingResponse);
+        Pec pec = infoCamereConverter.retrieveBatchRequestPec(batchRequest.getCf(), iniPecPollingResponse);
         if (Objects.isNull(pec)) {
             return handlePecNotFoundResponse(batchRequest, status, now);
         }
         return evaluateStatoImpresa(batchRequest, pec, status, now);
     }
 
-    private Pec retrieveBatchRequestPec(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
-        String requestCf = batchRequest.getCf();
-        return iniPecPollingResponse.getElencoPec().stream()
-                .filter(pec -> StringUtils.hasText(pec.getCf())
-                        && StringUtils.hasText(requestCf)
-                        && pec.getCf().equalsIgnoreCase(requestCf))
-                .findFirst()
-                .orElse(null);
-    }
 
     private Mono<Void> callInadEservice(BatchRequest request) {
         RecipientType recipientType = retrieveRecipientType(request.getCf(), request.getRecipientType());
@@ -300,19 +272,19 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                     .doOnNext(batchRequest -> log.info("CreatedRequest for correlationId: {} for registry INAD", nationalRegistriesRequest.getCorrelationId()))
                     .then();
         }
-        return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType, correlationId)
+        return inadService.callEService(GatewayConverter.convertToGetDigitalAddressInadRequest(request.getCorrelationId(), request.getCf()), recipientType, correlationId)
                 .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(inadResponse -> {
-                    CodeSqsDto codeSqsDto = inadToSqsDto(correlationId, inadResponse);
-                    logCfWithAddressMetricFromBatchRequest(codeSqsDto, request, GatewayDownstreamService.INAD);
+                    CodeSqsDto codeSqsDto = GatewayConverter.inadToSqsDto(correlationId, inadResponse);
+                    logCfWithAddressMetricFromBatchRequest(codeSqsDto, request.getCorrelationId(), request.getCf(), request.getRecipientType(), GatewayDownstreamService.INAD);
                     request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
                     request.setStatus(BatchStatus.WORKED.getValue());
                 })
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
                 .onErrorResume(e -> {
                     logEServiceError(e, "can not retrieve digital address from INAD: {}");
-                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
+                    CodeSqsDto codeSqsDto = GatewayConverter.errorInadToSqsDto(correlationId, e);
                     if(codeSqsDto != null) {
                         logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
                         request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
@@ -356,7 +328,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
         if (Objects.isNull(pec.getStatoImpresa())) {
             log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
-            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest.getCorrelationId(), pec);
             int foundPecCount = CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()) ? 0 : codeSqsDto.getDigitalAddress().size();
             removeInvalidEmails(codeSqsDto);
             int validPecCount = codeSqsDto.getDigitalAddress().size();
@@ -366,7 +338,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 log.info("IniPEC - correlationId {} - no valid digital address found in IniPEC response, starting fallback", batchRequest.getCorrelationId());
                 return handlePecNotFoundResponse(batchRequest, status, now);
             }
-            logCfWithAddressMetricFromBatchRequest(codeSqsDto, batchRequest, GatewayDownstreamService.INIPEC);
+            logCfWithAddressMetricFromBatchRequest(codeSqsDto, batchRequest.getCorrelationId(), batchRequest.getCf(), batchRequest.getRecipientType(), GatewayDownstreamService.INIPEC);
             return infoCamereConverter.updateBatchRequestFields(batchRequest, status, now, codeSqsDto);
         }
 
@@ -381,7 +353,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     public Mono<BatchRequest> handlePecNotFoundResponse(BatchRequest request, BatchStatus status, LocalDateTime now) {
         if(PF.name().equalsIgnoreCase(request.getRecipientType())) {
-            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(request, null);
+            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(request.getCorrelationId(), null);
             return infoCamereConverter.updateBatchRequestFields(request, status, now, codeSqsDto);
         }
         return callInadEservice(request)

@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbEnhancedAsyncClient;
 import software.amazon.awssdk.enhanced.dynamodb.Key;
@@ -34,9 +35,8 @@ import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.ERROR;
 import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.NOT_WORKED;
 import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.WORKED;
 import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.WORKING;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_CONDITIONALCHECKFAILED;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_REQUIRED_BATCHID;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_REQUIRED_RESULTPAYLOAD;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_REQUEST_RESULTPAYLOAD;
 
 @Component
 @Slf4j
@@ -63,7 +63,7 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      *
      */
     @Override
-    public Mono<Page<NationalRegistriesRequest>> getRequestsBatchId(String batchId, RequestStatusEnum status, Map<String, AttributeValue> lastEvaluatedKey) {
+    public SdkPublisher<Page<NationalRegistriesRequest>> getRequestsBatchId(String batchId, RequestStatusEnum status) {
         Key key;
         if(Objects.isNull(status)) {
             key = Key.builder().partitionValue(batchId).build();
@@ -75,11 +75,7 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
                 .queryConditional(QueryConditional.keyEqualTo(key))
                 .limit(nationalRegistriesConfig.getQueryLimit());
 
-        if (!CollectionUtils.isEmpty(lastEvaluatedKey)) {
-            builder.exclusiveStartKey(lastEvaluatedKey);
-        }
-
-        return Mono.from(table.index(NationalRegistriesRequest.BATCH_ID_INDEX).query(builder.build()));
+        return table.index(NationalRegistriesRequest.BATCH_ID_INDEX).query(builder.build());
     }
 
     /**
@@ -143,20 +139,26 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      * WORKED è uno stato finale, quindi viene aggiornato anche il TTL.
      */
     @Override
-    public Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload, GatewayDownstreamService registry) {
-
+    public Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload, GatewayDownstreamService registry, boolean isFinalRegistry) {
         Map<String, String> names = new HashMap<>();
         Map<String, AttributeValue> values = new HashMap<>();
         List<String> updates = new ArrayList<>();
 
-        if (!StringUtils.hasText(resultPayload)) {
-            log.error("ResultPayload is required to set status to WORKED, but it is null or empty");
-            throw new PnInternalException("ResultPayload is required to set status to WORKED",400, ERROR_CODE_NATIONAL_REGISTRIES_REQUIRED_RESULTPAYLOAD);
+        if (isFinalRegistry && !StringUtils.hasText(resultPayload)) {
+            log.error("Result payload is required for final registry");
+            throw new PnInternalException("Result payload is required for final registry", 400, ERROR_CODE_NATIONAL_REGISTRIES_REQUEST_RESULTPAYLOAD);
         }
 
-        names.put("#resultPayload", NationalRegistriesRequest.COL_RESULT_PAYLOAD);
-        values.put(":resultPayload", AttributeValue.builder().s(resultPayload).build());
-        updates.add("#resultPayload = :resultPayload");
+        if (!isFinalRegistry && resultPayload != null) {
+            log.error("Result payload must be null for non-final registry");
+            throw new PnInternalException("Result payload must be null for non-final registry", 400, ERROR_CODE_NATIONAL_REGISTRIES_REQUEST_RESULTPAYLOAD);
+        }
+
+        if (isFinalRegistry) {
+            names.put("#resultPayload", NationalRegistriesRequest.COL_RESULT_PAYLOAD);
+            values.put(":resultPayload", AttributeValue.builder().s(resultPayload).build());
+            updates.add("#resultPayload = :resultPayload");
+        }
 
         addTtl(names, values, updates);
 

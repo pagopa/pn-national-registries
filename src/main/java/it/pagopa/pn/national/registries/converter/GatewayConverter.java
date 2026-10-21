@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.constant.*;
-import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
@@ -34,13 +33,13 @@ public class GatewayConverter {
     private static final String DATE_PATTERN = "yyyy-MM-dd";
     private static final String CF_NOT_FOUND = "CF non trovato";
 
-    protected AddressOKDto mapToAddressesOKDto(String correlationId) {
+    public static AddressOKDto mapToAddressesOKDto(String correlationId) {
         AddressOKDto dto = new AddressOKDto();
         dto.setCorrelationId(correlationId);
         return dto;
     }
 
-    protected CodeSqsDto anprToSqsDto(String correlationId, GetAddressANPROKDto anprResponse) {
+    public static CodeSqsDto anprToSqsDto(String correlationId, GetAddressANPROKDto anprResponse) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.ANPR);
         if (anprResponse != null && !CollectionUtils.isEmpty(anprResponse.getResidentialAddresses())) {
             codeSqsDto.setPhysicalAddress(convertAnprToPhysicalAddress(anprResponse.getResidentialAddresses().getFirst()));
@@ -52,7 +51,7 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto errorAnprToSqsDto(String correlationId, Throwable throwable) {
+    public static CodeSqsDto errorAnprToSqsDto(String correlationId, Throwable throwable) {
         CodeSqsDto codeSqsDto = null;
         // per ANPR CF non trovato corrisponde a HTTP Status 404 e nel body codiceErroreAnomalia = "EN122"
         if (isAnprAddressNotFound(throwable)) {
@@ -64,7 +63,7 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto) {
+    public static CodeSqsDto inadToSqsDto(String correlationId, GetDigitalAddressINADOKDto inadDto) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.INAD);
         if (inadDto != null && inadDto.getDigitalAddress() != null) {
             codeSqsDto.setDigitalAddress(List.of(convertInadToDigitalAddress(inadDto.getDigitalAddress(), evaluteDigitalAddressRecipientType(inadDto))));
@@ -85,7 +84,7 @@ public class GatewayConverter {
         return null;
     }
 
-    protected CodeSqsDto errorInadToSqsDto(String correlationId, Throwable throwable) {
+    public static CodeSqsDto errorInadToSqsDto(String correlationId, Throwable throwable) {
         CodeSqsDto codeSqsDto = null;
         // per INAD CF non trovato corrisponde a HTTP Status 404 e nel body deve essere contenuta la stringa "CF non trovato"
         if (isInadAddressNotFound(throwable)) {
@@ -97,19 +96,19 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    private boolean isAnprAddressNotFound(Throwable throwable) {
+    private static boolean isAnprAddressNotFound(Throwable throwable) {
         return throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.NOT_FOUND
                 && StringUtils.hasText(exception.getResponseBodyAsString())
                 && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
     }
 
-    public final Predicate<Throwable> isAnprAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
+    public static final Predicate<Throwable> isAnprAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
             && exception.getStatusCode() == HttpStatus.NOT_FOUND
             && StringUtils.hasText(exception.getResponseBodyAsString())
             && ANPR_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find();
 
 
-    private boolean isInadAddressNotFound(Throwable throwable) {
+    private static boolean isInadAddressNotFound(Throwable throwable) {
         return throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.NOT_FOUND
                 && (
                 (StringUtils.hasText(exception.getResponseBodyAsString())
@@ -118,15 +117,7 @@ public class GatewayConverter {
         );
     }
 
-    public final Predicate<Throwable> isInadAddressNotFound = t -> t instanceof PnNationalRegistriesException exception
-            && exception.getStatusCode() == HttpStatus.NOT_FOUND
-            && (
-            (StringUtils.hasText(exception.getResponseBodyAsString())
-                    && INAD_CF_NOT_FOUND.matcher(exception.getResponseBodyAsString()).find())
-                    || CF_NOT_FOUND.equalsIgnoreCase(exception.getMessage())
-    );
-
-    protected CodeSqsDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
+    public static CodeSqsDto regImpToSqsDto(String correlationId, GetAddressRegistroImpreseOKDto registroImpreseDto) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.REGISTRO_IMPRESE);
         if (registroImpreseDto != null && registroImpreseDto.getProfessionalAddress() != null) {
             codeSqsDto.setPhysicalAddress(convertRegImpToPhysicalAddress(registroImpreseDto.getProfessionalAddress()));
@@ -138,7 +129,7 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    protected CodeSqsDto ipaToSqsDto(String correlationId, IPAPecDto ipaResponse) {
+    public static CodeSqsDto ipaToSqsDto(String correlationId, IPAPecDto ipaResponse) {
         CodeSqsDto codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.IPA);
         if (ipaResponse != null && ipaResponse.getDomicilioDigitale() != null) {
             codeSqsDto.setDigitalAddress(List.of(convertIpaPecToDigitalAddress(ipaResponse)));
@@ -149,7 +140,7 @@ public class GatewayConverter {
         return codeSqsDto;
     }
 
-    private DigitalAddress convertIpaPecToDigitalAddress(IPAPecDto domicilioDigitale) {
+    private static DigitalAddress convertIpaPecToDigitalAddress(IPAPecDto domicilioDigitale) {
         DigitalAddress digitalAddress = new DigitalAddress();
         digitalAddress.setAddress(domicilioDigitale.getDomicilioDigitale());
         digitalAddress.setRecipient(DigitalAddressRecipientType.IMPRESA.getValue());
@@ -157,14 +148,14 @@ public class GatewayConverter {
         return digitalAddress;
     }
 
-    protected CodeSqsDto newCodeSqsDto(String correlationId, GatewayDownstreamService addressSourceEnum) {
+    private static CodeSqsDto newCodeSqsDto(String correlationId, GatewayDownstreamService addressSourceEnum) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(correlationId);
         codeSqsDto.setRegistry(addressSourceEnum.name());
         return codeSqsDto;
     }
 
-    protected PhysicalAddressDto convertAnprToPhysicalAddress(ResidentialAddressDto residenceDto) {
+    private static PhysicalAddressDto convertAnprToPhysicalAddress(ResidentialAddressDto residenceDto) {
         PhysicalAddressDto physicalAddress = new PhysicalAddressDto();
         physicalAddress.setAddress(residenceDto.getAddress());
         physicalAddress.setAddressDetails(residenceDto.getAddressDetail());
@@ -178,7 +169,7 @@ public class GatewayConverter {
         return physicalAddress;
     }
 
-    protected DigitalAddress convertInadToDigitalAddress(DigitalAddressDto digitalAddressDto, DigitalAddressRecipientType digitalAddressRecipientType) {
+    private static DigitalAddress convertInadToDigitalAddress(DigitalAddressDto digitalAddressDto, DigitalAddressRecipientType digitalAddressRecipientType) {
         DigitalAddress digitalAddress = new DigitalAddress();
         digitalAddress.setAddress(digitalAddressDto.getDigitalAddress());
         digitalAddress.setRecipient(digitalAddressRecipientType.getValue());
@@ -186,7 +177,7 @@ public class GatewayConverter {
         return digitalAddress;
     }
 
-    protected PhysicalAddressDto convertRegImpToPhysicalAddress(GetAddressRegistroImpreseOKProfessionalAddressDto addressDto) {
+    private static PhysicalAddressDto convertRegImpToPhysicalAddress(GetAddressRegistroImpreseOKProfessionalAddressDto addressDto) {
         PhysicalAddressDto physicalAddress = new PhysicalAddressDto();
         physicalAddress.setProvince(addressDto.getProvince());
         physicalAddress.setAddress(addressDto.getAddress());
@@ -196,7 +187,7 @@ public class GatewayConverter {
         return physicalAddress;
     }
 
-    protected GetAddressANPRRequestBodyDto convertToGetAddressAnprRequest(AddressRequestBodyDto addressRequestBodyDto) {
+    public static GetAddressANPRRequestBodyDto convertToGetAddressAnprRequest(AddressRequestBodyDto addressRequestBodyDto) {
         GetAddressANPRRequestBodyDto dto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto filterDto = new GetAddressANPRRequestBodyFilterDto();
         filterDto.setRequestReason(addressRequestBodyDto.getFilter().getCorrelationId());
@@ -210,29 +201,7 @@ public class GatewayConverter {
         return dto;
     }
 
-    protected GetDigitalAddressINADRequestBodyDto convertToGetDigitalAddressInadRequest(AddressRequestBodyDto addressRequestBodyDto) {
-        GetDigitalAddressINADRequestBodyDto dto = new GetDigitalAddressINADRequestBodyDto();
-        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
-
-        filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
-        filterDto.setPracticalReference(addressRequestBodyDto.getFilter().getCorrelationId());
-
-        dto.setFilter(filterDto);
-        return dto;
-    }
-
-    protected GetDigitalAddressINADRequestBodyDto convertToGetDigitalAddressInadRequest(BatchRequest batchRequest) {
-        GetDigitalAddressINADRequestBodyDto dto = new GetDigitalAddressINADRequestBodyDto();
-        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
-
-        filterDto.setTaxId(batchRequest.getCf());
-        filterDto.setPracticalReference(batchRequest.getCorrelationId());
-
-        dto.setFilter(filterDto);
-        return dto;
-    }
-
-    protected GetAddressRegistroImpreseRequestBodyDto convertToGetAddressRegistroImpreseRequest(AddressRequestBodyDto addressRequestBodyDto) {
+    public static GetAddressRegistroImpreseRequestBodyDto convertToGetAddressRegistroImpreseRequest(AddressRequestBodyDto addressRequestBodyDto) {
         GetAddressRegistroImpreseRequestBodyDto dto = new GetAddressRegistroImpreseRequestBodyDto();
         GetAddressRegistroImpreseRequestBodyFilterDto filterDto = new GetAddressRegistroImpreseRequestBodyFilterDto();
 
@@ -242,18 +211,7 @@ public class GatewayConverter {
         return dto;
     }
 
-    protected GetDigitalAddressIniPECRequestBodyDto convertToGetDigitalAddressIniPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
-        GetDigitalAddressIniPECRequestBodyDto dto = new GetDigitalAddressIniPECRequestBodyDto();
-        GetDigitalAddressIniPECRequestBodyFilterDto filterDto = new GetDigitalAddressIniPECRequestBodyFilterDto();
-
-        filterDto.setCorrelationId(addressRequestBodyDto.getFilter().getCorrelationId());
-        filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
-
-        dto.setFilter(filterDto);
-        return dto;
-    }
-
-    protected IPARequestBodyDto convertToGetIpaPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
+    public static IPARequestBodyDto convertToGetIpaPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
         IPARequestBodyDto dto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filterDto = new CheckTaxIdRequestBodyFilterDto();
         filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
@@ -262,7 +220,7 @@ public class GatewayConverter {
     }
 
     // START METHODS FOR MULTI ADDRESSES
-    protected List<AddressQueryRequest> toAddressQueryRequests(PhysicalAddressesRequestBodyDto requestBodyDto) {
+    public static List<AddressQueryRequest> toAddressQueryRequests(PhysicalAddressesRequestBodyDto requestBodyDto) {
         return requestBodyDto.getAddresses().stream()
                 .map(addressRequest -> AddressQueryRequest.builder()
                         .correlationId(requestBodyDto.getCorrelationId())
@@ -275,7 +233,7 @@ public class GatewayConverter {
                 .toList();
     }
 
-    protected GetAddressANPRRequestBodyDto convertToGetAddressAnprRequest(AddressQueryRequest addressQueryRequest) {
+    public static GetAddressANPRRequestBodyDto convertToGetAddressAnprRequest(AddressQueryRequest addressQueryRequest) {
         GetAddressANPRRequestBodyDto dto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto filterDto = new GetAddressANPRRequestBodyFilterDto();
         filterDto.setRequestReason(addressQueryRequest.getCorrelationId());
@@ -288,7 +246,7 @@ public class GatewayConverter {
         return dto;
     }
 
-    protected PhysicalAddressResponseDto convertAnprResponseToInternalRecipientAddress(GetAddressANPROKDto response, AddressQueryRequest addressQueryRequest) {
+    public static PhysicalAddressResponseDto convertAnprResponseToInternalRecipientAddress(GetAddressANPROKDto response, AddressQueryRequest addressQueryRequest) {
         PhysicalAddressResponseDto addressResponseDto = new PhysicalAddressResponseDto();
         if (response != null && !CollectionUtils.isEmpty(response.getResidentialAddresses())) {
             addressResponseDto.setPhysicalAddress(convertAnprToPhysicalAddress(response.getResidentialAddresses().getFirst()));
@@ -301,14 +259,14 @@ public class GatewayConverter {
         return addressResponseDto;
     }
 
-    protected PhysicalAddressResponseDto anprNotFoundErrorToPhysicalAddressSQSMessage(AddressQueryRequest addressQueryRequest) {
+    public static PhysicalAddressResponseDto anprNotFoundErrorToPhysicalAddressSQSMessage(AddressQueryRequest addressQueryRequest) {
         PhysicalAddressResponseDto addressResponseDto = new PhysicalAddressResponseDto();
         addressResponseDto.setRecIndex(addressQueryRequest.getRecIndex());
         addressResponseDto.setRegistry(GatewayDownstreamService.ANPR.name());
         return addressResponseDto;
     }
 
-    protected GetAddressRegistroImpreseRequestBodyDto convertToGetAddressRegistroImpreseRequest(AddressQueryRequest addressQueryRequest) {
+    public static GetAddressRegistroImpreseRequestBodyDto convertToGetAddressRegistroImpreseRequest(AddressQueryRequest addressQueryRequest) {
         GetAddressRegistroImpreseRequestBodyDto dto = new GetAddressRegistroImpreseRequestBodyDto();
         GetAddressRegistroImpreseRequestBodyFilterDto filterDto = new GetAddressRegistroImpreseRequestBodyFilterDto();
 
@@ -318,7 +276,7 @@ public class GatewayConverter {
         return dto;
     }
 
-    protected PhysicalAddressResponseDto convertRegImprResponseToInternalRecipientAddress(GetAddressRegistroImpreseOKDto response, AddressQueryRequest addressQueryRequest) {
+    public static PhysicalAddressResponseDto convertRegImprResponseToInternalRecipientAddress(GetAddressRegistroImpreseOKDto response, AddressQueryRequest addressQueryRequest) {
         PhysicalAddressResponseDto addressInfo = new PhysicalAddressResponseDto();
         if (response != null && response.getProfessionalAddress() != null) {
             addressInfo.setPhysicalAddress(convertRegImpToPhysicalAddress(response.getProfessionalAddress()));
@@ -331,7 +289,7 @@ public class GatewayConverter {
         return addressInfo;
     }
 
-    protected PhysicalAddressesResponseDto convertToPhysicalAddressesResponseDto(List<PhysicalAddressResponseDto> addressResponse, String correlationId) {
+    public static PhysicalAddressesResponseDto convertToPhysicalAddressesResponseDto(List<PhysicalAddressResponseDto> addressResponse, String correlationId) {
         PhysicalAddressesResponseDto response = new PhysicalAddressesResponseDto();
         response.setCorrelationId(correlationId);
         response.setAddresses(addressResponse);
@@ -340,7 +298,7 @@ public class GatewayConverter {
 
     // END METHODS FOR MULTI ADDRESSES
 
-    protected AddressRequestBodyDto toAddressRequestBodyDto(PnAddressGatewayEvent.Payload payload) {
+    public static AddressRequestBodyDto toAddressRequestBodyDto(PnAddressGatewayEvent.Payload payload) {
         AddressRequestBodyDto addressRequestBodyDto = new AddressRequestBodyDto();
         AddressRequestBodyFilterDto addressRequestBodyFilterDto = new AddressRequestBodyFilterDto();
         addressRequestBodyFilterDto.setCorrelationId(payload.getCorrelationId());
@@ -351,14 +309,7 @@ public class GatewayConverter {
         return addressRequestBodyDto;
     }
 
-    protected CodeSqsDto emptyDigitalCodeSqsDto(String correlationId) {
-        var codeSqsDto = newCodeSqsDto(correlationId, GatewayDownstreamService.INAD);
-        codeSqsDto.setDigitalAddress(Collections.emptyList());
-        codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
-        return codeSqsDto;
-    }
-
-    protected InternalCodeSqsDto toInternalCodeSqsDto(AddressRequestBodyFilterDto filter, String recipientType, String pnNationalRegistriesCxId) {
+    public static InternalCodeSqsDto toInternalCodeSqsDto(AddressRequestBodyFilterDto filter, String recipientType, String pnNationalRegistriesCxId) {
         return InternalCodeSqsDto.builder()
                 .taxId(filter.getTaxId())
                 .correlationId(filter.getCorrelationId())
@@ -370,7 +321,7 @@ public class GatewayConverter {
     }
 
 
-    protected NationalRegistriesRequest constructNationalRegistriesRequest(AddressRequestBodyDto addressRequestBodyDto, RecipientType recipientType, String pnNationalRegistriesCxId, GatewayDownstreamService registry) {
+    public static NationalRegistriesRequest constructNationalRegistriesRequest(AddressRequestBodyDto addressRequestBodyDto, RecipientType recipientType, String pnNationalRegistriesCxId, GatewayDownstreamService registry) {
         NationalRegistriesRequest nationalRegistriesRequest = new NationalRegistriesRequest();
 
         nationalRegistriesRequest.setCreatedAt(Instant.now());
@@ -385,5 +336,16 @@ public class GatewayConverter {
         nationalRegistriesRequest.setRegistryStatus(String.join("#", registry.name(), RequestStatusEnum.NOT_WORKED.name()));
 
         return nationalRegistriesRequest;
+    }
+
+    public static GetDigitalAddressINADRequestBodyDto convertToGetDigitalAddressInadRequest(String correlationId, String taxId) {
+        GetDigitalAddressINADRequestBodyDto dto = new GetDigitalAddressINADRequestBodyDto();
+        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
+
+        filterDto.setTaxId(taxId);
+        filterDto.setPracticalReference(correlationId);
+
+        dto.setFilter(filterDto);
+        return dto;
     }
 }
