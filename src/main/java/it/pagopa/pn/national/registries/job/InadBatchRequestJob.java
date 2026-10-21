@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.job;
 
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
@@ -16,6 +17,7 @@ import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
+import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -25,6 +27,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID;
 
 @Component
 @Slf4j
@@ -90,8 +94,8 @@ public class InadBatchRequestJob {
                                     String batchId,
                                     List<NationalRegistriesRequest> requests,
                                     Instant now) {
-        if (!Objects.nonNull(providerResponse) || !Objects.nonNull(providerResponse.getId())) {
-            return Mono.error(new IllegalStateException("INAD returned no polling identifier for batch " + batchId));
+        if (!Objects.nonNull(providerResponse) || !StringUtils.hasText(providerResponse.getId())) {
+            return Mono.error(new PnInternalException("INAD returned no polling identifier for batch " + batchId, 400, ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID));
         }
 
         NationalRegistriesBatch batch = getBatch(batchId, requests, now, providerResponse);
@@ -119,7 +123,7 @@ public class InadBatchRequestJob {
         batch.setBatchSize(requests.size());
         batch.setAttemptAfter(calculateFirstPollingAttempt(requests.size(), now));
         batch.setStatus(BatchesStatusEnum.REQUEST_SENT);
-        batch.setRetryCount(0);
+        batch.setErrorRetryCount(0);
         batch.setInProgressRetryCount(0);
         return batch;
     }

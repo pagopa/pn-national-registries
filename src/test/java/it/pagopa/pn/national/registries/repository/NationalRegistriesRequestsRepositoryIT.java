@@ -90,16 +90,18 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         requests.forEach(request -> repository.putRequest(request).block());
 
-        Page<NationalRegistriesRequest> firstPage = repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING, null).block();
+        List<Page<NationalRegistriesRequest>> pages = Flux.from(repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
+                .collectList()
+                .block();
 
-        Assertions.assertNotNull(firstPage);
+        Assertions.assertNotNull(pages);
+        Assertions.assertEquals(2, pages.size());
+        Page<NationalRegistriesRequest> firstPage = pages.getFirst();
         Assertions.assertEquals(5, firstPage.items().size());
         Assertions.assertTrue(firstPage.items().stream().allMatch(item -> batchId.equals(item.getBatchId())));
         Assertions.assertFalse(firstPage.lastEvaluatedKey().isEmpty());
 
-        Page<NationalRegistriesRequest> secondPage = repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING, firstPage.lastEvaluatedKey()).block();
-
-        Assertions.assertNotNull(secondPage);
+        Page<NationalRegistriesRequest> secondPage = pages.get(1);
         Assertions.assertEquals(2, secondPage.items().size());
         Assertions.assertTrue(secondPage.items().stream().allMatch(item -> batchId.equals(item.getBatchId())));
         Assertions.assertTrue(secondPage.lastEvaluatedKey() == null || secondPage.lastEvaluatedKey().isEmpty());
@@ -272,7 +274,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 request.getCorrelationId(),
                 request.getCreatedAt().toString(),
                 resultPayload,
-                GatewayDownstreamService.INIPEC
+                GatewayDownstreamService.INIPEC,
+                true
         ).block();
 
         NationalRegistriesRequest updated = getRequestByBatchId(batchId, RequestStatusEnum.WORKED);
@@ -307,7 +310,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 request.getCorrelationId(),
                 request.getCreatedAt().toString(),
                 resultPayload,
-                GatewayDownstreamService.INAD
+                GatewayDownstreamService.INAD,
+                true
         ).block();
 
         NationalRegistriesRequest updated = getRequestByBatchId(batchId, RequestStatusEnum.WORKED);
@@ -340,7 +344,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         "payload",
-                        null
+                        null,
+                        true
                 ).block()
         );
 
@@ -369,7 +374,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         "resultPayload",
-                        null
+                        null,
+                        true
                 ).block()
         );
 
@@ -546,7 +552,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         null,
-                        null
+                        null,
+                        true
                 ).block()
         );
 
@@ -576,7 +583,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         " ",
-                        null
+                        null,
+                        true
                 ).block()
         );
 
@@ -585,7 +593,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
     }
 
     private NationalRegistriesRequest getRequestByBatchId(String batchId, RequestStatusEnum status ) {
-        Page<NationalRegistriesRequest> page = repository.getRequestsBatchId(batchId, status, null).block();
+        Page<NationalRegistriesRequest> page = Flux.from(repository.getRequestsBatchId(batchId, status)).next().block();
         Assertions.assertNotNull(page);
         Assertions.assertEquals(1, page.items().size());
         return page.items().getFirst();
