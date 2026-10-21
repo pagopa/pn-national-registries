@@ -52,9 +52,8 @@ public class PollingJob {
     }
 
     private Mono<Void> takeCharge(NationalRegistriesBatch batch) {
-        batch.setStatus(BatchesStatusEnum.WORKING);
         return nationalRegistriesBatchesRepository
-                .updateItem(batch, BatchesStatusEnum.REQUEST_SENT)
+                .updateItem(batch, BatchesStatusEnum.WORKING)
                 .onErrorResume(ConditionalCheckFailedException.class, ex -> {
                     log.debug("Batch {} already taken by another worker", batch.getBatchId());
                     return Mono.empty();

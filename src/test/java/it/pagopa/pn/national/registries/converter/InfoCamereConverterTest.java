@@ -71,7 +71,7 @@ class InfoCamereConverterTest {
         Pec pec = new Pec();
         pec.setCf("cf");
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest.getCorrelationId(), pec);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNull(codeSqsDto.getError());
         assertTrue(CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()));
@@ -95,7 +95,7 @@ class InfoCamereConverterTest {
         pec.setPecImpresa("pecImpresa");
         pec.setPecProfessionista(Collections.emptyList());
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest.getCorrelationId(), pec);
         assertNotNull(codeSqsDto);
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertEquals(1, codeSqsDto.getDigitalAddress().size());
@@ -119,7 +119,7 @@ class InfoCamereConverterTest {
         professionista2.setPec("professionista2@pec.it");
         pec.setPecProfessionista(List.of(professionista1, professionista2));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest.getCorrelationId(), pec);
 
         assertEquals(3, codeSqsDto.getDigitalAddress().size());
         assertEquals("impresa@pec.it", codeSqsDto.getDigitalAddress().get(0).getAddress());
@@ -143,7 +143,7 @@ class InfoCamereConverterTest {
         Pec pec = new Pec();
         pec.setCf("altro-cf");
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest.getCorrelationId(), pec);
         assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertNotNull(codeSqsDto.getDigitalAddress());
         assertTrue(codeSqsDto.getDigitalAddress().isEmpty());
@@ -442,7 +442,7 @@ class InfoCamereConverterTest {
                 buildProfessionista("second@pec.it")
         ));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest.getCorrelationId(), pec);
 
         assertEquals(4, codeSqsDto.getDigitalAddress().size());
         assertEquals("impresa@pec.it", codeSqsDto.getDigitalAddress().get(0).getAddress());
@@ -470,7 +470,7 @@ class InfoCamereConverterTest {
                 buildProfessionista("prof2@pec.it")
         ));
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest.getCorrelationId(), pec);
 
         assertEquals(2, codeSqsDto.getDigitalAddress().size());
         assertEquals("PROFESSIONISTA", codeSqsDto.getDigitalAddress().get(0).getRecipient());
@@ -490,7 +490,7 @@ class InfoCamereConverterTest {
         pec.setPecImpresa("impresa@pec.it");
         pec.setPecProfessionista(Collections.emptyList());
 
-        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
+        CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest.getCorrelationId(), pec);
 
         assertEquals(1, codeSqsDto.getDigitalAddress().size());
         assertEquals("IMPRESA", codeSqsDto.getDigitalAddress().get(0).getRecipient());

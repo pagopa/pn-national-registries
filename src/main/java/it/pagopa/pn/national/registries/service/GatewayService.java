@@ -24,11 +24,12 @@ import java.nio.charset.Charset;
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_CX_ID_FLAG;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
+import static it.pagopa.pn.national.registries.converter.GatewayConverter.*;
 
 @Service
 @lombok.CustomLog
 @RequiredArgsConstructor
-public class GatewayService extends GatewayConverter {
+public class GatewayService{
 
     private final SqsService sqsService;
     private final NationalRegistriesConfig nationalRegistriesConfig;

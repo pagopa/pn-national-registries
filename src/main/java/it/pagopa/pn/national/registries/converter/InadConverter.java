@@ -1,7 +1,6 @@
 package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.constant.RecipientType;
-import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;

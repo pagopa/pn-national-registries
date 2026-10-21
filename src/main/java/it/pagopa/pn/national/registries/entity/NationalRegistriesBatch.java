@@ -4,19 +4,24 @@ import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import software.amazon.awssdk.enhanced.dynamodb.TableSchema;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbAttribute;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbBean;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondaryPartitionKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSecondarySortKey;
 import software.amazon.awssdk.enhanced.dynamodb.mapper.annotations.DynamoDbSortKey;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.Instant;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
 @DynamoDbBean
 public class NationalRegistriesBatch {
+
+    public static final String SK = "-";
 
     public static final String COL_BATCHID = "batchId";
     public static final String COL_SK = "sk";
@@ -28,7 +33,7 @@ public class NationalRegistriesBatch {
     public static final String COL_PRACTICALREFERENCE = "practicalReference";
     public static final String COL_BATCHSIZE = "batchSize";
     public static final String COL_ATTEMPTAFTER = "attemptAfter";
-    public static final String COL_RETRYCOUNT = "retryCount";
+    public static final String COL_ERRORRETRYCOUNT = "errorRetryCount";
     public static final String COL_INPROGRESSRETRYCOUNT = "inProgressRetryCount";
     public static final String COL_UPDATEDAT = "updatedAt";
     public static final String COL_TTL = "ttl";
@@ -65,8 +70,8 @@ public class NationalRegistriesBatch {
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_ATTEMPTAFTER), @DynamoDbSecondarySortKey(indexNames = STATUS_ATTEMPTAFTER_INDEX)}))
     private Instant attemptAfter;
 
-    @Getter(onMethod = @__({@DynamoDbAttribute(COL_RETRYCOUNT)}))
-    private Integer retryCount;
+    @Getter(onMethod = @__({@DynamoDbAttribute(COL_ERRORRETRYCOUNT)}))
+    private Integer errorRetryCount;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_INPROGRESSRETRYCOUNT)}))
     private Integer inProgressRetryCount;
@@ -76,4 +81,23 @@ public class NationalRegistriesBatch {
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_TTL)}))
     private Long ttl;
+
+    // Costruito UNA volta sola
+    private static final TableSchema<NationalRegistriesBatch> SCHEMA =
+            TableSchema.fromBean(NationalRegistriesBatch.class);
+
+    /**
+     * Converte l'entity NationalRegistriesBatch in una mappa {@code Map<String, AttributeValue>} utilizzata da DynamoDB.
+     */
+    public static Map<String, AttributeValue> nationalRegistriesRequestToAttributeValueMap(NationalRegistriesBatch p) {
+        return SCHEMA.itemToMap(p, true);
+    }
+
+    /**
+     * Converte una mappa {@code Map<String, AttributeValue>} utilizzata da DynamoDB in una entity NationalRegistriesRequest.
+     */
+    public static NationalRegistriesBatch attributeValueMapToNationalRegistriesRequest(Map<String, AttributeValue> item) {
+        if (item == null || item.isEmpty()) return null;
+        return SCHEMA.mapToItem(item);
+    }
 }

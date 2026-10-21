@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.VerificheApi;
+import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.SqsService;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Assertions;
@@ -110,13 +111,12 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
     }
 
     @Test
-    void updateItemTest() {
+    void updateItemToWorkedTest() {
         NationalRegistriesBatch batch = batch("update-technical-error", WORKING, Instant.parse("2026-10-09T10:00:00Z"));
         nationalRegistriesBatchesRepository.putBatch(batch).block();
-        batch.setStatus(WORKED);
 
         NationalRegistriesBatch updatedBatch = nationalRegistriesBatchesRepository
-                .updateItem(batch, WORKING)
+                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), WORKED)
                 .block();
         NationalRegistriesBatch retrievedBatch = nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block();
 
@@ -128,16 +128,105 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
     }
 
     @Test
+    void updateItemToErrorTest() {
+        NationalRegistriesBatch batch = batch("update-technical-error", WORKING, Instant.parse("2026-10-09T10:00:00Z"));
+        nationalRegistriesBatchesRepository.putBatch(batch).block();
+
+        NationalRegistriesBatch updatedBatch = nationalRegistriesBatchesRepository
+                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), ERROR)
+                .block();
+        NationalRegistriesBatch retrievedBatch = nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block();
+
+        Assertions.assertNotNull(updatedBatch);
+        Assertions.assertNotNull(retrievedBatch);
+        Assertions.assertEquals(ERROR, retrievedBatch.getStatus());
+        Assertions.assertNotNull(retrievedBatch.getUpdatedAt());
+        Assertions.assertTrue(retrievedBatch.getAttemptAfter().equals(Instant.parse("2026-10-09T10:00:00Z")));
+    }
+
+    @Test
+    void updateItemToWorkedFromInvalidStatusTest() {
+        NationalRegistriesBatch batch = batch("update-technical-error", REQUEST_SENT, Instant.parse("2099-10-09T10:00:00Z"));
+        nationalRegistriesBatchesRepository.putBatch(batch).block();
+
+        Assertions.assertThrows(ConditionalCheckFailedException.class, () -> nationalRegistriesBatchesRepository
+                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), WORKED)
+                        .block());
+    }
+
+    @Test
     void updateItemWithInvalidFromStatus() {
         Instant attemptAfter = Instant.parse("2026-10-10T10:00:00Z");
         NationalRegistriesBatch batch = batch("update-without-error", ERROR, attemptAfter);
         nationalRegistriesBatchesRepository.putBatch(batch).block();
 
-        batch.setStatus(WORKED);
-
         Assertions.assertThrows(ConditionalCheckFailedException.class, () -> nationalRegistriesBatchesRepository
                 .updateItem(batch, WORKING)
                 .block());
+    }
+
+    @Test
+    void updateItemFromRequestSentToWorkingTest() {
+        NationalRegistriesBatch batch = batch("update-working", REQUEST_SENT, Instant.parse("2099-10-09T10:00:00Z"));
+        nationalRegistriesBatchesRepository.putBatch(batch).block();
+
+        NationalRegistriesBatch updatedBatch = nationalRegistriesBatchesRepository.updateItem(batch, WORKING).block();
+        NationalRegistriesBatch retrievedBatch = nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block();
+
+        Assertions.assertNotNull(updatedBatch);
+        Assertions.assertNotNull(retrievedBatch);
+        Assertions.assertEquals(WORKING, retrievedBatch.getStatus());
+        Assertions.assertNotNull(retrievedBatch.getUpdatedAt());
+    }
+
+    @Test
+    void resetStatusForStandardRetryTest() {
+        NationalRegistriesBatch batch = batch("retry-standard", WORKING, Instant.parse("2026-10-09T10:00:00Z"));
+        batch.setErrorRetryCount(0);
+        batch.setInProgressRetryCount(0);
+        nationalRegistriesBatchesRepository.putBatch(batch).block();
+
+        Instant before = Instant.now();
+
+        NationalRegistriesBatch updatedBatch = nationalRegistriesBatchesRepository
+                .resetStatusForRetry(batch.getBatchId(), batch.getSk(), 1, false, GatewayDownstreamService.INAD)
+                .block();
+
+        NationalRegistriesBatch retrievedBatch = nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block();
+
+        Assertions.assertNotNull(updatedBatch);
+        Assertions.assertNotNull(retrievedBatch);
+        Assertions.assertEquals(REQUEST_SENT, retrievedBatch.getStatus());
+        Assertions.assertEquals(1, retrievedBatch.getErrorRetryCount());
+        Assertions.assertEquals(0, retrievedBatch.getInProgressRetryCount());
+        Assertions.assertNotNull(retrievedBatch.getAttemptAfter());
+        Assertions.assertFalse(retrievedBatch.getAttemptAfter().isBefore(before.plusSeconds(60)));
+        Assertions.assertNotNull(retrievedBatch.getUpdatedAt());
+    }
+
+    @Test
+    void resetStatusForInProgressRetryTest() {
+        NationalRegistriesBatch batch = batch("retry-in-progress", WORKING, Instant.parse("2026-10-09T10:00:00Z"));
+        batch.setErrorRetryCount(0);
+        batch.setInProgressRetryCount(0);
+        nationalRegistriesBatchesRepository.putBatch(batch).block();
+
+        Instant before = Instant.now();
+
+        NationalRegistriesBatch updatedBatch = nationalRegistriesBatchesRepository
+                .resetStatusForRetry(batch.getBatchId(), batch.getSk(), 1, true, GatewayDownstreamService.INAD)
+                .block();
+
+        NationalRegistriesBatch retrievedBatch = nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block();
+
+        Assertions.assertNotNull(updatedBatch);
+        Assertions.assertNotNull(retrievedBatch);
+        Assertions.assertEquals(REQUEST_SENT, retrievedBatch.getStatus());
+        Assertions.assertEquals(0, retrievedBatch.getErrorRetryCount());
+        Assertions.assertEquals(1, retrievedBatch.getInProgressRetryCount());
+        Assertions.assertNotNull(retrievedBatch.getAttemptAfter());
+        Assertions.assertFalse(retrievedBatch.getAttemptAfter().isBefore(before.plusSeconds(120)));
+        Assertions.assertNotNull(retrievedBatch.getUpdatedAt());
     }
 
     private NationalRegistriesBatch batch(String batchId, BatchesStatusEnum status, Instant attemptAfter) {

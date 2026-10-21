@@ -14,13 +14,13 @@ public interface NationalRegistriesRequestsRepository {
 
     Mono<NationalRegistriesRequest> putRequest(NationalRegistriesRequest nationalRegistriesRequest);
 
-    Mono<Page<NationalRegistriesRequest>> getRequestsBatchId(String batchId, RequestStatusEnum status, Map<String, AttributeValue> lastEvaluatedKey);
+    SdkPublisher<Page<NationalRegistriesRequest>> getRequestsBatchId(String batchId, RequestStatusEnum status);
 
     SdkPublisher<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, int limit);
 
     Mono<NationalRegistriesRequest> updateStatusToWorking(String pk, String sk, String batchId, GatewayDownstreamService registry);
 
-    Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload, GatewayDownstreamService registry);
+    Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload, GatewayDownstreamService registry, boolean isFinalRegistry);
 
     Mono<NationalRegistriesRequest> resetStatusForRetry(String pk, String sk, Integer retry, GatewayDownstreamService registry);
 
