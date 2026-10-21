@@ -1,7 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.inad.InadClient;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +24,17 @@ public class InadService{
     public Mono<ResponseRequestDigitalAddress> callEService(GetDigitalAddressINADRequestBodyDto request) {
         validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INAD_ADDRESS, false);
         return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference());
+    }
+
+    public Mono<ResponseRequestListDigitalAddress> callEServiceMassiveRequest(RequestListDigitalAddress request) {
+        return inadClient.callMassiveEService(request);
+    }
+
+    public Mono<ResponseStatusListDigitalAddress> callEServiceMassiveStatus(String pollingId) {
+        return inadClient.checkMassiveRequestStatus(pollingId);
+    }
+
+    public Mono<ResponseListDigitalAddress> callEServiceMassiveResponse(String pollingId) {
+        return inadClient.getMassiveRequestResult(pollingId);
     }
 }
