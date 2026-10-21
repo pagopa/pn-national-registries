@@ -996,11 +996,17 @@ Resources:
                 }
       Target: !Ref NationalRegistriesPollingQueueARN
       TargetParameters:
+        SqsQueueParameters:
+          MessageGroupId: $.dynamodb.NewImage.batchId.S
+          MessageDeduplicationId: $.dynamodb.NewImage.batchId.S
         InputTemplate: >-
           {
             "registry": "<$.dynamodb.NewImage.registry.S>",
             "batchId": "<$.dynamodb.NewImage.batchId.S>",
-            "pollingId": "<$.dynamodb.NewImage.pollingId.S>"
+            "pollingId": "<$.dynamodb.NewImage.pollingId.S>",
+            "batchSize": <$.dynamodb.NewImage.batchSize.N>,
+            "retryCount": <$.dynamodb.NewImage.retryCount.N>,
+            "inProgressRetryCount": <$.dynamodb.NewImage.inProgressRetryCount.N>
           }
 
   PnNationalRegistriesCompletedRequestPipe:
