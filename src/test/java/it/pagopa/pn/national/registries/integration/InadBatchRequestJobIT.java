@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.integration;
 
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.RequestListDigitalAddress;
@@ -197,7 +198,7 @@ class InadBatchRequestJobIT extends AbstractNationalRegistriesComponentIT {
     }
 
     // Verifica che una risposta INAD priva di polling ID venga rifiutata senza persistere modifiche.
-    // Assertions: viene sollevata un'IllegalStateException con il messaggio atteso, non vengono creati batch
+    // Assertions: viene sollevata una PnInternalException con il dettaglio atteso, non vengono creati batch
     // e le richieste restano non lavorate e senza batch.
     @Test
     void rejectsInadResponseWithoutPollingIdentifierWithoutPersistingChanges() {
@@ -205,9 +206,11 @@ class InadBatchRequestJobIT extends AbstractNationalRegistriesComponentIT {
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
                 .thenReturn(Mono.just(new ResponseRequestListDigitalAddress()));
 
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> inadBatchRequestJob.batchRequest());
+        PnInternalException thrown = assertThrows(PnInternalException.class, () -> inadBatchRequestJob.batchRequest());
 
-        assertTrue(thrown.getMessage().startsWith("INAD returned no polling identifier for batch "));
+        assertNotNull(thrown.getProblem().getDetail());
+        assertTrue(thrown.getProblem().getDetail()
+                .startsWith("INAD returned no polling identifier for batch "));
         assertEquals(0, findBatches().size());
         requests.forEach(this::assertTrueNotWorkedWithoutBatchId);
     }

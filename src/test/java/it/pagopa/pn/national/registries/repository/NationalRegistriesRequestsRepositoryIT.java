@@ -558,7 +558,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         );
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("ResultPayload is required"));
+        Assertions.assertTrue(exception.getProblem().getDetail().contains("Result payload is required for final registry"));
     }
 
     @Test
@@ -589,7 +589,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         );
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("ResultPayload is required"));
+        Assertions.assertTrue(exception.getProblem().getDetail().contains("Result payload is required for final registry"));
     }
 
     private NationalRegistriesRequest getRequestByBatchId(String batchId, RequestStatusEnum status ) {
