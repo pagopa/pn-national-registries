@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.job;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
@@ -14,6 +15,7 @@ import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRep
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
+import org.slf4j.MDC;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -45,11 +47,15 @@ public class InadBatchRequestJob {
             lockAtMostFor = "${pn.national-registries.inad.batch-request.lock-at-most}",
             lockAtLeastFor = "${pn.national-registries.inad.batch-request.lock-at-least}")
     public void batchRequest() {
+        MDCUtils.clearMDCKeys();
+        String executionId = UUID.randomUUID().toString();
         Instant now = Instant.now();
-        processNextBatch(now)
+        MDC.put(MDCUtils.MDC_PN_CTX_REQUEST_ID, executionId);
+        MDC.put(MDCUtils.MDC_PN_CTX_TOPIC, "INAD_BATCH_REQUEST");
+        Mono<Void> executeBatch = processNextBatch(now)
                 .doOnSuccess(ignored -> log.trace("INAD batch request job completed"))
-                .doOnError(error -> log.error("INAD batch request job failed", error))
-                .block();
+                .doOnError(error -> log.error("INAD batch request job failed", error));
+        MDCUtils.addMDCToContextAndExecute(executeBatch).block();
     }
 
     private Mono<Void> processNextBatch(Instant now) {
@@ -71,11 +77,19 @@ public class InadBatchRequestJob {
             return false;
         }
         if (requests.size() == batchSize) {
+            log.info("Inad batch request is eligible for batchSize, requestsSize: {}, batchSize: {}", requests.size(), batchSize);
             return true;
         }
-        Instant oldestRequestDeadline = requests.getFirst().getCreatedAt()
+        Instant createdAtOldestRequest = requests.getFirst().getCreatedAt();
+        Instant oldestRequestDeadline = createdAtOldestRequest
                 .plusSeconds(nationalRegistriesConfig.getInad().getOldestRequestMaxWaitingSeconds());
-        return !oldestRequestDeadline.isAfter(now);
+        boolean waitIsOver = !oldestRequestDeadline.isAfter(now);
+        if (waitIsOver) {
+            log.info("Inad batch request is eligible for waitIsOver, createdAtOldestRequest: {}, MaxWaitingSeconds: {}, " +
+                    "oldestRequestDeadline: {}",
+                    createdAtOldestRequest, nationalRegistriesConfig.getInad().getOldestRequestMaxWaitingSeconds(), oldestRequestDeadline);
+        }
+        return waitIsOver;
     }
 
     private Mono<Void> submitBatch(List<NationalRegistriesRequest> requests, Instant now) {
