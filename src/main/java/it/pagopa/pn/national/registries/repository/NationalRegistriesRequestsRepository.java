@@ -16,7 +16,7 @@ public interface NationalRegistriesRequestsRepository {
 
     SdkPublisher<Page<NationalRegistriesRequest>> getRequestsBatchId(String batchId, RequestStatusEnum status);
 
-    Mono<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, Map<String, AttributeValue> lastEvaluatedKey, int limit);
+    SdkPublisher<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, int limit);
 
     Mono<NationalRegistriesRequest> updateStatusToWorking(String pk, String sk, String batchId, GatewayDownstreamService registry);
 

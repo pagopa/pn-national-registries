@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.config.pdnd;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.api.AuthApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,7 @@ class PdndClientConfigTest {
     private WebClient.Builder webClientBuilder;
     @Mock
     private WebClient webClient;
+    private NationalRegistriesConfig nationalRegistriesConfig;
 
     @BeforeEach
     void setUp() {
@@ -30,12 +32,14 @@ class PdndClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        pdndClientConfig = new PdndClientConfig(webClientBuilder);
+        nationalRegistriesConfig = new NationalRegistriesConfig();
+        nationalRegistriesConfig.setPdndBaseURL("basePath");
+        pdndClientConfig = new PdndClientConfig(webClientBuilder, nationalRegistriesConfig);
     }
 
     @Test
     void authApi() {
-        AuthApi authApi = pdndClientConfig.authApi("basePath");
+        AuthApi authApi = pdndClientConfig.authApi();
         assertNotNull(authApi);
         assertEquals("basePath", authApi.getApiClient().getBasePath());
     }

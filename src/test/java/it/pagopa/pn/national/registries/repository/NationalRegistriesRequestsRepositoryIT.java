@@ -19,7 +19,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import reactor.core.publisher.Mono;
+import reactor.core.publisher.Flux;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.time.Instant;
@@ -90,12 +90,21 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         requests.forEach(request -> repository.putRequest(request).block());
 
-        List<NationalRegistriesRequest> firstPage = Mono.from(repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
-                .map(Page::items).block();
+        List<Page<NationalRegistriesRequest>> pages = Flux.from(repository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
+                .collectList()
+                .block();
 
-        Assertions.assertNotNull(firstPage);
-        Assertions.assertEquals(5, firstPage.size());
-        Assertions.assertTrue(firstPage.stream().allMatch(item -> batchId.equals(item.getBatchId())));
+        Assertions.assertNotNull(pages);
+        Assertions.assertEquals(2, pages.size());
+        Page<NationalRegistriesRequest> firstPage = pages.getFirst();
+        Assertions.assertEquals(5, firstPage.items().size());
+        Assertions.assertTrue(firstPage.items().stream().allMatch(item -> batchId.equals(item.getBatchId())));
+        Assertions.assertFalse(firstPage.lastEvaluatedKey().isEmpty());
+
+        Page<NationalRegistriesRequest> secondPage = pages.get(1);
+        Assertions.assertEquals(2, secondPage.items().size());
+        Assertions.assertTrue(secondPage.items().stream().allMatch(item -> batchId.equals(item.getBatchId())));
+        Assertions.assertTrue(secondPage.lastEvaluatedKey() == null || secondPage.lastEvaluatedKey().isEmpty());
     }
 
     @Test
@@ -137,7 +146,10 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         List.of(inadNotWorked1, inadNotWorked2, inipecNotWorked, inadWorked).forEach(request -> repository.putRequest(request).block());
 
-        Page<NationalRegistriesRequest> result = repository.getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, null, 10).block();
+        Page<NationalRegistriesRequest> result = Flux.from(repository
+                        .getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, 10))
+                .single()
+                .block();
 
         Assertions.assertNotNull(result);
         Assertions.assertEquals(2, result.items().size());
@@ -546,7 +558,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         );
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("Result payload is required"));
+        Assertions.assertTrue(exception.getProblem().getDetail().contains("Result payload is required for final registry"));
     }
 
     @Test
@@ -577,15 +589,14 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         );
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("Result payload is required"));
+        Assertions.assertTrue(exception.getProblem().getDetail().contains("Result payload is required for final registry"));
     }
 
     private NationalRegistriesRequest getRequestByBatchId(String batchId, RequestStatusEnum status ) {
-        List<NationalRegistriesRequest> page = Mono.from(repository.getRequestsBatchId(batchId, status))
-                .map(Page::items).block();
+        Page<NationalRegistriesRequest> page = Flux.from(repository.getRequestsBatchId(batchId, status)).next().block();
         Assertions.assertNotNull(page);
-        Assertions.assertEquals(1, page.size());
-        return page.getFirst();
+        Assertions.assertEquals(1, page.items().size());
+        return page.items().getFirst();
     }
 
     private NationalRegistriesRequest buildRequest(String correlationId, Instant createdAt, String batchId, GatewayDownstreamService registry, RequestStatusEnum status) {

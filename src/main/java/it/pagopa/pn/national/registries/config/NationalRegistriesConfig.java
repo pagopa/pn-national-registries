@@ -16,6 +16,9 @@ public class NationalRegistriesConfig {
     private boolean enableInadMassiveApi;
     private boolean valCxIdEnabled;
 
+    private String pdndBaseURL;
+    private String inadBaseURL;
+
     private Dao dao;
     private Integer queryLimit;
     private Inipec inipec;

@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.ApiClient;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniMultipleApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.pdnd.v1.dto.TokenType;
@@ -42,6 +43,9 @@ class InadClientTest {
     ApiEstrazioniPuntualiApi apiEstrazioniPuntualiApi;
 
     @MockitoBean
+    ApiEstrazioniMultipleApi apiEstrazioniMultipleApi;
+
+    @MockitoBean
     InadSecretConfig inadSecretConfig;
 
     @MockitoBean
@@ -50,7 +54,7 @@ class InadClientTest {
     @Test
     void callEService() {
 
-        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, inadSecretConfig, pnNationalRegistriesSecretService);
+        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, apiEstrazioniMultipleApi, inadSecretConfig, pnNationalRegistriesSecretService);
 
         ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
         response.setCodiceFiscale("cf");
@@ -74,7 +78,7 @@ class InadClientTest {
 
     @Test
     void callEServiceDoOnError() {
-        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, inadSecretConfig, pnNationalRegistriesSecretService);
+        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, apiEstrazioniMultipleApi, inadSecretConfig, pnNationalRegistriesSecretService);
         HttpHeaders headers = mock(HttpHeaders.class);
         byte[] testByteArray = new byte[0];
         String test = "test";
@@ -90,7 +94,7 @@ class InadClientTest {
 
     @Test
     void callExtractOnRetryExhaustedThrow() {
-        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, inadSecretConfig, pnNationalRegistriesSecretService);
+        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, apiEstrazioniMultipleApi, inadSecretConfig, pnNationalRegistriesSecretService);
 
         ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
         response.setCodiceFiscale("cf");
@@ -117,7 +121,7 @@ class InadClientTest {
 
     @Test
     void callExtractDoOnError() {
-        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, inadSecretConfig, pnNationalRegistriesSecretService);
+        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, apiEstrazioniMultipleApi, inadSecretConfig, pnNationalRegistriesSecretService);
 
         ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
         response.setCodiceFiscale("cf");
@@ -145,14 +149,14 @@ class InadClientTest {
     @Test
     @DisplayName("Should return false when the exception is not webclientresponseexception")
     void shouldRetryWhenNotWebClientResponseExceptionThenReturnFalse() {
-        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, inadSecretConfig, pnNationalRegistriesSecretService);
+        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, apiEstrazioniMultipleApi, inadSecretConfig, pnNationalRegistriesSecretService);
         assertFalse(inadClient.shouldRetry(new Exception()));
     }
 
     @Test
     @DisplayName("Should return true when the exception is webclientresponseexception and the status code is 401")
     void shouldRetryWhenWebClientResponseExceptionAndStatusCodeIs401ThenReturnTrue() {
-        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, inadSecretConfig, pnNationalRegistriesSecretService);
+        InadClient inadClient = new InadClient(accessTokenExpiringMap, apiEstrazioniPuntualiApi, apiEstrazioniMultipleApi, inadSecretConfig, pnNationalRegistriesSecretService);
         WebClientResponseException webClientResponseException = new WebClientResponseException("message",
                 HttpStatus.UNAUTHORIZED.value(), "statusText", HttpHeaders.EMPTY, null, null);
         assertTrue(inadClient.shouldRetry(webClientResponseException));

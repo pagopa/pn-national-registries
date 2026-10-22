@@ -691,7 +691,7 @@ Resources:
         WireTapLogActivation: !Ref WireTapLogActivation
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGIONCODE=${AWS::Region}'
-        ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_BASE_URL=${PDNDBaseURL}'
+        ContainerEnvEntry2: !Sub 'PN_NATIONALREGISTRIES_PDNDBASEURL=${PDNDBaseURL}'
         ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
         ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
         ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_ADE_AUTH=${AdESSL}'
@@ -699,7 +699,7 @@ Resources:
         ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_NAME_ID=${AdELegalNameId}'
         ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
         ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PDND_CLIENT_SECRET=${PDNDAdECheckCfSecret}'
-        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
+        ContainerEnvEntry10: !Sub 'PN_NATIONALREGISTRIES_INADBASEURL=${INADBaseURL}'
         ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_INAD_PDND_CLIENT_SECRET=${PDNDInadSecret}'
         ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
         ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
