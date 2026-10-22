@@ -305,6 +305,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     AttributeName=batchId,AttributeType=S \
     AttributeName=status,AttributeType=S \
     AttributeName=registryStatus,AttributeType=S \
+    AttributeName=attemptAfter,AttributeType=S \
   --key-schema \
     AttributeName=correlationId,KeyType=HASH \
     AttributeName=createdAt,KeyType=RANGE \
@@ -328,14 +329,14 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
       }
     },
     {
-      "IndexName": "registryStatus-index",
+      "IndexName": "registryStatus-attemptAfter-index",
       "KeySchema": [
         {
           "AttributeName": "registryStatus",
           "KeyType": "HASH"
         },
         {
-          "AttributeName": "createdAt",
+          "AttributeName": "attemptAfter",
           "KeyType": "RANGE"
         }
       ],

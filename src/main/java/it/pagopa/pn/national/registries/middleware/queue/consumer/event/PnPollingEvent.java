@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotEmpty;
 import lombok.*;
 
 @Getter
+@Setter
 @Builder
 @ToString
 @EqualsAndHashCode
@@ -19,6 +20,7 @@ public class PnPollingEvent implements GenericEvent<StandardEventHeader, PnPolli
     private Payload payload;
 
     @Getter
+    @Setter
     @Builder
     @ToString
     @EqualsAndHashCode

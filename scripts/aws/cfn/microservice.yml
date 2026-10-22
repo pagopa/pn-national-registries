@@ -364,7 +364,7 @@ Parameters:
     Description: 'IniPEC polling fixed delay in seconds for the first attempt'
     Default: 300
 
-  PnNationalRegistriesInipecPollingRetryAfter:
+  PnNationalRegistriesInipecPollingErrorRetryAfter:
     Type: Number
     Description: 'IniPEC polling retry-after delay in seconds'
     Default: 3600
@@ -424,7 +424,7 @@ Parameters:
     Description: 'INAD polling fixed delay in seconds for the first attempt'
     Default: 300
 
-  PnNationalRegistriesInadPollingRetryAfter:
+  PnNationalRegistriesInadPollingErrorRetryAfter:
     Type: Number
     Description: 'INAD polling retry-after delay in seconds'
     Default: 3600
@@ -432,6 +432,11 @@ Parameters:
   PnNationalRegistriesInadPollingInProgressRetryAfter:
     Type: Number
     Description: 'INAD polling in-progress retry-after delay in seconds'
+    Default: 3600
+
+  PnNationalRegistriesInipecRequestRetryAfter:
+    Type: Number
+    Description: 'INIPEC request retry-after delay in seconds'
     Default: 3600
 
   PnNationalRegistriesInadBatchPollingInProgressMaxRetry:
@@ -752,7 +757,7 @@ Resources:
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
         ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${PnNationalRegistriesInipecPollingFirstAttemptDelaySecondsPerCf}'
         ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${PnNationalRegistriesInipecPollingFirstAttemptFixedDelaySeconds}'
-        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGRETRYAFTER=${PnNationalRegistriesInipecPollingRetryAfter}'
+        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGERRORRETRYAFTER=${PnNationalRegistriesInipecPollingErrorRetryAfter}'
         ContainerEnvEntry64: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGINPROGRESSRETRYAFTER=${PnNationalRegistriesInipecPollingInProgressRetryAfter}'
         ContainerEnvEntry65: !Sub 'PN_NATIONALREGISTRIES_INAD_MAXBATCHREQUESTSIZE=${PnNationalRegistriesInadMaxBatchRequestSize}'
         ContainerEnvEntry66: !Sub 'PN_NATIONALREGISTRIES_INAD_OLDESTREQUESTMAXWAITINGSECONDS=${PnNationalRegistriesInadOldestRequestMaxWaitingSeconds}'
@@ -764,7 +769,7 @@ Resources:
         ContainerEnvEntry72: !Sub 'PN_NATIONALREGISTRIES_POLLINGLOCKATLEAST=${PnNationalRegistriesPollingLockAtLeast}'
         ContainerEnvEntry73: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${PnNationalRegistriesInadPollingFirstAttemptDelaySecondsPerCf}'
         ContainerEnvEntry74: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${PnNationalRegistriesInadPollingFirstAttemptFixedDelaySeconds}'
-        ContainerEnvEntry75: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGRETRYAFTER=${PnNationalRegistriesInadPollingRetryAfter}'
+        ContainerEnvEntry75: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGERRORRETRYAFTER=${PnNationalRegistriesInadPollingErrorRetryAfter}'
         ContainerEnvEntry76: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGINPROGRESSRETRYAFTER=${PnNationalRegistriesInadPollingInProgressRetryAfter}'
         ContainerEnvEntry77: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGINPROGRESSMAXRETRY=${PnNationalRegistriesInadBatchPollingInProgressMaxRetry}'
         ContainerEnvEntry78: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInadBatchPollingMaxRetry}'
@@ -772,6 +777,7 @@ Resources:
         ContainerEnvEntry80: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${PnNationalRegistriesRequestsTableName}'
         ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${PnNationalRegistriesBatchesTableName}'
         ContainerEnvEntry82: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADMASSIVEAPI=${EnableInadMassiveApi}'
+        ContainerEnvEntry83: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRETRYAFTER=${PnNationalRegistriesInipecRequestRetryAfter}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'

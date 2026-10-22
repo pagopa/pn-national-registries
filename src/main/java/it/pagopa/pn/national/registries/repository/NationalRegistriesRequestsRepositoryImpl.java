@@ -7,7 +7,6 @@ import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.SdkPublisher;
@@ -85,15 +84,17 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      */
     @Override
     public SdkPublisher<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, int limit) {
-
+        Instant now = Instant.now();
         String registryStatus = String.join("#", registry.name(), NOT_WORKED.name());
 
         QueryEnhancedRequest.Builder builder = QueryEnhancedRequest.builder()
-                .queryConditional(QueryConditional.keyEqualTo(Key.builder().partitionValue(registryStatus).build()))
+                .queryConditional(QueryConditional.sortLessThan(Key.builder()
+                        .partitionValue(registryStatus)
+                        .sortValue(now.toString())
+                        .build()))
                 .limit(limit);
 
-        SdkPublisher<Page<NationalRegistriesRequest>> query = table.index(NationalRegistriesRequest.REGISTRY_STATUS_CREATED_AT_INDEX).query(builder.build());
-        return query;
+        return table.index(NationalRegistriesRequest.REGISTRY_STATUS_ATTEMPT_AFTER_INDEX).query(builder.build());
     }
 
     /**
@@ -187,7 +188,7 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      * Contestualmente aggiorna il contatore dei retry.
      */
     @Override
-    public Mono<NationalRegistriesRequest> resetStatusForRetry(String pk, String sk, Integer retry, GatewayDownstreamService registry) {
+    public Mono<NationalRegistriesRequest> resetStatusForRetry(String pk, String sk, Integer retry, Instant attemptAfter, GatewayDownstreamService registry) {
 
         Map<String, String> names = new HashMap<>();
         Map<String, AttributeValue> values = new HashMap<>();
@@ -196,6 +197,10 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
         names.put("#retryCount", NationalRegistriesRequest.COL_RETRY_COUNT);
         values.put(":retryCount", AttributeValue.builder().n(String.valueOf(retry)).build());
         updates.add("#retryCount = :retryCount");
+
+        names.put("#attemptAfter", NationalRegistriesRequest.COL_ATTEMPTAFTER);
+        values.put(":attemptAfter", AttributeValue.builder().s(attemptAfter.toString()).build());
+        updates.add("#attemptAfter = :attemptAfter");
 
         return updateStatus(pk, sk, NOT_WORKED, registry, names, values, updates);
     }
@@ -215,10 +220,9 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      */
     public Mono<NationalRegistriesRequest> updateStatus(String pk, String sk, RequestStatusEnum newStatus, GatewayDownstreamService registry, Map<String, String> names, Map<String, AttributeValue> values, List<String> updates) {
 
-        RequestStatusEnum expectedStatus = retrieveExpectedStatus(newStatus);
+        String conditionExpression = retrieveConditionExpressionOnStatus(newStatus, values);
         Instant now = Instant.now();
         names.put("#status", NationalRegistriesRequest.COL_STATUS);
-        values.put(":expectedStatus", AttributeValue.builder().s(expectedStatus.name()).build());
         values.put(":newStatus", AttributeValue.builder().s(newStatus.name()).build());
         updates.add("#status = :newStatus");
 
@@ -242,7 +246,7 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
                 .key(Map.of(NationalRegistriesRequest.COL_CORRELATION_ID, AttributeValue.builder().s(pk).build(),
                                 NationalRegistriesRequest.COL_CREATED_AT, AttributeValue.builder().s(sk).build()))
                 .updateExpression("SET " + String.join(", ", updates))
-                .conditionExpression("#status = :expectedStatus")
+                .conditionExpression(conditionExpression)
                 .expressionAttributeNames(names)
                 .expressionAttributeValues(values)
                 .returnValues(ReturnValue.ALL_NEW)
@@ -252,8 +256,8 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
             return Mono.just(dynamoDbClient.updateItem(request))
                     .map(updateItemResponse -> NationalRegistriesRequest.attributeValueMapToNationalRegistriesRequest(updateItemResponse.attributes()));
         } catch (ConditionalCheckFailedException e) {
-            log.error("Unable to transition to {}: the current status is not {}", newStatus, expectedStatus);
-            throw new PnInternalException(String.format("Unable to transition to %s: the current status is not %s", newStatus, expectedStatus), 400, ERROR_CODE_NATIONAL_REGISTRIES_CONDITIONALCHECKFAILED);
+            log.error("Unable to transition to {}", newStatus);
+            throw new PnInternalException(String.format("Unable to transition to %s", newStatus), 400, ERROR_CODE_NATIONAL_REGISTRIES_CONDITIONALCHECKFAILED);
         }
     }
 
@@ -264,11 +268,22 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      * WORKING    -> WORKED
      * WORKING    -> ERROR
      * WORKING    -> NOT_WORKED
+     * NOT_WORKED -> ERROR
      */
-    private RequestStatusEnum retrieveExpectedStatus(RequestStatusEnum newStatus) {
+    private String retrieveConditionExpressionOnStatus(RequestStatusEnum newStatus, Map<String, AttributeValue> values) {
         return switch (newStatus) {
-            case WORKING -> NOT_WORKED;
-            case WORKED, ERROR, NOT_WORKED -> WORKING;
+            case WORKING -> {
+                values.put(":expectedStatus", AttributeValue.builder().s(NOT_WORKED.name()).build());
+                yield "#status = :expectedStatus";
+            }
+            case WORKED, NOT_WORKED -> {
+                values.put(":expectedStatus", AttributeValue.builder().s(WORKING.name()).build());
+                yield "#status = :expectedStatus";
+            }
+            case ERROR -> {
+                values.put(":expectedStatus", AttributeValue.builder().s(WORKED.name()).build());
+                yield "#status <> :expectedStatus";
+            }
         };
     }
 
