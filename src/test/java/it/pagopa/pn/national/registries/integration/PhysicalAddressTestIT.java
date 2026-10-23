@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest()
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT {
 
     @Test

@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.integration;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.RequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
 import it.pagopa.pn.national.registries.job.InadBatchRequestJob;
@@ -15,9 +16,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.context.TestPropertySource;
+import org.springframework.http.HttpStatus;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.Charset;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -42,13 +45,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
         "pn.national-registries.query-limit=2",
         "pn.national-registries.inad.max-batch-request-size=3",
         "pn.national-registries.inad.oldest-request-max-waiting-seconds=60",
         "pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0",
-        "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0",
+        "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0"
 })
 class InadBatchRequestJobIT extends AbstractNationalRegistriesComponentIT {
 
@@ -176,6 +179,32 @@ class InadBatchRequestJobIT extends AbstractNationalRegistriesComponentIT {
         requests.forEach(this::assertTrueNotWorkedWithoutBatchId);
     }
 
+    @Test
+    void propagatesNonBadRequestPnExceptionWithoutPersistingBatchesOrChangingRequests() {
+        List<NationalRegistriesRequest> requests = persistRequests(3, Instant.now());
+        PnNationalRegistriesException inadError = pnException("INAD unavailable", HttpStatus.INTERNAL_SERVER_ERROR.value());
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.error(inadError));
+
+        PnNationalRegistriesException thrown = assertThrows(PnNationalRegistriesException.class, () -> inadBatchRequestJob.batchRequest());
+
+        assertEquals(inadError, thrown);
+        assertEquals(0, findBatches().size());
+        requests.forEach(this::assertTrueNotWorkedWithoutBatchId);
+    }
+
+    @Test
+    void marksAllRequestsAsErrorAndStopsFlowWhenInadReturnsBadRequest() {
+        List<NationalRegistriesRequest> requests = persistRequests(3, Instant.now());
+        PnNationalRegistriesException badRequest = pnException("Invalid massive request", HttpStatus.BAD_REQUEST.value());
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.error(badRequest));
+
+        inadBatchRequestJob.batchRequest();
+
+        verify(inadClient).callMassiveEService(any(RequestListDigitalAddress.class));
+        assertEquals(0, findBatches().size());
+        requests.forEach(this::assertErrorWithoutBatchId);
+    }
+
     // Verifica il comportamento se, dopo l'accettazione del batch da parte di INAD, l'aggiornamento condizionale della richiesta fallisce.
     // Assertions: viene propagata un'eccezione, risulta un batch e la richiesta conserva lo stato WORKING e il batch ID assegnato dalla concorrenza.
     @Test
@@ -232,6 +261,7 @@ class InadBatchRequestJobIT extends AbstractNationalRegistriesComponentIT {
         request.setRegistry(GatewayDownstreamService.INAD);
         request.setStatus(RequestStatusEnum.NOT_WORKED);
         request.setRegistryStatus("INAD#NOT_WORKED");
+        request.setAttemptAfter(createdAt.minusSeconds(1));
         return request;
     }
 
@@ -251,11 +281,22 @@ class InadBatchRequestJobIT extends AbstractNationalRegistriesComponentIT {
         assertNull(storedRequest.get("batchId"));
     }
 
+    private void assertErrorWithoutBatchId(NationalRegistriesRequest request) {
+        Map<String, AttributeValue> storedRequest = findNationalRegistriesRequestsByCorrelationId(request.getCorrelationId()).getFirst();
+        assertEquals("ERROR", storedRequest.get("status").s());
+        assertEquals("INAD#ERROR", storedRequest.get("registryStatus").s());
+        assertNull(storedRequest.get("batchId"));
+    }
+
     //crea una risposta fittizia del batch INAD con l'ID di polling specificato.
     private ResponseRequestListDigitalAddress inadBatchResponse(String pollingId) {
         ResponseRequestListDigitalAddress response = new ResponseRequestListDigitalAddress();
         response.setId(pollingId);
         return response;
+    }
+
+    private PnNationalRegistriesException pnException(String message, int statusCode) {
+        return new PnNationalRegistriesException(message, statusCode, "error", null, null, Charset.defaultCharset(), null);
     }
 
 }

@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.VerificheApi;
+import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.SqsService;
 import lombok.extern.slf4j.Slf4j;
@@ -27,13 +28,14 @@ import java.util.List;
 import static it.pagopa.pn.national.registries.constant.BatchesStatusEnum.*;
 
 @Slf4j
-@SpringBootTest(properties = {
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class,
+        properties = {
         "spring.cloud.aws.sqs.enabled=false",
-        "pn.national-registries.dao.national-registries-batches-table-name=pn-nationalRegistries-nationalRegistriesBatches",
+        "pn.national-registries.dao.national-registries-batches-table-name=pn-nationalRegistriesBatches",
         "pn.national-registries.query-limit=2",
-        "pn.national-registries.inad.polling-retry-after=60",
+        "pn.national-registries.inad.polling-error-retry-after=60",
         "pn.national-registries.inad.polling-in-progress-retry-after=120",
-        "pn.national-registries.inipec.ttl=3600"
+        "pn.national-registries.ttl=3600"
 })
 class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
 

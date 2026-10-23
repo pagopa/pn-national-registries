@@ -1,13 +1,18 @@
 package it.pagopa.pn.national.registries.integration;
 
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.sqs.model.Message;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,11 +20,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest(properties = {
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
+@TestPropertySource(properties = {
         "pn.national-registries.enable-pf-pec-fallback-flow=false",
         "pn.national-registries.enable-inad-massive-api=false"
 })
 public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentIT {
+
     @Test
     void PF_Digital_INAD() {
         String correlationId = "pf-digital-found-" + UUID.randomUUID();
@@ -33,7 +40,7 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
         assertEquals(correlationId, payload.getCorrelationId());
         assertEquals("INAD", payload.getRegistry());
         assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue(), payload.getAddressType());
@@ -60,7 +67,7 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
         assertEquals(correlationId, payload.getCorrelationId());
         assertEquals("INAD", payload.getRegistry());
         assertTrue(payload.getDigitalAddress().isEmpty());
@@ -86,7 +93,7 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
         assertEquals(correlationId, payload.getCorrelationId());
         assertEquals("INAD", payload.getRegistry());
         assertTrue(payload.getDigitalAddress().isEmpty());
@@ -113,7 +120,7 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
         assertEquals("personal@pec.it", payload.getDigitalAddress().getFirst().getAddress());
         assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
@@ -136,9 +143,7 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        assertEquals(correlationId, response.getCorrelationId());
-
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
         assertEquals(correlationId, payload.getCorrelationId());
         assertEquals("INAD", payload.getRegistry());
         assertTrue(payload.getDigitalAddress().isEmpty());
@@ -165,7 +170,7 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
         assertTrue(payload.getDigitalAddress().isEmpty());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
@@ -177,9 +182,10 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
     @Test
     void PF_Digital_INAD_EmptyList_fallbackDisabled() {
         String correlationId = "pf-digital-empty-list-disabled-" + UUID.randomUUID();
+
         ResponseRequestDigitalAddress emptyResponse = new ResponseRequestDigitalAddress();
         emptyResponse.setCodiceFiscale(VALID_PF_CF);
-        emptyResponse.setSince(java.util.Date.from(java.time.Instant.parse("2026-10-10T10:15:30Z")));
+        emptyResponse.setSince(Date.from(Instant.parse("2026-10-10T10:15:30Z")));
         emptyResponse.setDigitalAddress(List.of());
 
         when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId))).thenReturn(Mono.just(emptyResponse));
@@ -191,7 +197,7 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
         assertEquals(correlationId, payload.getCorrelationId());
         assertEquals("INAD", payload.getRegistry());
         assertTrue(payload.getDigitalAddress().isEmpty());
@@ -214,6 +220,71 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
         assertEquals(correlationId, response.getCorrelationId());
         assertSame(technicalError, thrown.getCause() != null ? thrown.getCause() : thrown);
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
+        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
+        assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
+
+        verify(inadClient).callEService(VALID_PF_CF, correlationId);
+        verifyNoInteractions(ipaClient, anprClient);
+    }
+
+    @Test
+    void PF_Digital_INAD_PersonalExpired_ProfessionalValid_fallbackDisabled() {
+        String correlationId = "pf-digital-expired-personal-professional-" + UUID.randomUUID();
+
+        ElementDigitalAddress expiredPersonal = inadAddress("expired-personal@pec.it", null);
+        expiredPersonal.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
+
+        when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId)))
+                .thenReturn(Mono.just(inadResponse(VALID_PF_CF, List.of(
+                        expiredPersonal,
+                        inadAddress("professional@pec.it", "INGEGNERE")
+                ))));
+
+        AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        assertEquals(correlationId, response.getCorrelationId());
+
+        Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
+        assertNotNull(outputMessage);
+
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getCorrelationId());
+        assertEquals("INAD", payload.getRegistry());
+        assertTrue(payload.getDigitalAddress().isEmpty());
+
+        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
+        assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
+
+        verify(inadClient).callEService(VALID_PF_CF, correlationId);
+        verifyNoInteractions(ipaClient, anprClient);
+    }
+
+    @Test
+    void PF_Digital_INAD_PersonalExpired_fallbackDisabled() {
+        String correlationId = "pf-digital-expired-personal-" + UUID.randomUUID();
+
+        ElementDigitalAddress expiredPersonal = inadAddress("expired-personal@pec.it", null);
+        expiredPersonal.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
+
+        when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId)))
+                .thenReturn(Mono.just(inadResponse(VALID_PF_CF, List.of(
+                        expiredPersonal
+                ))));
+
+        AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        assertEquals(correlationId, response.getCorrelationId());
+
+        Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
+        assertNotNull(outputMessage);
+
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getCorrelationId());
+        assertEquals("INAD", payload.getRegistry());
+        assertTrue(payload.getDigitalAddress().isEmpty());
+
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
 

@@ -2,10 +2,7 @@ package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.UsageInfo;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.UsageInfoDto;
@@ -13,13 +10,13 @@ import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 
 import java.nio.charset.Charset;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
+import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.isValidEmail;
 
@@ -64,15 +61,6 @@ public class InadConverter {
         if (taxId.length() == PIVA_LENGTH &&
                 digitalAddressDtoList.size() == 1 && !StringUtils.hasText(digitalAddressDtoList.get(0).getPracticedProfession())) {
             response.setDigitalAddress(digitalAddressDtoList.get(0));
-        }else{
-            retrieveProfessionalAddress(digitalAddressDtoList)
-                    .ifPresentOrElse(
-                            response::setDigitalAddress,
-                            () -> {
-                                throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
-                                        HttpStatus.NOT_FOUND.getReasonPhrase(),null,null, Charset.defaultCharset(), InadResponseKO.class);
-                            }
-                    );
         }
     }
 
@@ -146,5 +134,17 @@ public class InadConverter {
             log.info("inad digital address is not valid");
             return false;
         }
+    }
+
+    public Map<String, ResponseRequestDigitalAddress> mapResponseByTaxId(ResponseListDigitalAddress response) {
+        if (Objects.isNull(response) || CollectionUtils.isEmpty(response.getList())) {
+            return Collections.emptyMap();
+        }
+        return response.getList()
+                .stream()
+                .collect(Collectors.toMap(
+                        ResponseRequestDigitalAddress::getCodiceFiscale,
+                        Function.identity()
+                ));
     }
 }

@@ -5,19 +5,28 @@ import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
+import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
+import it.pagopa.pn.national.registries.converter.GatewayConverter;
+import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
+import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
+import it.pagopa.pn.national.registries.service.InfoCamereService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import org.springframework.util.StringUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
@@ -31,16 +40,19 @@ import java.util.List;
 import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
+import static it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService.INAD;
+import static it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService.INIPEC;
 
 @Component
 @Slf4j
 @RequiredArgsConstructor
 public class IniPecBatchRequestJob {
 
-    private final NationalRegistriesRequestsRepository requestsRepository;
-    private final NationalRegistriesBatchesRepository batchesRepository;
-    private final InfoCamereClient infoCamereClient;
+    private final NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
+    private final NationalRegistriesBatchesRepository nationalRegistriesBatchesRepository;
     private final NationalRegistriesConfig config;
+    private final InfoCamereService infoCamereService;
+    private final InfoCamereConverter infoCamereConverter;
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch-request.delay}")
     @SchedulerLock(name = "inipecRequests",
@@ -51,82 +63,60 @@ public class IniPecBatchRequestJob {
         MDC.put(MDCUtils.MDC_PN_CTX_REQUEST_ID, UUID.randomUUID().toString());
         MDC.put(MDCUtils.MDC_PN_CTX_TOPIC, "INIPEC_BATCH_REQUEST");
         Mono<Void> execution = collectBatchRequests()
-                .filter(this::isEligible)
                 .flatMap(requests -> execBatchRequest(requests, UUID.randomUUID().toString()))
                 .doOnError(error -> log.error("INIPEC batch request job failed", error));
         MDCUtils.addMDCToContextAndExecute(execution).block();
     }
 
     private Mono<List<NationalRegistriesRequest>> collectBatchRequests() {
-        return Flux.defer(() -> Flux.from(requestsRepository.getRequestsByRegistryStatus(
-                        GatewayDownstreamService.INIPEC, config.getInipec().getQueryLimit())))
+        return Flux.defer(() -> Flux.from(nationalRegistriesRequestsRepository.getRequestsByRegistryStatus(
+                        GatewayDownstreamService.INIPEC, RequestStatusEnum.NOT_WORKED, config.getQueryLimit())))
                 .concatMapIterable(Page::items)
                 .take(config.getInipec().getMaxBatchRequestSize())
                 .collectList();
     }
 
-    private boolean isEligible(List<NationalRegistriesRequest> requests) {
-        if (requests.isEmpty()) {
-            return false;
-        }
-        return requests.size() == config.getInipec().getMaxBatchRequestSize()
-                || !requests.getFirst().getCreatedAt()
-                .plusSeconds(config.getInipec().getOldestRequestMaxWaitingSeconds()).isAfter(Instant.now());
-    }
 
     private Mono<Void> execBatchRequest(List<NationalRegistriesRequest> requests, String batchId) {
-        IniPecBatchRequest payload = new IniPecBatchRequest();
-        payload.setDataOraRichiesta(LocalDateTime.now(ZoneOffset.UTC).toString());
-        payload.setElencoCf(requests.stream().map(request -> {
-            IniPecBatchRequest.IniPecCf taxId = new IniPecBatchRequest.IniPecCf();
-            taxId.setCf(request.getTaxId());
-            return taxId;
-        }).toList());
-
+        if(CollectionUtils.isEmpty(requests)) {
+            log.info("No INIPEC requests to process");
+            return Mono.empty();
+        }
+        IniPecBatchRequest iniPecBatchRequest = infoCamereConverter.createIniPecRequest(requests.stream().map(NationalRegistriesRequest::getTaxId).toList());
         log.info("INIPEC submitting batch {} with {} requests", batchId, requests.size());
-        return infoCamereClient.callEServiceRequestId(payload)
-                .switchIfEmpty(Mono.error(new PnInternalException(
-                        "INIPEC returned an empty submission response for batch " + batchId,
-                        500, ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID)))
-                .flatMap(response -> Mono.defer(() -> persistBatch(response, batchId, requests))
-                        .onErrorMap(error -> {
-                            String pollingId = response.getIdentificativoRichiesta();
-                            log.error("INIPEC consistency error: batchId={}, pollingId={}, requestKeys={}",
-                                    batchId, pollingId,
-                                    requests.stream().map(request -> request.getCorrelationId() + "/" + request.getCreatedAt()).toList(),
-                                    error);
-                            return new PnInternalException(
-                                    "INIPEC submission succeeded but local persistence failed",
-                                    500, ERROR_CODE_NATIONAL_REGISTRIES_BATCH_CONSISTENCY);
-                        }));
+        return infoCamereService.callEService(iniPecBatchRequest, batchId)
+                .onErrorResume(PnNationalRegistriesException.class, throwable -> checkIfIsBadRequestAndMarkRequestAsError(throwable, requests))
+                .flatMap(iniPecBatchResponse -> persistBatch(iniPecBatchResponse, batchId, requests))
+                .then();
     }
 
-    private Mono<Void> persistBatch(IniPecBatchResponse response, String batchId,
-                                   List<NationalRegistriesRequest> requests) {
+    private Mono<IniPecBatchResponse> checkIfIsBadRequestAndMarkRequestAsError(PnNationalRegistriesException throwable, List<NationalRegistriesRequest> requests) {
+        boolean badRequest = throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST;
+        if(badRequest){
+            return Flux.fromIterable(requests)
+                    .concatMap(request -> nationalRegistriesRequestsRepository.updateStatusToError(
+                            request.getCorrelationId(),
+                            request.getCreatedAt().toString(),
+                            GatewayDownstreamService.INIPEC))
+                    .then(Mono.empty());
+        }
+        return Mono.error(throwable);
+
+    }
+
+    private Mono<Void> persistBatch(IniPecBatchResponse response, String batchId, List<NationalRegistriesRequest> requests) {
         if (!StringUtils.hasText(response.getIdentificativoRichiesta())) {
-            return Mono.error(new PnInternalException("INIPEC returned no polling identifier",
-                    500, ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID));
+            return Mono.error(new PnInternalException("INIPEC returned no polling identifier", 500, ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID));
         }
         Instant now = Instant.now();
-        NationalRegistriesBatch batch = new NationalRegistriesBatch();
-        batch.setBatchId(batchId);
-        batch.setRegistry(GatewayDownstreamService.INIPEC.name());
-        batch.setPollingId(response.getIdentificativoRichiesta());
-        batch.setBatchSize(requests.size());
-        batch.setStatus(BatchesStatusEnum.REQUEST_SENT);
-        batch.setCreatedAt(now);
-        batch.setUpdatedAt(now);
-        batch.setAttemptAfter(now.plusSeconds(Math.round(config.getInipec().getPollingFirstAttemptDelaySecondsPerCf()
-                * requests.size() + config.getInipec().getPollingFirstAttemptFixedDelaySeconds()))
-                .truncatedTo(ChronoUnit.SECONDS));
-        batch.setErrorRetryCount(0);
-        batch.setInProgressRetryCount(0);
+        NationalRegistriesBatch batch = GatewayConverter.constructBatchEntity(batchId, requests, now, INIPEC, response.getIdentificativoRichiesta());
+        batch.setAttemptAfter(infoCamereConverter.calculateFirstAttemptAfter(requests.size()));
 
-        return Mono.defer(() -> batchesRepository.putBatch(batch))
+        return nationalRegistriesBatchesRepository.putBatch(batch)
                 .thenMany(Flux.fromIterable(requests)
-                        .concatMap(request -> Mono.defer(() -> requestsRepository.updateStatusToWorking(
-                                        request.getCorrelationId(), request.getCreatedAt().toString(),
-                                        batchId, GatewayDownstreamService.INIPEC))))
+                        .concatMap(request -> nationalRegistriesRequestsRepository.updateStatusToWorking(
+                                request.getCorrelationId(), request.getCreatedAt().toString(),
+                                batchId, GatewayDownstreamService.INIPEC)))
                 .then();
     }
 }

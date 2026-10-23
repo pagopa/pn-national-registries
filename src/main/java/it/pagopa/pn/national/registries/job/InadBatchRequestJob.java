@@ -5,8 +5,11 @@ import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
+import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
+import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.RequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
@@ -16,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -28,9 +32,11 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID;
+import static it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService.INAD;
 
 @Component
 @Slf4j
@@ -63,7 +69,7 @@ public class InadBatchRequestJob {
         int queryLimit = nationalRegistriesConfig.getQueryLimit();
 
         return Flux.from(nationalRegistriesRequestsRepository
-                        .getRequestsByRegistryStatus(GatewayDownstreamService.INAD, queryLimit))
+                        .getRequestsByRegistryStatus(INAD, RequestStatusEnum.NOT_WORKED, queryLimit))
                 .concatMapIterable(Page::items)
                 .buffer(maxBatchSize)
                 .concatMap(requests -> isEligible(requests, maxBatchSize, now)
@@ -100,52 +106,50 @@ public class InadBatchRequestJob {
         request.setPraticalReference(batchId);
 
         return inadClient.callMassiveEService(request)
+                .onErrorResume(PnNationalRegistriesException.class,throwable -> checkIfIsBadRequestAndMarkRequestAsError(throwable, requests))
                 .flatMap(response -> persistBatch(response, batchId, requests, now))
                 .doOnError(error -> log.error("INAD batch {} failed", batchId, error));
     }
 
-    private Mono<Void> persistBatch(ResponseRequestListDigitalAddress providerResponse,
-                                    String batchId,
-                                    List<NationalRegistriesRequest> requests,
-                                    Instant now) {
+    private Mono<ResponseRequestListDigitalAddress> checkIfIsBadRequestAndMarkRequestAsError(PnNationalRegistriesException throwable, List<NationalRegistriesRequest> requests) {
+        boolean badRequest = throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST;
+        if(badRequest){
+            return Flux.fromIterable(requests)
+                    .concatMap(request -> nationalRegistriesRequestsRepository.updateStatusToError(
+                            request.getCorrelationId(),
+                            request.getCreatedAt().toString(),
+                            INAD))
+                    .then(Mono.empty());
+        }
+        return Mono.error(throwable);
+
+    }
+
+    private Mono<Void> persistBatch(ResponseRequestListDigitalAddress providerResponse, String batchId, List<NationalRegistriesRequest> requests, Instant now) {
         if (!Objects.nonNull(providerResponse) || !StringUtils.hasText(providerResponse.getId())) {
             return Mono.error(new PnInternalException("INAD returned no polling identifier for batch " + batchId, 400, ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID));
         }
 
-        NationalRegistriesBatch batch = getBatch(batchId, requests, now, providerResponse);
+        NationalRegistriesBatch batch = GatewayConverter.constructBatchEntity(batchId, requests, now, INAD, providerResponse.getId());
+        batch.setAttemptAfter(calculateFirstPollingAttempt(requests.size(), now));
 
         return nationalRegistriesBatchesRepository.putBatch(batch)
                 .thenMany(reactor.core.publisher.Flux.fromIterable(requests)
-                        // The repository conditionally accepts only NOT_WORKED -> WORKING transitions.
                         .flatMap(request -> nationalRegistriesRequestsRepository.updateStatusToWorking(
                                 request.getCorrelationId(),
                                 request.getCreatedAt().toString(),
                                 batchId,
-                                GatewayDownstreamService.INAD)))
+                                INAD)))
                 .then();
     }
 
-    private NationalRegistriesBatch getBatch(String batchId, List<NationalRegistriesRequest> requests,
-                                             Instant now, ResponseRequestListDigitalAddress providerResponse) {
-        NationalRegistriesBatch batch = new NationalRegistriesBatch();
-        batch.setBatchId(batchId);
-        batch.setCreatedAt(now);
-        batch.setUpdatedAt(now);
-        batch.setRegistry(GatewayDownstreamService.INAD.name());
-        batch.setPollingId(providerResponse.getId());
-        batch.setPracticalReferenceValue(batchId);
-        batch.setBatchSize(requests.size());
-        batch.setAttemptAfter(calculateFirstPollingAttempt(requests.size(), now));
-        batch.setStatus(BatchesStatusEnum.REQUEST_SENT);
-        batch.setErrorRetryCount(0);
-        batch.setInProgressRetryCount(0);
-        return batch;
-    }
+    private Instant calculateFirstPollingAttempt(Integer inadBatchSize, Instant now) {
+        double delaySecondsPerCf = nationalRegistriesConfig.getInad().getPollingFirstAttemptDelaySecondsPerCf();
+        int fixedDelaySeconds = nationalRegistriesConfig.getInad().getPollingFirstAttemptFixedDelaySeconds();
+        int batchSize = Optional.ofNullable(inadBatchSize).orElse(0);
 
-    private Instant calculateFirstPollingAttempt(int batchSize, Instant now) {
-        double delayPerTaxId = nationalRegistriesConfig.getInad().getPollingFirstAttemptDelaySecondsPerCf();
-        int fixedDelay = nationalRegistriesConfig.getInad().getPollingFirstAttemptFixedDelaySeconds();
-        return now.plusSeconds(Math.round((delayPerTaxId * batchSize) + fixedDelay))
-                .truncatedTo(ChronoUnit.SECONDS);
+        long delaySeconds = Math.round((delaySecondsPerCf * batchSize) + fixedDelaySeconds);
+
+        return now.plusSeconds(delaySeconds).truncatedTo(ChronoUnit.SECONDS);
     }
 }

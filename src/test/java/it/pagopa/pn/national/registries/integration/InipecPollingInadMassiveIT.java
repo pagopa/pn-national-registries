@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
@@ -37,11 +38,10 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(properties = {
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
+@TestPropertySource(properties = {
         "spring.cloud.aws.sqs.enabled=false",
         "pn.national-registries.query-limit=2",
         "pn.national-registries.dao.requestsTableName=pn-NationalRegistriesRequests",
@@ -49,12 +49,13 @@ import static org.mockito.Mockito.when;
         "pn.national-registries.enable-inad-massive-api=true",
         "pn.national-registries.inipec.batch-polling-max-retry=2",
         "pn.national-registries.inipec.batch-polling-in-progress-max-retry=2",
-        "pn.national-registries.inipec.polling-retry-after=60",
+        "pn.national-registries.inipec.polling-error-retry-after=60",
         "pn.national-registries.inipec.polling-in-progress-retry-after=30",
         "pn.national-registries.inipec.batch-request-max-retry=2",
+        "pn.national-registries.inipec.request-retry-after=60",
         "pn.national-registries.inipec.batch-request-pk-separator=~"
 })
-class InipecPollingMassiveIT extends AbstractNationalRegistriesComponentIT {
+class InipecPollingInadMassiveIT extends AbstractNationalRegistriesComponentIT {
 
     private static final String PF_VALID_PEC = "PPPPLT80A01H501V";
     private static final String PF_INVALID_PEC = "RSSMRA80A01H501U";
@@ -113,6 +114,7 @@ class InipecPollingMassiveIT extends AbstractNationalRegistriesComponentIT {
                 pecResponseWithState(PF_ER, "ignored-er@pec.it", Pec.StatoImpresaEnum.ER)
         )));
 
+        Instant erStart = Instant.now();
         consume(pollingPayload(batchId, pollingId, 6, 0, 0));
 
         Assertions.assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
@@ -130,6 +132,7 @@ class InipecPollingMassiveIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals(RequestStatusEnum.NOT_WORKED, er.getStatus());
         Assertions.assertEquals(1, er.getRetryCount());
         Assertions.assertNull(er.getResultPayload());
+        assertAttemptAfter(erStart, er.getAttemptAfter(), 60);
         Assertions.assertNull(findRequestOrNull(batchId, "corr-pf-er", GatewayDownstreamService.INAD));
 
         Assertions.assertEquals(6, findRequestsByBatch(batchId).size());
@@ -160,6 +163,7 @@ class InipecPollingMassiveIT extends AbstractNationalRegistriesComponentIT {
                 pecResponseWithState(PG_INAD_ERROR, "ignored-inad-error@pec.it", Pec.StatoImpresaEnum.NF)
         )));
 
+        Instant erStart = Instant.now();
         consume(pollingPayload(batchId, pollingId, 8, 0, 0));
 
         Assertions.assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
@@ -185,6 +189,7 @@ class InipecPollingMassiveIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals(batchId, er.getBatchId());
         Assertions.assertEquals(1, er.getRetryCount());
         Assertions.assertNull(er.getResultPayload());
+        assertAttemptAfter(erStart, er.getAttemptAfter(), 60);
         Assertions.assertNull(findRequestOrNull(batchId, "corr-pg-er", GatewayDownstreamService.INAD));
 
         Assertions.assertEquals(8, findRequestsByBatch(batchId).size());
@@ -277,20 +282,37 @@ class InipecPollingMassiveIT extends AbstractNationalRegistriesComponentIT {
     }
 
     @Test
-    void shouldPropagateUnhandledConsumerErrorAndLeaveStateUntouched() {
+    void shouldTreatUnhandledConsumerErrorAsNormalPollingRetry() {
         String batchId = "batch-unhandled";
         String pollingId = "polling-unhandled";
         putBatch(batchId, BatchesStatusEnum.WORKING, 1);
         putRequest(batchId, "corr-unhandled", PF_VALID_PEC, "PF", RequestStatusEnum.WORKING);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.error(new IllegalStateException("unexpected infrastructure error")));
 
-        Assertions.assertThrows(RuntimeException.class, () -> consume(pollingPayload(batchId, pollingId, 1, 0, 0)));
+        Instant retryStart = Instant.now();
+        consume(pollingPayload(batchId, pollingId, 1, 0, 0));
 
         NationalRegistriesBatch batch = getBatch(batchId);
-        Assertions.assertEquals(BatchesStatusEnum.WORKING, batch.getStatus());
-        Assertions.assertEquals(0, batch.getErrorRetryCount());
+        Assertions.assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
+        Assertions.assertEquals(1, batch.getErrorRetryCount());
         Assertions.assertEquals(0, batch.getInProgressRetryCount());
+        assertAttemptAfter(retryStart, batch.getAttemptAfter(), 60);
         Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(batchId, "corr-unhandled", GatewayDownstreamService.INIPEC).getStatus());
+    }
+
+    @Test
+    void shouldHandleMissingTaxIdFromInipecResponse() {
+        String batchId = "batch-missing-tax-id";
+        String pollingId = "polling-missing-tax-id";
+        putBatch(batchId, BatchesStatusEnum.WORKING, 1);
+        putRequest(batchId, "corr-missing-tax-id", PG_VALID_PEC, "PG", RequestStatusEnum.WORKING);
+
+        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse()));
+
+        consume(pollingPayload(batchId, pollingId, 1, 0, 0));
+
+        Assertions.assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
+        assertMassiveInadFallback(batchId, "corr-missing-tax-id");
     }
 
     private void assertFinalInipecEmptyResult(String batchId, String correlationId) {

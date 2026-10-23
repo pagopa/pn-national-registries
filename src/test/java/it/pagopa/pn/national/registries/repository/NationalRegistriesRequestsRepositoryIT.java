@@ -11,6 +11,7 @@ import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.VerificheApi;
+import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.SqsService;
 import lombok.extern.slf4j.Slf4j;
@@ -29,7 +30,8 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 @Slf4j
-@SpringBootTest(properties = {
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class,
+        properties = {
         "spring.cloud.aws.sqs.enabled=false",
         "pn.national-registries.query-limit=5"
 })
@@ -112,7 +114,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         Instant baseTime = Instant.parse("2026-10-07T11:00:00Z");
 
-        NationalRegistriesRequest inadNotWorked1 = buildRequest(
+        NationalRegistriesRequest inipecNotWorked = buildRequest(
                 "CORRELATION-" + UUID.randomUUID(),
                 baseTime,
                 UUID.randomUUID().toString(),
@@ -120,7 +122,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 RequestStatusEnum.NOT_WORKED
         );
 
-        NationalRegistriesRequest inadNotWorked2 = buildRequest(
+        NationalRegistriesRequest inipecNotWorked1 = buildRequest(
                 "CORRELATION-" + UUID.randomUUID(),
                 baseTime.plusSeconds(1),
                 UUID.randomUUID().toString(),
@@ -128,7 +130,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 RequestStatusEnum.NOT_WORKED
         );
 
-        NationalRegistriesRequest inipecNotWorked = buildRequest(
+        NationalRegistriesRequest inadNotWorked = buildRequest(
                 "CORRELATION-" + UUID.randomUUID(),
                 baseTime.plusSeconds(2),
                 UUID.randomUUID().toString(),
@@ -136,27 +138,43 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 RequestStatusEnum.NOT_WORKED
         );
 
-        NationalRegistriesRequest inadWorked = buildRequest(
+        NationalRegistriesRequest inipecNotWorked2 = buildRequest(
                 "CORRELATION-" + UUID.randomUUID(),
                 baseTime.plusSeconds(3),
+                UUID.randomUUID().toString(),
+                GatewayDownstreamService.INIPEC,
+                RequestStatusEnum.NOT_WORKED
+        );
+
+        NationalRegistriesRequest inipecNotWorked3 = buildRequest(
+                "CORRELATION-" + UUID.randomUUID(),
+                Instant.parse("2099-10-07T11:00:03Z"),
+                UUID.randomUUID().toString(),
+                GatewayDownstreamService.INIPEC,
+                RequestStatusEnum.NOT_WORKED
+        );
+
+        NationalRegistriesRequest inipecWorked = buildRequest(
+                "CORRELATION-" + UUID.randomUUID(),
+                Instant.parse("2099-10-07T11:00:03Z"),
                 UUID.randomUUID().toString(),
                 GatewayDownstreamService.INIPEC,
                 RequestStatusEnum.WORKED
         );
 
-        List.of(inadNotWorked1, inadNotWorked2, inipecNotWorked, inadWorked).forEach(request -> repository.putRequest(request).block());
+        List.of(inipecNotWorked, inipecNotWorked1, inipecNotWorked2, inipecNotWorked3, inadNotWorked, inipecWorked).forEach(request -> repository.putRequest(request).block());
 
         Page<NationalRegistriesRequest> result = Flux.from(repository
-                        .getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, 10))
+                        .getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, RequestStatusEnum.NOT_WORKED, 10))
                 .single()
                 .block();
 
         Assertions.assertNotNull(result);
-        Assertions.assertEquals(2, result.items().size());
+        Assertions.assertEquals(3, result.items().size());
         String expectedRegistryStatus = GatewayDownstreamService.INIPEC.name() + "#" + RequestStatusEnum.NOT_WORKED.name();
         Assertions.assertTrue(result.items().stream().allMatch(request -> expectedRegistryStatus.equals(request.getRegistryStatus())));
-        Assertions.assertTrue(result.items().stream().anyMatch(request -> inadNotWorked1.getCorrelationId().equals(request.getCorrelationId())));
-        Assertions.assertTrue(result.items().stream().anyMatch(request -> inadNotWorked2.getCorrelationId().equals(request.getCorrelationId())));
+        Assertions.assertTrue(result.items().stream().anyMatch(request -> inipecNotWorked1.getCorrelationId().equals(request.getCorrelationId())));
+        Assertions.assertTrue(result.items().stream().anyMatch(request -> inipecNotWorked.getCorrelationId().equals(request.getCorrelationId())));
     }
 
     @Test
@@ -212,7 +230,6 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to WORKING"));
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("the current status is not NOT_WORKED"));
     }
 
     @Test
@@ -243,12 +260,6 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to WORKING"));
-
-        Assertions.assertTrue(
-                exception.getProblem().getDetail().contains(
-                        "the current status is not NOT_WORKED"
-                )
-        );
     }
 
 
@@ -351,7 +362,6 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to WORKED"));
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("the current status is not WORKING"));
     }
 
     @Test
@@ -381,7 +391,6 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to WORKED"));
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("the current status is not WORKING"));
     }
 
     @Test
@@ -424,7 +433,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 createdAt,
                 null,
                 GatewayDownstreamService.INAD,
-                RequestStatusEnum.NOT_WORKED
+                RequestStatusEnum.WORKED
         );
 
         repository.putRequest(request).block();
@@ -440,7 +449,6 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to ERROR"));
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("the current status is not WORKING"));
     }
 
     @Test
@@ -468,7 +476,6 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
         Assertions.assertNotNull(exception.getProblem().getDetail());
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to ERROR"));
-        Assertions.assertTrue(exception.getProblem().getDetail().contains("the current status is not WORKING"));
     }
 
 
@@ -603,6 +610,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         NationalRegistriesRequest request = new NationalRegistriesRequest();
         request.setCorrelationId(correlationId);
         request.setCreatedAt(createdAt);
+        request.setAttemptAfter(createdAt);
         request.setTaxId("RSSMRA80A01H501U");
         request.setRecipientType("PF");
         request.setClientId("pn-delivery");

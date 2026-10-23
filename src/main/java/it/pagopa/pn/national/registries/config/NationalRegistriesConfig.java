@@ -47,18 +47,17 @@ public class NationalRegistriesConfig {
 
     @Data
     public static class Inipec {
-        private Integer maxBatchRequestSize = 6250;
-        private Integer oldestRequestMaxWaitingSeconds = 300;
-        private Integer queryLimit = 1000;
+        private Integer maxBatchRequestSize;
         private Integer batchRequestMaxRetry;
         private String batchRequestPkSeparator;
         private Integer batchRequestRecoveryAfter;
-        private Double pollingFirstAttemptDelaySecondsPerCf = 0.085;
-        private Integer pollingFirstAttemptFixedDelaySeconds = 300;
+        private Double pollingFirstAttemptDelaySecondsPerCf;
+        private Integer pollingFirstAttemptFixedDelaySeconds;
         private Integer batchPollingInProgressMaxRetry;
         private Integer batchPollingMaxRetry;
-        private Integer pollingRetryAfter;
+        private Integer pollingErrorRetryAfter;
         private Integer pollingInProgressRetryAfter;
+        private Integer requestRetryAfter;
     }
 
     @Data
@@ -69,7 +68,7 @@ public class NationalRegistriesConfig {
         private Integer batchPollingMaxRetry;
         private Double pollingFirstAttemptDelaySecondsPerCf;
         private Integer pollingFirstAttemptFixedDelaySeconds;
-        private Integer pollingRetryAfter;
+        private Integer pollingErrorRetryAfter;
         private Integer pollingInProgressRetryAfter;
     }
 }

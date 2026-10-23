@@ -44,6 +44,7 @@ import it.pagopa.pn.national.registries.middleware.queue.consumer.GatewayInputsH
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.service.DigitalAddressBatchPollingService;
 import it.pagopa.pn.national.registries.service.IniPecBatchRequestService;
+import it.pagopa.pn.national.registries.service.IpaService;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -85,6 +86,9 @@ import java.util.UUID;
         "pn.national-registries.inipec.max-batch-request-size=6250",
         "pn.national-registries.inipec.batch-request-recovery-after=3600",
         "pn.national.registries.inipec.batch.request.delay=30000",
+        "pn.national-registries.inipec.batch-request.delay=30000",
+        "pn.national-registries.inipec.batch-request.lock-at-most=27000",
+        "pn.national-registries.inipec.batch-request.lock-at-least=22000",
         "pn.national-registries.inipec.batch.request.recovery.delay=30000",
         "pn.national-registries.inipec.batch.polling.max-retry=3",
         "pn.national-registries.inipec.batch.polling.inprogress.max-retry=24",
@@ -434,7 +438,7 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
     }
 
     protected RispostaE002OK anprResponse(String taxId, String species, String street, String civicNumber, String municipality, String province, String zip,
-                                         String addressDetail, String at, String municipalityDetails) {
+                                          String addressDetail, String at, String municipalityDetails) {
         String scala = null;
         String scalaEsterna = null;
         if (addressDetail != null) {

@@ -44,7 +44,7 @@ public class IniPecBatchRequestService {
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository batchRequestRepository;
     private final IniPecBatchPollingRepository batchPollingRepository;
-    private final InfoCamereClient infoCamereClient;
+    private final InfoCamereService infoCamereService;
     private final IniPecBatchSqsService iniPecBatchSqsService;
     private final NationalRegistriesConfig nationalRegistriesConfig;
 
@@ -123,11 +123,9 @@ public class IniPecBatchRequestService {
                 .collectList()
                 .filter(requests -> !requests.isEmpty())
                 .flatMap(requests -> {
-                    IniPecBatchRequest iniPecBatchRequest = createIniPecRequest(requests);
+                    IniPecBatchRequest iniPecBatchRequest = infoCamereConverter.createIniPecRequest(requests.stream().map(BatchRequest::getCf).toList());
                     log.info("IniPEC - batchId {} - calling with {} cf", batchId, iniPecBatchRequest.getElencoCf().size());
-                    return callEService(iniPecBatchRequest, batchId)
-                            .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest, false))
-                            .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest, true))
+                    return infoCamereService.callEService(iniPecBatchRequest, batchId)
                             .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId).then(Mono.error(t)))
                             .flatMap(response -> createPolling(response, batchId, requests, iniPecBatchRequest.getElencoCf().size()))
                             .thenReturn(requests);
@@ -135,24 +133,6 @@ public class IniPecBatchRequestService {
                 .doOnError(e -> log.error("IniPEC - batchId {} - failed to execute batch", batchId, e))
                 .onErrorResume(e -> Mono.empty())
                 .then();
-    }
-
-    private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
-        return infoCamereClient.callEServiceRequestId(iniPecBatchRequest)
-                .doOnError(e -> log.warn("IniPEC - batchId {} - failed to call EService", batchId, e));
-    }
-
-    private IniPecBatchRequest createIniPecRequest(List<BatchRequest> requests) {
-        IniPecBatchRequest iniPecBatchRequest = new IniPecBatchRequest();
-        iniPecBatchRequest.setElencoCf(requests.stream()
-                .map(request -> {
-                    IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
-                    iniPecCf.setCf(request.getCf());
-                    return iniPecCf;
-                })
-                .toList());
-        iniPecBatchRequest.setDataOraRichiesta(LocalDateTime.now().toString());
-        return iniPecBatchRequest;
     }
 
     private Mono<Void> createPolling(IniPecBatchResponse response, String batchId, List<BatchRequest> requests, Integer iniPecBatchRequestSize) {

@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.job;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
+import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.RequestListDigitalAddress;
@@ -68,7 +69,7 @@ class InadBatchRequestJobTest {
 
         when(page.items()).thenReturn(List.of(first));
         when(secondPage.items()).thenReturn(List.of(second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, 2))
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
                 .thenReturn(SdkPublisher.adapt(Flux.just(page, secondPage)));
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
                 .thenReturn(Mono.just(providerResponse));
@@ -100,7 +101,7 @@ class InadBatchRequestJobTest {
         providerResponse.setId("polling-id");
 
         when(page.items()).thenReturn(List.of(first));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, 2))
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED,2))
                 .thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
                 .thenReturn(Mono.just(providerResponse));
@@ -120,7 +121,7 @@ class InadBatchRequestJobTest {
         NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
 
         when(page.items()).thenReturn(List.of(first));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, 2))
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
                 .thenReturn(SdkPublisher.adapt(Flux.just(page)));
 
         job.batchRequest();
@@ -136,7 +137,7 @@ class InadBatchRequestJobTest {
         NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
 
         when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, 2))
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
                 .thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
                 .thenReturn(Mono.error(new IllegalStateException("INAD unavailable")));
@@ -163,7 +164,7 @@ class InadBatchRequestJobTest {
         when(page.items()).thenReturn(List.of(first, second));
         when(secondPage.items()).thenReturn(List.of(third, fourth));
         when(thirdPage.items()).thenReturn(List.of(fifth, sixth));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, 2))
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
                 .thenReturn(SdkPublisher.adapt(Flux.just(page, secondPage, thirdPage)));
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
                 .thenReturn(Mono.just(providerResponse));
