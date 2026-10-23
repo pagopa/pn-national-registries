@@ -324,7 +324,9 @@ public class GatewayConverter {
     public static NationalRegistriesRequest constructNationalRegistriesRequest(AddressRequestBodyDto addressRequestBodyDto, RecipientType recipientType, String pnNationalRegistriesCxId, GatewayDownstreamService registry) {
         NationalRegistriesRequest nationalRegistriesRequest = new NationalRegistriesRequest();
 
-        nationalRegistriesRequest.setCreatedAt(Instant.now());
+        Instant now = Instant.now();
+        nationalRegistriesRequest.setCreatedAt(now);
+        nationalRegistriesRequest.setAttemptAfter(now);
         nationalRegistriesRequest.setCorrelationId(addressRequestBodyDto.getFilter().getCorrelationId());
         nationalRegistriesRequest.setReferenceRequestDate(addressRequestBodyDto.getFilter().getReferenceRequestDate().toString());
         nationalRegistriesRequest.setDomicileType(addressRequestBodyDto.getFilter().getDomicileType().getValue());

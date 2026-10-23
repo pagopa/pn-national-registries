@@ -192,12 +192,12 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
 
     private int getInipecRetryAfter(boolean inProgressRetry) {
         NationalRegistriesConfig.Inipec inipecConfig = nationalRegistriesConfig.getInipec();
-        return inProgressRetry ? inipecConfig.getPollingInProgressRetryAfter() : inipecConfig.getPollingRetryAfter();
+        return inProgressRetry ? inipecConfig.getPollingInProgressRetryAfter() : inipecConfig.getPollingErrorRetryAfter();
     }
 
     private int getInadRetryAfter(boolean inProgressRetry) {
         NationalRegistriesConfig.Inad inadConfig = nationalRegistriesConfig.getInad();
-        return inProgressRetry ? inadConfig.getPollingInProgressRetryAfter() : inadConfig.getPollingRetryAfter();
+        return inProgressRetry ? inadConfig.getPollingInProgressRetryAfter() : inadConfig.getPollingErrorRetryAfter();
     }
 
     private BatchesStatusEnum retrieveExpectedStatus(BatchesStatusEnum newStatus) {

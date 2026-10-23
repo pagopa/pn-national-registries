@@ -29,11 +29,11 @@ import static it.pagopa.pn.national.registries.constant.BatchesStatusEnum.*;
 @Slf4j
 @SpringBootTest(properties = {
         "spring.cloud.aws.sqs.enabled=false",
-        "pn.national-registries.dao.national-registries-batches-table-name=pn-nationalRegistries-nationalRegistriesBatches",
+        "pn.national-registries.dao.national-registries-batches-table-name=pn-nationalRegistriesBatches",
         "pn.national-registries.query-limit=2",
-        "pn.national-registries.inad.polling-retry-after=60",
+        "pn.national-registries.inad.polling-error-retry-after=60",
         "pn.national-registries.inad.polling-in-progress-retry-after=120",
-        "pn.national-registries.inipec.ttl=3600"
+        "pn.national-registries.ttl=3600"
 })
 class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
 

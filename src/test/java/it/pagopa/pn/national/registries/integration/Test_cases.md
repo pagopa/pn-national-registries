@@ -32,11 +32,61 @@
 
 # Inad Polling - Scenari funzionali di test
 
------
+Questa sezione descrive gli scenari funzionali coperti dai test del flusso di polling di INAD massivo.
+
+## Scenari funzionali coperti
+
+| Scenario funzionale                                           | Fallback PF disabilitato                                                              | Fallback PF abilitato                                              |
+|---------------------------------------------------------------|---------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| PF, solo domicilio personale valido                           | Request INAD `WORKED` con domicilio personale                                         | Request INAD `WORKED` con domicilio personale                      |
+| PF, domicilio personale e professionale validi                | Seleziona il domicilio personale INAD                                                 | Seleziona il domicilio personale INAD                              |
+| PF, solo domicilio professionale valido                       | Request INAD `WORKED` con payload senza indirizzi                                     | Seleziona il domicilio professionale INAD                          |
+| PF, domicilio personale non valido e professionale valido     | Request INAD `WORKED` con payload senza indirizzi                                     | Seleziona il domicilio professionale INAD                          |
+| PF, domicilio personale valido e professionale non valido     | Seleziona il domicilio personale INAD                                                 | Seleziona il domicilio personale INAD                              |
+| PF, domicilio personale e professionale entrambi non validi   | Request INAD `WORKED` con payload senza indirizzi                                     | INAD `WORKED` non finale + nuova request INIPEC `NOT_WORKED`       |
+| PF, lista `digitalAddress` vuota                              | Request INAD `WORKED` con payload senza indirizzi                                     | INAD `WORKED` non finale + nuova request INIPEC `NOT_WORKED`       |
+| PF, CF assente dalla risposta massiva                         | Request INAD `WORKED` con payload senza indirizzi                                     | INAD `WORKED` non finale + nuova request INIPEC `NOT_WORKED`       |
+| PF, più domicili professionali e nessun personale             | Request INAD `WORKED` con payload senza indirizzi                                     | Seleziona un domicilio professionale INAD                          |
+| PG, un solo domicilio valido con `practicedProfession = null` | Request INAD `WORKED` con PEC                                                         | Request INAD `WORKED` con PEC                                      |
+| PG, un solo domicilio con `practicedProfession` valorizzata   | Request INAD `WORKED` con payload senza indirizzi; nessun fallback                    | Request INAD `WORKED` con payload senza indirizzi; nessun fallback |
+| PG, più domicili nella lista                                  | Request INAD `WORKED` con payload senza indirizzi; nessun fallback                    | Request INAD `WORKED` con payload senza indirizzi; nessun fallback |
+| PG, un solo domicilio con PEC sintatticamente non valida      | Request INAD `WORKED` con payload senza indirizzi; nessun fallback                    | Request INAD `WORKED` con payload senza indirizzi; nessun fallback |
+| PG, lista `digitalAddress` vuota                              | Request INAD `WORKED` con payload senza indirizzi; nessun fallback                    | Request INAD `WORKED` con payload senza indirizzi; nessun fallback |
+| PG, CF assente dalla risposta massiva                         | Request INAD `WORKED` con payload senza indirizzi; nessun fallback                    | Request INAD `WORKED` con payload senza indirizzi; nessun fallback |
+| Polling INAD in `PRESA_IN_CARICO` / `IN_ELABORAZIONE`         | Batch `REQUEST_SENT`, incremento `inProgressRetryCount`, aggiornamento `attemptAfter` | Stesso comportamento                                               |
+| Polling INAD in `DISPONIBILE`                                 | Recupero risultato massivo e processamento delle request                              | Stesso comportamento                                               |
+| Errore retryable durante verifica stato                       | Batch `REQUEST_SENT`, incremento `errorRetryCount`, aggiornamento `attemptAfter`      | Stesso comportamento                                               |
+| Errore retryable durante recupero risultato                   | Batch `REQUEST_SENT`, incremento `errorRetryCount`, aggiornamento `attemptAfter`      | Stesso comportamento                                               |
+| Retry polling normale esaurito                                | Request `WORKING` → `ERROR`, batch → `ERROR`                                          | Stesso comportamento                                               |
+| Retry polling in-progress esaurito                            | Request `WORKING` → `ERROR`, batch → `ERROR`                                          | Stesso comportamento                                               |
+| `BAD_REQUEST` durante il polling                              | Request → `ERROR`, batch → `ERROR`, nessun ulteriore retry                            | Stesso comportamento                                               |
+| Errore non gestito / infrastrutturale                         | Errore propagato al consumer, stato invariato                                         | Stesso comportamento                                               |
+
+## Regola di selezione PF
+
+Con fallback disabilitato:
+
+```text
+domicilio personale INAD valido
+        ↓ no
+NotFound INAD
+```
+
+Con fallback abilitato:
+
+```text
+domicilio personale INAD valido
+        ↓ no
+domicilio professionale INAD valido
+        ↓ no
+IniPEC
+```
+
+La presenza di un domicilio professionale non modifica quindi il comportamento standard quando il flag è disabilitato. Con il flag abilitato, invece, il domicilio professionale viene utilizzato come secondo livello di fallback interno a INAD prima di delegare la richiesta a IniPEC.
 
 # IniPEC Polling - Scenari funzionali di test
 
-Questa sezione descrive gli scenari funzionali coperti dai test del flusso IniPEC.
+Questa sezione descrive gli scenari funzionali coperti dai test del flusso di polling IniPEC.
 
 ## Scenari funzionali coperti
 

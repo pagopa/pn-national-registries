@@ -18,7 +18,9 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@SpringBootTest()
+@SpringBootTest(properties = {
+        "spring.task.scheduling.enabled=false"
+})
 class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT {
 
     @Test

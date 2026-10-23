@@ -49,10 +49,12 @@ import static org.mockito.Mockito.when;
         "pn.national-registries.enable-inad-massive-api=false",
         "pn.national-registries.inipec.batch-polling-max-retry=2",
         "pn.national-registries.inipec.batch-polling-in-progress-max-retry=2",
-        "pn.national-registries.inipec.polling-retry-after=60",
+        "pn.national-registries.inipec.polling-error-retry-after=60",
         "pn.national-registries.inipec.polling-in-progress-retry-after=30",
         "pn.national-registries.inipec.batch-request-max-retry=2",
-        "pn.national-registries.inipec.batch-request-pk-separator=~"
+        "pn.national-registries.inipec.request-retry-after=60",
+        "pn.national-registries.inipec.batch-request-pk-separator=~",
+        "spring.task.scheduling.enabled=false"
 })
 class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
 
@@ -113,6 +115,7 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
                 pecResponseWithState(PF_ER, "ignored-er@pec.it", Pec.StatoImpresaEnum.ER)
         )));
 
+        Instant erStart = Instant.now();
         consume(pollingPayload(batchId, pollingId, 6, 0, 0));
 
         Assertions.assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
@@ -130,6 +133,7 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals(RequestStatusEnum.NOT_WORKED, er.getStatus());
         Assertions.assertEquals(1, er.getRetryCount());
         Assertions.assertNull(er.getResultPayload());
+        assertAttemptAfter(erStart, er.getAttemptAfter(), 60);
         Assertions.assertNull(findRequestOrNull(batchId, "corr-pf-er", GatewayDownstreamService.INAD));
 
         Assertions.assertEquals(6, findRequestsByBatch(batchId).size());
@@ -166,6 +170,7 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
         when(inadClient.callEService(eq(PG_INAD_NOT_FOUND), any())).thenReturn(Mono.error(pnException("CF non trovato", 404)));
         when(inadClient.callEService(eq(PG_INAD_ERROR), any())).thenReturn(Mono.error(pnException("INAD unavailable", 500)));
 
+        Instant erStart = Instant.now();
         consume(pollingPayload(batchId, pollingId, 8, 0, 0));
 
         Assertions.assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
@@ -188,6 +193,7 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals("INIPEC#NOT_WORKED", er.getRegistryStatus());
         Assertions.assertEquals(1, er.getRetryCount());
         Assertions.assertNull(er.getResultPayload());
+        assertAttemptAfter(erStart, er.getAttemptAfter(), 60);
         Assertions.assertNull(findRequestOrNull(batchId, "corr-pg-er", GatewayDownstreamService.INAD));
 
         Assertions.assertEquals(8, findRequestsByBatch(batchId).size());
@@ -272,19 +278,21 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
     }
 
     @Test
-    void shouldPropagateUnhandledConsumerErrorAndLeaveStateUntouched() {
+    void shouldTreatUnhandledConsumerErrorAsNormalPollingRetry() {
         String batchId = "batch-unhandled";
         String pollingId = "polling-unhandled";
         putBatch(batchId, BatchesStatusEnum.WORKING, 1);
         putRequest(batchId, "corr-unhandled", PF_VALID_PEC, "PF", RequestStatusEnum.WORKING);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.error(new IllegalStateException("unexpected infrastructure error")));
 
-        Assertions.assertThrows(RuntimeException.class, () -> consume(pollingPayload(batchId, pollingId, 1, 0, 0)));
+        Instant retryStart = Instant.now();
+        consume(pollingPayload(batchId, pollingId, 1, 0, 0));
 
         NationalRegistriesBatch batch = getBatch(batchId);
-        Assertions.assertEquals(BatchesStatusEnum.WORKING, batch.getStatus());
-        Assertions.assertEquals(0, batch.getErrorRetryCount());
+        Assertions.assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
+        Assertions.assertEquals(1, batch.getErrorRetryCount());
         Assertions.assertEquals(0, batch.getInProgressRetryCount());
+        assertAttemptAfter(retryStart, batch.getAttemptAfter(), 60);
         Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(batchId, "corr-unhandled", GatewayDownstreamService.INIPEC).getStatus());
     }
 
@@ -347,6 +355,7 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
             Assertions.assertNull(inadRequest.getResultPayload());
         }
     }
+
     private void assertBatchAndRequestError(String batchId, String correlationId) {
         Assertions.assertEquals(BatchesStatusEnum.ERROR, getBatch(batchId).getStatus());
         Assertions.assertEquals(RequestStatusEnum.ERROR, findRequest(batchId, correlationId, GatewayDownstreamService.INIPEC).getStatus());
@@ -462,7 +471,6 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
         response.setSince(Date.from(Instant.parse("2026-10-10T10:15:30Z")));
         ElementDigitalAddress element = new ElementDigitalAddress();
         element.setDigitalAddress(digitalAddress);
-        element.setPracticedProfession("CONSULENTE");
         response.setDigitalAddress(List.of(element));
         return response;
     }
