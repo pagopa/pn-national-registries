@@ -47,12 +47,14 @@ public class NationalRegistriesConfig {
 
     @Data
     public static class Inipec {
-        private Integer maxBatchRequestSize;
+        private Integer maxBatchRequestSize = 6250;
+        private Integer oldestRequestMaxWaitingSeconds = 300;
+        private Integer queryLimit = 1000;
         private Integer batchRequestMaxRetry;
         private String batchRequestPkSeparator;
         private Integer batchRequestRecoveryAfter;
-        private Double pollingFirstAttemptDelaySecondsPerCf;
-        private Integer pollingFirstAttemptFixedDelaySeconds;
+        private Double pollingFirstAttemptDelaySecondsPerCf = 0.085;
+        private Integer pollingFirstAttemptFixedDelaySeconds = 300;
         private Integer batchPollingInProgressMaxRetry;
         private Integer batchPollingMaxRetry;
         private Integer pollingRetryAfter;
