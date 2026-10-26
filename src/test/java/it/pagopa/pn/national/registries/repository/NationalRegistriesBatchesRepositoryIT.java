@@ -18,6 +18,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
@@ -84,33 +86,60 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
     @Test
     void getBatchesToProcessFiltersByStatusAndAttemptAfterAndPaginatesTest() {
         Instant now = Instant.parse("2026-10-09T10:00:00Z");
-        NationalRegistriesBatch firstBatch = batch("query-1", REQUEST_SENT, now.minus(2, ChronoUnit.MINUTES));
-        NationalRegistriesBatch secondBatch = batch("query-2", REQUEST_SENT, now.minus(1, ChronoUnit.MINUTES));
-        NationalRegistriesBatch thirdBatch = batch("query-3", REQUEST_SENT, now);
-        NationalRegistriesBatch futureBatch = batch("query-future", REQUEST_SENT, now.plus(1, ChronoUnit.MINUTES));
-        NationalRegistriesBatch otherStatusBatch = batch("query-other-status", WORKING, now.minus(1, ChronoUnit.MINUTES));
 
-        List.of(firstBatch, secondBatch, thirdBatch, futureBatch, otherStatusBatch)
-                .forEach(batch -> nationalRegistriesBatchesRepository.putBatch(batch).block());
+        NationalRegistriesBatch firstBatch =
+                batch("query-1", REQUEST_SENT, now.minus(2, ChronoUnit.MINUTES));
 
-        Page<NationalRegistriesBatch> firstPage = nationalRegistriesBatchesRepository
-                .getBatchesToProcess(REQUEST_SENT, now, null)
+        NationalRegistriesBatch secondBatch =
+                batch("query-2", REQUEST_SENT, now.minus(1, ChronoUnit.MINUTES));
+
+        NationalRegistriesBatch thirdBatch =
+                batch("query-3", REQUEST_SENT, now);
+
+        NationalRegistriesBatch futureBatch =
+                batch("query-future", REQUEST_SENT, now.plus(1, ChronoUnit.MINUTES));
+
+        NationalRegistriesBatch otherStatusBatch =
+                batch("query-other-status", WORKING, now.minus(1, ChronoUnit.MINUTES));
+
+        List.of(firstBatch, secondBatch, thirdBatch, futureBatch, otherStatusBatch).forEach(batch ->
+                nationalRegistriesBatchesRepository.putBatch(batch).block()
+        );
+
+        List<Page<NationalRegistriesBatch>> pages = Flux.from(
+                        nationalRegistriesBatchesRepository
+                                .getBatchesToProcess(REQUEST_SENT, now)
+                )
+                .collectList()
                 .block();
 
-        Assertions.assertNotNull(firstPage);
+        Assertions.assertNotNull(pages);
+        Assertions.assertEquals(2, pages.size());
+
+        Page<NationalRegistriesBatch> firstPage = pages.get(0);
+        Page<NationalRegistriesBatch> secondPage = pages.get(1);
+
         Assertions.assertEquals(2, firstPage.items().size());
-        Assertions.assertTrue(firstPage.items().stream()
-                .allMatch(batch -> REQUEST_SENT.equals(batch.getStatus()) && !Instant.parse(batch.getAttemptAfter()).isAfter(now)));
         Assertions.assertNotNull(firstPage.lastEvaluatedKey());
 
-        Page<NationalRegistriesBatch> secondPage = nationalRegistriesBatchesRepository
-                .getBatchesToProcess(REQUEST_SENT, now, firstPage.lastEvaluatedKey())
-                .block();
-
-        Assertions.assertNotNull(secondPage);
         Assertions.assertEquals(1, secondPage.items().size());
-        Assertions.assertEquals(thirdBatch.getBatchId(), secondPage.items().get(0).getBatchId());
         Assertions.assertNull(secondPage.lastEvaluatedKey());
+
+        List<NationalRegistriesBatch> items = pages.stream()
+                .flatMap(page -> page.items().stream())
+                .toList();
+
+        Assertions.assertEquals(3, items.size());
+        Assertions.assertTrue(items.stream().allMatch(batch -> REQUEST_SENT.equals(batch.getStatus()) && !Instant.parse(batch.getAttemptAfter()).isAfter(now)));
+        Assertions.assertTrue(items.stream()
+                        .map(NationalRegistriesBatch::getBatchId)
+                        .toList()
+                        .containsAll(List.of(
+                                firstBatch.getBatchId(),
+                                secondBatch.getBatchId(),
+                                thirdBatch.getBatchId()
+                        ))
+        );
     }
 
     @Test

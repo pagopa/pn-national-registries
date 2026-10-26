@@ -1,9 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
-import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
@@ -34,7 +32,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
-import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchRequestMetrics;
 
 @Service
 @CustomLog

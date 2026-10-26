@@ -8,14 +8,12 @@ import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.time.Instant;
-import java.util.Map;
 
 @Component
 @Slf4j
@@ -29,26 +27,17 @@ public class PollingJob {
     public void polling() {
         log.trace("Polling job start");
         Instant now = Instant.now();
-        retrieveAndProcessBatches(now, null)
+        retrieveAndProcessBatches(now)
                 .doOnSuccess(ignored -> log.trace("Polling job completed"))
                 .doOnError(ex -> log.error("Polling job failed", ex))
                 .block();
     }
 
-    private Mono<Void> retrieveAndProcessBatches(Instant now, Map<String, AttributeValue> lastEvaluatedKey) {
-        return nationalRegistriesBatchesRepository
-                .getBatchesToProcess(BatchesStatusEnum.REQUEST_SENT, now, lastEvaluatedKey)
-                .flatMap(page ->
-                        Flux.fromIterable(page.items())
-                                .flatMap(this::takeCharge)
-                                .then(Mono.defer(() -> {
-                                    Map<String, AttributeValue> nextKey = page.lastEvaluatedKey();
-                                    if (CollectionUtils.isEmpty(nextKey)) {
-                                        return Mono.empty();
-                                    }
-                                    return retrieveAndProcessBatches(now, nextKey);
-                                }))
-                );
+    private Mono<Void> retrieveAndProcessBatches(Instant now) {
+        return Flux.from(nationalRegistriesBatchesRepository.getBatchesToProcess(BatchesStatusEnum.REQUEST_SENT, now))
+                .flatMapIterable(Page::items)
+                .flatMap(this::takeCharge)
+                .then();
     }
 
     private Mono<Void> takeCharge(NationalRegistriesBatch batch) {

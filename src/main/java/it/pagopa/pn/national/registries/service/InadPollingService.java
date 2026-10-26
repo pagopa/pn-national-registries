@@ -44,7 +44,6 @@ public class InadPollingService {
 
     private final InadClient inadClient;
     private final NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
-    private final NationalRegistriesBatchesRepository nationalRegistriesBatchesRepository;
     private final NationalRegistriesConfig nationalRegistriesConfig;
     private final InadConverter inadConverter;
     private final GatewayUtils gatewayUtils;
@@ -53,7 +52,7 @@ public class InadPollingService {
     public Mono<Void> handleMessage(PnPollingEvent.Payload payload) {
         return callInadStatusEService(payload.getBatchId(), payload.getPollingId())
                 .flatMap(response -> handlePollingStatus(payload, response))
-                .onErrorResume(PnNationalRegistriesException.class, e -> incrementAndCheckRetry(payload.getBatchId(), payload.getRetryCount(), payload.getInProgressRetryCount(), false, e)
+                .onErrorResume(PnNationalRegistriesException.class, e -> incrementAndCheckRetry(payload.getBatchId(), payload.getErrorRetryCount(), payload.getInProgressRetryCount(), false, e)
                         .then(Mono.empty()));
     }
 
@@ -71,7 +70,7 @@ public class InadPollingService {
         return switch (state) {
             case PRESA_IN_CARICO, IN_ELABORAZIONE -> incrementAndCheckRetry(
                     payload.getBatchId(),
-                    payload.getRetryCount(),
+                    payload.getErrorRetryCount(),
                     payload.getInProgressRetryCount(),
                     true,
                     null
@@ -84,7 +83,7 @@ public class InadPollingService {
         return callInadResultEService(payload.getBatchId(), payload.getPollingId())
                 .flatMap(response -> handleSuccessfulPolling(payload.getBatchId(), payload.getBatchSize(), response))
                 .onErrorResume(PnNationalRegistriesException.class,
-                        e -> incrementAndCheckRetry(payload.getBatchId(), payload.getRetryCount(), payload.getInProgressRetryCount(), false, e)
+                        e -> incrementAndCheckRetry(payload.getBatchId(), payload.getErrorRetryCount(), payload.getInProgressRetryCount(), false, e)
                                 .then(Mono.empty()));
     }
 

@@ -38,6 +38,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)

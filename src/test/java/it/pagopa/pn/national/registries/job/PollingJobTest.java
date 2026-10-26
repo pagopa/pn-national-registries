@@ -9,14 +9,14 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,22 +39,23 @@ class PollingJobTest {
         Page<NationalRegistriesBatch> page = mock(Page.class);
 
         when(page.items()).thenReturn(List.of());
-        when(page.lastEvaluatedKey()).thenReturn(null);
-        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull())).thenReturn(Mono.just(page));
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.just(page)));
 
         pollingJob.polling();
-        verify(repository).getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull());
+
+        verify(repository).getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class));
         verify(repository, never()).updateItem(any(), any());
     }
 
     @Test
     void startJobWith1BatchToProcess() {
         NationalRegistriesBatch batch = batch("batch-1", BatchesStatusEnum.REQUEST_SENT, Instant.parse("2024-06-01T10:00:00Z"));
+
         Page<NationalRegistriesBatch> page = mock(Page.class);
 
         when(page.items()).thenReturn(List.of(batch));
-        when(page.lastEvaluatedKey()).thenReturn(null);
-        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull())).thenReturn(Mono.just(page));
+
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(repository.updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         pollingJob.polling();
@@ -73,10 +74,8 @@ class PollingJobTest {
 
         Page<NationalRegistriesBatch> page = mock(Page.class);
         when(page.items()).thenReturn(List.of(batch1, batch2, batch3));
-        when(page.lastEvaluatedKey()).thenReturn(null);
-        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull())).thenReturn(Mono.just(page));
-        when(repository.updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.just(page)));
+        when(repository.updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         pollingJob.polling();
 
@@ -92,33 +91,24 @@ class PollingJobTest {
     }
 
     @Test
-    void startJobWith4BatchToProcessInTwoPage() {
+    void startJobWith4BatchToProcessInTwoPages() {
         NationalRegistriesBatch batch1 = batch("batch-1", BatchesStatusEnum.REQUEST_SENT, Instant.parse("2024-06-01T10:00:00Z"));
         NationalRegistriesBatch batch2 = batch("batch-2", BatchesStatusEnum.REQUEST_SENT, Instant.parse("2024-06-01T10:00:00Z"));
         NationalRegistriesBatch batch3 = batch("batch-3", BatchesStatusEnum.REQUEST_SENT, Instant.parse("2024-06-01T10:00:00Z"));
         NationalRegistriesBatch batch4 = batch("batch-4", BatchesStatusEnum.REQUEST_SENT, Instant.parse("2024-06-01T10:00:00Z"));
 
-        Map<String, AttributeValue> nextKey = Map.of("batchId", AttributeValue.builder().s("batch-2").build());
-
         Page<NationalRegistriesBatch> firstPage = mock(Page.class);
         Page<NationalRegistriesBatch> secondPage = mock(Page.class);
 
         when(firstPage.items()).thenReturn(List.of(batch1, batch2));
-        when(firstPage.lastEvaluatedKey()).thenReturn(nextKey);
         when(secondPage.items()).thenReturn(List.of(batch3, batch4));
-        when(secondPage.lastEvaluatedKey()).thenReturn(null);
 
-        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull())).thenReturn(Mono.just(firstPage));
-        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), eq(nextKey))).thenReturn(Mono.just(secondPage));
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.just(firstPage, secondPage)));
         when(repository.updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
         pollingJob.polling();
 
-        verify(repository).getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull());
-        verify(repository).getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), eq(nextKey));
-        verify(repository, times(4)).updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING));
-
-
+        verify(repository, times(1)).getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class));
         ArgumentCaptor<NationalRegistriesBatch> captor = ArgumentCaptor.forClass(NationalRegistriesBatch.class);
         verify(repository, times(4)).updateItem(captor.capture(), eq(BatchesStatusEnum.WORKING));
         assertEquals(
@@ -139,23 +129,23 @@ class PollingJobTest {
         Page<NationalRegistriesBatch> page = mock(Page.class);
 
         when(page.items()).thenReturn(List.of(batch1, batch2, batch3));
-        when(page.lastEvaluatedKey()).thenReturn(null);
-        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class), isNull())).thenReturn(Mono.just(page));
+
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(repository.updateItem(
                 argThat(batch ->
-                        batch != null &&
-                                "batch-1".equals(batch.getBatchId())
+                        batch != null
+                                && "batch-1".equals(batch.getBatchId())
                 ),
                 eq(BatchesStatusEnum.WORKING)
         )).thenReturn(Mono.error(ConditionalCheckFailedException.builder().message("Condition failed").build()));
 
         when(repository.updateItem(
                 argThat(batch ->
-                        batch != null &&
-                                (
-                                        "batch-2".equals(batch.getBatchId()) ||
-                                                "batch-3".equals(batch.getBatchId())
-                                )
+                        batch != null
+                                && (
+                                "batch-2".equals(batch.getBatchId())
+                                        || "batch-3".equals(batch.getBatchId())
+                        )
                 ),
                 eq(BatchesStatusEnum.WORKING)
         )).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
@@ -164,6 +154,7 @@ class PollingJobTest {
 
         verify(repository, times(3)).updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING));
     }
+
     private NationalRegistriesBatch batch(String id, BatchesStatusEnum status, Instant attemptAfter) {
         NationalRegistriesBatch nationalRegistriesBatch = new NationalRegistriesBatch();
         nationalRegistriesBatch.setStatus(status);

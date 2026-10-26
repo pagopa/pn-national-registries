@@ -4,7 +4,6 @@ import it.pagopa.pn.national.registries.constant.*;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;

@@ -13,16 +13,12 @@ import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollin
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
-import it.pagopa.pn.national.registries.model.ipa.IpaSecret;
-import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.test.context.TestPropertySource;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
@@ -31,7 +27,6 @@ import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
@@ -258,7 +253,7 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
                 .batchId(batchId)
                 .pollingId(pollingId)
                 .batchSize(batchSize)
-                .retryCount(0)
+                .errorRetryCount(0)
                 .inProgressRetryCount(0)
                 .build();
     }

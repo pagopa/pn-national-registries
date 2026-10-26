@@ -2,17 +2,13 @@ package it.pagopa.pn.national.registries.job;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.MDCUtils;
-import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
-import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
-import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
@@ -33,15 +29,12 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
-import static it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService.INAD;
+import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID;
 import static it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService.INIPEC;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 
 @Component
 @Slf4j
@@ -110,7 +103,7 @@ public class IniPecBatchRequestJob {
         }
         Instant now = Instant.now();
         NationalRegistriesBatch batch = GatewayConverter.constructBatchEntity(batchId, requests, now, INIPEC, response.getIdentificativoRichiesta());
-        batch.setAttemptAfter(infoCamereConverter.calculateFirstAttemptAfter(requests.size()));
+        batch.setAttemptAfter(formatInstant(infoCamereConverter.calculateFirstAttemptAfter(requests.size())));
 
         return nationalRegistriesBatchesRepository.putBatch(batch)
                 .thenMany(Flux.fromIterable(requests)
