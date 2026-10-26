@@ -24,18 +24,11 @@ import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
-import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.ERROR;
-import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.NOT_WORKED;
-import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.WORKED;
-import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.WORKING;
+import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.*;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.*;
-import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_REQUEST_RESULTPAYLOAD;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 
 @Component
 @Slf4j
@@ -83,14 +76,14 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      * (stato = NOT_WORKED).
      */
     @Override
-    public SdkPublisher<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, RequestStatusEnum status, int limit) {
+    public SdkPublisher<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, int limit) {
         Instant now = Instant.now();
-        String registryStatus = String.join("#", registry.name(), status.name());
+        String registryStatus = String.join("#", registry.name(), NOT_WORKED.name());
 
         QueryEnhancedRequest.Builder builder = QueryEnhancedRequest.builder()
                 .queryConditional(QueryConditional.sortLessThan(Key.builder()
                         .partitionValue(registryStatus)
-                        .sortValue(now.toString())
+                        .sortValue(formatInstant(now))
                         .build()))
                 .limit(limit);
 
@@ -199,7 +192,7 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
         updates.add("#retryCount = :retryCount");
 
         names.put("#attemptAfter", NationalRegistriesRequest.COL_ATTEMPTAFTER);
-        values.put(":attemptAfter", AttributeValue.builder().s(attemptAfter.toString()).build());
+        values.put(":attemptAfter", AttributeValue.builder().s(formatInstant(attemptAfter)).build());
         updates.add("#attemptAfter = :attemptAfter");
 
         return updateStatus(pk, sk, NOT_WORKED, registry, names, values, updates);

@@ -1022,7 +1022,7 @@ Resources:
             "batchId": "<$.dynamodb.NewImage.batchId.S>",
             "pollingId": "<$.dynamodb.NewImage.pollingId.S>",
             "batchSize": <$.dynamodb.NewImage.batchSize.N>,
-            "retryCount": <$.dynamodb.NewImage.retryCount.N>,
+            "errorRetryCount": <$.dynamodb.NewImage.errorRetryCount.N>,
             "inProgressRetryCount": <$.dynamodb.NewImage.inProgressRetryCount.N>
           }
 

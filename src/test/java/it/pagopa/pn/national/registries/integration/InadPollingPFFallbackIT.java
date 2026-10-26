@@ -38,6 +38,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
@@ -274,7 +275,7 @@ class InadPollingPFFallbackIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
         Assertions.assertEquals(0, batch.getErrorRetryCount());
         Assertions.assertEquals(1, batch.getInProgressRetryCount());
-        assertAttemptAfter(start, batch.getAttemptAfter(), 30);
+        assertAttemptAfter(start, Instant.parse(batch.getAttemptAfter()), 30);
         Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(batchId, "corr-in-progress", GatewayDownstreamService.INAD).getStatus());
     }
 
@@ -294,7 +295,7 @@ class InadPollingPFFallbackIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
         Assertions.assertEquals(1, batch.getErrorRetryCount());
         Assertions.assertEquals(0, batch.getInProgressRetryCount());
-        assertAttemptAfter(start, batch.getAttemptAfter(), 60);
+        assertAttemptAfter(start, Instant.parse(batch.getAttemptAfter()), 60);
         Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(batchId, "corr-status-error", GatewayDownstreamService.INAD).getStatus());
     }
 
@@ -315,7 +316,7 @@ class InadPollingPFFallbackIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
         Assertions.assertEquals(1, batch.getErrorRetryCount());
         Assertions.assertEquals(0, batch.getInProgressRetryCount());
-        assertAttemptAfter(start, batch.getAttemptAfter(), 60);
+        assertAttemptAfter(start, Instant.parse(batch.getAttemptAfter()), 60);
         Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(batchId, "corr-result-error", GatewayDownstreamService.INAD).getStatus());
     }
 
@@ -576,7 +577,7 @@ class InadPollingPFFallbackIT extends AbstractNationalRegistriesComponentIT {
     }
 
     private PnPollingEvent.Payload pollingPayload(String batchId, String pollingId, int batchSize, Integer retryCount, Integer inProgressRetryCount) {
-        return PnPollingEvent.Payload.builder().registry(GatewayDownstreamService.INAD).batchId(batchId).pollingId(pollingId).batchSize(batchSize).retryCount(retryCount).inProgressRetryCount(inProgressRetryCount).build();
+        return PnPollingEvent.Payload.builder().registry(GatewayDownstreamService.INAD).batchId(batchId).pollingId(pollingId).batchSize(batchSize).errorRetryCount(retryCount).inProgressRetryCount(inProgressRetryCount).build();
     }
 
     private void putRequest(String batchId, String correlationId, String taxId, String recipientType, RequestStatusEnum status) {
@@ -607,7 +608,7 @@ class InadPollingPFFallbackIT extends AbstractNationalRegistriesComponentIT {
         batch.setStatus(status);
         batch.setPollingId("polling-id");
         batch.setBatchSize(batchSize);
-        batch.setAttemptAfter(Instant.now().minusSeconds(10));
+        batch.setAttemptAfter(formatInstant(Instant.now().minusSeconds(10)));
         batch.setErrorRetryCount(0);
         batch.setInProgressRetryCount(0);
         batch.setUpdatedAt(Instant.now());

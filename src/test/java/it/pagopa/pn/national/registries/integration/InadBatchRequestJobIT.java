@@ -33,6 +33,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -261,7 +262,7 @@ class InadBatchRequestJobIT extends AbstractNationalRegistriesComponentIT {
         request.setRegistry(GatewayDownstreamService.INAD);
         request.setStatus(RequestStatusEnum.NOT_WORKED);
         request.setRegistryStatus("INAD#NOT_WORKED");
-        request.setAttemptAfter(createdAt.minusSeconds(1));
+        request.setAttemptAfter(formatInstant(createdAt.minus(10, ChronoUnit.MINUTES)));
         return request;
     }
 

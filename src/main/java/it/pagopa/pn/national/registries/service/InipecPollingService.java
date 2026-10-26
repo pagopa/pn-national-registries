@@ -49,7 +49,7 @@ public class InipecPollingService {
 
     public Mono<Void> handleMessage(PnPollingEvent.Payload payload) {
         return infoCamereService.callIniPecEService(payload.getBatchId(), payload.getPollingId())
-                .onErrorResume(e -> incrementAndCheckRetry(payload.getBatchId(), payload.getRetryCount(), payload.getInProgressRetryCount(), e)
+                .onErrorResume(e -> incrementAndCheckRetry(payload.getBatchId(), payload.getErrorRetryCount(), payload.getInProgressRetryCount(), e)
                         .then(Mono.empty()))
                 .flatMap(response -> handleSuccessfulPolling(payload.getBatchId(), payload.getBatchSize(), response));
     }

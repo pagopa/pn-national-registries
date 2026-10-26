@@ -144,7 +144,8 @@ public class InadConverter {
                 .stream()
                 .collect(Collectors.toMap(
                         ResponseRequestDigitalAddress::getCodiceFiscale,
-                        Function.identity()
+                        Function.identity(),
+                        (first, second) -> first
                 ));
     }
 }

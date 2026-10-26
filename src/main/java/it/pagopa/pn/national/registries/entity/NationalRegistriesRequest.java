@@ -13,6 +13,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import java.time.Instant;
 import java.util.Map;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
+
 @DynamoDbBean
 @Data
 @NoArgsConstructor
@@ -81,7 +83,7 @@ public class NationalRegistriesRequest {
     private Integer retryCount;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_ATTEMPTAFTER), @DynamoDbSecondarySortKey(indexNames = REGISTRY_STATUS_ATTEMPT_AFTER_INDEX)}))
-    private Instant attemptAfter;
+    private String attemptAfter;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_TTL)}))
     private Long ttl;
@@ -116,7 +118,7 @@ public class NationalRegistriesRequest {
         referenceRequestDate = nationalRegistriesRequest.getReferenceRequestDate();
 
         this.createdAt = now;
-        this.attemptAfter = now;
+        this.attemptAfter = formatInstant(now);
         this.registry = registry;
         this.status = status;
         if(StringUtils.hasText(resultPayload)){

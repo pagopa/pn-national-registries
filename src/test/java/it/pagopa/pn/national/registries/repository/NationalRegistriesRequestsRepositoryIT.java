@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
+
 @Slf4j
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class,
         properties = {
@@ -610,7 +612,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         NationalRegistriesRequest request = new NationalRegistriesRequest();
         request.setCorrelationId(correlationId);
         request.setCreatedAt(createdAt);
-        request.setAttemptAfter(createdAt);
+        request.setAttemptAfter(formatInstant(createdAt));
         request.setTaxId("RSSMRA80A01H501U");
         request.setRecipientType("PF");
         request.setClientId("pn-delivery");

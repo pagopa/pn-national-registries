@@ -37,6 +37,7 @@ import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID;
 import static it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService.INAD;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 
 @Component
 @Slf4j
@@ -143,6 +144,22 @@ public class InadBatchRequestJob {
                 .then();
     }
 
+    private NationalRegistriesBatch getBatch(String batchId, List<NationalRegistriesRequest> requests,
+                                             Instant now, ResponseRequestListDigitalAddress providerResponse) {
+        NationalRegistriesBatch batch = new NationalRegistriesBatch();
+        batch.setBatchId(batchId);
+        batch.setCreatedAt(now);
+        batch.setUpdatedAt(now);
+        batch.setRegistry(GatewayDownstreamService.INAD.name());
+        batch.setPollingId(providerResponse.getId());
+        batch.setPracticalReferenceValue(batchId);
+        batch.setBatchSize(requests.size());
+        batch.setAttemptAfter(formatInstant(calculateFirstPollingAttempt(requests.size(), now)));
+        batch.setStatus(BatchesStatusEnum.REQUEST_SENT);
+        batch.setErrorRetryCount(0);
+        batch.setInProgressRetryCount(0);
+        return batch;
+    }
     private Instant calculateFirstPollingAttempt(Integer inadBatchSize, Instant now) {
         double delaySecondsPerCf = nationalRegistriesConfig.getInad().getPollingFirstAttemptDelaySecondsPerCf();
         int fixedDelaySeconds = nationalRegistriesConfig.getInad().getPollingFirstAttemptFixedDelaySeconds();
