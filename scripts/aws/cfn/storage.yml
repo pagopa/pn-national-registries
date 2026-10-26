@@ -275,6 +275,8 @@ Resources:
           AttributeType: "S"
         - AttributeName: "status"
           AttributeType: "S"
+        - AttributeName: "attemptAfter"
+          AttributeType: "S"
       KeySchema:
         - AttributeName: "correlationId"
           KeyType: "HASH"
@@ -289,11 +291,11 @@ Resources:
               KeyType: RANGE
           Projection:
             ProjectionType: ALL
-        - IndexName: "registryStatus-index"
+        - IndexName: "registryStatus-attemptAfter-index"
           KeySchema:
             - AttributeName: registryStatus
               KeyType: HASH
-            - AttributeName: createdAt
+            - AttributeName: attemptAfter
               KeyType: RANGE
           Projection:
             ProjectionType: ALL

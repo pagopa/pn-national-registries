@@ -55,8 +55,9 @@ public class NationalRegistriesConfig {
         private Integer pollingFirstAttemptFixedDelaySeconds;
         private Integer batchPollingInProgressMaxRetry;
         private Integer batchPollingMaxRetry;
-        private Integer pollingRetryAfter;
+        private Integer pollingErrorRetryAfter;
         private Integer pollingInProgressRetryAfter;
+        private Integer requestRetryAfter;
     }
 
     @Data
@@ -67,7 +68,7 @@ public class NationalRegistriesConfig {
         private Integer batchPollingMaxRetry;
         private Double pollingFirstAttemptDelaySecondsPerCf;
         private Integer pollingFirstAttemptFixedDelaySeconds;
-        private Integer pollingRetryAfter;
+        private Integer pollingErrorRetryAfter;
         private Integer pollingInProgressRetryAfter;
     }
 }

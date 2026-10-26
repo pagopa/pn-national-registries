@@ -7,6 +7,7 @@ import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.RequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
@@ -16,6 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -31,6 +33,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 
 @Component
 @Slf4j
@@ -100,8 +103,23 @@ public class InadBatchRequestJob {
         request.setPraticalReference(batchId);
 
         return inadClient.callMassiveEService(request)
+                .onErrorResume(PnNationalRegistriesException.class,throwable -> checkIfIsBadRequestAndMarkRequestAsError(throwable, requests))
                 .flatMap(response -> persistBatch(response, batchId, requests, now))
                 .doOnError(error -> log.error("INAD batch {} failed", batchId, error));
+    }
+
+    private Mono<ResponseRequestListDigitalAddress> checkIfIsBadRequestAndMarkRequestAsError(PnNationalRegistriesException throwable, List<NationalRegistriesRequest> requests) {
+        boolean badRequest = throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST;
+        if(badRequest){
+            return Flux.fromIterable(requests)
+                    .concatMap(request -> nationalRegistriesRequestsRepository.updateStatusToError(
+                            request.getCorrelationId(),
+                            request.getCreatedAt().toString(),
+                            GatewayDownstreamService.INAD))
+                    .then(Mono.empty());
+        }
+        return Mono.error(throwable);
+
     }
 
     private Mono<Void> persistBatch(ResponseRequestListDigitalAddress providerResponse,
@@ -135,7 +153,7 @@ public class InadBatchRequestJob {
         batch.setPollingId(providerResponse.getId());
         batch.setPracticalReferenceValue(batchId);
         batch.setBatchSize(requests.size());
-        batch.setAttemptAfter(calculateFirstPollingAttempt(requests.size(), now));
+        batch.setAttemptAfter(formatInstant(calculateFirstPollingAttempt(requests.size(), now)));
         batch.setStatus(BatchesStatusEnum.REQUEST_SENT);
         batch.setErrorRetryCount(0);
         batch.setInProgressRetryCount(0);

@@ -13,6 +13,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import java.time.Instant;
 import java.util.Map;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
+
 @DynamoDbBean
 @Data
 @NoArgsConstructor
@@ -32,15 +34,16 @@ public class NationalRegistriesRequest {
     public static final String COL_RESULT_PAYLOAD = "resultPayload";
     public static final String COL_UPDATED_AT = "updatedAt";
     public static final String COL_RETRY_COUNT = "retryCount";
+    public static final String COL_ATTEMPTAFTER = "attemptAfter";
     public static final String COL_TTL = "ttl";
 
     public static final String BATCH_ID_INDEX = "batchId-status-index";
-    public static final String REGISTRY_STATUS_CREATED_AT_INDEX = "registryStatus-index";
+    public static final String REGISTRY_STATUS_ATTEMPT_AFTER_INDEX = "registryStatus-attemptAfter-index";
 
     @Getter(onMethod = @__({@DynamoDbPartitionKey, @DynamoDbAttribute(COL_CORRELATION_ID)}))
     private String correlationId;
 
-    @Getter(onMethod = @__({@DynamoDbSortKey, @DynamoDbAttribute(COL_CREATED_AT), @DynamoDbSecondarySortKey(indexNames = REGISTRY_STATUS_CREATED_AT_INDEX)}))
+    @Getter(onMethod = @__({@DynamoDbSortKey, @DynamoDbAttribute(COL_CREATED_AT)}))
     private Instant createdAt;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_TAX_ID)}))
@@ -61,7 +64,7 @@ public class NationalRegistriesRequest {
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_STATUS), @DynamoDbSecondarySortKey(indexNames = BATCH_ID_INDEX)}))
     private RequestStatusEnum status;
 
-    @Getter(onMethod = @__({@DynamoDbAttribute(COL_REGISTRY_STATUS), @DynamoDbSecondaryPartitionKey(indexNames = REGISTRY_STATUS_CREATED_AT_INDEX)}))
+    @Getter(onMethod = @__({@DynamoDbAttribute(COL_REGISTRY_STATUS), @DynamoDbSecondaryPartitionKey(indexNames = REGISTRY_STATUS_ATTEMPT_AFTER_INDEX)}))
     private String registryStatus;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_BATCH_ID), @DynamoDbSecondaryPartitionKey(indexNames = BATCH_ID_INDEX)}))
@@ -78,6 +81,9 @@ public class NationalRegistriesRequest {
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_RETRY_COUNT)}))
     private Integer retryCount;
+
+    @Getter(onMethod = @__({@DynamoDbAttribute(COL_ATTEMPTAFTER), @DynamoDbSecondarySortKey(indexNames = REGISTRY_STATUS_ATTEMPT_AFTER_INDEX)}))
+    private String attemptAfter;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_TTL)}))
     private Long ttl;
@@ -102,6 +108,7 @@ public class NationalRegistriesRequest {
     }
 
     public NationalRegistriesRequest(NationalRegistriesRequest nationalRegistriesRequest, RequestStatusEnum status, GatewayDownstreamService registry, String resultPayload) {
+        Instant now = Instant.now();
         correlationId = nationalRegistriesRequest.getCorrelationId();
         taxId = nationalRegistriesRequest.getTaxId();
         recipientType = nationalRegistriesRequest.getRecipientType();
@@ -110,7 +117,8 @@ public class NationalRegistriesRequest {
         registryStatus = String.join("#", registry.name(), status.name());
         referenceRequestDate = nationalRegistriesRequest.getReferenceRequestDate();
 
-        this.createdAt = Instant.now();
+        this.createdAt = now;
+        this.attemptAfter = formatInstant(now);
         this.registry = registry;
         this.status = status;
         if(StringUtils.hasText(resultPayload)){

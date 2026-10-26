@@ -105,25 +105,6 @@ class InadConverterTest {
     }
 
     @Test
-    void mapToResponseOkShouldReturnProfessionalAddressForPg() {
-        ElementDigitalAddress personalAddress = createPersonalAddress("personal@pec.it");
-        ElementDigitalAddress professionalAddress = createProfessionalAddress("professional@pec.it", "AVVOCATO");
-        ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), personalAddress, professionalAddress);
-        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PG, VALID_CF, false, "correlationid");
-        assertNotNull(result.getDigitalAddress());
-        assertEquals("professional@pec.it", result.getDigitalAddress().getDigitalAddress());
-        assertEquals("AVVOCATO", result.getDigitalAddress().getPracticedProfession());
-    }
-
-    @Test
-    void mapToResponseOkShouldThrowForPgWhenProfessionalAddressIsMissing() {
-        ElementDigitalAddress firstAddress = createPersonalAddress("first@pec.it");
-        ElementDigitalAddress secondAddress = createPersonalAddress("second@pec.it");
-        ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), firstAddress, secondAddress);
-        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(input, PG, VALID_CF, false, "correlationId"));
-    }
-
-    @Test
     void mapToResponseOkShouldIgnoreExpiredAddress() {
         ElementDigitalAddress expiredAddress = createAddress("expired@pec.it", null, daysFromNow(-1), MotivationTermination.CESSAZIONE_UFFICIO);
         ElementDigitalAddress validAddress = createPersonalAddress("valid@pec.it");

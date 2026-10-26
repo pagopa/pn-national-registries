@@ -6,9 +6,8 @@ import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
-import java.util.Map;
+import java.time.Instant;
 
 public interface NationalRegistriesRequestsRepository {
 
@@ -22,7 +21,7 @@ public interface NationalRegistriesRequestsRepository {
 
     Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload, GatewayDownstreamService registry, boolean isFinalRegistry);
 
-    Mono<NationalRegistriesRequest> resetStatusForRetry(String pk, String sk, Integer retry, GatewayDownstreamService registry);
+    Mono<NationalRegistriesRequest> resetStatusForRetry(String pk, String sk, Integer retry, Instant attemptAfter, GatewayDownstreamService registry);
 
     Mono<NationalRegistriesRequest> updateStatusToError(String pk, String sk, GatewayDownstreamService registry);
 
