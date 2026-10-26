@@ -47,10 +47,10 @@ public class IniPecBatchRequestJob {
     private final InfoCamereService infoCamereService;
     private final InfoCamereConverter infoCamereConverter;
 
-    @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch-request.delay}")
+    @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch-request-delay}")
     @SchedulerLock(name = "inipecRequests",
-            lockAtMostFor = "${pn.national-registries.inipec.batch-request.lock-at-most}",
-            lockAtLeastFor = "${pn.national-registries.inipec.batch-request.lock-at-least}")
+            lockAtMostFor = "${pn.national-registries.inipec.batch-request-lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch-request-lock-at-least}")
     public void batchRequestScheduled() {
         MDCUtils.clearMDCKeys();
         MDC.put(MDCUtils.MDC_PN_CTX_REQUEST_ID, UUID.randomUUID().toString());

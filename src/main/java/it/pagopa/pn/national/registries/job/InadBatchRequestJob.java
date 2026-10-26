@@ -48,10 +48,10 @@ public class InadBatchRequestJob {
     private final InadClient inadClient;
     private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    @Scheduled(fixedDelayString = "${pn.national-registries.inad.batch-request.delay}")
+    @Scheduled(fixedDelayString = "${pn.national-registries.inad.batch-request-delay}")
     @SchedulerLock(name = "inadRequests",
-            lockAtMostFor = "${pn.national-registries.inad.batch-request.lock-at-most}",
-            lockAtLeastFor = "${pn.national-registries.inad.batch-request.lock-at-least}")
+            lockAtMostFor = "${pn.national-registries.inad.batch-request-lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inad.batch-request-lock-at-least}")
     public void batchRequest() {
         MDCUtils.clearMDCKeys();
         String executionId = UUID.randomUUID().toString();
