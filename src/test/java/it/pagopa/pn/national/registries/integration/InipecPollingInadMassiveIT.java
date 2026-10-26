@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
@@ -40,7 +41,8 @@ import java.util.List;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(properties = {
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
+@TestPropertySource(properties = {
         "spring.cloud.aws.sqs.enabled=false",
         "pn.national-registries.query-limit=2",
         "pn.national-registries.dao.requestsTableName=pn-NationalRegistriesRequests",
@@ -52,8 +54,7 @@ import static org.mockito.Mockito.when;
         "pn.national-registries.inipec.polling-in-progress-retry-after=30",
         "pn.national-registries.inipec.batch-request-max-retry=2",
         "pn.national-registries.inipec.request-retry-after=60",
-        "pn.national-registries.inipec.batch-request-pk-separator=~",
-        "spring.task.scheduling.enabled=false"
+        "pn.national-registries.inipec.batch-request-pk-separator=~"
 })
 class InipecPollingInadMassiveIT extends AbstractNationalRegistriesComponentIT {
 
@@ -298,6 +299,21 @@ class InipecPollingInadMassiveIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals(0, batch.getInProgressRetryCount());
         assertAttemptAfter(retryStart, Instant.parse(batch.getAttemptAfter()), 60);
         Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(batchId, "corr-unhandled", GatewayDownstreamService.INIPEC).getStatus());
+    }
+
+    @Test
+    void shouldHandleMissingTaxIdFromInipecResponse() {
+        String batchId = "batch-missing-tax-id";
+        String pollingId = "polling-missing-tax-id";
+        putBatch(batchId, BatchesStatusEnum.WORKING, 1);
+        putRequest(batchId, "corr-missing-tax-id", PG_VALID_PEC, "PG", RequestStatusEnum.WORKING);
+
+        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse()));
+
+        consume(pollingPayload(batchId, pollingId, 1, 0, 0));
+
+        Assertions.assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
+        assertMassiveInadFallback(batchId, "corr-missing-tax-id");
     }
 
     private void assertFinalInipecEmptyResult(String batchId, String correlationId) {

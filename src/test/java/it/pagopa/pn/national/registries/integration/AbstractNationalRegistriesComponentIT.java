@@ -11,35 +11,16 @@ import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.VerificheApi;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RispostaE002OK;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoCodiceFiscale;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoComune;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoCivicoInterno;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoDatiSoggettiEnte;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoGeneralita;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoIndirizzo;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoListaSoggetti;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoNumeroCivico;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoResidenza;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoToponimo;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.UsageInfo;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.AddressRegistroImprese;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.LegalAddress;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.DataWS23Dto;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.ResultDto;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.WS23ResponseDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressIniPECOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressIniPECRequestBodyDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressIniPECRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.GatewayInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.service.DigitalAddressBatchPollingService;
@@ -65,11 +46,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 @TestPropertySource(properties = {
         "spring.cloud.aws.sqs.enabled=false",
@@ -84,7 +61,9 @@ import java.util.UUID;
         "pn.national-registries.inipec.batch-request-max-retry=3",
         "pn.national-registries.inipec.max-batch-request-size=6250",
         "pn.national-registries.inipec.batch-request-recovery-after=3600",
-        "pn.national.registries.inipec.batch.request.delay=30000",
+        "pn.national-registries.inipec.batch-request-delay=30000",
+        "pn.national-registries.inipec.batch-request-lock-at-most=27000",
+        "pn.national-registries.inipec.batch-request-lock-at-least=22000",
         "pn.national-registries.inipec.batch.request.recovery.delay=30000",
         "pn.national-registries.inipec.batch.polling.max-retry=3",
         "pn.national-registries.inipec.batch.polling.inprogress.max-retry=24",
@@ -434,7 +413,7 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
     }
 
     protected RispostaE002OK anprResponse(String taxId, String species, String street, String civicNumber, String municipality, String province, String zip,
-                                         String addressDetail, String at, String municipalityDetails) {
+                                          String addressDetail, String at, String municipalityDetails) {
         String scala = null;
         String scalaEsterna = null;
         if (addressDetail != null) {

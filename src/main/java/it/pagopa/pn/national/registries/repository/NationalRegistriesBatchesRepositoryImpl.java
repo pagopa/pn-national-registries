@@ -7,8 +7,8 @@ import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import lombok.CustomLog;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.enhanced.dynamodb.*;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
@@ -62,19 +62,15 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
     }
 
     @Override
-    public Mono<Page<NationalRegistriesBatch>> getBatchesToProcess(BatchesStatusEnum status, Instant now, Map<String, AttributeValue> lastEvaluatedKey) {
+    public SdkPublisher<Page<NationalRegistriesBatch>> getBatchesToProcess(BatchesStatusEnum status, Instant now) {
         Key key = Key.builder().partitionValue(status.name()).sortValue(formatInstant(now)).build();
 
         QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
                 .queryConditional(QueryConditional.sortLessThanOrEqualTo(key))
                 .limit(nationalRegistriesConfig.getQueryLimit());
 
-        if (!CollectionUtils.isEmpty(lastEvaluatedKey)) {
-            queryEnhancedRequestBuilder.exclusiveStartKey(lastEvaluatedKey);
-        }
-
-        return Mono.from(table.index(NationalRegistriesBatch.STATUS_ATTEMPTAFTER_INDEX)
-                .query(queryEnhancedRequestBuilder.build()));
+        return table.index(NationalRegistriesBatch.STATUS_ATTEMPTAFTER_INDEX)
+                .query(queryEnhancedRequestBuilder.build());
     }
 
     @Override

@@ -5,6 +5,8 @@ import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
+import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
+import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -30,6 +32,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID;
@@ -45,10 +48,10 @@ public class InadBatchRequestJob {
     private final InadClient inadClient;
     private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    @Scheduled(fixedDelayString = "${pn.national-registries.inad.batch-request.delay}")
+    @Scheduled(fixedDelayString = "${pn.national-registries.inad.batch-request-delay}")
     @SchedulerLock(name = "inadRequests",
-            lockAtMostFor = "${pn.national-registries.inad.batch-request.lock-at-most}",
-            lockAtLeastFor = "${pn.national-registries.inad.batch-request.lock-at-least}")
+            lockAtMostFor = "${pn.national-registries.inad.batch-request-lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inad.batch-request-lock-at-least}")
     public void batchRequest() {
         MDCUtils.clearMDCKeys();
         String executionId = UUID.randomUUID().toString();
@@ -66,7 +69,7 @@ public class InadBatchRequestJob {
         int queryLimit = nationalRegistriesConfig.getQueryLimit();
 
         return Flux.from(nationalRegistriesRequestsRepository
-                        .getRequestsByRegistryStatus(GatewayDownstreamService.INAD, queryLimit))
+                        .getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, queryLimit))
                 .concatMapIterable(Page::items)
                 .buffer(maxBatchSize)
                 .concatMap(requests -> isEligible(requests, maxBatchSize, now)
@@ -122,15 +125,13 @@ public class InadBatchRequestJob {
 
     }
 
-    private Mono<Void> persistBatch(ResponseRequestListDigitalAddress providerResponse,
-                                    String batchId,
-                                    List<NationalRegistriesRequest> requests,
-                                    Instant now) {
+    private Mono<Void> persistBatch(ResponseRequestListDigitalAddress providerResponse, String batchId, List<NationalRegistriesRequest> requests, Instant now) {
         if (!Objects.nonNull(providerResponse) || !StringUtils.hasText(providerResponse.getId())) {
             return Mono.error(new PnInternalException("INAD returned no polling identifier for batch " + batchId, 400, ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID));
         }
 
-        NationalRegistriesBatch batch = getBatch(batchId, requests, now, providerResponse);
+        NationalRegistriesBatch batch = GatewayConverter.constructBatchEntity(batchId, requests, now, GatewayDownstreamService.INAD, providerResponse.getId());
+        batch.setAttemptAfter(formatInstant(calculateFirstPollingAttempt(requests.size(), now)));
 
         return nationalRegistriesBatchesRepository.putBatch(batch)
                 .thenMany(reactor.core.publisher.Flux.fromIterable(requests)
@@ -143,27 +144,13 @@ public class InadBatchRequestJob {
                 .then();
     }
 
-    private NationalRegistriesBatch getBatch(String batchId, List<NationalRegistriesRequest> requests,
-                                             Instant now, ResponseRequestListDigitalAddress providerResponse) {
-        NationalRegistriesBatch batch = new NationalRegistriesBatch();
-        batch.setBatchId(batchId);
-        batch.setCreatedAt(now);
-        batch.setUpdatedAt(now);
-        batch.setRegistry(GatewayDownstreamService.INAD.name());
-        batch.setPollingId(providerResponse.getId());
-        batch.setPracticalReferenceValue(batchId);
-        batch.setBatchSize(requests.size());
-        batch.setAttemptAfter(formatInstant(calculateFirstPollingAttempt(requests.size(), now)));
-        batch.setStatus(BatchesStatusEnum.REQUEST_SENT);
-        batch.setErrorRetryCount(0);
-        batch.setInProgressRetryCount(0);
-        return batch;
-    }
+    private Instant calculateFirstPollingAttempt(Integer inadBatchSize, Instant now) {
+        double delaySecondsPerCf = nationalRegistriesConfig.getInad().getPollingFirstAttemptDelaySecondsPerCf();
+        int fixedDelaySeconds = nationalRegistriesConfig.getInad().getPollingFirstAttemptFixedDelaySeconds();
+        int batchSize = Optional.ofNullable(inadBatchSize).orElse(0);
 
-    private Instant calculateFirstPollingAttempt(int batchSize, Instant now) {
-        double delayPerTaxId = nationalRegistriesConfig.getInad().getPollingFirstAttemptDelaySecondsPerCf();
-        int fixedDelay = nationalRegistriesConfig.getInad().getPollingFirstAttemptFixedDelaySeconds();
-        return now.plusSeconds(Math.round((delayPerTaxId * batchSize) + fixedDelay))
-                .truncatedTo(ChronoUnit.SECONDS);
+        long delaySeconds = Math.round((delaySecondsPerCf * batchSize) + fixedDelaySeconds);
+
+        return now.plusSeconds(delaySeconds).truncatedTo(ChronoUnit.SECONDS);
     }
 }

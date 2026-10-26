@@ -72,7 +72,7 @@ class InadPollingServiceTest {
 
     @BeforeEach
     void setUp() {
-        inadPollingService = new InadPollingService(inadClient, nationalRegistriesRequestsRepository, nationalRegistriesBatchesRepository, nationalRegistriesConfig, inadConverter, gatewayUtils, pollingService);
+        inadPollingService = new InadPollingService(inadClient, nationalRegistriesRequestsRepository, nationalRegistriesConfig, inadConverter, gatewayUtils, pollingService);
     }
 
     @Test

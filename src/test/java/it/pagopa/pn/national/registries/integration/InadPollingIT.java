@@ -10,6 +10,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.R
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseStatusListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.StatusProcessingRequest;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.UsageInfo;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.PollingInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
@@ -21,6 +22,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
@@ -40,7 +42,8 @@ import java.util.List;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(properties = {
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
+@TestPropertySource(properties = {
         "spring.cloud.aws.sqs.enabled=false",
         "pn.national-registries.query-limit=2",
         "pn.national-registries.dao.requestsTableName=pn-NationalRegistriesRequests",
@@ -50,8 +53,7 @@ import static org.mockito.Mockito.when;
         "pn.national-registries.inad.batch-polling-max-retry=2",
         "pn.national-registries.inad.batch-polling-in-progress-max-retry=2",
         "pn.national-registries.inad.polling-error-retry-after=60",
-        "pn.national-registries.inad.polling-in-progress-retry-after=30",
-        "spring.task.scheduling.enabled=false"
+        "pn.national-registries.inad.polling-in-progress-retry-after=30"
 })
 class InadPollingIT extends AbstractNationalRegistriesComponentIT {
 
@@ -471,6 +473,67 @@ class InadPollingIT extends AbstractNationalRegistriesComponentIT {
         consume(pollingPayload(batchId, pollingId, 1, 0, 0));
 
         assertFinalInadEmptyResult(batchId, "corr-pg-missing");
+    }
+
+    @Test
+    void shouldRejectEmptyInadPollingStatus() {
+        String batchId = "batch-empty-status";
+        String pollingId = "polling-empty-status";
+        putBatch(batchId, BatchesStatusEnum.WORKING, 1);
+        putRequest(batchId, "corr-empty-status", PF_ONLY_PERSONAL, "PF", RequestStatusEnum.WORKING);
+
+        when(inadClient.checkMassiveRequestStatus(pollingId)).thenReturn(Mono.just(new ResponseStatusListDigitalAddress()));
+
+        Assertions.assertThrows(RuntimeException.class, () -> consume(pollingPayload(batchId, pollingId, 1, 0, 0)));
+
+        NationalRegistriesBatch batch = getBatch(batchId);
+        Assertions.assertEquals(BatchesStatusEnum.WORKING, batch.getStatus());
+        Assertions.assertEquals(0, batch.getErrorRetryCount());
+        Assertions.assertEquals(0, batch.getInProgressRetryCount());
+        Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(batchId, "corr-empty-status", GatewayDownstreamService.INAD).getStatus());
+    }
+
+    @Test
+    void shouldTakeFirstPersonalWhenMultiplePersonalExist() {
+        String batchId = "batch-multiple-personal";
+        String pollingId = "polling-multiple-personal";
+        putBatch(batchId, BatchesStatusEnum.WORKING, 1);
+        putRequest(batchId, "corr-multiple-personal", PF_PERSONAL_PROFESSIONAL, "PF", RequestStatusEnum.WORKING);
+
+        when(inadClient.checkMassiveRequestStatus(pollingId)).thenReturn(Mono.just(status(StatusProcessingRequest.DISPONIBILE)));
+        when(inadClient.getMassiveRequestResult(pollingId)).thenReturn(Mono.just(inadPollingResponse(
+                inadResponse(PF_PERSONAL_PROFESSIONAL,
+                        inadAddress("first-personal@pec.it", null),
+                        inadAddress("second-personal@pec.it", null))
+        )));
+
+        consume(pollingPayload(batchId, pollingId, 1, 0, 0));
+
+        assertFinalInadResult(batchId, "corr-multiple-personal", "first-personal@pec.it", "PERSONALE");
+        NationalRegistriesRequest request = findRequest(batchId, "corr-multiple-personal", GatewayDownstreamService.INAD);
+        Assertions.assertFalse(request.getResultPayload().contains("second-personal@pec.it"));
+    }
+
+    @Test
+    void shouldReturnNotFoundForPgWhenAddressExpired() {
+        String batchId = "batch-pg-expired";
+        String pollingId = "polling-pg-expired";
+        putBatch(batchId, BatchesStatusEnum.WORKING, 1);
+        putRequest(batchId, "corr-pg-expired", PG_SINGLE_VALID, "PG", RequestStatusEnum.WORKING);
+
+        ElementDigitalAddress expiredAddress = inadAddress("expired-pg@pec.it", null);
+        UsageInfo usageInfo = new UsageInfo();
+        usageInfo.setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
+        expiredAddress.setUsageInfo(usageInfo);
+
+        when(inadClient.checkMassiveRequestStatus(pollingId)).thenReturn(Mono.just(status(StatusProcessingRequest.DISPONIBILE)));
+        when(inadClient.getMassiveRequestResult(pollingId)).thenReturn(Mono.just(inadPollingResponse(
+                inadResponse(PG_SINGLE_VALID, expiredAddress)
+        )));
+
+        consume(pollingPayload(batchId, pollingId, 1, 0, 0));
+
+        assertFinalInadEmptyResult(batchId, "corr-pg-expired");
     }
 
     private void assertFinalInadResult(String batchId, String correlationId, String address) {

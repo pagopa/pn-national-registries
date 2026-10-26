@@ -71,14 +71,13 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
     }
 
     /**
-     * Recupera, in modo paginato, le richieste associate a uno specifico registro,
+     * Recupera, in modo paginato, le richieste associate a uno specifico registro e uno stato,
      * ordinate per data di ricezione, disponibili per la raccolta in batch
-     * (stato = NOT_WORKED).
      */
     @Override
-    public SdkPublisher<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, int limit) {
+    public SdkPublisher<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, RequestStatusEnum status, int limit) {
         Instant now = Instant.now();
-        String registryStatus = String.join("#", registry.name(), NOT_WORKED.name());
+        String registryStatus = String.join("#", registry.name(), status.name());
 
         QueryEnhancedRequest.Builder builder = QueryEnhancedRequest.builder()
                 .queryConditional(QueryConditional.sortLessThan(Key.builder()

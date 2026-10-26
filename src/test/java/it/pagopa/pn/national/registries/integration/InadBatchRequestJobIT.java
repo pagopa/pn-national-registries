@@ -10,15 +10,13 @@ import it.pagopa.pn.national.registries.job.InadBatchRequestJob;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.util.AopTestUtils;
-import org.springframework.test.context.TestPropertySource;
 import org.springframework.http.HttpStatus;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Mono;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.nio.charset.Charset;
 import java.time.Instant;
@@ -26,34 +24,20 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
-@SpringBootTest
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
         "pn.national-registries.query-limit=2",
         "pn.national-registries.inad.max-batch-request-size=3",
         "pn.national-registries.inad.oldest-request-max-waiting-seconds=60",
         "pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0",
-        "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0",
-        "spring.task.scheduling.enabled=false"
+        "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0"
 })
 class InadBatchRequestJobIT extends AbstractNationalRegistriesComponentIT {
 

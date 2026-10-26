@@ -6,14 +6,12 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.AddressRegistroImprese;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.InfoCamereVerification;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.InipecEvaluationResult;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
@@ -32,6 +30,7 @@ import java.util.Objects;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
 import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.removeInvalidEmails;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchRequestMetrics;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetricFromBatchRequest;
 
 @Service
@@ -79,6 +78,13 @@ public class InfoCamereService {
             case ER -> new InipecEvaluationResult.Retry();
             case ND, NF -> new InipecEvaluationResult.NotFound();
         };
+    }
+
+    public Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
+        return infoCamereClient.callEServiceRequestId(iniPecBatchRequest)
+                .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest, false))
+                .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest, true))
+                .doOnError(e -> log.warn("IniPEC - batchId {} - failed to call EService", batchId, e));
     }
 
     public Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {

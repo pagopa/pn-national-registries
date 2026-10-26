@@ -44,7 +44,6 @@ public class InadPollingService {
 
     private final InadClient inadClient;
     private final NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
-    private final NationalRegistriesBatchesRepository nationalRegistriesBatchesRepository;
     private final NationalRegistriesConfig nationalRegistriesConfig;
     private final InadConverter inadConverter;
     private final GatewayUtils gatewayUtils;

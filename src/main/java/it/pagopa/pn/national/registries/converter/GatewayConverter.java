@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.converter;
 
 import it.pagopa.pn.national.registries.constant.*;
+import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
@@ -351,5 +352,20 @@ public class GatewayConverter {
 
         dto.setFilter(filterDto);
         return dto;
+    }
+
+    public static NationalRegistriesBatch constructBatchEntity(String batchId, List<NationalRegistriesRequest> requests, Instant now, GatewayDownstreamService registry, String pollingId) {
+        NationalRegistriesBatch batch = new NationalRegistriesBatch();
+        batch.setBatchId(batchId);
+        batch.setCreatedAt(now);
+        batch.setUpdatedAt(now);
+        batch.setRegistry(registry.name());
+        batch.setPollingId(pollingId);
+        batch.setPracticalReferenceValue(batchId);
+        batch.setBatchSize(requests.size());
+        batch.setStatus(BatchesStatusEnum.REQUEST_SENT);
+        batch.setErrorRetryCount(0);
+        batch.setInProgressRetryCount(0);
+        return batch;
     }
 }

@@ -21,6 +21,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.DynamoDbAsyncTable;
@@ -40,7 +41,8 @@ import java.util.List;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static org.mockito.Mockito.when;
 
-@SpringBootTest(properties = {
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
+@TestPropertySource(properties = {
         "spring.cloud.aws.sqs.enabled=false",
         "pn.national-registries.query-limit=2",
         "pn.national-registries.dao.requestsTableName=pn-NationalRegistriesRequests",
@@ -50,8 +52,7 @@ import static org.mockito.Mockito.when;
         "pn.national-registries.inad.batch-polling-max-retry=2",
         "pn.national-registries.inad.batch-polling-in-progress-max-retry=2",
         "pn.national-registries.inad.polling-error-retry-after=60",
-        "pn.national-registries.inad.polling-in-progress-retry-after=30",
-        "spring.task.scheduling.enabled=false"
+        "pn.national-registries.inad.polling-in-progress-retry-after=30"
 })
 class InadPollingPFFallbackIT extends AbstractNationalRegistriesComponentIT {
 

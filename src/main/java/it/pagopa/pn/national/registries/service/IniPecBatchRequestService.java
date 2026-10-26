@@ -1,9 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
-import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
@@ -34,7 +32,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
-import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchRequestMetrics;
 
 @Service
 @CustomLog
@@ -44,13 +41,13 @@ public class IniPecBatchRequestService {
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository batchRequestRepository;
     private final IniPecBatchPollingRepository batchPollingRepository;
-    private final InfoCamereClient infoCamereClient;
+    private final InfoCamereService infoCamereService;
     private final IniPecBatchSqsService iniPecBatchSqsService;
     private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    @Scheduled(fixedDelayString = "${pn.national.registries.inipec.batch.request.delay}")
-    @SchedulerLock(name = "batchPecRequest", lockAtMostFor = "${pn.national-registries.inipec.batch.request.lock-at-most}",
-            lockAtLeastFor = "${pn.national-registries.inipec.batch.request.lock-at-least}")
+    @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch-request-delay}")
+    @SchedulerLock(name = "batchPecRequest", lockAtMostFor = "${pn.national-registries.inipec.batch-request-lock-at-most}",
+            lockAtLeastFor = "${pn.national-registries.inipec.batch-request-lock-at-least}")
     public void batchPecRequest() {
         log.trace("IniPEC - batchPecRequest start");
         collectBatchRequests()
@@ -123,11 +120,9 @@ public class IniPecBatchRequestService {
                 .collectList()
                 .filter(requests -> !requests.isEmpty())
                 .flatMap(requests -> {
-                    IniPecBatchRequest iniPecBatchRequest = createIniPecRequest(requests);
+                    IniPecBatchRequest iniPecBatchRequest = infoCamereConverter.createIniPecRequest(requests.stream().map(BatchRequest::getCf).toList());
                     log.info("IniPEC - batchId {} - calling with {} cf", batchId, iniPecBatchRequest.getElencoCf().size());
-                    return callEService(iniPecBatchRequest, batchId)
-                            .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest, false))
-                            .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest, true))
+                    return infoCamereService.callEService(iniPecBatchRequest, batchId)
                             .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId).then(Mono.error(t)))
                             .flatMap(response -> createPolling(response, batchId, requests, iniPecBatchRequest.getElencoCf().size()))
                             .thenReturn(requests);
@@ -135,24 +130,6 @@ public class IniPecBatchRequestService {
                 .doOnError(e -> log.error("IniPEC - batchId {} - failed to execute batch", batchId, e))
                 .onErrorResume(e -> Mono.empty())
                 .then();
-    }
-
-    private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
-        return infoCamereClient.callEServiceRequestId(iniPecBatchRequest)
-                .doOnError(e -> log.warn("IniPEC - batchId {} - failed to call EService", batchId, e));
-    }
-
-    private IniPecBatchRequest createIniPecRequest(List<BatchRequest> requests) {
-        IniPecBatchRequest iniPecBatchRequest = new IniPecBatchRequest();
-        iniPecBatchRequest.setElencoCf(requests.stream()
-                .map(request -> {
-                    IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
-                    iniPecCf.setCf(request.getCf());
-                    return iniPecCf;
-                })
-                .toList());
-        iniPecBatchRequest.setDataOraRichiesta(LocalDateTime.now().toString());
-        return iniPecBatchRequest;
     }
 
     private Mono<Void> createPolling(IniPecBatchResponse response, String batchId, List<BatchRequest> requests, Integer iniPecBatchRequestSize) {

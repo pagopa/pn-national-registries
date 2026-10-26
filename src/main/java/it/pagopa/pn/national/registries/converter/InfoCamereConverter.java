@@ -13,6 +13,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -88,7 +89,7 @@ public class InfoCamereConverter{
         return batchPolling;
     }
 
-    private Instant calculateFirstAttemptAfter(Integer iniPecBatchRequestSize) {
+    public Instant calculateFirstAttemptAfter(Integer iniPecBatchRequestSize) {
         double delaySecondsPerCf = nationalRegistriesConfig.getInipec().getPollingFirstAttemptDelaySecondsPerCf();
         int fixedDelaySeconds = nationalRegistriesConfig.getInipec().getPollingFirstAttemptFixedDelaySeconds();
         int batchSize = Optional.ofNullable(iniPecBatchRequestSize).orElse(0);
@@ -266,6 +267,20 @@ public class InfoCamereConverter{
         Matcher matcher = PEC_REQUEST_IN_PROGRESS_PATTERN.matcher(message);
         return matcher.find();
     }
+
+    public IniPecBatchRequest createIniPecRequest(List<String> cfList) {
+        IniPecBatchRequest iniPecBatchRequest = new IniPecBatchRequest();
+        iniPecBatchRequest.setElencoCf(cfList.stream()
+                .map(cf -> {
+                    IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
+                    iniPecCf.setCf(cf);
+                    return iniPecCf;
+                })
+                .toList());
+        iniPecBatchRequest.setDataOraRichiesta(LocalDateTime.now().toString());
+        return iniPecBatchRequest;
+    }
+
 
     /**
      * @deprecated Questo metodo appartiene al flusso legacy di INI-PEC

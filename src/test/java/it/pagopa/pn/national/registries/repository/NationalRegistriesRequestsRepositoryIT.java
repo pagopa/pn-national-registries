@@ -11,6 +11,7 @@ import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.api.VerificheApi;
+import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.SqsService;
 import lombok.extern.slf4j.Slf4j;
@@ -31,7 +32,8 @@ import java.util.stream.IntStream;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 
 @Slf4j
-@SpringBootTest(properties = {
+@SpringBootTest(classes = PnNationalRegistriesTestApplication.class,
+        properties = {
         "spring.cloud.aws.sqs.enabled=false",
         "pn.national-registries.query-limit=5"
 })
@@ -165,7 +167,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         List.of(inipecNotWorked, inipecNotWorked1, inipecNotWorked2, inipecNotWorked3, inadNotWorked, inipecWorked).forEach(request -> repository.putRequest(request).block());
 
         Page<NationalRegistriesRequest> result = Flux.from(repository
-                        .getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, 10))
+                        .getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, RequestStatusEnum.NOT_WORKED, 10))
                 .single()
                 .block();
 
