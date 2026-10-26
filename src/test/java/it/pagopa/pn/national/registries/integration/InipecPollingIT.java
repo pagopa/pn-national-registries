@@ -37,6 +37,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
@@ -133,7 +134,7 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals(RequestStatusEnum.NOT_WORKED, er.getStatus());
         Assertions.assertEquals(1, er.getRetryCount());
         Assertions.assertNull(er.getResultPayload());
-        assertAttemptAfter(erStart, er.getAttemptAfter(), 60);
+        assertAttemptAfter(erStart, Instant.parse(er.getAttemptAfter()), 60);
         Assertions.assertNull(findRequestOrNull(batchId, "corr-pf-er", GatewayDownstreamService.INAD));
 
         Assertions.assertEquals(6, findRequestsByBatch(batchId).size());
@@ -193,7 +194,7 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals("INIPEC#NOT_WORKED", er.getRegistryStatus());
         Assertions.assertEquals(1, er.getRetryCount());
         Assertions.assertNull(er.getResultPayload());
-        assertAttemptAfter(erStart, er.getAttemptAfter(), 60);
+        assertAttemptAfter(erStart, Instant.parse(er.getAttemptAfter()), 60);
         Assertions.assertNull(findRequestOrNull(batchId, "corr-pg-er", GatewayDownstreamService.INAD));
 
         Assertions.assertEquals(8, findRequestsByBatch(batchId).size());
@@ -220,14 +221,14 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals(BatchesStatusEnum.REQUEST_SENT, inProgressBatch.getStatus());
         Assertions.assertEquals(0, inProgressBatch.getErrorRetryCount());
         Assertions.assertEquals(1, inProgressBatch.getInProgressRetryCount());
-        assertAttemptAfter(inProgressStart, inProgressBatch.getAttemptAfter(), 30);
+        assertAttemptAfter(inProgressStart, Instant.parse(inProgressBatch.getAttemptAfter()), 30);
         Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(inProgressBatchId, "corr-in-progress", GatewayDownstreamService.INIPEC).getStatus());
 
         NationalRegistriesBatch normalRetryBatch = getBatch(normalRetryBatchId);
         Assertions.assertEquals(BatchesStatusEnum.REQUEST_SENT, normalRetryBatch.getStatus());
         Assertions.assertEquals(1, normalRetryBatch.getErrorRetryCount());
         Assertions.assertEquals(0, normalRetryBatch.getInProgressRetryCount());
-        assertAttemptAfter(normalRetryStart, normalRetryBatch.getAttemptAfter(), 60);
+        assertAttemptAfter(normalRetryStart, Instant.parse(normalRetryBatch.getAttemptAfter()), 60);
         Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(normalRetryBatchId, "corr-normal-retry", GatewayDownstreamService.INIPEC).getStatus());
     }
 
@@ -292,7 +293,7 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
         Assertions.assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
         Assertions.assertEquals(1, batch.getErrorRetryCount());
         Assertions.assertEquals(0, batch.getInProgressRetryCount());
-        assertAttemptAfter(retryStart, batch.getAttemptAfter(), 60);
+        assertAttemptAfter(retryStart, Instant.parse(batch.getAttemptAfter()), 60);
         Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(batchId, "corr-unhandled", GatewayDownstreamService.INIPEC).getStatus());
     }
 
@@ -414,7 +415,7 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
     }
 
     private PnPollingEvent.Payload pollingPayload(String batchId, String pollingId, int batchSize, Integer retryCount, Integer inProgressRetryCount) {
-        return PnPollingEvent.Payload.builder().registry(GatewayDownstreamService.INIPEC).batchId(batchId).pollingId(pollingId).batchSize(batchSize).retryCount(retryCount).inProgressRetryCount(inProgressRetryCount).build();
+        return PnPollingEvent.Payload.builder().registry(GatewayDownstreamService.INIPEC).batchId(batchId).pollingId(pollingId).batchSize(batchSize).errorRetryCount(retryCount).inProgressRetryCount(inProgressRetryCount).build();
     }
 
     private void putRequest(String batchId, String correlationId, String taxId, String recipientType, RequestStatusEnum status) {
@@ -445,7 +446,7 @@ class InipecPollingIT extends AbstractNationalRegistriesComponentIT {
         batch.setStatus(status);
         batch.setPollingId("polling-id");
         batch.setBatchSize(batchSize);
-        batch.setAttemptAfter(Instant.now().minusSeconds(10));
+        batch.setAttemptAfter(formatInstant(Instant.now().minusSeconds(10)));
         batch.setErrorRetryCount(0);
         batch.setInProgressRetryCount(0);
         batch.setUpdatedAt(Instant.now());

@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import static it.pagopa.pn.national.registries.constant.BatchesStatusEnum.REQUEST_SENT;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 
 @Component
 @CustomLog
@@ -62,7 +63,7 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
 
     @Override
     public Mono<Page<NationalRegistriesBatch>> getBatchesToProcess(BatchesStatusEnum status, Instant now, Map<String, AttributeValue> lastEvaluatedKey) {
-        Key key = Key.builder().partitionValue(status.name()).sortValue(now.toString()).build();
+        Key key = Key.builder().partitionValue(status.name()).sortValue(formatInstant(now)).build();
 
         QueryEnhancedRequest.Builder queryEnhancedRequestBuilder = QueryEnhancedRequest.builder()
                 .queryConditional(QueryConditional.sortLessThanOrEqualTo(key))
@@ -145,7 +146,7 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
         }
 
         names.put("#attemptAfter", NationalRegistriesBatch.COL_ATTEMPTAFTER);
-        values.put(":attemptAfter", AttributeValue.builder().s(attemptAfter.toString()).build());
+        values.put(":attemptAfter", AttributeValue.builder().s(formatInstant(attemptAfter)).build());
         updates.add("#attemptAfter = :attemptAfter");
 
         return updateStatus(pk, sk, REQUEST_SENT, names, values, updates, now);

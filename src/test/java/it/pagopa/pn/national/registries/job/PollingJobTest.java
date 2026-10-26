@@ -20,6 +20,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -167,7 +168,7 @@ class PollingJobTest {
         NationalRegistriesBatch nationalRegistriesBatch = new NationalRegistriesBatch();
         nationalRegistriesBatch.setStatus(status);
         nationalRegistriesBatch.setBatchId(id);
-        nationalRegistriesBatch.setAttemptAfter(attemptAfter);
+        nationalRegistriesBatch.setAttemptAfter(formatInstant(attemptAfter));
         return nationalRegistriesBatch;
     }
 }

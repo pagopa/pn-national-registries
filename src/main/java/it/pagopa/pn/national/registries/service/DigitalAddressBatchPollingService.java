@@ -47,6 +47,7 @@ import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE
 import static it.pagopa.pn.national.registries.constant.DomicileType.DIGITAL;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.*;
 
@@ -284,7 +285,7 @@ public class DigitalAddressBatchPollingService{
 
         Instant now = Instant.now();
         nationalRegistriesRequest.setCreatedAt(now);
-        nationalRegistriesRequest.setAttemptAfter(now);
+        nationalRegistriesRequest.setAttemptAfter(formatInstant(now));
         nationalRegistriesRequest.setCorrelationId(request.getCorrelationId());
         nationalRegistriesRequest.setReferenceRequestDate(request.getReferenceRequestDate().toString());
         nationalRegistriesRequest.setDomicileType(DIGITAL.name());

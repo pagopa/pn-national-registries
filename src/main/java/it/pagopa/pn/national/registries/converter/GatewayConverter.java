@@ -23,6 +23,8 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
+
 @Slf4j
 public class GatewayConverter {
 
@@ -326,7 +328,7 @@ public class GatewayConverter {
 
         Instant now = Instant.now();
         nationalRegistriesRequest.setCreatedAt(now);
-        nationalRegistriesRequest.setAttemptAfter(now);
+        nationalRegistriesRequest.setAttemptAfter(formatInstant(now));
         nationalRegistriesRequest.setCorrelationId(addressRequestBodyDto.getFilter().getCorrelationId());
         nationalRegistriesRequest.setReferenceRequestDate(addressRequestBodyDto.getFilter().getReferenceRequestDate().toString());
         nationalRegistriesRequest.setDomicileType(addressRequestBodyDto.getFilter().getDomicileType().getValue());

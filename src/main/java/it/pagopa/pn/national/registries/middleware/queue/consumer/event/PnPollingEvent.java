@@ -38,7 +38,7 @@ public class PnPollingEvent implements GenericEvent<StandardEventHeader, PnPolli
         private String pollingId;
 
         private Integer batchSize;
-        private Integer retryCount;
+        private Integer errorRetryCount;
         private Integer inProgressRetryCount;
 
     }

@@ -33,6 +33,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 
 @Component
 @Slf4j
@@ -152,7 +153,7 @@ public class InadBatchRequestJob {
         batch.setPollingId(providerResponse.getId());
         batch.setPracticalReferenceValue(batchId);
         batch.setBatchSize(requests.size());
-        batch.setAttemptAfter(calculateFirstPollingAttempt(requests.size(), now));
+        batch.setAttemptAfter(formatInstant(calculateFirstPollingAttempt(requests.size(), now)));
         batch.setStatus(BatchesStatusEnum.REQUEST_SENT);
         batch.setErrorRetryCount(0);
         batch.setInProgressRetryCount(0);

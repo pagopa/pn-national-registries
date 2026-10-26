@@ -105,13 +105,14 @@ public class InadClient {
     private Mono<ResponseStatusListDigitalAddress> callMassiveStatus(String pollingId, AccessTokenCacheEntry tokenEntry) {
         apiEstrazioniMultipleApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
         return apiEstrazioniMultipleApi.verificaStatoRichiestaElencoDomiciliDigitali(pollingId)
-                .doOnError(throwable -> {
+                .onErrorResume(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage(), throwable);
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(throwable.getMessage(), ex.getStatusCode().value(),
+                        return Mono.error(new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
-                                Charset.defaultCharset(), InadResponseKO.class);
+                                Charset.defaultCharset(), InadResponseKO.class));
                     }
+                    return Mono.error(throwable);
                 });
     }
 
@@ -121,7 +122,7 @@ public class InadClient {
                 .onErrorResume(throwable -> {
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage(), throwable);
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
-                        Mono.error(new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                        return Mono.error(new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InadResponseKO.class));
                     }
@@ -140,7 +141,7 @@ public class InadClient {
                 .map(ResponseEntity::getBody)
                 .onErrorResume(throwable -> {
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
-                        Mono.error(new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                        return Mono.error(new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InadResponseKO.class));
                     }

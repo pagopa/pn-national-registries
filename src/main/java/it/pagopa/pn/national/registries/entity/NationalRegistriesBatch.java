@@ -68,7 +68,7 @@ public class NationalRegistriesBatch {
     private Integer batchSize;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_ATTEMPTAFTER), @DynamoDbSecondarySortKey(indexNames = STATUS_ATTEMPTAFTER_INDEX)}))
-    private Instant attemptAfter;
+    private String attemptAfter;
 
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_ERRORRETRYCOUNT)}))
     private Integer errorRetryCount;

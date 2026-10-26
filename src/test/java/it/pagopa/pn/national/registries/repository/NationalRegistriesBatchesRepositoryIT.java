@@ -25,6 +25,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static it.pagopa.pn.national.registries.constant.BatchesStatusEnum.*;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 
 @Slf4j
 @SpringBootTest(properties = {
@@ -97,7 +98,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         Assertions.assertNotNull(firstPage);
         Assertions.assertEquals(2, firstPage.items().size());
         Assertions.assertTrue(firstPage.items().stream()
-                .allMatch(batch -> REQUEST_SENT.equals(batch.getStatus()) && !batch.getAttemptAfter().isAfter(now)));
+                .allMatch(batch -> REQUEST_SENT.equals(batch.getStatus()) && !Instant.parse(batch.getAttemptAfter()).isAfter(now)));
         Assertions.assertNotNull(firstPage.lastEvaluatedKey());
 
         Page<NationalRegistriesBatch> secondPage = nationalRegistriesBatchesRepository
@@ -124,7 +125,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         Assertions.assertNotNull(retrievedBatch);
         Assertions.assertEquals(WORKED, retrievedBatch.getStatus());
         Assertions.assertNotNull(retrievedBatch.getUpdatedAt());
-        Assertions.assertTrue(retrievedBatch.getAttemptAfter().equals(Instant.parse("2026-10-09T10:00:00Z")));
+        Assertions.assertTrue(retrievedBatch.getAttemptAfter().equals("2026-10-09T10:00:00.000Z"));
     }
 
     @Test
@@ -141,7 +142,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         Assertions.assertNotNull(retrievedBatch);
         Assertions.assertEquals(ERROR, retrievedBatch.getStatus());
         Assertions.assertNotNull(retrievedBatch.getUpdatedAt());
-        Assertions.assertTrue(retrievedBatch.getAttemptAfter().equals(Instant.parse("2026-10-09T10:00:00Z")));
+        Assertions.assertTrue(retrievedBatch.getAttemptAfter().equals("2026-10-09T10:00:00.000Z"));
     }
 
     @Test
@@ -186,8 +187,6 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         batch.setInProgressRetryCount(0);
         nationalRegistriesBatchesRepository.putBatch(batch).block();
 
-        Instant before = Instant.now();
-
         NationalRegistriesBatch updatedBatch = nationalRegistriesBatchesRepository
                 .resetStatusForRetry(batch.getBatchId(), batch.getSk(), 1, false, GatewayDownstreamService.INAD)
                 .block();
@@ -200,7 +199,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         Assertions.assertEquals(1, retrievedBatch.getErrorRetryCount());
         Assertions.assertEquals(0, retrievedBatch.getInProgressRetryCount());
         Assertions.assertNotNull(retrievedBatch.getAttemptAfter());
-        Assertions.assertFalse(retrievedBatch.getAttemptAfter().isBefore(before.plusSeconds(60)));
+        Assertions.assertFalse(Instant.parse(retrievedBatch.getAttemptAfter()).isBefore(Instant.parse(batch.getAttemptAfter()).plusSeconds(60)));
         Assertions.assertNotNull(retrievedBatch.getUpdatedAt());
     }
 
@@ -210,8 +209,6 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         batch.setErrorRetryCount(0);
         batch.setInProgressRetryCount(0);
         nationalRegistriesBatchesRepository.putBatch(batch).block();
-
-        Instant before = Instant.now();
 
         NationalRegistriesBatch updatedBatch = nationalRegistriesBatchesRepository
                 .resetStatusForRetry(batch.getBatchId(), batch.getSk(), 1, true, GatewayDownstreamService.INAD)
@@ -225,7 +222,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         Assertions.assertEquals(0, retrievedBatch.getErrorRetryCount());
         Assertions.assertEquals(1, retrievedBatch.getInProgressRetryCount());
         Assertions.assertNotNull(retrievedBatch.getAttemptAfter());
-        Assertions.assertFalse(retrievedBatch.getAttemptAfter().isBefore(before.plusSeconds(120)));
+        Assertions.assertFalse(Instant.parse(retrievedBatch.getAttemptAfter()).isBefore(Instant.parse(batch.getAttemptAfter()).plusSeconds(120)));
         Assertions.assertNotNull(retrievedBatch.getUpdatedAt());
     }
 
@@ -233,7 +230,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         NationalRegistriesBatch batch = new NationalRegistriesBatch();
         batch.setBatchId(batchId);
         batch.setStatus(status);
-        batch.setAttemptAfter(attemptAfter);
+        batch.setAttemptAfter(formatInstant(attemptAfter));
         batch.setCreatedAt(Instant.parse("2026-10-09T09:00:00Z"));
         return batch;
     }

@@ -83,11 +83,11 @@ class InadPollingServiceTest {
         when(response.getState()).thenReturn(StatusProcessingRequest.PRESA_IN_CARICO);
         when(inadClient.checkMassiveRequestStatus(POLLING_ID)).thenReturn(Mono.just(response));
         mockRetryConfiguration();
-        when(pollingService.incrementAndCheckRetry(BATCH_ID, payload.getRetryCount(), payload.getInProgressRetryCount(), true, 5, 10, GatewayDownstreamService.INAD, null)).thenReturn(Mono.empty());
+        when(pollingService.incrementAndCheckRetry(BATCH_ID, payload.getErrorRetryCount(), payload.getInProgressRetryCount(), true, 5, 10, GatewayDownstreamService.INAD, null)).thenReturn(Mono.empty());
 
         StepVerifier.create(inadPollingService.handleMessage(payload)).verifyComplete();
 
-        verify(pollingService).incrementAndCheckRetry(BATCH_ID, payload.getRetryCount(), payload.getInProgressRetryCount(), true, 5, 10, GatewayDownstreamService.INAD, null);
+        verify(pollingService).incrementAndCheckRetry(BATCH_ID, payload.getErrorRetryCount(), payload.getInProgressRetryCount(), true, 5, 10, GatewayDownstreamService.INAD, null);
         verify(inadClient, never()).getMassiveRequestResult(anyString());
     }
 
@@ -103,7 +103,7 @@ class InadPollingServiceTest {
 
         StepVerifier.create(inadPollingService.handleMessage(payload)).verifyComplete();
 
-        verify(pollingService).incrementAndCheckRetry(BATCH_ID, payload.getRetryCount(), payload.getInProgressRetryCount(), true, 5, 10, GatewayDownstreamService.INAD, null);
+        verify(pollingService).incrementAndCheckRetry(BATCH_ID, payload.getErrorRetryCount(), payload.getInProgressRetryCount(), true, 5, 10, GatewayDownstreamService.INAD, null);
     }
 
     @Test
@@ -206,11 +206,11 @@ class InadPollingServiceTest {
         PnNationalRegistriesException exception = mockPnNationalRegistriesException();
         when(inadClient.checkMassiveRequestStatus(POLLING_ID)).thenReturn(Mono.error(exception));
         mockRetryConfiguration();
-        when(pollingService.incrementAndCheckRetry(BATCH_ID, payload.getRetryCount(), payload.getInProgressRetryCount(), false, 5, 10, GatewayDownstreamService.INAD, exception)).thenReturn(Mono.empty());
+        when(pollingService.incrementAndCheckRetry(BATCH_ID, payload.getErrorRetryCount(), payload.getInProgressRetryCount(), false, 5, 10, GatewayDownstreamService.INAD, exception)).thenReturn(Mono.empty());
 
         StepVerifier.create(inadPollingService.handleMessage(payload)).verifyComplete();
 
-        verify(pollingService).incrementAndCheckRetry(BATCH_ID, payload.getRetryCount(), payload.getInProgressRetryCount(), false, 5, 10, GatewayDownstreamService.INAD, exception);
+        verify(pollingService).incrementAndCheckRetry(BATCH_ID, payload.getErrorRetryCount(), payload.getInProgressRetryCount(), false, 5, 10, GatewayDownstreamService.INAD, exception);
     }
 
     @Test
@@ -223,11 +223,11 @@ class InadPollingServiceTest {
         RuntimeException exception = mockPnNationalRegistriesException();
         when(inadClient.getMassiveRequestResult(POLLING_ID)).thenReturn(Mono.error(exception));
         mockRetryConfiguration();
-        when(pollingService.incrementAndCheckRetry(BATCH_ID, payload.getRetryCount(), payload.getInProgressRetryCount(), false, 5, 10, GatewayDownstreamService.INAD, exception)).thenReturn(Mono.empty());
+        when(pollingService.incrementAndCheckRetry(BATCH_ID, payload.getErrorRetryCount(), payload.getInProgressRetryCount(), false, 5, 10, GatewayDownstreamService.INAD, exception)).thenReturn(Mono.empty());
 
         StepVerifier.create(inadPollingService.handleMessage(payload)).verifyComplete();
 
-        verify(pollingService).incrementAndCheckRetry(BATCH_ID, payload.getRetryCount(), payload.getInProgressRetryCount(), false, 5, 10, GatewayDownstreamService.INAD, exception);
+        verify(pollingService).incrementAndCheckRetry(BATCH_ID, payload.getErrorRetryCount(), payload.getInProgressRetryCount(), false, 5, 10, GatewayDownstreamService.INAD, exception);
     }
 
     private void mockRetryConfiguration() {
@@ -241,7 +241,7 @@ class InadPollingServiceTest {
         payload.setBatchId(BATCH_ID);
         payload.setPollingId(POLLING_ID);
         payload.setBatchSize(1);
-        payload.setRetryCount(1);
+        payload.setErrorRetryCount(1);
         payload.setInProgressRetryCount(2);
         return payload;
     }
