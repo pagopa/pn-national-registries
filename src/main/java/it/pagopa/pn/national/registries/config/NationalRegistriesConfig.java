@@ -15,6 +15,7 @@ public class NationalRegistriesConfig {
     private boolean enablePfPecFallbackFlow;
     private boolean enableInadMassiveApi;
     private boolean valCxIdEnabled;
+    private boolean enableOldInipecFlow;
 
     private String pdndBaseURL;
     private String inadBaseURL;

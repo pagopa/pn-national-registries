@@ -3,7 +3,6 @@ package it.pagopa.pn.national.registries.service;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.RecipientType;
-import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
@@ -37,6 +36,7 @@ public class GatewayService{
     private final DigitalAddressService digitalAddressService;
     private final GatewayUtils gatewayUtils;
     private final NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
+    private final InfoCamereService infoCamereService;
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto request) {
         checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
@@ -110,8 +110,7 @@ public class GatewayService{
                 .flatMap(result -> {
                     if (result instanceof AddressInternalResult.NotFound && nationalRegistriesConfig.isEnablePfPecFallbackFlow()) {
                         log.info("correlationId: {} - PEC not found on INAD, fallback to INI-PEC", correlationId);
-                        NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(addressRequestBodyDto, PF, pnNationalRegistriesCxId, GatewayDownstreamService.INIPEC);
-                        return inizializeBatchRequest(nationalRegistriesRequest).then();
+                        return inizializeInipecRequest(pnNationalRegistriesCxId, addressRequestBodyDto, PF);
                     }
                     return sqsService.pushToOutputQueue(result.codeSqsDto(), pnNationalRegistriesCxId).then();
                 });
@@ -130,9 +129,17 @@ public class GatewayService{
                     if (result instanceof AddressInternalResult.Found(CodeSqsDto codeSqsDto)) {
                         return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId).then();
                     }
-                    NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(addressRequestBodyDto, PG, pnNationalRegistriesCxId, GatewayDownstreamService.INIPEC);
-                    return inizializeBatchRequest(nationalRegistriesRequest).then();
+                    return inizializeInipecRequest(pnNationalRegistriesCxId, addressRequestBodyDto, PG);
                 });
+    }
+
+    public Mono<Void> inizializeInipecRequest(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, RecipientType pg) {
+        if (nationalRegistriesConfig.isEnableOldInipecFlow()) {
+            return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto), addressRequestBodyDto.getFilter().getReferenceRequestDate(), pg)
+                    .then();
+        }
+        NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(addressRequestBodyDto, pg, pnNationalRegistriesCxId, GatewayDownstreamService.INIPEC);
+        return inizializeBatchRequest(nationalRegistriesRequest).then();
     }
 
     private CodeSqsDto getOutputMessage(AddressRequestBodyDto addressRequestBodyDto, String correlationId, Throwable error) {

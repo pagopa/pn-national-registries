@@ -214,6 +214,28 @@ public class GatewayConverter {
         return dto;
     }
 
+    public static GetDigitalAddressIniPECRequestBodyDto convertToGetDigitalAddressIniPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
+        GetDigitalAddressIniPECRequestBodyDto dto = new GetDigitalAddressIniPECRequestBodyDto();
+        GetDigitalAddressIniPECRequestBodyFilterDto filterDto = new GetDigitalAddressIniPECRequestBodyFilterDto();
+
+        filterDto.setCorrelationId(addressRequestBodyDto.getFilter().getCorrelationId());
+        filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
+
+        dto.setFilter(filterDto);
+        return dto;
+    }
+
+    public static GetDigitalAddressIniPECRequestBodyDto convertToGetDigitalAddressIniPecRequest(NationalRegistriesRequest request) {
+        GetDigitalAddressIniPECRequestBodyDto dto = new GetDigitalAddressIniPECRequestBodyDto();
+        GetDigitalAddressIniPECRequestBodyFilterDto filterDto = new GetDigitalAddressIniPECRequestBodyFilterDto();
+
+        filterDto.setCorrelationId(request.getCorrelationId());
+        filterDto.setTaxId(request.getTaxId());
+
+        dto.setFilter(filterDto);
+        return dto;
+    }
+
     public static IPARequestBodyDto convertToGetIpaPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
         IPARequestBodyDto dto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filterDto = new CheckTaxIdRequestBodyFilterDto();
