@@ -97,6 +97,19 @@ class DigitalAddressUtilsTest {
     }
 
     @Test
+    void emailValidation_shouldReturnResponseWhenDigitalAddressIsNull() {
+        GetDigitalAddressINADOKDto inadResponse =
+                new GetDigitalAddressINADOKDto();
+        inadResponse.setDigitalAddress(null);
+
+        StepVerifier.create(
+                        DigitalAddressUtils.emailValidation(inadResponse)
+                )
+                .assertNext(result -> assertSame(inadResponse, result))
+                .verifyComplete();
+    }
+
+    @Test
     void emailValidation_shouldReturnNotFoundWhenEmailIsInvalid() {
         DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
         digitalAddressDto.setDigitalAddress("invalid-email");

@@ -215,6 +215,7 @@ public class DigitalAddressBatchPollingService{
                 .flatMap(batchRequestRepository::update)
                 .doOnNext(r -> log.debug("IniPEC - correlationId {} - set status in {}", r.getCorrelationId(), r.getStatus()))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to set request in status {}", batchId, status, e))
+                .filter(request -> !BatchSendStatus.NOT_TO_SEND.getValue().equals(request.getSendStatus()))
                 .collectList()
                 .filter(requests -> !requests.isEmpty())
                 .flatMap(iniPecBatchSqsService::batchSendToSqs)
@@ -250,9 +251,14 @@ public class DigitalAddressBatchPollingService{
         String correlationId = request.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0];
         request.setEservice(GatewayDownstreamService.INAD.name());
         if(nationalRegistriesConfig.isEnableInadMassiveApi()){
-            NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(request, recipientType, GatewayDownstreamService.INAD);
+            NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(request, recipientType, GatewayDownstreamService.INAD, correlationId);
             return nationalRegistriesRequestsRepository.putRequest(nationalRegistriesRequest)
-                    .doOnNext(batchRequest -> log.info("CreatedRequest for correlationId: {} for registry INAD", nationalRegistriesRequest.getCorrelationId()))
+                    .doOnNext(unused -> {
+                        log.info("CreatedRequest for correlationId: {} for registry INAD", nationalRegistriesRequest.getCorrelationId());
+                        request.setStatus(BatchStatus.WORKED.getValue());
+                        request.setSendStatus(BatchSendStatus.NOT_TO_SEND.getValue());
+                    })
+                    .doOnNext(batchRequest -> log.info("Closing batchRequest for correlationId: {} to start INAD massive", request.getCorrelationId()))
                     .then();
         }
         return inadService.callEService(GatewayConverter.convertToGetDigitalAddressInadRequest(request.getCorrelationId(), request.getCf()), recipientType, correlationId)
@@ -280,14 +286,19 @@ public class DigitalAddressBatchPollingService{
                 .then();
     }
 
-    private NationalRegistriesRequest constructNationalRegistriesRequest(BatchRequest request, RecipientType recipientType, GatewayDownstreamService registry){
+    private NationalRegistriesRequest constructNationalRegistriesRequest(BatchRequest request, RecipientType recipientType, GatewayDownstreamService registry, String correlationId){
         NationalRegistriesRequest nationalRegistriesRequest = new NationalRegistriesRequest();
 
         Instant now = Instant.now();
         nationalRegistriesRequest.setCreatedAt(now);
         nationalRegistriesRequest.setAttemptAfter(formatInstant(now));
-        nationalRegistriesRequest.setCorrelationId(request.getCorrelationId());
-        nationalRegistriesRequest.setReferenceRequestDate(request.getReferenceRequestDate().toString());
+        nationalRegistriesRequest.setCorrelationId(correlationId);
+        // LocalDateTime -> UTC Instant -> ISO-8601
+        nationalRegistriesRequest.setReferenceRequestDate(
+                request.getReferenceRequestDate()
+                        .toInstant(ZoneOffset.UTC)
+                        .toString()
+        );
         nationalRegistriesRequest.setDomicileType(DIGITAL.name());
         nationalRegistriesRequest.setTaxId(request.getCf());
         nationalRegistriesRequest.setRecipientType(recipientType.name());

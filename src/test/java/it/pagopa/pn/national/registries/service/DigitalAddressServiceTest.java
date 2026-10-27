@@ -6,12 +6,15 @@ import it.pagopa.pn.national.registries.model.AddressInternalResult;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.springframework.http.HttpStatus;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.nio.charset.Charset;
 import java.util.Date;
 
 import static it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType.IMPRESA;
@@ -63,7 +66,9 @@ class DigitalAddressServiceTest {
                 })
                 .verifyComplete();
 
-        verify(ipaService).getIpaPec(any(IPARequestBodyDto.class));
+        ArgumentCaptor<IPARequestBodyDto> requestCaptor = ArgumentCaptor.forClass(IPARequestBodyDto.class);
+        verify(ipaService).getIpaPec(requestCaptor.capture());
+        assertEquals(TAX_ID, requestCaptor.getValue().getFilter().getTaxId());
     }
 
     @Test
@@ -134,6 +139,11 @@ class DigitalAddressServiceTest {
                     assertEquals(PERSONALE.getValue(), found.codeSqsDto().getDigitalAddress().getFirst().getRecipient());
                 })
                 .verifyComplete();
+
+        ArgumentCaptor<GetDigitalAddressINADRequestBodyDto> requestCaptor = ArgumentCaptor.forClass(GetDigitalAddressINADRequestBodyDto.class);
+        verify(inadService).callEService(requestCaptor.capture(), eq(PF), eq(CORRELATION_ID));
+        assertEquals(TAX_ID, requestCaptor.getValue().getFilter().getTaxId());
+        assertEquals(CORRELATION_ID, requestCaptor.getValue().getFilter().getPracticalReference());
     }
 
     @Test
@@ -170,6 +180,36 @@ class DigitalAddressServiceTest {
 
         verify(gatewayUtils).logEServiceError(exception, "can not retrieve digital address from INAD: {}");
         verifyNoInteractions(ipaService);
+    }
+
+    @Test
+    void retrieveDigitalAddressFromInadSync_shouldReturnNotFoundWhenInadReturnsCfNotFound() {
+        AddressRequestBodyDto request = buildRequest();
+        PnNationalRegistriesException exception = new PnNationalRegistriesException(
+                "CF non trovato",
+                HttpStatus.NOT_FOUND.value(),
+                HttpStatus.NOT_FOUND.getReasonPhrase(),
+                null,
+                null,
+                Charset.defaultCharset(),
+                Object.class
+        );
+
+        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class), eq(PF), eq(CORRELATION_ID)))
+                .thenReturn(Mono.error(exception));
+
+        StepVerifier.create(digitalAddressService.retrieveDigitalAddressFromInadSync(request, CORRELATION_ID, PF))
+                .assertNext(result -> {
+                    AddressInternalResult.NotFound notFound = assertInstanceOf(AddressInternalResult.NotFound.class, result);
+                    assertNotNull(notFound.codeSqsDto());
+                    assertEquals(CORRELATION_ID, notFound.codeSqsDto().getCorrelationId());
+                    assertEquals("INAD", notFound.codeSqsDto().getRegistry());
+                    assertNotNull(notFound.codeSqsDto().getDigitalAddress());
+                    assertTrue(notFound.codeSqsDto().getDigitalAddress().isEmpty());
+                })
+                .verifyComplete();
+
+        verifyNoInteractions(gatewayUtils);
     }
 
     @Test

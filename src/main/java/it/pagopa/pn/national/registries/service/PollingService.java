@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -15,9 +17,13 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
+import java.time.Instant;
+import java.util.Date;
 import java.util.Optional;
 
+import static it.pagopa.pn.national.registries.converter.GatewayConverter.convertToGetDigitalAddressIniPecRequest;
 import static it.pagopa.pn.national.registries.entity.NationalRegistriesBatch.SK;
+import static it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService.INIPEC;
 
 @Component
 @Slf4j
@@ -26,6 +32,8 @@ public class PollingService {
 
     private final NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
     private final NationalRegistriesBatchesRepository nationalRegistriesBatchesRepository;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
+    private final InfoCamereService infoCamereService;
 
     public Mono<Void> incrementAndCheckRetry(String batchId, Integer errorRetryCount, Integer inProgressRetryCount, boolean inProgress, int maxErrorRetry, int maxInProgressRetry, GatewayDownstreamService registry, Throwable throwable) {
         int errorRetry = Optional.ofNullable(errorRetryCount).orElse(0);
@@ -56,6 +64,15 @@ public class PollingService {
     }
 
     public Mono<Void> createFallbackRequest(NationalRegistriesRequest request, GatewayDownstreamService sourceRegistry, GatewayDownstreamService targetRegistry) {
+        if(nationalRegistriesConfig.isEnableOldInipecFlow() && INIPEC.equals(targetRegistry)) {
+            log.info("Creating fallback request on legacy INIPEC flow for correlationId: {}", request.getCorrelationId());
+            Date referenceRequestDate = Date.from(
+                    Instant.parse(request.getReferenceRequestDate())
+            );
+            return infoCamereService.getIniPecDigitalAddress(request.getClientId(), convertToGetDigitalAddressIniPecRequest(request.getCorrelationId(), request.getTaxId()), referenceRequestDate, RecipientType.fromString(request.getRecipientType()))
+                    .then(markRequestAsWorked(request, sourceRegistry, null,false))
+                    .then();
+        }
         NationalRegistriesRequest fallbackRequest = new NationalRegistriesRequest(request, RequestStatusEnum.NOT_WORKED, targetRegistry, null);
         return nationalRegistriesRequestsRepository
                 .putRequest(fallbackRequest)

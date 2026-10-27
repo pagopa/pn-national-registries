@@ -964,14 +964,82 @@ class DigitalAddressBatchPollingServiceTest {
         batchRequest.setClientId("clientId");
 
         when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(true);
-        when(nationalRegistriesRequestsRepository.putRequest(any())).thenReturn(Mono.just(new NationalRegistriesRequest()));
+        when(nationalRegistriesRequestsRepository.putRequest(any()))
+                .thenReturn(Mono.just(new NationalRegistriesRequest()));
 
         BatchRequest result = digitalAddressBatchPollingService
                 .handlePecNotFoundResponse(batchRequest, BatchStatus.WORKED, LocalDateTime.now())
                 .block();
 
         assertSame(batchRequest, result);
+        assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
+        assertEquals(BatchSendStatus.NOT_TO_SEND.getValue(), batchRequest.getSendStatus());
+        assertEquals(GatewayDownstreamService.INAD.name(), batchRequest.getEservice());
+
+        verify(nationalRegistriesRequestsRepository).putRequest(any(NationalRegistriesRequest.class));
         verifyNoInteractions(inadService);
+    }
+
+    @Test
+    void testBatchPecPollingFallbackToInadMassiveShouldNotSendToSqs() {
+        BatchPolling batchPolling = new BatchPolling();
+        batchPolling.setBatchId("batchId");
+        batchPolling.setPollingId("pollingId");
+
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setBatchId("batchId");
+        batchRequest.setCorrelationId("correlationId~1");
+        batchRequest.setCf("12345678901");
+        batchRequest.setRecipientType(PG.name());
+        batchRequest.setReferenceRequestDate(LocalDateTime.now().minusDays(1));
+        batchRequest.setClientId("clientId");
+
+        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        iniPecPollingResponse.setElencoPec(Collections.emptyList());
+
+        when(batchPollingRepository.getBatchPollingWithoutReservationIdAndStatusNotWorked(anyMap(), anyInt()))
+                .thenReturn(Mono.just(Page.create(List.of(batchPolling))));
+        when(batchPollingRepository.setNewReservationIdToBatchPolling(same(batchPolling)))
+                .thenReturn(Mono.just(batchPolling));
+        when(infoCamereService.callIniPecEService("batchId", "pollingId"))
+                .thenReturn(Mono.just(iniPecPollingResponse));
+
+        when(batchRequestRepository.getBatchRequestByBatchIdAndStatus(
+                "batchId",
+                BatchStatus.WORKING,
+                new HashMap<>()
+        )).thenReturn(Mono.just(Page.create(List.of(batchRequest))));
+
+        when(infoCamereConverter.retrieveBatchRequestPec(
+                batchRequest.getCf(),
+                iniPecPollingResponse
+        )).thenReturn(null);
+
+        when(nationalRegistriesConfig.isEnableInadMassiveApi())
+                .thenReturn(true);
+
+        when(nationalRegistriesRequestsRepository.putRequest(any(NationalRegistriesRequest.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+
+        when(batchRequestRepository.update(same(batchRequest)))
+                .thenReturn(Mono.just(batchRequest));
+
+        when(batchPollingRepository.update(same(batchPolling)))
+                .thenReturn(Mono.just(batchPolling));
+
+        assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
+
+        assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
+        assertEquals(BatchSendStatus.NOT_TO_SEND.getValue(), batchRequest.getSendStatus());
+        assertEquals(GatewayDownstreamService.INAD.name(), batchRequest.getEservice());
+
+        verify(nationalRegistriesRequestsRepository)
+                .putRequest(any(NationalRegistriesRequest.class));
+
+        verifyNoInteractions(inadService);
+
+        verify(iniPecBatchSqsService, never())
+                .batchSendToSqs(anyList());
     }
 
     @Test

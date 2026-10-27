@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
@@ -16,8 +18,7 @@ import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.util.concurrent.CompletableFuture;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -99,7 +100,7 @@ class SqsServiceTest {
         SendMessageRequest request = sendMessageCaptor.getValue();
 
         assertEquals(QUEUE_URL, request.queueUrl());
-        assertNotNull(request.messageBody());
+        assertEquals("{\"correlationId\":\"correlationId\"}", request.messageBody());
 
         assertEquals(
                 CLIENT_ID,
@@ -224,5 +225,101 @@ class SqsServiceTest {
                         .get("eventType")
                         .stringValue()
         );
+    }
+
+    @Test
+    void pushWithoutClientIdShouldOmitClientIdAttribute() {
+        SqsService sqsService = new SqsService(
+                amazonSQS,
+                objectMapper,
+                nationalRegistriesConfig
+        );
+
+        StepVerifier.create(sqsService.push("message", null, "queueName", "eventType"))
+                .expectNext(sendMessageResponse)
+                .verifyComplete();
+
+        ArgumentCaptor<SendMessageRequest> sendMessageCaptor = ArgumentCaptor.forClass(SendMessageRequest.class);
+        verify(amazonSQS).sendMessage(sendMessageCaptor.capture());
+        SendMessageRequest request = sendMessageCaptor.getValue();
+        assertFalse(request.messageAttributes().containsKey("clientId"));
+        assertEquals("eventType", request.messageAttributes().get("eventType").stringValue());
+        assertEquals("message", request.messageBody());
+    }
+
+    @Test
+    void pushShouldPropagateGetQueueUrlError() {
+        SqsService sqsService = new SqsService(
+                amazonSQS,
+                objectMapper,
+                nationalRegistriesConfig
+        );
+        RuntimeException error = new RuntimeException("get queue url failed");
+        when(amazonSQS.getQueueUrl(any(GetQueueUrlRequest.class)))
+                .thenReturn(CompletableFuture.failedFuture(error));
+
+        StepVerifier.create(sqsService.push("message", CLIENT_ID, "queueName", "eventType"))
+                .expectErrorMatches(throwable -> throwable == error)
+                .verify();
+
+        verify(amazonSQS, never()).sendMessage(any(SendMessageRequest.class));
+    }
+
+    @Test
+    void pushShouldPropagateSendMessageError() {
+        SqsService sqsService = new SqsService(
+                amazonSQS,
+                objectMapper,
+                nationalRegistriesConfig
+        );
+        RuntimeException error = new RuntimeException("send failed");
+        when(amazonSQS.sendMessage(any(SendMessageRequest.class)))
+                .thenReturn(CompletableFuture.failedFuture(error));
+
+        StepVerifier.create(sqsService.push("message", CLIENT_ID, "queueName", "eventType"))
+                .expectErrorMatches(throwable -> throwable == error)
+                .verify();
+    }
+
+    @Test
+    void toJsonShouldThrowPnInternalExceptionWhenSerializationFails() throws Exception {
+        SqsService sqsService = new SqsService(
+                amazonSQS,
+                objectMapper,
+                nationalRegistriesConfig
+        );
+        when(objectMapper.writeValueAsString(any()))
+                .thenThrow(new JsonProcessingException("serialization failed") { });
+
+        assertThrows(PnInternalException.class, () -> sqsService.toJson(new CodeSqsDto()));
+    }
+
+    @Test
+    void toObjectShouldDeserializeMessage() throws Exception {
+        SqsService sqsService = new SqsService(
+                amazonSQS,
+                objectMapper,
+                nationalRegistriesConfig
+        );
+        CodeSqsDto expected = new CodeSqsDto();
+        when(objectMapper.readValue("message", CodeSqsDto.class)).thenReturn(expected);
+
+        CodeSqsDto result = sqsService.toObject("message", CodeSqsDto.class);
+
+        assertSame(expected, result);
+        verify(objectMapper).readValue("message", CodeSqsDto.class);
+    }
+
+    @Test
+    void toObjectShouldThrowPnInternalExceptionWhenDeserializationFails() throws Exception {
+        SqsService sqsService = new SqsService(
+                amazonSQS,
+                objectMapper,
+                nationalRegistriesConfig
+        );
+        when(objectMapper.readValue("message", CodeSqsDto.class))
+                .thenThrow(new JsonProcessingException("deserialization failed") { });
+
+        assertThrows(PnInternalException.class, () -> sqsService.toObject("message", CodeSqsDto.class));
     }
 }

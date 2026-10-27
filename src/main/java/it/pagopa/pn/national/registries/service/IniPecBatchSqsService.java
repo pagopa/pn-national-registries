@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.RecipientType;
@@ -8,9 +9,9 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -33,23 +34,16 @@ import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipi
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class IniPecBatchSqsService {
 
     private final IniPecBatchRequestRepository batchRequestRepository;
     private final SqsService sqsService;
+    private final NationalRegistriesConfig config;
 
     private static final int MAX_BATCH_REQUEST_SIZE = 100;
     private static final String DOMICILE_TYPE = "DIGITAL";
-    private final String batchRequestPkSeparator;
 
-
-    public IniPecBatchSqsService(IniPecBatchRequestRepository batchRequestRepository,
-                                 SqsService sqsService,
-                                 @Value("${pn.national-registries.inipec.batchrequest-pk-separator}") String batchRequestPkSeparator) {
-        this.batchRequestRepository = batchRequestRepository;
-        this.sqsService = sqsService;
-        this.batchRequestPkSeparator = batchRequestPkSeparator;
-    }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.sqs.recovery.delay}")
     @SchedulerLock(name = "recoveryBatchSendToSqs", lockAtMostFor = "${pn.national-registries.inipec.batch.sqs.recovery.lock-at-most}",
@@ -112,6 +106,7 @@ public class IniPecBatchSqsService {
                                 .onErrorResume(e -> Mono.empty());
                     } else {
                         RecipientType recipientType = retrieveRecipientType(item.getCf(), item.getRecipientType());
+                        String batchRequestPkSeparator = config.getInipec().getBatchRequestPkSeparator();
                         return sqsService.pushToInputDlqQueue(InternalCodeSqsDto.builder()
                                         .taxId(item.getCf())
                                         .correlationId(item.getCorrelationId().split(batchRequestPkSeparator)[0])
@@ -160,6 +155,7 @@ public class IniPecBatchSqsService {
 
     private InternalCodeSqsDto toInternalCodeSqsDto(BatchRequest batchRequest) {
         RecipientType recipientType = retrieveRecipientType(batchRequest.getCf(), batchRequest.getRecipientType());
+        String batchRequestPkSeparator = config.getInipec().getBatchRequestPkSeparator();
         return InternalCodeSqsDto.builder()
                 .taxId(batchRequest.getCf())
                 .recipientType(recipientType.name())

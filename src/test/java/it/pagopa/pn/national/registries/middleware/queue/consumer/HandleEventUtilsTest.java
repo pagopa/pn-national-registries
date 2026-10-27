@@ -35,6 +35,35 @@ class HandleEventUtilsTest {
     }
 
 
+    @Test
+    void mapStandardEventHeaderWithoutValuesKeepsNullFields() {
+        StandardEventHeader actual = HandleEventUtils.mapStandardEventHeader(new MessageHeaders(new HashMap<>()));
+
+        Assertions.assertNull(actual.getEventId());
+        Assertions.assertNull(actual.getIun());
+        Assertions.assertNull(actual.getEventType());
+        Assertions.assertNull(actual.getCreatedAt());
+        Assertions.assertNull(actual.getPublisher());
+    }
+
+    @Test
+    void handleExceptionWithHeaders() {
+        Assertions.assertDoesNotThrow(() ->
+                HandleEventUtils.handleException(buildMessageHeaders(), new RuntimeException("error", new IllegalStateException("cause"))));
+    }
+
+    @Test
+    void handleExceptionWithHeadersAndExceptionWithoutCause() {
+        Assertions.assertDoesNotThrow(() ->
+                HandleEventUtils.handleException(buildMessageHeaders(), new RuntimeException("error")));
+    }
+
+    @Test
+    void handleExceptionWithNullHeaders() {
+        Assertions.assertDoesNotThrow(() ->
+                HandleEventUtils.handleException(null, new RuntimeException("error")));
+    }
+
     private MessageHeaders buildMessageHeaders() {
         Map<String, Object> map = new HashMap<>();
         map.put(PN_EVENT_HEADER_EVENT_ID, "001");

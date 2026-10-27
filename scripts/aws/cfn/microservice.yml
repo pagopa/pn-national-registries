@@ -654,6 +654,13 @@ Parameters:
       - true
       - false
 
+  EnableOldInipecFlow:
+    Type: String
+    Description: 'Enable INIPEC old workflow. If disabled, the new workflow is used.'
+    AllowedValues:
+      - true
+      - false
+
   CpuArchitecture:
     Type: String
     Default: 'ARM'
@@ -778,6 +785,7 @@ Resources:
         ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${PnNationalRegistriesBatchesTableName}'
         ContainerEnvEntry82: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADMASSIVEAPI=${EnableInadMassiveApi}'
         ContainerEnvEntry83: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRETRYAFTER=${PnNationalRegistriesInipecRequestRetryAfter}'
+        ContainerEnvEntry84: !Sub 'PN_NATIONALREGISTRIES_ENABLEOLDINIPECFLOW=${EnableOldInipecFlow}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'

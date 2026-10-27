@@ -214,6 +214,17 @@ public class GatewayConverter {
         return dto;
     }
 
+    public static GetDigitalAddressIniPECRequestBodyDto convertToGetDigitalAddressIniPecRequest(String correlationId, String taxId) {
+        GetDigitalAddressIniPECRequestBodyDto dto = new GetDigitalAddressIniPECRequestBodyDto();
+        GetDigitalAddressIniPECRequestBodyFilterDto filterDto = new GetDigitalAddressIniPECRequestBodyFilterDto();
+
+        filterDto.setCorrelationId(correlationId);
+        filterDto.setTaxId(taxId);
+
+        dto.setFilter(filterDto);
+        return dto;
+    }
+
     public static IPARequestBodyDto convertToGetIpaPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
         IPARequestBodyDto dto = new IPARequestBodyDto();
         CheckTaxIdRequestBodyFilterDto filterDto = new CheckTaxIdRequestBodyFilterDto();
@@ -331,7 +342,13 @@ public class GatewayConverter {
         nationalRegistriesRequest.setCreatedAt(now);
         nationalRegistriesRequest.setAttemptAfter(formatInstant(now));
         nationalRegistriesRequest.setCorrelationId(addressRequestBodyDto.getFilter().getCorrelationId());
-        nationalRegistriesRequest.setReferenceRequestDate(addressRequestBodyDto.getFilter().getReferenceRequestDate().toString());
+        // Date -> Instant -> ISO-8601
+        nationalRegistriesRequest.setReferenceRequestDate(
+                addressRequestBodyDto.getFilter()
+                        .getReferenceRequestDate()
+                        .toInstant()
+                        .toString()
+        );
         nationalRegistriesRequest.setDomicileType(addressRequestBodyDto.getFilter().getDomicileType().getValue());
         nationalRegistriesRequest.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
         nationalRegistriesRequest.setRecipientType(recipientType.name());

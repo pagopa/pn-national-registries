@@ -348,7 +348,7 @@ class InadPollingPFFallbackIT extends AbstractNationalRegistriesComponentIT {
     }
 
     @Test
-    void shouldPropagateUnhandledConsumerErrorAndLeaveStateUntouched() {
+    void shouldScheduleRetryOnUnhandledConsumerErrorAndLeaveRequestUntouched() {
         String batchId = "batch-unhandled";
         String pollingId = "polling-unhandled";
         putBatch(batchId, BatchesStatusEnum.WORKING, 1);
@@ -356,11 +356,11 @@ class InadPollingPFFallbackIT extends AbstractNationalRegistriesComponentIT {
 
         when(inadClient.checkMassiveRequestStatus(pollingId)).thenReturn(Mono.error(new IllegalStateException("unexpected infrastructure error")));
 
-        Assertions.assertThrows(RuntimeException.class, () -> consume(pollingPayload(batchId, pollingId, 1, 0, 0)));
+        consume(pollingPayload(batchId, pollingId, 1, 0, 0));
 
         NationalRegistriesBatch batch = getBatch(batchId);
-        Assertions.assertEquals(BatchesStatusEnum.WORKING, batch.getStatus());
-        Assertions.assertEquals(0, batch.getErrorRetryCount());
+        Assertions.assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
+        Assertions.assertEquals(1, batch.getErrorRetryCount());
         Assertions.assertEquals(0, batch.getInProgressRetryCount());
         Assertions.assertEquals(RequestStatusEnum.WORKING, findRequest(batchId, "corr-unhandled", GatewayDownstreamService.INAD).getStatus());
     }

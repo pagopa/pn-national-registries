@@ -21,7 +21,10 @@ import reactor.test.StepVerifier;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_IPA_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -146,6 +149,91 @@ class IpaServiceTest {
                 .verify();
     }
 
+    @Test
+    void getIpaPec_shouldUseWs23ConversionWhenMultipleItemsButDataIsEmpty() {
+        IpaService ipaService = buildService();
+        WS23ResponseDto ws23ResponseDto = ws23Response(2, 0, "", List.of());
+        IPAPecDto expected = new IPAPecDto();
+        expected.setDomicilioDigitale("ws23@pec.it");
+
+        when(ipaClient.callEServiceWS23(TAX_ID, AUTH_ID)).thenReturn(Mono.just(ws23ResponseDto));
+        when(ipaConverter.convertToIpaPecDtoFromWS23(ws23ResponseDto)).thenReturn(expected);
+
+        StepVerifier.create(ipaService.getIpaPec(request(TAX_ID)))
+                .expectNext(expected)
+                .verifyComplete();
+
+        verify(ipaClient, never()).callEServiceWS05(any(), any());
+        verify(ipaConverter).convertToIpaPecDtoFromWS23(ws23ResponseDto);
+    }
+
+    @Test
+    void getIpaPec_shouldUseWs23ConversionWhenResultIsNull() {
+        IpaService ipaService = buildService();
+        WS23ResponseDto ws23ResponseDto = new WS23ResponseDto();
+        ws23ResponseDto.setData(List.of(ws23Data("cod-amm")));
+        IPAPecDto expected = new IPAPecDto();
+        expected.setDomicilioDigitale("ws23@pec.it");
+
+        when(ipaClient.callEServiceWS23(TAX_ID, AUTH_ID)).thenReturn(Mono.just(ws23ResponseDto));
+        when(ipaConverter.convertToIpaPecDtoFromWS23(ws23ResponseDto)).thenReturn(expected);
+
+        StepVerifier.create(ipaService.getIpaPec(request(TAX_ID)))
+                .expectNext(expected)
+                .verifyComplete();
+
+        verify(ipaClient, never()).callEServiceWS05(any(), any());
+    }
+
+    @Test
+    void getIpaPec_shouldPropagateWs05FunctionalError() {
+        IpaService ipaService = buildService();
+        WS23ResponseDto ws23ResponseDto = ws23Response(2, 0, "", List.of(ws23Data("cod-amm"), ws23Data("cod-amm-2")));
+        WS05ResponseDto ws05ResponseDto = ws05Response(1, 1, "WS05 error", "mail1@pec.it");
+
+        when(ipaClient.callEServiceWS23(TAX_ID, AUTH_ID)).thenReturn(Mono.just(ws23ResponseDto));
+        when(ipaClient.callEServiceWS05("cod-amm", AUTH_ID)).thenReturn(Mono.just(ws05ResponseDto));
+
+        StepVerifier.create(ipaService.getIpaPec(request(TAX_ID)))
+                .expectErrorSatisfies(error -> {
+                    assertInstanceOf(PnNationalRegistriesException.class, error);
+                    PnNationalRegistriesException exception = (PnNationalRegistriesException) error;
+                    assertEquals(HttpStatus.BAD_REQUEST, exception.getStatusCode());
+                    assertEquals("WS05 error", exception.getMessage());
+                })
+                .verify();
+
+        verify(ipaConverter, never()).convertToIPAPecDtoFromWS05(any());
+    }
+
+    @Test
+    void getIpaPec_shouldPropagateWs05TechnicalError() {
+        IpaService ipaService = buildService();
+        WS23ResponseDto ws23ResponseDto = ws23Response(2, 0, "", List.of(ws23Data("cod-amm"), ws23Data("cod-amm-2")));
+        RuntimeException technicalError = new RuntimeException("WS05 unavailable");
+
+        when(ipaClient.callEServiceWS23(TAX_ID, AUTH_ID)).thenReturn(Mono.just(ws23ResponseDto));
+        when(ipaClient.callEServiceWS05("cod-amm", AUTH_ID)).thenReturn(Mono.error(technicalError));
+
+        StepVerifier.create(ipaService.getIpaPec(request(TAX_ID)))
+                .expectErrorMatches(error -> error == technicalError)
+                .verify();
+
+        verify(ipaConverter, never()).convertToIPAPecDtoFromWS05(any());
+    }
+
+    @Test
+    void getIpaPec_shouldStopWhenTaxIdValidationFails() {
+        IpaService ipaService = new IpaService(ipaConverter, ipaClient, validateTaxIdUtils, pnNationalRegistriesSecretService, ipaSecretConfig);
+        RuntimeException validationError = new RuntimeException("invalid tax id");
+        doThrow(validationError).when(validateTaxIdUtils).validateTaxId(TAX_ID, PROCESS_NAME_IPA_ADDRESS, false);
+
+        RuntimeException thrown = assertThrows(RuntimeException.class, () -> ipaService.getIpaPec(request(TAX_ID)));
+
+        assertSame(validationError, thrown);
+        verifyNoInteractions(pnNationalRegistriesSecretService, ipaClient, ipaConverter);
+    }
+
     private IpaService buildService() {
         IpaSecret ipaSecret = new IpaSecret();
         ipaSecret.setAuthId(AUTH_ID);
@@ -195,4 +283,3 @@ class IpaServiceTest {
         return data;
     }
 }
-

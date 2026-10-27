@@ -21,9 +21,11 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -317,6 +319,17 @@ class GatewayConverterTest {
     }
 
     @Test
+    void testConvertToGetDigitalAddressIniPecRequest() {
+        GetDigitalAddressIniPECRequestBodyDto result =
+                gatewayConverter.convertToGetDigitalAddressIniPecRequest(C_ID, CF);
+
+        assertNotNull(result);
+        assertNotNull(result.getFilter());
+        assertEquals(C_ID, result.getFilter().getCorrelationId());
+        assertEquals(CF, result.getFilter().getTaxId());
+    }
+
+    @Test
     void testToAddressQueryRequests() {
         RecipientAddressRequestBodyDto address =
                 new RecipientAddressRequestBodyDto();
@@ -553,8 +566,9 @@ class GatewayConverterTest {
         );
 
         assertNotNull(result.getCreatedAt());
+        assertEquals(formatInstant(result.getCreatedAt()), result.getAttemptAfter());
         assertEquals(C_ID, result.getCorrelationId());
-        assertEquals(referenceDate.toString(), result.getReferenceRequestDate());
+        assertEquals(referenceDate.toInstant().atZone(ZoneOffset.UTC).toString(), result.getReferenceRequestDate());
         assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue(), result.getDomicileType());
         assertEquals(CF, result.getTaxId());
         assertEquals(RecipientType.PF.name(), result.getRecipientType());
@@ -645,5 +659,252 @@ class GatewayConverterTest {
                 gatewayConverter.errorInadToSqsDto(C_ID, exception);
 
         assertNull(result);
+    }
+
+    // ---- errori reali (non mock): solo 404 + pattern specifico deve diventare risposta "non trovato" ----
+
+    private static PnNationalRegistriesException pnException(String message, int status, String body) {
+        return new PnNationalRegistriesException(message, status, "status", null,
+                body == null ? null : body.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                java.nio.charset.StandardCharsets.UTF_8, Object.class);
+    }
+
+    @Test
+    void errorAnprToSqsDtoReturnsNullWhenStatusIsNotNotFoundEvenWithEN122() {
+        assertNull(GatewayConverter.errorAnprToSqsDto(C_ID, pnException("err", 500, "{\"codiceErroreAnomalia\":\"EN122\"}")));
+        assertNull(GatewayConverter.errorAnprToSqsDto(C_ID, pnException("err", 400, "{\"codiceErroreAnomalia\":\"EN122\"}")));
+    }
+
+    @Test
+    void errorAnprToSqsDtoReturnsNullWhenNotFoundWithOtherErrorCodeOrEmptyBody() {
+        assertNull(GatewayConverter.errorAnprToSqsDto(C_ID, pnException("err", 404, "{\"codiceErroreAnomalia\":\"EN999\"}")));
+        assertNull(GatewayConverter.errorAnprToSqsDto(C_ID, pnException("err", 404, null)));
+        assertNull(GatewayConverter.errorAnprToSqsDto(C_ID, pnException("err", 404, "")));
+    }
+
+    @Test
+    void errorAnprToSqsDtoMatchesEN122CaseInsensitiveWithSpaces() {
+        CodeSqsDto result = GatewayConverter.errorAnprToSqsDto(C_ID, pnException("err", 404, "{\"codiceErroreAnomalia\" : \"en122\"}"));
+
+        assertNotNull(result);
+        assertEquals(GatewayDownstreamService.ANPR.name(), result.getRegistry());
+    }
+
+    @Test
+    void isAnprAddressNotFoundPredicateMatchesOnlyNotFoundWithEN122() {
+        assertTrue(GatewayConverter.isAnprAddressNotFound.test(pnException("err", 404, "{\"codiceErroreAnomalia\":\"EN122\"}")));
+        assertFalse(GatewayConverter.isAnprAddressNotFound.test(pnException("err", 500, "{\"codiceErroreAnomalia\":\"EN122\"}")));
+        assertFalse(GatewayConverter.isAnprAddressNotFound.test(pnException("err", 404, "{\"codiceErroreAnomalia\":\"EN001\"}")));
+        assertFalse(GatewayConverter.isAnprAddressNotFound.test(new RuntimeException("x")));
+    }
+
+    @Test
+    void errorInadToSqsDtoMatchesBodyDetailWhenStatusIsNotFound() {
+        CodeSqsDto result = GatewayConverter.errorInadToSqsDto(C_ID, pnException("other", 404, "{\"detail\":\"CF non trovato\"}"));
+
+        assertNotNull(result);
+        assertTrue(result.getDigitalAddress().isEmpty());
+    }
+
+    @Test
+    void errorInadToSqsDtoMatchesMessageCaseInsensitiveWhenBodyIsEmpty() {
+        assertNotNull(GatewayConverter.errorInadToSqsDto(C_ID, pnException("cf NON trovato", 404, null)));
+    }
+
+    @Test
+    void errorInadToSqsDtoReturnsNullForNotFoundWithDifferentDetail() {
+        assertNull(GatewayConverter.errorInadToSqsDto(C_ID, pnException("other", 404, "{\"detail\":\"altro errore\"}")));
+    }
+
+    @Test
+    void errorInadToSqsDtoReturnsNullWhenStatusIsNotNotFound() {
+        assertNull(GatewayConverter.errorInadToSqsDto(C_ID, pnException("CF non trovato", 400, "{\"detail\":\"CF non trovato\"}")));
+        assertNull(GatewayConverter.errorInadToSqsDto(C_ID, pnException("CF non trovato", 500, null)));
+    }
+
+    // ---- INAD: tipo destinatario dell'indirizzo ----
+
+    private static GetDigitalAddressINADOKDto inadResponse(String taxId, String pec, String profession) {
+        DigitalAddressDto digitalAddress = new DigitalAddressDto();
+        digitalAddress.setDigitalAddress(pec);
+        digitalAddress.setPracticedProfession(profession);
+        GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
+        response.setTaxId(taxId);
+        response.setDigitalAddress(digitalAddress);
+        return response;
+    }
+
+    @Test
+    void inadToSqsDtoMapsElevenDigitTaxIdWithoutProfessionToImpresa() {
+        CodeSqsDto result = GatewayConverter.inadToSqsDto(C_ID, inadResponse("12345678901", "impresa@pec.it", null));
+
+        assertEquals(DigitalAddressRecipientType.IMPRESA.getValue(), result.getDigitalAddress().getFirst().getRecipient());
+    }
+
+    @Test
+    void inadToSqsDtoMapsProfessionToProfessionista() {
+        CodeSqsDto forCf = GatewayConverter.inadToSqsDto(C_ID, inadResponse(CF, "pro@pec.it", "AVVOCATO"));
+        CodeSqsDto forPiva = GatewayConverter.inadToSqsDto(C_ID, inadResponse("12345678901", "pro@pec.it", "AVVOCATO"));
+
+        assertEquals(DigitalAddressRecipientType.PROFESSIONISTA.getValue(), forCf.getDigitalAddress().getFirst().getRecipient());
+        assertEquals(DigitalAddressRecipientType.PROFESSIONISTA.getValue(), forPiva.getDigitalAddress().getFirst().getRecipient());
+    }
+
+    @Test
+    void inadToSqsDtoWithoutDigitalAddressReturnsEmptyList() {
+        GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
+        response.setTaxId(CF);
+
+        CodeSqsDto result = GatewayConverter.inadToSqsDto(C_ID, response);
+
+        assertTrue(result.getDigitalAddress().isEmpty());
+        assertEquals(GatewayDownstreamService.INAD.name(), result.getRegistry());
+    }
+
+    @Test
+    void ipaToSqsDtoWithoutDomicilioDigitaleHasNoAddresses() {
+        CodeSqsDto result = GatewayConverter.ipaToSqsDto(C_ID, new IPAPecDto());
+
+        assertNull(result.getDigitalAddress());
+        assertEquals(GatewayDownstreamService.IPA.name(), result.getRegistry());
+    }
+
+    @Test
+    void anprToSqsDtoUsesOnlyFirstResidentialAddress() {
+        ResidentialAddressDto first = new ResidentialAddressDto();
+        first.setAddress("Via Prima");
+        ResidentialAddressDto second = new ResidentialAddressDto();
+        second.setAddress("Via Seconda");
+        GetAddressANPROKDto response = new GetAddressANPROKDto();
+        response.setResidentialAddresses(List.of(first, second));
+
+        CodeSqsDto result = GatewayConverter.anprToSqsDto(C_ID, response);
+
+        assertEquals("Via Prima", result.getPhysicalAddress().getAddress());
+    }
+
+    @Test
+    void regImpToSqsDtoWithoutProfessionalAddressHasNoPhysicalAddress() {
+        CodeSqsDto result = GatewayConverter.regImpToSqsDto(C_ID, new GetAddressRegistroImpreseOKDto());
+
+        assertNull(result.getPhysicalAddress());
+        assertEquals(GatewayDownstreamService.REGISTRO_IMPRESE.name(), result.getRegistry());
+    }
+
+    // ---- richieste multiple e costruttori ----
+
+    @Test
+    void toAddressQueryRequestsMapsEveryAddressIncludingPg() {
+        RecipientAddressRequestBodyDto pf = new RecipientAddressRequestBodyDto();
+        pf.setTaxId(CF);
+        pf.setRecIndex(0);
+        pf.setRecipientType(RecipientAddressRequestBodyDto.RecipientTypeEnum.PF);
+        RecipientAddressRequestBodyDto pg = new RecipientAddressRequestBodyDto();
+        pg.setTaxId("12345678901");
+        pg.setRecIndex(1);
+        pg.setRecipientType(RecipientAddressRequestBodyDto.RecipientTypeEnum.PG);
+        PhysicalAddressesRequestBodyDto request = new PhysicalAddressesRequestBodyDto();
+        request.setCorrelationId(C_ID);
+        request.setReferenceRequestDate(new Date());
+        request.setAddresses(List.of(pf, pg));
+
+        List<AddressQueryRequest> result = GatewayConverter.toAddressQueryRequests(request);
+
+        assertEquals(2, result.size());
+        assertEquals(RecipientType.PF, result.get(0).getRecipientType());
+        assertEquals(0, result.get(0).getRecIndex());
+        assertEquals(RecipientType.PG, result.get(1).getRecipientType());
+        assertEquals("12345678901", result.get(1).getTaxId());
+        assertEquals(1, result.get(1).getRecIndex());
+    }
+
+    @Test
+    void toAddressQueryRequestsWithNoAddressesReturnsEmptyList() {
+        PhysicalAddressesRequestBodyDto request = new PhysicalAddressesRequestBodyDto();
+        request.setCorrelationId(C_ID);
+        request.setAddresses(List.of());
+
+        assertTrue(GatewayConverter.toAddressQueryRequests(request).isEmpty());
+    }
+
+    @Test
+    void convertToGetAddressAnprRequestFromQueryRequestFormatsDate() {
+        Date referenceDate = Date.from(LocalDate.of(2026, 9, 10).atStartOfDay(ZoneId.systemDefault()).toInstant());
+        AddressQueryRequest queryRequest = AddressQueryRequest.builder()
+                .correlationId(C_ID).taxId(CF).referenceRequestDate(referenceDate).build();
+
+        GetAddressANPRRequestBodyDto result = GatewayConverter.convertToGetAddressAnprRequest(queryRequest);
+
+        assertEquals(C_ID, result.getFilter().getRequestReason());
+        assertEquals(CF, result.getFilter().getTaxId());
+        assertEquals("2026-09-10", result.getFilter().getReferenceRequestDate());
+    }
+
+    @Test
+    void convertToGetAddressRegistroImpreseRequestFromQueryRequestUsesTaxId() {
+        AddressQueryRequest queryRequest = AddressQueryRequest.builder().taxId("12345678901").build();
+
+        assertEquals("12345678901", GatewayConverter.convertToGetAddressRegistroImpreseRequest(queryRequest).getFilter().getTaxId());
+    }
+
+    @Test
+    void convertToGetDigitalAddressInadRequestSetsPracticalReferenceAndTaxId() {
+        var result = GatewayConverter.convertToGetDigitalAddressInadRequest(C_ID, CF);
+
+        assertEquals(CF, result.getFilter().getTaxId());
+        assertEquals(C_ID, result.getFilter().getPracticalReference());
+    }
+
+    @Test
+    void toAddressRequestBodyDtoMapsPayloadFields() {
+        Date referenceDate = new Date();
+        it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent.Payload payload =
+                it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent.Payload.builder()
+                        .correlationId(C_ID).taxId(CF).domicileType("PHYSICAL").referenceRequestDate(referenceDate).build();
+
+        AddressRequestBodyDto result = GatewayConverter.toAddressRequestBodyDto(payload);
+
+        assertEquals(C_ID, result.getFilter().getCorrelationId());
+        assertEquals(CF, result.getFilter().getTaxId());
+        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL, result.getFilter().getDomicileType());
+        assertEquals(referenceDate, result.getFilter().getReferenceRequestDate());
+    }
+
+    @Test
+    void constructBatchEntityInitializesBatchInRequestSentStatus() {
+        java.time.Instant now = java.time.Instant.parse("2026-01-01T10:00:00Z");
+        List<NationalRegistriesRequest> requests = List.of(new NationalRegistriesRequest(), new NationalRegistriesRequest());
+
+        var batch = GatewayConverter.constructBatchEntity("batch-id", requests, now, GatewayDownstreamService.INAD, "polling-id");
+
+        assertEquals("batch-id", batch.getBatchId());
+        assertEquals("batch-id", batch.getPracticalReferenceValue());
+        assertEquals("polling-id", batch.getPollingId());
+        assertEquals(GatewayDownstreamService.INAD.name(), batch.getRegistry());
+        assertEquals(2, batch.getBatchSize());
+        assertEquals(now, batch.getCreatedAt());
+        assertEquals(now, batch.getUpdatedAt());
+        assertNull(batch.getAttemptAfter());
+        assertEquals(it.pagopa.pn.national.registries.constant.BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
+        assertEquals(0, batch.getErrorRetryCount());
+        assertEquals(0, batch.getInProgressRetryCount());
+    }
+
+    @Test
+    void constructNationalRegistriesRequestBuildsRegistryStatusForEveryRegistryAndRecipient() {
+        AddressRequestBodyFilterDto filter = new AddressRequestBodyFilterDto();
+        filter.setCorrelationId(C_ID);
+        filter.setTaxId("12345678901");
+        filter.setDomicileType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+        filter.setReferenceRequestDate(new Date());
+        AddressRequestBodyDto request = new AddressRequestBodyDto();
+        request.setFilter(filter);
+
+        NationalRegistriesRequest result = GatewayConverter.constructNationalRegistriesRequest(request, RecipientType.PG, null, GatewayDownstreamService.INIPEC);
+
+        assertEquals("INIPEC#NOT_WORKED", result.getRegistryStatus());
+        assertEquals("PG", result.getRecipientType());
+        assertNull(result.getClientId());
+        assertNotNull(result.getAttemptAfter());
     }
 }

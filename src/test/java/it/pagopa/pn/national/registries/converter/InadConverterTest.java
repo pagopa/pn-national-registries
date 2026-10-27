@@ -141,6 +141,17 @@ class InadConverterTest {
     }
 
     @Test
+    void mapToResponseOkShouldMapDateEndValidity() {
+        Date dateEndValidity = daysFromNow(1);
+        ElementDigitalAddress address = createAddress("valid@pec.it", null, dateEndValidity, null);
+        ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), address);
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
+        assertNotNull(result.getDigitalAddress());
+        assertNotNull(result.getDigitalAddress().getUsageInfo());
+        assertEquals(dateEndValidity, result.getDigitalAddress().getUsageInfo().getDateEndValidity());
+    }
+
+    @Test
     void mapToResponseOkShouldMapCessazioneUfficioMotivation() {
         ElementDigitalAddress address = createAddress("valid@pec.it", null, daysFromNow(1), MotivationTermination.CESSAZIONE_UFFICIO);
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), address);
@@ -179,6 +190,114 @@ class InadConverterTest {
         GetDigitalAddressINADOKDto result = assertDoesNotThrow(() -> InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationId"));
         assertEquals(VALID_CF, result.getTaxId());
         assertNull(result.getDigitalAddress());
+    }
+
+    @Test
+    void mapToResponseOkShouldNotSetAddressForPgWhenTaxIdIsNotPiva() {
+        ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), createPersonalAddress("company@pec.it"));
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PG, VALID_CF, false, "correlationid");
+        assertNull(result.getDigitalAddress());
+    }
+
+    @Test
+    void mapToResponseOkShouldNotSetAddressForPgWhenMoreThanOneAddress() {
+        ResponseRequestDigitalAddress input = createResponse(VALID_PIVA, new Date(),
+                createPersonalAddress("company1@pec.it"), createPersonalAddress("company2@pec.it"));
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PG, VALID_PIVA, false, "correlationid");
+        assertNull(result.getDigitalAddress());
+    }
+
+    @Test
+    void mapToResponseOkShouldNotSetAddressForPgWhenAddressIsProfessional() {
+        ResponseRequestDigitalAddress input = createResponse(VALID_PIVA, new Date(),
+                createProfessionalAddress("professional@pec.it", "AVVOCATO"));
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PG, VALID_PIVA, false, "correlationid");
+        assertNull(result.getDigitalAddress());
+    }
+
+    @Test
+    void mapToResponseOkShouldNotSetAddressForPgWhenAllAddressesAreExpired() {
+        ResponseRequestDigitalAddress input = createResponse(VALID_PIVA, new Date(),
+                createAddress("expired@pec.it", null, daysFromNow(-2), MotivationTermination.CESSAZIONE_VOLONTARIA));
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PG, VALID_PIVA, false, "correlationid");
+        assertNull(result.getDigitalAddress());
+    }
+
+    @Test
+    void mapToResponseOkShouldThrowForPfWhenAllAddressesAreExpired() {
+        ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(),
+                createAddress("expired@pec.it", null, daysFromNow(-2), MotivationTermination.CESSAZIONE_UFFICIO));
+        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(input, PF, VALID_CF, true, "correlationId"));
+    }
+
+    @Test
+    void mapToResponseOkShouldThrowForPfWhenResponseTaxIdIsNotACodiceFiscale() {
+        ResponseRequestDigitalAddress input = createResponse(VALID_PIVA, new Date(), createPersonalAddress("personal@pec.it"));
+        PnNationalRegistriesException exception = assertThrows(PnNationalRegistriesException.class,
+                () -> InadConverter.mapToResponseOk(input, PF, VALID_PIVA, false, "correlationId"));
+        assertEquals(org.springframework.http.HttpStatus.NOT_FOUND, exception.getStatusCode());
+    }
+
+    @Test
+    void mapToResponseOkShouldKeepInvalidPersonalEmailForPfWhenFallbackDisabledAndLeaveValidationToCaller() {
+        ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), createPersonalAddress("not-an-email"));
+        GetDigitalAddressINADOKDto result = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
+        assertNotNull(result.getDigitalAddress());
+        assertEquals("not-an-email", result.getDigitalAddress().getDigitalAddress());
+    }
+
+    @Test
+    void mapToResponseOkShouldThrowForPfWhenFallbackEnabledPersonalEmailInvalidAndNoProfessionalAddress() {
+        ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), createPersonalAddress("not-an-email"));
+        assertThrows(PnNationalRegistriesException.class,
+                () -> InadConverter.mapToResponseOk(input, PF, VALID_CF, true, "correlationid"));
+    }
+
+    @Test
+    void mapResponseByTaxIdShouldReturnEmptyMapForNullResponse() {
+        assertTrue(inadConverterInstance().mapResponseByTaxId(null).isEmpty());
+    }
+
+    @Test
+    void mapResponseByTaxIdShouldReturnEmptyMapForNullList() {
+        it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseListDigitalAddress response =
+                new it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseListDigitalAddress();
+        response.setList(null);
+        assertTrue(inadConverterInstance().mapResponseByTaxId(response).isEmpty());
+    }
+
+    @Test
+    void mapResponseByTaxIdShouldReturnEmptyMapForEmptyList() {
+        it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseListDigitalAddress response =
+                new it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseListDigitalAddress();
+        response.setList(List.of());
+        assertTrue(inadConverterInstance().mapResponseByTaxId(response).isEmpty());
+    }
+
+    @Test
+    void mapResponseByTaxIdShouldIndexByTaxIdKeepingFirstOnDuplicates() {
+        ResponseRequestDigitalAddress first = createResponse(VALID_CF, new Date(), createPersonalAddress("first@pec.it"));
+        ResponseRequestDigitalAddress duplicate = createResponse(VALID_CF, new Date(), createPersonalAddress("second@pec.it"));
+        ResponseRequestDigitalAddress other = createResponse(VALID_PIVA, new Date(), createPersonalAddress("other@pec.it"));
+        it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseListDigitalAddress response =
+                new it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseListDigitalAddress();
+        response.setList(List.of(first, duplicate, other));
+
+        java.util.Map<String, ResponseRequestDigitalAddress> result = inadConverterInstance().mapResponseByTaxId(response);
+
+        assertEquals(2, result.size());
+        assertSame(first, result.get(VALID_CF));
+        assertSame(other, result.get(VALID_PIVA));
+    }
+
+    private InadConverter inadConverterInstance() {
+        try {
+            java.lang.reflect.Constructor<InadConverter> constructor = InadConverter.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (ReflectiveOperationException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private ResponseRequestDigitalAddress createResponse(String taxId, Date since, ElementDigitalAddress... addresses) {

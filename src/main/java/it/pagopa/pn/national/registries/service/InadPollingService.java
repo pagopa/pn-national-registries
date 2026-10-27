@@ -8,7 +8,6 @@ import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InadConverter;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
-import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseStatusListDigitalAddress;
@@ -16,7 +15,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.S
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
-import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
@@ -51,9 +49,9 @@ public class InadPollingService {
 
     public Mono<Void> handleMessage(PnPollingEvent.Payload payload) {
         return callInadStatusEService(payload.getBatchId(), payload.getPollingId())
-                .flatMap(response -> handlePollingStatus(payload, response))
-                .onErrorResume(PnNationalRegistriesException.class, e -> incrementAndCheckRetry(payload.getBatchId(), payload.getErrorRetryCount(), payload.getInProgressRetryCount(), false, e)
-                        .then(Mono.empty()));
+                .onErrorResume(e -> incrementAndCheckRetry(payload.getBatchId(), payload.getErrorRetryCount(), payload.getInProgressRetryCount(), false, e)
+                        .then(Mono.empty()))
+                .flatMap(response -> handlePollingStatus(payload, response));
     }
 
     private Mono<ResponseStatusListDigitalAddress> callInadStatusEService(String batchId, String pollingId) {
@@ -81,10 +79,10 @@ public class InadPollingService {
 
     private Mono<Void> handleAvailableResult(PnPollingEvent.Payload payload) {
         return callInadResultEService(payload.getBatchId(), payload.getPollingId())
-                .flatMap(response -> handleSuccessfulPolling(payload.getBatchId(), payload.getBatchSize(), response))
-                .onErrorResume(PnNationalRegistriesException.class,
-                        e -> incrementAndCheckRetry(payload.getBatchId(), payload.getErrorRetryCount(), payload.getInProgressRetryCount(), false, e)
-                                .then(Mono.empty()));
+                .onErrorResume(e -> incrementAndCheckRetry(payload.getBatchId(), payload.getErrorRetryCount(), payload.getInProgressRetryCount(), false, e)
+                        .then(Mono.empty()))
+                .flatMap(response -> handleSuccessfulPolling(payload.getBatchId(), payload.getBatchSize(), response));
+
     }
 
     private Mono<ResponseListDigitalAddress> callInadResultEService(String batchId, String pollingId) {
