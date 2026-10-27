@@ -135,6 +135,7 @@ public class GatewayService{
 
     private Mono<Void> inizializeInipecRequest(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, RecipientType recipientType) {
         if (nationalRegistriesConfig.isEnableOldInipecFlow()) {
+            log.info("Creating request on legacy INIPEC flow for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId());
             return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto.getFilter().getCorrelationId(), addressRequestBodyDto.getFilter().getTaxId()), addressRequestBodyDto.getFilter().getReferenceRequestDate(), recipientType)
                     .then();
         }

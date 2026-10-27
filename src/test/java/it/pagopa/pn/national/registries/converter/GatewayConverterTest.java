@@ -21,6 +21,7 @@ import org.springframework.test.context.junit.jupiter.SpringExtension;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 
@@ -567,7 +568,7 @@ class GatewayConverterTest {
         assertNotNull(result.getCreatedAt());
         assertEquals(formatInstant(result.getCreatedAt()), result.getAttemptAfter());
         assertEquals(C_ID, result.getCorrelationId());
-        assertEquals(referenceDate.toString(), result.getReferenceRequestDate());
+        assertEquals(referenceDate.toInstant().atZone(ZoneOffset.UTC).toString(), result.getReferenceRequestDate());
         assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue(), result.getDomicileType());
         assertEquals(CF, result.getTaxId());
         assertEquals(RecipientType.PF.name(), result.getRecipientType());

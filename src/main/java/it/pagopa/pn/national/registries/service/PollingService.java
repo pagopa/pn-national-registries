@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
+import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -16,15 +17,12 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
-import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.Instant;
 import java.util.Date;
 import java.util.Optional;
 
-import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.converter.GatewayConverter.convertToGetDigitalAddressIniPecRequest;
 import static it.pagopa.pn.national.registries.entity.NationalRegistriesBatch.SK;
-import static it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService.INAD;
 import static it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService.INIPEC;
 
 @Component
@@ -67,13 +65,12 @@ public class PollingService {
 
     public Mono<Void> createFallbackRequest(NationalRegistriesRequest request, GatewayDownstreamService sourceRegistry, GatewayDownstreamService targetRegistry) {
         if(nationalRegistriesConfig.isEnableOldInipecFlow() && INIPEC.equals(targetRegistry)) {
+            log.info("Creating fallback request on legacy INIPEC flow for correlationId: {}", request.getCorrelationId());
             Date referenceRequestDate = Date.from(
-                    LocalDate.parse(request.getReferenceRequestDate())
-                            .atStartOfDay(ZoneOffset.UTC)
-                            .toInstant()
+                    Instant.parse(request.getReferenceRequestDate())
             );
-            return infoCamereService.getIniPecDigitalAddress(request.getClientId(), convertToGetDigitalAddressIniPecRequest(request.getCorrelationId(), request.getTaxId()), referenceRequestDate, PF)
-                    .then(markRequestAsWorked(request, INAD, null,false))
+            return infoCamereService.getIniPecDigitalAddress(request.getClientId(), convertToGetDigitalAddressIniPecRequest(request.getCorrelationId(), request.getTaxId()), referenceRequestDate, RecipientType.fromString(request.getRecipientType()))
+                    .then(markRequestAsWorked(request, sourceRegistry, null,false))
                     .then();
         }
         NationalRegistriesRequest fallbackRequest = new NationalRegistriesRequest(request, RequestStatusEnum.NOT_WORKED, targetRegistry, null);

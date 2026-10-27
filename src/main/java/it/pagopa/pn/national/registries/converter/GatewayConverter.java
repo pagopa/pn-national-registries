@@ -342,7 +342,13 @@ public class GatewayConverter {
         nationalRegistriesRequest.setCreatedAt(now);
         nationalRegistriesRequest.setAttemptAfter(formatInstant(now));
         nationalRegistriesRequest.setCorrelationId(addressRequestBodyDto.getFilter().getCorrelationId());
-        nationalRegistriesRequest.setReferenceRequestDate(addressRequestBodyDto.getFilter().getReferenceRequestDate().toString());
+        // Date -> Instant -> ISO-8601
+        nationalRegistriesRequest.setReferenceRequestDate(
+                addressRequestBodyDto.getFilter()
+                        .getReferenceRequestDate()
+                        .toInstant()
+                        .toString()
+        );
         nationalRegistriesRequest.setDomicileType(addressRequestBodyDto.getFilter().getDomicileType().getValue());
         nationalRegistriesRequest.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
         nationalRegistriesRequest.setRecipientType(recipientType.name());

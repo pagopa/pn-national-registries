@@ -41,7 +41,7 @@ class PollingServiceTest {
     private static final String CORRELATION_ID = "correlation-id";
     private static final String TAX_ID = "RSSMRA80A01H501U";
     private static final String CLIENT_ID = "client-id";
-    private static final String REFERENCE_REQUEST_DATE = "2026-01-01";
+    private static final String REFERENCE_REQUEST_DATE = "2026-01-01T00:00:00Z";
 
     private static final Instant CREATED_AT =
             Instant.parse("2026-01-01T10:00:00Z");
@@ -768,9 +768,7 @@ class PollingServiceTest {
                 );
 
         Date expectedDate = Date.from(
-                LocalDate.parse(REFERENCE_REQUEST_DATE)
-                        .atStartOfDay(ZoneOffset.UTC)
-                        .toInstant()
+                Instant.parse(REFERENCE_REQUEST_DATE)
         );
 
         assertEquals(
