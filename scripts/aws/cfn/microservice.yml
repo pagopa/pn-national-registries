@@ -656,7 +656,7 @@ Parameters:
 
   EnableOldInipecFlow:
     Type: String
-    Description: 'Enable INIPEC new workflow. If disabled, only the old workflow is used.'
+    Description: 'Enable INIPEC old workflow. If disabled, the new workflow is used.'
     AllowedValues:
       - true
       - false
