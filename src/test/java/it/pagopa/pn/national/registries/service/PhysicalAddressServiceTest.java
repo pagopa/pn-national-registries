@@ -545,6 +545,63 @@ class PhysicalAddressServiceTest {
 
 
     @Test
+    void retrieveAsyncPhysicalAddressFromAnpr_shouldReturnNotFoundWhenNoResidentialAddress() {
+        GetAddressANPROKDto response = new GetAddressANPROKDto();
+        response.setResidentialAddresses(List.of());
+        when(anprService.getAddressANPR(any(GetAddressANPRRequestBodyDto.class))).thenReturn(Mono.just(response));
+
+        StepVerifier.create(physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(buildAsyncRequest(), CORRELATION_ID))
+                .assertNext(result -> {
+                    AddressInternalResult.NotFound notFound = assertInstanceOf(AddressInternalResult.NotFound.class, result);
+                    assertEquals(CORRELATION_ID, notFound.codeSqsDto().getCorrelationId());
+                    assertEquals(GatewayDownstreamService.ANPR.name(), notFound.codeSqsDto().getRegistry());
+                    assertNull(notFound.codeSqsDto().getPhysicalAddress());
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void retrieveAsyncPhysicalAddressFromAnpr_shouldPropagateEN122ErrorToCaller() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException("not found", 404, "Not Found", null,
+                "{\"codiceErroreAnomalia\":\"EN122\"}".getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                java.nio.charset.StandardCharsets.UTF_8, Object.class);
+        when(anprService.getAddressANPR(any(GetAddressANPRRequestBodyDto.class))).thenReturn(Mono.error(exception));
+
+        StepVerifier.create(physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(buildAsyncRequest(), CORRELATION_ID))
+                .expectErrorMatches(error -> error == exception)
+                .verify();
+    }
+
+    @Test
+    void retrieveAsyncPhysicalAddressFromRegistroImprese_shouldReturnNotFoundWhenNoProfessionalAddress() {
+        when(infoCamereService.getRegistroImpreseLegalAddress(any(GetAddressRegistroImpreseRequestBodyDto.class)))
+                .thenReturn(Mono.just(new GetAddressRegistroImpreseOKDto()));
+
+        StepVerifier.create(physicalAddressService.retrieveAsyncPhysicalAddressFromRegistroImprese(buildAsyncRequest(), CORRELATION_ID))
+                .assertNext(result -> {
+                    AddressInternalResult.NotFound notFound = assertInstanceOf(AddressInternalResult.NotFound.class, result);
+                    assertEquals(GatewayDownstreamService.REGISTRO_IMPRESE.name(), notFound.codeSqsDto().getRegistry());
+                    assertNull(notFound.codeSqsDto().getPhysicalAddress());
+                })
+                .verifyComplete();
+    }
+
+    @Test
+    void retrieveAsyncPhysicalAddressFromAnpr_shouldSendTaxIdAndDateToAnpr() {
+        GetAddressANPROKDto response = new GetAddressANPROKDto();
+        when(anprService.getAddressANPR(any(GetAddressANPRRequestBodyDto.class))).thenReturn(Mono.just(response));
+
+        StepVerifier.create(physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(buildAsyncRequest(), CORRELATION_ID))
+                .expectNextCount(1)
+                .verifyComplete();
+
+        verify(anprService).getAddressANPR(argThat(body ->
+                TAX_ID.equals(body.getFilter().getTaxId())
+                        && CORRELATION_ID.equals(body.getFilter().getRequestReason())
+                        && body.getFilter().getReferenceRequestDate() != null));
+    }
+
+    @Test
     void isAnprAddressNotFound_shouldReturnTrueFor404WithEN122() {
         PnNationalRegistriesException exception =
                 mock(PnNationalRegistriesException.class);

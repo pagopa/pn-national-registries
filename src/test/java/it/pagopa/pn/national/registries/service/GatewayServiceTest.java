@@ -529,6 +529,162 @@ class GatewayServiceTest {
         );
     }
 
+    @Test
+    void retrieveDigitalOrPhysicalAddress_shouldThrowWhenRecipientTypeIsInvalid() {
+        AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+
+        assertThrows(it.pagopa.pn.commons.exceptions.PnInternalException.class,
+                () -> gatewayService.retrieveDigitalOrPhysicalAddress("XX", CX_ID, request));
+
+        verifyNoInteractions(sqsService, digitalAddressService, physicalAddressService, nationalRegistriesRequestsRepository);
+    }
+
+    @Test
+    void retrieveDigitalOrPhysicalAddress_shouldNotConsultPfPecFallbackFlagWhenInadFindsAddressForPf() {
+        AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
+        when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
+                .thenReturn(Mono.just(foundResult(GatewayDownstreamService.INAD, false)));
+        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
+                .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
+                .verifyComplete();
+
+        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.INAD.name().equals(message.getRegistry())), eq(CX_ID));
+        verifyNoInteractions(nationalRegistriesRequestsRepository);
+    }
+
+    @Test
+    void retrieveDigitalOrPhysicalAddress_shouldPropagateNotEligibleErrorForPfWhenFallbackEnabled() {
+        AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+        PnNationalRegistriesException exception = new PnNationalRegistriesException(
+                "not found", HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(),
+                null, null, Charset.defaultCharset(), null);
+
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
+                .thenReturn(Mono.error(exception));
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
+                .expectErrorMatches(error -> error == exception)
+                .verify();
+
+        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, never()).pushToInputDlqQueue(any(), any());
+    }
+
+    @Test
+    void retrieveDigitalOrPhysicalAddress_shouldUseInadMassiveApiEvenWhenPfPecFallbackIsEnabled() {
+        AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+
+        when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(true);
+        when(nationalRegistriesRequestsRepository.putRequest(any(NationalRegistriesRequest.class)))
+                .thenAnswer(invocation -> Mono.just((NationalRegistriesRequest) invocation.getArgument(0)));
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
+                .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
+                .verifyComplete();
+
+        verify(nationalRegistriesRequestsRepository).putRequest(argThat(r -> GatewayDownstreamService.INAD == r.getRegistry()));
+        verifyNoInteractions(digitalAddressService);
+        verify(sqsService, never()).pushToOutputQueue(any(), any());
+    }
+
+    @Test
+    void retrieveDigitalOrPhysicalAddress_shouldSendPgIpaBadRequestToDlq() {
+        AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+        PnNationalRegistriesException exception = new PnNationalRegistriesException(
+                "bad request", HttpStatus.BAD_REQUEST.value(), HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                null, null, Charset.defaultCharset(), null);
+
+        when(digitalAddressService.retrieveDigitalAddressFromIpa(request, C_ID)).thenReturn(Mono.error(exception));
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", CX_ID, request))
+                .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
+                .verifyComplete();
+
+        verify(sqsService).pushToInputDlqQueue(argThat(message -> "PG".equals(message.getRecipientType())), eq(CX_ID));
+        verify(sqsService, never()).pushToOutputQueue(any(), any());
+    }
+
+    @Test
+    void retrieveDigitalOrPhysicalAddress_shouldSendPgPhysicalTooManyRequestsToDlq() {
+        AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
+        PnNationalRegistriesException exception = new PnNationalRegistriesException(
+                "too many requests", HttpStatus.TOO_MANY_REQUESTS.value(), HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
+                null, null, Charset.defaultCharset(), null);
+
+        when(physicalAddressService.retrieveAsyncPhysicalAddressFromRegistroImprese(request, C_ID)).thenReturn(Mono.error(exception));
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", CX_ID, request))
+                .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
+                .verifyComplete();
+
+        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID));
+        verify(sqsService, never()).pushToOutputQueue(any(), any());
+    }
+
+    @Test
+    void handleExceptionAndSendToDlq_shouldPropagateErrorWhenNotEligible() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException(
+                "server error", HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(),
+                null, null, Charset.defaultCharset(), null);
+        InternalCodeSqsDto message = InternalCodeSqsDto.builder().taxId(CF).correlationId(C_ID).pnNationalRegistriesCxId(CX_ID).build();
+
+        StepVerifier.create(gatewayService.handleExceptionAndSendToDlq(exception, message))
+                .expectErrorMatches(error -> error == exception)
+                .verify();
+
+        verifyNoInteractions(sqsService);
+    }
+
+    @Test
+    void handleExceptionAndSendToDlq_shouldPropagateGenericException() {
+        RuntimeException exception = new RuntimeException("generic");
+        InternalCodeSqsDto message = InternalCodeSqsDto.builder().taxId(CF).correlationId(C_ID).pnNationalRegistriesCxId(CX_ID).build();
+
+        StepVerifier.create(gatewayService.handleExceptionAndSendToDlq(exception, message))
+                .expectErrorMatches(error -> error == exception)
+                .verify();
+
+        verifyNoInteractions(sqsService);
+    }
+
+    @Test
+    void handleExceptionAndSendToDlq_shouldSendTooManyRequestsToDlq() {
+        PnNationalRegistriesException exception = new PnNationalRegistriesException(
+                "too many requests", HttpStatus.TOO_MANY_REQUESTS.value(), HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
+                null, null, Charset.defaultCharset(), null);
+        InternalCodeSqsDto message = InternalCodeSqsDto.builder().taxId(CF).correlationId(C_ID).pnNationalRegistriesCxId(CX_ID).build();
+        when(sqsService.pushToInputDlqQueue(message, CX_ID)).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        StepVerifier.create(gatewayService.handleExceptionAndSendToDlq(exception, message))
+                .verifyComplete();
+
+        verify(sqsService).pushToInputDlqQueue(message, CX_ID);
+    }
+
+    @Test
+    void retrieveDigitalOrPhysicalAddressAsync_shouldAcceptNonNullCxIdWhenValidationIsDisabled() {
+        AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+
+        when(nationalRegistriesConfig.isValCxIdEnabled()).thenReturn(false);
+        when(sqsService.pushToInputQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
+                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+
+        StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PG", CX_ID, request))
+                .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
+                .verifyComplete();
+    }
+
     private AddressInternalResult.Found foundResult(GatewayDownstreamService registry, boolean physical) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(C_ID);

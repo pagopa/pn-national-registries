@@ -4,12 +4,15 @@ import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.national.registries.client.agenziaentrate.AdELegalClient;
 import it.pagopa.pn.national.registries.client.agenziaentrate.CheckCfClient;
 import it.pagopa.pn.national.registries.converter.AgenziaEntrateConverter;
+import it.pagopa.pn.national.registries.exceptions.RuntimeJAXBException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.dto.Richiesta;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ade.v1.dto.VerificaCodiceFiscale;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -18,6 +21,10 @@ import org.springframework.test.context.ContextConfiguration;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_AGENZIA_ENTRATE_LEGAL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
@@ -58,6 +65,11 @@ class AgenziaEntrateServiceTest {
 
         StepVerifier.create(agenziaEntrateService.callEService(requestBodyDto)).expectNext(checkTaxIdOKDto).verifyComplete();
 
+        ArgumentCaptor<Richiesta> requestCaptor = ArgumentCaptor.forClass(Richiesta.class);
+        verify(checkCfClient).callEService(requestCaptor.capture());
+        assertEquals("test", requestCaptor.getValue().getCodiceFiscale());
+        verify(validateTaxIdUtils).validateTaxId("test", PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID, true);
+        verify(agenziaEntrateConverter).convertToCfStatusDto(taxIdVerification);
     }
 
     @Test
@@ -72,8 +84,14 @@ class AgenziaEntrateServiceTest {
         checkTaxIdOKDto.setTaxId("test");
         when(validateUtils.taxIdIsInWhiteList(any())).thenReturn(true);
 
-        StepVerifier.create(agenziaEntrateService.callEService(requestBodyDto)).expectNext(checkTaxIdOKDto).verifyComplete();
+        StepVerifier.create(agenziaEntrateService.callEService(requestBodyDto))
+                .assertNext(result -> {
+                    assertEquals("test", result.getTaxId());
+                    assertEquals(true, result.getIsValid());
+                })
+                .verifyComplete();
 
+        verifyNoInteractions(validateTaxIdUtils, checkCfClient, agenziaEntrateConverter);
     }
 
     /**
@@ -91,6 +109,25 @@ class AgenziaEntrateServiceTest {
         when(validateUtils.taxIdIsInWhiteList(any())).thenReturn(false);
         assertThrows(IllegalArgumentException.class, () -> agenziaEntrateService.callEService(checkTaxIdRequestBodyDto));
         verify(checkCfClient).callEService(org.mockito.Mockito.any());
+    }
+
+    @Test
+    void callEServiceShouldPropagateReactiveClientError() {
+        CheckTaxIdRequestBodyDto requestBodyDto = new CheckTaxIdRequestBodyDto();
+        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        filter.setTaxId("test");
+        requestBodyDto.setFilter(filter);
+        RuntimeException error = new RuntimeException("service unavailable");
+
+        when(validateUtils.taxIdIsInWhiteList("test")).thenReturn(false);
+        when(checkCfClient.callEService(any())).thenReturn(Mono.error(error));
+
+        StepVerifier.create(agenziaEntrateService.callEService(requestBodyDto))
+                .expectErrorMatches(throwable -> throwable == error)
+                .verify();
+
+        verify(validateTaxIdUtils).validateTaxId("test", PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID, true);
+        verify(agenziaEntrateConverter, never()).convertToCfStatusDto(any());
     }
 
     /**
@@ -112,7 +149,7 @@ class AgenziaEntrateServiceTest {
     /**
      * Method under test: {@link AgenziaEntrateService#checkTaxIdAndVatNumber(ADELegalRequestBodyDto)}
      */
-   @Test
+    @Test
     void testCheckTaxIdAndVatNumber5() {
         when(adELegalClient.checkTaxIdAndVatNumberAdE(Mockito.any()))
                 .thenReturn((Mono<String>) mock(Mono.class));
@@ -124,8 +161,74 @@ class AgenziaEntrateServiceTest {
     }
 
     @Test
+    void checkTaxIdAndVatNumberShouldConvertValidSoapResponse() {
+        ADELegalRequestBodyFilterDto filter = new ADELegalRequestBodyFilterDto();
+        filter.setTaxId("RSSMRA80A01H501U");
+        filter.setVatNumber("00123456789");
+        ADELegalRequestBodyDto request = new ADELegalRequestBodyDto();
+        request.setFilter(filter);
+        ADELegalOKDto expected = new ADELegalOKDto();
+
+        when(adELegalClient.checkTaxIdAndVatNumberAdE(filter)).thenReturn(Mono.just(validSoapResponse()));
+        when(agenziaEntrateConverter.adELegalResponseToDto(any())).thenReturn(expected);
+
+        StepVerifier.create(agenziaEntrateService.checkTaxIdAndVatNumber(request))
+                .expectNext(expected)
+                .verifyComplete();
+
+        verify(validateTaxIdUtils).validateTaxId("RSSMRA80A01H501U", PROCESS_NAME_AGENZIA_ENTRATE_LEGAL, false);
+        verify(validateTaxIdUtils).validateTaxId("00123456789", PROCESS_NAME_AGENZIA_ENTRATE_LEGAL, false);
+        verify(adELegalClient).checkTaxIdAndVatNumberAdE(filter);
+        verify(agenziaEntrateConverter).adELegalResponseToDto(any());
+    }
+
+    @Test
+    void checkTaxIdAndVatNumberShouldWrapInvalidSoapResponse() {
+        ADELegalRequestBodyFilterDto filter = new ADELegalRequestBodyFilterDto();
+        filter.setTaxId("RSSMRA80A01H501U");
+        filter.setVatNumber("00123456789");
+        ADELegalRequestBodyDto request = new ADELegalRequestBodyDto();
+        request.setFilter(filter);
+
+        when(adELegalClient.checkTaxIdAndVatNumberAdE(filter)).thenReturn(Mono.just("<invalid/>"));
+
+        StepVerifier.create(agenziaEntrateService.checkTaxIdAndVatNumber(request))
+                .expectError(RuntimeJAXBException.class)
+                .verify();
+
+        verify(agenziaEntrateConverter, never()).adELegalResponseToDto(any());
+    }
+
+    @Test
+    void checkTaxIdAndVatNumberShouldPropagateReactiveClientError() {
+        ADELegalRequestBodyFilterDto filter = new ADELegalRequestBodyFilterDto();
+        filter.setTaxId("RSSMRA80A01H501U");
+        filter.setVatNumber("00123456789");
+        ADELegalRequestBodyDto request = new ADELegalRequestBodyDto();
+        request.setFilter(filter);
+        RuntimeException error = new RuntimeException("service unavailable");
+
+        when(adELegalClient.checkTaxIdAndVatNumberAdE(filter)).thenReturn(Mono.error(error));
+
+        StepVerifier.create(agenziaEntrateService.checkTaxIdAndVatNumber(request))
+                .expectErrorMatches(throwable -> throwable == error)
+                .verify();
+
+        verify(agenziaEntrateConverter, never()).adELegalResponseToDto(any());
+    }
+
+    @Test
     void unmarshallerSuccess(){
-        String response = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
+        Assertions.assertDoesNotThrow(() -> agenziaEntrateService.unmarshaller(validSoapResponse()));
+    }
+
+    @Test
+    void unmarshallerShouldFailWhenSoapBodyIsMissing() {
+        assertThrows(jakarta.xml.bind.JAXBException.class, () -> agenziaEntrateService.unmarshaller("<invalid/>"));
+    }
+
+    private String validSoapResponse() {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
                 "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:anag=\"http://anagrafica.verifica.rappresentante.ente\">" +
                 "<soapenv:Header/>" +
                 "<soapenv:Body>" +
@@ -136,8 +239,5 @@ class AgenziaEntrateServiceTest {
                 "</checkValidityRappresentanteResp>" +
                 "</soapenv:Body>" +
                 "</soapenv:Envelope>";
-
-
-        Assertions.assertDoesNotThrow(() -> agenziaEntrateService.unmarshaller(response));
     }
 }

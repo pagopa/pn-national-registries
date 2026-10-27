@@ -63,7 +63,9 @@ class PollingJobTest {
         ArgumentCaptor<NationalRegistriesBatch> captor = ArgumentCaptor.forClass(NationalRegistriesBatch.class);
         verify(repository).updateItem(captor.capture(), eq(BatchesStatusEnum.WORKING));
         NationalRegistriesBatch updatedBatch = captor.getValue();
+        assertSame(batch, updatedBatch);
         assertEquals("batch-1", updatedBatch.getBatchId());
+        assertEquals(BatchesStatusEnum.REQUEST_SENT, updatedBatch.getStatus());
     }
 
     @Test
@@ -121,6 +123,25 @@ class PollingJobTest {
     }
 
     @Test
+    void startJobProcessesSecondPageWhenFirstPageIsEmpty() {
+        NationalRegistriesBatch batch = batch("batch-1", BatchesStatusEnum.REQUEST_SENT, Instant.parse("2024-06-01T10:00:00Z"));
+
+        Page<NationalRegistriesBatch> firstPage = mock(Page.class);
+        Page<NationalRegistriesBatch> secondPage = mock(Page.class);
+
+        when(firstPage.items()).thenReturn(List.of());
+        when(secondPage.items()).thenReturn(List.of(batch));
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.just(firstPage, secondPage)));
+        when(repository.updateItem(same(batch), eq(BatchesStatusEnum.WORKING))).thenReturn(Mono.just(batch));
+
+        pollingJob.polling();
+
+        verify(firstPage).items();
+        verify(secondPage).items();
+        verify(repository).updateItem(same(batch), eq(BatchesStatusEnum.WORKING));
+    }
+
+    @Test
     void startJobWith3BatchToProcessInOnePageWithOneInvalidStatus() {
         NationalRegistriesBatch batch1 = batch("batch-1", BatchesStatusEnum.WORKING, Instant.parse("2024-06-01T10:00:00Z"));
         NationalRegistriesBatch batch2 = batch("batch-2", BatchesStatusEnum.REQUEST_SENT, Instant.parse("2024-06-01T10:00:00Z"));
@@ -153,6 +174,78 @@ class PollingJobTest {
         assertDoesNotThrow(() -> pollingJob.polling());
 
         verify(repository, times(3)).updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING));
+        verify(repository).updateItem(same(batch1), eq(BatchesStatusEnum.WORKING));
+        verify(repository).updateItem(same(batch2), eq(BatchesStatusEnum.WORKING));
+        verify(repository).updateItem(same(batch3), eq(BatchesStatusEnum.WORKING));
+    }
+
+    @Test
+    void startJobWithNoPagesDoesNothing() {
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.empty()));
+
+        assertDoesNotThrow(() -> pollingJob.polling());
+
+        verify(repository).getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class));
+        verify(repository, never()).updateItem(any(), any());
+    }
+
+    @Test
+    void startJobQueriesBatchesWithCurrentInstant() {
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.empty()));
+
+        Instant before = Instant.now();
+        pollingJob.polling();
+        Instant after = Instant.now();
+
+        ArgumentCaptor<Instant> captor = ArgumentCaptor.forClass(Instant.class);
+        verify(repository).getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), captor.capture());
+        assertFalse(captor.getValue().isBefore(before));
+        assertFalse(captor.getValue().isAfter(after));
+    }
+
+    @Test
+    void startJobContinuesWithOtherBatchesWhenOneFailsWithGenericError() {
+        NationalRegistriesBatch failing = batch("batch-1", BatchesStatusEnum.REQUEST_SENT, Instant.parse("2024-06-01T10:00:00Z"));
+        NationalRegistriesBatch healthy = batch("batch-2", BatchesStatusEnum.REQUEST_SENT, Instant.parse("2024-06-01T10:00:00Z"));
+
+        Page<NationalRegistriesBatch> page = mock(Page.class);
+        when(page.items()).thenReturn(List.of(failing, healthy));
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.just(page)));
+        when(repository.updateItem(same(failing), eq(BatchesStatusEnum.WORKING))).thenReturn(Mono.error(new IllegalStateException("dynamo down")));
+        when(repository.updateItem(same(healthy), eq(BatchesStatusEnum.WORKING))).thenReturn(Mono.just(healthy));
+
+        assertDoesNotThrow(() -> pollingJob.polling());
+
+        verify(repository).updateItem(same(failing), eq(BatchesStatusEnum.WORKING));
+        verify(repository).updateItem(same(healthy), eq(BatchesStatusEnum.WORKING));
+        verify(repository, times(2)).updateItem(any(NationalRegistriesBatch.class), eq(BatchesStatusEnum.WORKING));
+    }
+
+    @Test
+    void startJobCompletesWhenUpdateItemReturnsEmptyMono() {
+        NationalRegistriesBatch batch = batch("batch-1", BatchesStatusEnum.REQUEST_SENT, Instant.parse("2024-06-01T10:00:00Z"));
+
+        Page<NationalRegistriesBatch> page = mock(Page.class);
+
+        when(page.items()).thenReturn(List.of(batch));
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.just(page)));
+        when(repository.updateItem(same(batch), eq(BatchesStatusEnum.WORKING))).thenReturn(Mono.empty());
+
+        assertDoesNotThrow(() -> pollingJob.polling());
+
+        verify(repository).updateItem(same(batch), eq(BatchesStatusEnum.WORKING));
+    }
+
+    @Test
+    void startJobPropagatesErrorWhenBatchesCannotBeRetrieved() {
+        IllegalStateException error = new IllegalStateException("query failed");
+        when(repository.getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class))).thenReturn(SdkPublisher.adapt(Flux.error(error)));
+
+        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> pollingJob.polling());
+
+        assertSame(error, thrown);
+        verify(repository).getBatchesToProcess(eq(BatchesStatusEnum.REQUEST_SENT), any(Instant.class));
+        verify(repository, never()).updateItem(any(), any());
     }
 
     private NationalRegistriesBatch batch(String id, BatchesStatusEnum status, Instant attemptAfter) {

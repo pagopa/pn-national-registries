@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
@@ -16,14 +17,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.nio.charset.Charset;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 import java.util.Objects;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_INAD_ADDRESS;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class InadServiceTest {
@@ -209,4 +214,53 @@ class InadServiceTest {
                 .expectNext(response)
                 .verifyComplete();
     }
+
+    @Test
+    void callEServiceShouldPropagateClientError() {
+        String practicalReference = "00001";
+        RuntimeException error = new RuntimeException("INAD unavailable");
+        GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
+        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
+        filterDto.setTaxId(TAX_ID);
+        filterDto.setPracticalReference(practicalReference);
+        req.setFilter(filterDto);
+
+        when(inadClient.callEService(TAX_ID, practicalReference)).thenReturn(Mono.error(error));
+
+        StepVerifier.create(inadService.callEService(req, PF, "correlationId"))
+                .expectErrorMatches(throwable -> throwable == error)
+                .verify();
+
+        verify(validateTaxIdUtils).validateTaxId(TAX_ID, PROCESS_NAME_INAD_ADDRESS, false);
+        verify(inadClient).callEService(TAX_ID, practicalReference);
+        verifyNoInteractions(nationalRegistriesConfig);
+    }
+
+    @Test
+    void callEServiceShouldStopWhenTaxIdValidationFails() {
+        String practicalReference = "00001";
+        PnNationalRegistriesException validationError = new PnNationalRegistriesException(
+                "invalid tax id",
+                org.springframework.http.HttpStatus.BAD_REQUEST.value(),
+                org.springframework.http.HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                null,
+                null,
+                Charset.defaultCharset(),
+                Object.class
+        );
+        GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
+        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
+        filterDto.setTaxId(TAX_ID);
+        filterDto.setPracticalReference(practicalReference);
+        req.setFilter(filterDto);
+
+        doThrow(validationError).when(validateTaxIdUtils).validateTaxId(TAX_ID, PROCESS_NAME_INAD_ADDRESS, false);
+
+        PnNationalRegistriesException thrown = assertThrows(PnNationalRegistriesException.class,
+                () -> inadService.callEService(req, PF, "correlationId"));
+
+        assertSame(validationError, thrown);
+        verifyNoInteractions(inadClient, nationalRegistriesConfig);
+    }
+
 }

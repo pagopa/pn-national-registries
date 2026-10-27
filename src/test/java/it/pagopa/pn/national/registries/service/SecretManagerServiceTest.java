@@ -4,6 +4,7 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -15,7 +16,7 @@ import software.amazon.awssdk.services.secretsmanager.model.ResourceNotFoundExce
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class SecretManagerServiceTest {
@@ -30,6 +31,10 @@ class SecretManagerServiceTest {
         GetSecretValueResponse response = GetSecretValueResponse.builder().secretString("test").build();
         when(secretsManagerClient.getSecretValue((GetSecretValueRequest) any())).thenReturn(response);
         Assertions.assertEquals(Optional.of(response), secretManagerService.getSecretValue("test"));
+
+        ArgumentCaptor<GetSecretValueRequest> requestCaptor = ArgumentCaptor.forClass(GetSecretValueRequest.class);
+        verify(secretsManagerClient).getSecretValue(requestCaptor.capture());
+        Assertions.assertEquals("test", requestCaptor.getValue().secretId());
     }
 
     @Test
@@ -41,5 +46,17 @@ class SecretManagerServiceTest {
     @Test
     void getSecretValueEmpty() {
         Assertions.assertEquals(Optional.empty(),secretManagerService.getSecretValue(""));
+        Assertions.assertEquals(Optional.empty(),secretManagerService.getSecretValue(" "));
+        Assertions.assertEquals(Optional.empty(),secretManagerService.getSecretValue(null));
+        verifyNoInteractions(secretsManagerClient);
+    }
+
+    @Test
+    void getSecretValueShouldReturnEmptyWhenClientReturnsNull() {
+        when(secretsManagerClient.getSecretValue((GetSecretValueRequest) any())).thenReturn(null);
+
+        Assertions.assertEquals(Optional.empty(), secretManagerService.getSecretValue("test"));
+
+        verify(secretsManagerClient).getSecretValue(any(GetSecretValueRequest.class));
     }
 }

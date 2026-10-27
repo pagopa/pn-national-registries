@@ -272,6 +272,89 @@ class PollingServiceTest {
         verify(nationalRegistriesRequestsRepository).updateStatusToError("correlation-id-2", "2026-01-01T11:00:00Z", GatewayDownstreamService.INIPEC);
     }
 
+    @Test
+    void incrementAndCheckRetry_shouldRetry_whenInProgressWithNullThrowable() {
+        when(nationalRegistriesBatchesRepository.resetStatusForRetry(BATCH_ID, SK, 1, true, GatewayDownstreamService.INAD)).thenReturn(Mono.empty());
+
+        StepVerifier.create(pollingService.incrementAndCheckRetry(BATCH_ID, 0, 0, true, 5, 10, GatewayDownstreamService.INAD, null))
+                .verifyComplete();
+
+        verify(nationalRegistriesBatchesRepository).resetStatusForRetry(BATCH_ID, SK, 1, true, GatewayDownstreamService.INAD);
+        verifyNoInteractions(nationalRegistriesRequestsRepository);
+    }
+
+    @Test
+    void incrementAndCheckRetry_shouldRetry_whenExceptionIsNotBadRequest() {
+        PnNationalRegistriesException exception =
+                new PnNationalRegistriesException("server error", HttpStatus.INTERNAL_SERVER_ERROR.value(), HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase(), null, null, Charset.defaultCharset(), Object.class);
+        when(nationalRegistriesBatchesRepository.resetStatusForRetry(BATCH_ID, SK, 1, false, GatewayDownstreamService.INAD)).thenReturn(Mono.empty());
+
+        StepVerifier.create(pollingService.incrementAndCheckRetry(BATCH_ID, 0, 0, false, 5, 10, GatewayDownstreamService.INAD, exception))
+                .verifyComplete();
+
+        verify(nationalRegistriesBatchesRepository).resetStatusForRetry(BATCH_ID, SK, 1, false, GatewayDownstreamService.INAD);
+        verify(nationalRegistriesBatchesRepository, never()).updateToFinalStatus(anyString(), anyString(), any());
+    }
+
+    @Test
+    void incrementAndCheckRetry_shouldUseInProgressLimitAndIgnoreErrorLimit_whenInProgress() {
+        when(nationalRegistriesBatchesRepository.resetStatusForRetry(BATCH_ID, SK, 3, true, GatewayDownstreamService.INAD)).thenReturn(Mono.empty());
+
+        // errore max = 1 (esaurito se usato per errore), in-progress max = 10: deve essere usato il limite in-progress
+        StepVerifier.create(pollingService.incrementAndCheckRetry(BATCH_ID, 5, 2, true, 1, 10, GatewayDownstreamService.INAD, null))
+                .verifyComplete();
+
+        verify(nationalRegistriesBatchesRepository).resetStatusForRetry(BATCH_ID, SK, 3, true, GatewayDownstreamService.INAD);
+    }
+
+    @Test
+    void incrementAndCheckRetry_shouldPropagateError_whenResetStatusForRetryFails() {
+        RuntimeException failure = new RuntimeException("dynamo error");
+        when(nationalRegistriesBatchesRepository.resetStatusForRetry(BATCH_ID, SK, 1, false, GatewayDownstreamService.INAD)).thenReturn(Mono.error(failure));
+
+        StepVerifier.create(pollingService.incrementAndCheckRetry(BATCH_ID, 0, 0, false, 5, 10, GatewayDownstreamService.INAD, new RuntimeException("x")))
+                .expectErrorMatches(e -> e == failure)
+                .verify();
+    }
+
+    @Test
+    void createFallbackRequest_shouldPutRequestWithPreservedDataAndTargetRegistryStatus() {
+        NationalRegistriesRequest sourceRequest = buildRequest();
+        sourceRequest.setTaxId("RSSMRA80A01H501U");
+        when(nationalRegistriesRequestsRepository.putRequest(any(NationalRegistriesRequest.class))).thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
+        when(nationalRegistriesRequestsRepository.updateStatusToWorked(CORRELATION_ID, CREATED_AT.toString(), null, GatewayDownstreamService.INAD, false)).thenReturn(Mono.empty());
+
+        StepVerifier.create(pollingService.createFallbackRequest(sourceRequest, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC))
+                .verifyComplete();
+
+        verify(nationalRegistriesRequestsRepository).putRequest(argThat(request ->
+                CORRELATION_ID.equals(request.getCorrelationId())
+                        && "RSSMRA80A01H501U".equals(request.getTaxId())
+                        && request.getRegistry() == GatewayDownstreamService.INIPEC
+                        && request.getStatus() == RequestStatusEnum.NOT_WORKED));
+        verify(nationalRegistriesRequestsRepository).updateStatusToWorked(CORRELATION_ID, CREATED_AT.toString(), null, GatewayDownstreamService.INAD, false);
+    }
+
+    @Test
+    void markRequestAsWorked_shouldPassNullPayloadAndNoPublish() {
+        NationalRegistriesRequest request = buildRequest();
+        when(nationalRegistriesRequestsRepository.updateStatusToWorked(CORRELATION_ID, CREATED_AT.toString(), null, GatewayDownstreamService.INIPEC, false)).thenReturn(Mono.empty());
+
+        StepVerifier.create(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false)).verifyComplete();
+
+        verify(nationalRegistriesRequestsRepository).updateStatusToWorked(CORRELATION_ID, CREATED_AT.toString(), null, GatewayDownstreamService.INIPEC, false);
+    }
+
+    @Test
+    void markBatchAsWorked_shouldPropagateError_whenUpdateFails() {
+        RuntimeException failure = new RuntimeException("dynamo error");
+        when(nationalRegistriesBatchesRepository.updateToFinalStatus(BATCH_ID, SK, BatchesStatusEnum.WORKED)).thenReturn(Mono.error(failure));
+
+        StepVerifier.create(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD))
+                .expectErrorMatches(e -> e == failure)
+                .verify();
+    }
+
     private NationalRegistriesRequest buildRequest() {
         NationalRegistriesRequest request = new NationalRegistriesRequest();
         request.setCorrelationId(CORRELATION_ID);

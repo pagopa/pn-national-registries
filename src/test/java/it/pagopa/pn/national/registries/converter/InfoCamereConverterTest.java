@@ -5,19 +5,25 @@ import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpStatus;
 import org.springframework.util.CollectionUtils;
 import reactor.test.StepVerifier;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -39,6 +45,13 @@ class InfoCamereConverterTest {
     }
 
     @Test
+    void testConvertToGetAddressIniPecOKDtoWithEmptyCorrelationId() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setCorrelationId("");
+        assertNull(infoCamereConverter.convertToGetAddressIniPecOKDto(batchRequest).getCorrelationId());
+    }
+
+    @Test
     void testCreateBatchPollingByBatchIdAndPollingId() {
         NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
         inipec.setPollingFirstAttemptDelaySecondsPerCf(0.085);
@@ -53,6 +66,41 @@ class InfoCamereConverterTest {
         assertEquals("batchId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getBatchId());
         assertEquals("NOT_WORKED", actualCreateBatchPollingByBatchIdAndPollingIdResult.getStatus());
         assertEquals("pollingId", actualCreateBatchPollingByBatchIdAndPollingIdResult.getPollingId());
+        assertEquals(0, actualCreateBatchPollingByBatchIdAndPollingIdResult.getRetry());
+        assertEquals(0, actualCreateBatchPollingByBatchIdAndPollingIdResult.getInProgressRetry());
+        assertEquals(3, actualCreateBatchPollingByBatchIdAndPollingIdResult.getBatchSize());
+        assertNotNull(actualCreateBatchPollingByBatchIdAndPollingIdResult.getCreatedAt());
+        assertNotNull(actualCreateBatchPollingByBatchIdAndPollingIdResult.getFirstAttemptAfter());
+    }
+
+    @Test
+    void calculateFirstAttemptAfterShouldUseBatchSizeAndFixedDelay() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setPollingFirstAttemptDelaySecondsPerCf(1.5);
+        inipec.setPollingFirstAttemptFixedDelaySeconds(10);
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
+        Instant before = Instant.now().plusSeconds(13).truncatedTo(ChronoUnit.SECONDS);
+        Instant result = infoCamereConverter.calculateFirstAttemptAfter(2);
+        Instant after = Instant.now().plusSeconds(13).truncatedTo(ChronoUnit.SECONDS);
+
+        assertFalse(result.isBefore(before));
+        assertFalse(result.isAfter(after));
+    }
+
+    @Test
+    void calculateFirstAttemptAfterShouldHandleNullBatchSize() {
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setPollingFirstAttemptDelaySecondsPerCf(1.5);
+        inipec.setPollingFirstAttemptFixedDelaySeconds(10);
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+
+        Instant before = Instant.now().plusSeconds(10).truncatedTo(ChronoUnit.SECONDS);
+        Instant result = infoCamereConverter.calculateFirstAttemptAfter(null);
+        Instant after = Instant.now().plusSeconds(10).truncatedTo(ChronoUnit.SECONDS);
+
+        assertFalse(result.isBefore(before));
+        assertFalse(result.isAfter(after));
     }
 
     @Test
@@ -121,6 +169,7 @@ class InfoCamereConverterTest {
 
         CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest.getCorrelationId(), pec);
 
+        assertEquals("correlationId", codeSqsDto.getCorrelationId());
         assertEquals(3, codeSqsDto.getDigitalAddress().size());
         assertEquals("impresa@pec.it", codeSqsDto.getDigitalAddress().get(0).getAddress());
         assertEquals("professionista1@pec.it", codeSqsDto.getDigitalAddress().get(1).getAddress());
@@ -199,6 +248,17 @@ class InfoCamereConverterTest {
     }
 
     @Test
+    void testCheckIfResponseIsInfoCamereErrorFalse() {
+        IniPecPollingResponse iniPecPollingResponse = new IniPecPollingResponse();
+        assertFalse(infoCamereConverter.checkIfResponseIsInfoCamereError(iniPecPollingResponse));
+        iniPecPollingResponse.setCode("code");
+        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(iniPecPollingResponse));
+        iniPecPollingResponse.setCode(null);
+        iniPecPollingResponse.setDescription("description");
+        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(iniPecPollingResponse));
+    }
+
+    @Test
     void testCheckIfResponseIsInfoCamereErrorAddressRegistroImprese() {
         AddressRegistroImprese addressRegistroImprese = new AddressRegistroImprese();
         addressRegistroImprese.setAppName("appName");
@@ -206,9 +266,25 @@ class InfoCamereConverterTest {
     }
 
     @Test
+    void testCheckIfResponseIsInfoCamereErrorAddressRegistroImpreseFalse() {
+        AddressRegistroImprese addressRegistroImprese = new AddressRegistroImprese();
+        assertFalse(infoCamereConverter.checkIfResponseIsInfoCamereError(addressRegistroImprese));
+        addressRegistroImprese.setCode("code");
+        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(addressRegistroImprese));
+    }
+
+    @Test
     void testCheckIfResponseIsInfoCamereErrorInfoCamereVerification() {
         InfoCamereVerification infoCamereVerification = new InfoCamereVerification();
         infoCamereVerification.setAppName("appName");
+        assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(infoCamereVerification));
+    }
+
+    @Test
+    void testCheckIfResponseIsInfoCamereErrorInfoCamereVerificationFalse() {
+        InfoCamereVerification infoCamereVerification = new InfoCamereVerification();
+        assertFalse(infoCamereConverter.checkIfResponseIsInfoCamereError(infoCamereVerification));
+        infoCamereVerification.setDescription("description");
         assertTrue(infoCamereConverter.checkIfResponseIsInfoCamereError(infoCamereVerification));
     }
 
@@ -270,6 +346,19 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
         assertEquals("Italy", actualMapToResponseOkResult.getProfessionalAddress().getStato());
+    }
+
+    @Test
+    void testMapToResponseOkWithoutLegalAddress() {
+        AddressRegistroImprese addressRegistroImpreseResponse = new AddressRegistroImprese();
+        addressRegistroImpreseResponse.setCf("taxId");
+
+        GetAddressRegistroImpreseOKDto actualMapToResponseOkResult = infoCamereConverter
+                .mapToResponseOkByResponse(addressRegistroImpreseResponse);
+
+        assertEquals("taxId", actualMapToResponseOkResult.getTaxId());
+        assertNotNull(actualMapToResponseOkResult.getProfessionalAddress());
+        assertNull(actualMapToResponseOkResult.getProfessionalAddress().getAddress());
     }
 
     @Test
@@ -355,6 +444,21 @@ class InfoCamereConverterTest {
     }
 
     @Test
+    void testInfoCamereResponseToDtoWithKoVerification() {
+        InfoCamereVerification infoCamereVerificationResponse = new InfoCamereVerification();
+        infoCamereVerificationResponse.setEsitoVerifica("KO");
+        infoCamereVerificationResponse.setCfImpresa("vatNumber");
+        infoCamereVerificationResponse.setCfPersona("taxId");
+
+        InfoCamereLegalOKDto actualResult = infoCamereConverter
+                .infoCamereResponseToDtoByResponse(infoCamereVerificationResponse);
+
+        assertEquals("taxId", actualResult.getTaxId());
+        assertEquals("vatNumber", actualResult.getVatNumber());
+        assertEquals(false, actualResult.getVerificationResult());
+    }
+
+    @Test
     void mapToResponseOkByResponse() {
         InfoCamereLegalInstituionsResponse response = new InfoCamereLegalInstituionsResponse();
         response.setCfPersona("taxId");
@@ -369,6 +473,8 @@ class InfoCamereConverterTest {
 
         assertEquals("taxId", actualResult.getLegalTaxId());
         assertEquals(1, actualResult.getBusinessList().size());
+        assertEquals("businessTaxId", actualResult.getBusinessList().get(0).getBusinessTaxId());
+        assertEquals("businessName", actualResult.getBusinessList().get(0).getBusinessName());
     }
 
     @Test
@@ -422,6 +528,34 @@ class InfoCamereConverterTest {
                                 && GatewayDownstreamService.INIPEC.name().equals(dto.getRegistry())
                 )
         );
+    }
+
+    @Test
+    void testUpdateBatchRequestFields() {
+        BatchRequest batchRequest = new BatchRequest();
+        CodeSqsDto codeSqsDto = new CodeSqsDto();
+        LocalDateTime now = LocalDateTime.now();
+
+        when(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto))
+                .thenReturn("serialized-message");
+
+        StepVerifier.create(
+                        infoCamereConverter.updateBatchRequestFields(
+                                batchRequest,
+                                BatchStatus.WORKED,
+                                now,
+                                codeSqsDto
+                        )
+                )
+                .assertNext(result -> {
+                    assertSame(batchRequest, result);
+                    assertEquals("serialized-message", result.getMessage());
+                    assertEquals(GatewayDownstreamService.INIPEC.name(), result.getEservice());
+                    assertEquals(BatchStatus.WORKED.getValue(), result.getStatus());
+                    assertEquals(BatchSendStatus.NOT_SENT.getValue(), result.getSendStatus());
+                    assertEquals(now, result.getLastReserved());
+                })
+                .verifyComplete();
     }
 
     //in questo metodo le pec non valide non vengono scartate, saranno scartate dal flusso successivamente
@@ -494,6 +628,158 @@ class InfoCamereConverterTest {
 
         assertEquals(1, codeSqsDto.getDigitalAddress().size());
         assertEquals("IMPRESA", codeSqsDto.getDigitalAddress().get(0).getRecipient());
+    }
+
+    @Test
+    void isPollingResponseNotReadyShouldReturnTrueForNotFoundAndInProgressMessage() {
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.NOT_FOUND);
+        when(exception.getMessage()).thenReturn("Error - List PEC in progress - retry");
+
+        assertTrue(infoCamereConverter.isPollingResponseNotReady(exception));
+    }
+
+    @Test
+    void isPollingResponseNotReadyShouldReturnFalseForDifferentStatus() {
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
+
+        assertFalse(infoCamereConverter.isPollingResponseNotReady(exception));
+    }
+
+    @Test
+    void isPollingResponseNotReadyShouldReturnFalseForDifferentMessage() {
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.NOT_FOUND);
+        when(exception.getMessage()).thenReturn("Generic error");
+
+        assertFalse(infoCamereConverter.isPollingResponseNotReady(exception));
+    }
+
+    @Test
+    void isPollingResponseNotReadyShouldReturnFalseForNullMessage() {
+        PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
+        when(exception.getStatusCode()).thenReturn(HttpStatus.NOT_FOUND);
+        when(exception.getMessage()).thenReturn(null);
+
+        assertFalse(infoCamereConverter.isPollingResponseNotReady(exception));
+    }
+
+    @Test
+    void isPollingResponseNotReadyShouldReturnFalseForGenericException() {
+        assertFalse(infoCamereConverter.isPollingResponseNotReady(new RuntimeException("List PEC in progress")));
+    }
+
+    @Test
+    void createIniPecRequestShouldMapCfList() {
+        List<String> cfList = List.of("CF1", "CF2");
+
+        IniPecBatchRequest result = infoCamereConverter.createIniPecRequest(cfList);
+
+        assertNotNull(result);
+        assertNotNull(result.getElencoCf());
+        assertEquals(2, result.getElencoCf().size());
+        assertEquals("CF1", result.getElencoCf().get(0).getCf());
+        assertEquals("CF2", result.getElencoCf().get(1).getCf());
+        assertNotNull(result.getDataOraRichiesta());
+    }
+
+    @SuppressWarnings("removal")
+    @Test
+    void retrieveBatchRequestPecShouldFindCfIgnoringCase() {
+        Pec first = new Pec();
+        first.setCf("CF1");
+        Pec second = new Pec();
+        second.setCf("cf2");
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        response.setElencoPec(List.of(first, second));
+
+        Pec result = infoCamereConverter.retrieveBatchRequestPec("CF2", response);
+
+        assertSame(second, result);
+    }
+
+    @SuppressWarnings("removal")
+    @Test
+    void retrieveBatchRequestPecShouldReturnNullWhenCfIsNotFound() {
+        Pec pec = new Pec();
+        pec.setCf("CF1");
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        response.setElencoPec(List.of(pec));
+
+        Pec result = infoCamereConverter.retrieveBatchRequestPec("CF2", response);
+
+        assertNull(result);
+    }
+
+    @SuppressWarnings("removal")
+    @Test
+    void retrieveBatchRequestPecShouldIgnorePecWithoutCf() {
+        Pec withoutCf = new Pec();
+        Pec valid = new Pec();
+        valid.setCf("CF1");
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        response.setElencoPec(List.of(withoutCf, valid));
+
+        Pec result = infoCamereConverter.retrieveBatchRequestPec("CF1", response);
+
+        assertSame(valid, result);
+    }
+
+    @Test
+    void retrievePecShouldReturnPecIgnoringRequestCfCase() {
+        Pec pec = new Pec();
+        pec.setCf("CF1");
+        Map<String, Pec> pecByTaxId = Map.of("CF1", pec);
+
+        Pec result = infoCamereConverter.retrievePec("cf1", pecByTaxId);
+
+        assertSame(pec, result);
+    }
+
+    @Test
+    void retrievePecShouldReturnNullForBlankRequestCf() {
+        assertNull(infoCamereConverter.retrievePec(null, Collections.emptyMap()));
+        assertNull(infoCamereConverter.retrievePec("", Collections.emptyMap()));
+        assertNull(infoCamereConverter.retrievePec(" ", Collections.emptyMap()));
+    }
+
+    @Test
+    void retrievePecShouldReturnNullWhenTaxIdIsMissing() {
+        assertNull(infoCamereConverter.retrievePec("CF1", Collections.emptyMap()));
+    }
+
+    @Test
+    void mapPecByTaxIdShouldReturnEmptyMapForNullResponse() {
+        assertTrue(infoCamereConverter.mapPecByTaxId(null).isEmpty());
+    }
+
+    @Test
+    void mapPecByTaxIdShouldReturnEmptyMapForNullList() {
+        IniPecPollingResponse response = new IniPecPollingResponse();
+
+        assertTrue(infoCamereConverter.mapPecByTaxId(response).isEmpty());
+    }
+
+    @Test
+    void mapPecByTaxIdShouldMapByUpperCaseCfAndKeepFirstDuplicate() {
+        Pec first = new Pec();
+        first.setCf("abc");
+        first.setPecImpresa("first@pec.it");
+        Pec duplicate = new Pec();
+        duplicate.setCf("ABC");
+        duplicate.setPecImpresa("second@pec.it");
+        Pec other = new Pec();
+        other.setCf("def");
+        Pec withoutCf = new Pec();
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        response.setElencoPec(List.of(first, duplicate, other, withoutCf));
+
+        Map<String, Pec> result = infoCamereConverter.mapPecByTaxId(response);
+
+        assertEquals(2, result.size());
+        assertSame(first, result.get("ABC"));
+        assertSame(other, result.get("DEF"));
     }
 
     private PecProfessionista buildProfessionista(String pec) {
