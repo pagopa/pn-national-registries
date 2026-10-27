@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
-import static it.pagopa.pn.national.registries.utils.RequestIdUtils.X_REQUEST_ID;
 
 @RestController
 @lombok.CustomLog
@@ -41,12 +40,10 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        String requestId = RequestIdUtils.putRequestIdToMDC();
         var mono = checkTaxIdRequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
                 .flatMap(agenziaEntrateService::callEService)
-                .map(t -> ResponseEntity.ok()
-                        .header(X_REQUEST_ID, requestId)
-                        .body(t))
+                .map(ResponseEntity::ok)
                 .publishOn(scheduler);
 
         return MDCUtils.addMDCToContextAndExecute(mono);
@@ -65,12 +62,10 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     @Override
     public Mono<ResponseEntity<ADELegalOKDto>> adeLegal(Mono<ADELegalRequestBodyDto> adELegalRequestBodyDto, final ServerWebExchange exchange) {
-        String requestId = RequestIdUtils.putRequestIdToMDC();
         var mono = adELegalRequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
                 .flatMap(agenziaEntrateService::checkTaxIdAndVatNumber)
-                .map(t -> ResponseEntity.ok()
-                        .header(X_REQUEST_ID, requestId)
-                        .body(t))
+                .map(ResponseEntity::ok)
                 .publishOn(scheduler);
 
         return MDCUtils.addMDCToContextAndExecute(mono);

@@ -39,12 +39,10 @@ public class IpaController implements IpaApi {
      */
     @Override
     public Mono<ResponseEntity<IPAPecDto>> ipaPec(Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
-        String requestId = RequestIdUtils.putRequestIdToMDC();
         var mono = ipARequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
                 .flatMap(ipaService::getIpaPec)
-                .map(t -> ResponseEntity.ok()
-                        .header("X-Request-ID", requestId)
-                        .body(t))
+                .map(ResponseEntity::ok)
                 .publishOn(scheduler);
 
         return MDCUtils.addMDCToContextAndExecute(mono);

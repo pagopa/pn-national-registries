@@ -44,11 +44,9 @@ public class GatewayController implements AddressApi {
     @Override
     public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, Mono<AddressRequestBodyDto> monoAddressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
         var mono = monoAddressRequestBodyDto
-                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDC(requestBody.getFilter().getCorrelationId()))
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange))
                 .flatMap(addressRequestBodyDto -> gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto))
-                .map(s -> ResponseEntity.ok()
-                        .header("X-Request-ID", s.getCorrelationId())
-                        .body(s))
+                .map(ResponseEntity::ok)
                 .publishOn(scheduler);
 
         return MDCUtils.addMDCToContextAndExecute(mono);
@@ -67,11 +65,9 @@ public class GatewayController implements AddressApi {
     @Override
     public Mono<ResponseEntity<PhysicalAddressesResponseDto>> getPhysicalAddresses(Mono<PhysicalAddressesRequestBodyDto> physicalAddressesRequestBodyDto, final ServerWebExchange exchange) {
         var mono = physicalAddressesRequestBodyDto
-                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDC(requestBody.getCorrelationId()))
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getCorrelationId(), exchange))
                 .flatMap(gatewayService::retrieveSyncPhysicalAddresses)
-                .map(s -> ResponseEntity.ok()
-                        .header("X-Request-ID", s.getCorrelationId())
-                        .body(s))
+                .map(ResponseEntity::ok)
                 .publishOn(scheduler);
 
         return MDCUtils.addMDCToContextAndExecute(mono);

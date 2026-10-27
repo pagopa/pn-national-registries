@@ -46,8 +46,8 @@ public class AnprController implements AddressAnprApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(Mono<GetAddressANPRRequestBodyDto> getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
-        String requestId = RequestIdUtils.putRequestIdToMDC();
         var mono = getAddressANPRRequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
                 .flatMap(anprService::getAddressANPR)
                 .doOnNext(getAddressANPROKDto -> {
                     logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1);
@@ -61,9 +61,7 @@ public class AnprController implements AddressAnprApi {
                     }
                 })
                 .doOnError(gatewayService.isAnprAddressNotFound, e -> logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1))
-                .map(t -> ResponseEntity.ok()
-                        .header("X-Request-ID", requestId)
-                        .body(t))
+                .map(ResponseEntity::ok)
                 .publishOn(scheduler);
 
         return MDCUtils.addMDCToContextAndExecute(mono);
