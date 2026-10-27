@@ -637,7 +637,6 @@ class GatewayServiceTest {
         AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
         when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(true);
-        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
         when(nationalRegistriesRequestsRepository.putRequest(any(NationalRegistriesRequest.class)))
                 .thenAnswer(invocation -> Mono.just((NationalRegistriesRequest) invocation.getArgument(0)));
 

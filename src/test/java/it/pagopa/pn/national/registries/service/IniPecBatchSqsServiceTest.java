@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.RecipientType;
@@ -8,6 +9,7 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -64,6 +66,16 @@ class IniPecBatchSqsServiceTest {
 
     @MockitoBean
     private SqsService sqsService;
+
+    @MockitoBean
+    private NationalRegistriesConfig nationalRegistriesConfig;
+
+    @BeforeEach
+    void setup(){
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec()).thenReturn(inipec);
+    }
 
     @Test
     void batchSendToSqs_emptyList_shouldCompleteWithoutInteractions() {
