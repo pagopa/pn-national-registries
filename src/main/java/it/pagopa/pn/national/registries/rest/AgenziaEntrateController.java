@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
+import static it.pagopa.pn.national.registries.utils.RequestIdUtils.X_REQUEST_ID;
 
 @RestController
 @lombok.CustomLog
@@ -20,7 +21,6 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     private final AgenziaEntrateService agenziaEntrateService;
     private final Scheduler scheduler;
-    private static final String X_REQUEST_ID = "X-Request-ID";
 
 
 

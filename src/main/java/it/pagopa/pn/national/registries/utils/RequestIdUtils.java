@@ -6,18 +6,13 @@ import org.springframework.util.StringUtils;
 
 public class RequestIdUtils {
     private static final String AWS_XRAY_TRACE_ID = "AWS_XRAY_TRACE_ID";
+    public static final String X_REQUEST_ID = "X-Request-ID";
 
     private RequestIdUtils() {
     }
 
     public static String putRequestIdToMDC() {
-        String requestId = MDC.get(AWS_XRAY_TRACE_ID);
-
-        if (StringUtils.hasText(requestId)) {
-            MDC.put(MDCUtils.MDC_PN_CTX_REQUEST_ID, requestId);
-        }
-
-        return requestId;
+        return putRequestIdToMDC(null);
     }
 
     public static String putRequestIdToMDC(String correlationId) {

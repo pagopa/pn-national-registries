@@ -20,6 +20,7 @@ import java.util.Objects;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetric;
+import static it.pagopa.pn.national.registries.utils.RequestIdUtils.X_REQUEST_ID;
 
 
 @RestController
@@ -27,7 +28,6 @@ import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddres
 public class InfoCamereController implements InfoCamereApi {
 
     private final InfoCamereService infoCamereService;
-    private static final String X_REQUEST_ID = "X-Request-ID";
 
     @Qualifier("nationalRegistriesScheduler")
     private final Scheduler scheduler;
