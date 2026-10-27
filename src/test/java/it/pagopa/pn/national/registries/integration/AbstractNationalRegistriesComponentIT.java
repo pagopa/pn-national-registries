@@ -57,7 +57,7 @@ import java.util.*;
         "pn.national-registries.dao.requestsTableName=pn-NationalRegistriesRequests",
         "pn.national-registries.dao.shedlockTableName=pn-nationalRegistries-ShedLock",
         "pn.national-registries.inipec.ttl=1209600",
-        "pn.national-registries.inipec.batchrequest-pk-separator=~",
+        "pn.national-registries.inipec.batch-request-pk-separator=~",
         "pn.national-registries.inipec.batch-request-max-retry=3",
         "pn.national-registries.inipec.max-batch-request-size=6250",
         "pn.national-registries.inipec.batch-request-recovery-after=3600",
