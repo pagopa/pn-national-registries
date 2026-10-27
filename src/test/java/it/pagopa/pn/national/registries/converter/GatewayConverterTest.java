@@ -318,6 +318,17 @@ class GatewayConverterTest {
     }
 
     @Test
+    void testConvertToGetDigitalAddressIniPecRequest() {
+        GetDigitalAddressIniPECRequestBodyDto result =
+                gatewayConverter.convertToGetDigitalAddressIniPecRequest(C_ID, CF);
+
+        assertNotNull(result);
+        assertNotNull(result.getFilter());
+        assertEquals(C_ID, result.getFilter().getCorrelationId());
+        assertEquals(CF, result.getFilter().getTaxId());
+    }
+
+    @Test
     void testToAddressQueryRequests() {
         RecipientAddressRequestBodyDto address =
                 new RecipientAddressRequestBodyDto();

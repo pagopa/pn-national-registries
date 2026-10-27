@@ -214,23 +214,12 @@ public class GatewayConverter {
         return dto;
     }
 
-    public static GetDigitalAddressIniPECRequestBodyDto convertToGetDigitalAddressIniPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
+    public static GetDigitalAddressIniPECRequestBodyDto convertToGetDigitalAddressIniPecRequest(String correlationId, String taxId) {
         GetDigitalAddressIniPECRequestBodyDto dto = new GetDigitalAddressIniPECRequestBodyDto();
         GetDigitalAddressIniPECRequestBodyFilterDto filterDto = new GetDigitalAddressIniPECRequestBodyFilterDto();
 
-        filterDto.setCorrelationId(addressRequestBodyDto.getFilter().getCorrelationId());
-        filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
-
-        dto.setFilter(filterDto);
-        return dto;
-    }
-
-    public static GetDigitalAddressIniPECRequestBodyDto convertToGetDigitalAddressIniPecRequest(NationalRegistriesRequest request) {
-        GetDigitalAddressIniPECRequestBodyDto dto = new GetDigitalAddressIniPECRequestBodyDto();
-        GetDigitalAddressIniPECRequestBodyFilterDto filterDto = new GetDigitalAddressIniPECRequestBodyFilterDto();
-
-        filterDto.setCorrelationId(request.getCorrelationId());
-        filterDto.setTaxId(request.getTaxId());
+        filterDto.setCorrelationId(correlationId);
+        filterDto.setTaxId(taxId);
 
         dto.setFilter(filterDto);
         return dto;

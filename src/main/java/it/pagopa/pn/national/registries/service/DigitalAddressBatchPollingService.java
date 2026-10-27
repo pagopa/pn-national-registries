@@ -215,6 +215,7 @@ public class DigitalAddressBatchPollingService{
                 .flatMap(batchRequestRepository::update)
                 .doOnNext(r -> log.debug("IniPEC - correlationId {} - set status in {}", r.getCorrelationId(), r.getStatus()))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to set request in status {}", batchId, status, e))
+                .filter(request -> !BatchSendStatus.NOT_TO_SEND.getValue().equals(request.getSendStatus()))
                 .collectList()
                 .filter(requests -> !requests.isEmpty())
                 .flatMap(iniPecBatchSqsService::batchSendToSqs)
@@ -252,7 +253,12 @@ public class DigitalAddressBatchPollingService{
         if(nationalRegistriesConfig.isEnableInadMassiveApi()){
             NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(request, recipientType, GatewayDownstreamService.INAD);
             return nationalRegistriesRequestsRepository.putRequest(nationalRegistriesRequest)
-                    .doOnNext(batchRequest -> log.info("CreatedRequest for correlationId: {} for registry INAD", nationalRegistriesRequest.getCorrelationId()))
+                    .doOnNext(unused -> {
+                        log.info("CreatedRequest for correlationId: {} for registry INAD", nationalRegistriesRequest.getCorrelationId());
+                        request.setStatus(BatchStatus.WORKED.getValue());
+                        request.setSendStatus(BatchSendStatus.NOT_TO_SEND.getValue());
+                    })
+                    .doOnNext(batchRequest -> log.info("Closing batchRequest for correlationId: {} to start INAD massive", request.getCorrelationId()))
                     .then();
         }
         return inadService.callEService(GatewayConverter.convertToGetDigitalAddressInadRequest(request.getCorrelationId(), request.getCf()), recipientType, correlationId)

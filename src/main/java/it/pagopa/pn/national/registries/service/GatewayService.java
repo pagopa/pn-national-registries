@@ -133,12 +133,12 @@ public class GatewayService{
                 });
     }
 
-    public Mono<Void> inizializeInipecRequest(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, RecipientType pg) {
+    private Mono<Void> inizializeInipecRequest(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, RecipientType recipientType) {
         if (nationalRegistriesConfig.isEnableOldInipecFlow()) {
-            return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto), addressRequestBodyDto.getFilter().getReferenceRequestDate(), pg)
+            return infoCamereService.getIniPecDigitalAddress(pnNationalRegistriesCxId, convertToGetDigitalAddressIniPecRequest(addressRequestBodyDto.getFilter().getCorrelationId(), addressRequestBodyDto.getFilter().getTaxId()), addressRequestBodyDto.getFilter().getReferenceRequestDate(), recipientType)
                     .then();
         }
-        NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(addressRequestBodyDto, pg, pnNationalRegistriesCxId, GatewayDownstreamService.INIPEC);
+        NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(addressRequestBodyDto, recipientType, pnNationalRegistriesCxId, GatewayDownstreamService.INIPEC);
         return inizializeBatchRequest(nationalRegistriesRequest).then();
     }
 

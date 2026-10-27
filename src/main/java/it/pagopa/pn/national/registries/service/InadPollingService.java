@@ -26,12 +26,10 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
-import java.sql.Date;
 import java.util.Map;
 import java.util.Objects;
 
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
-import static it.pagopa.pn.national.registries.converter.GatewayConverter.convertToGetDigitalAddressIniPecRequest;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_INAD_RESPONSE_EMPTY;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
@@ -44,7 +42,6 @@ public class InadPollingService {
 
     private final InadClient inadClient;
     private final NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
-    private final InfoCamereService infoCamereService;
     private final NationalRegistriesConfig nationalRegistriesConfig;
     private final InadConverter inadConverter;
     private final GatewayUtils gatewayUtils;
@@ -152,10 +149,6 @@ public class InadPollingService {
 
     private Mono<Void> handlePecNotFoundResponse(NationalRegistriesRequest request, CodeSqsDto codeSqsDto) {
         if (nationalRegistriesConfig.isEnablePfPecFallbackFlow() && PF.name().equalsIgnoreCase(request.getRecipientType())) {
-            if(nationalRegistriesConfig.isEnableOldInipecFlow()) {
-                return infoCamereService.getIniPecDigitalAddress(request.getClientId(), convertToGetDigitalAddressIniPecRequest(request), Date.valueOf(request.getReferenceRequestDate()), PF)
-                        .then();
-            }
             return pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
         }
         String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
