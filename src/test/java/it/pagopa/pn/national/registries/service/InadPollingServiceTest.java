@@ -123,7 +123,6 @@ class InadPollingServiceTest {
         verify(pollingService).markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD);
     }
 
-
     @Test
     void handleMessage_shouldPropagateInternalException_whenStateIsNull() {
         PnPollingEvent.Payload payload = buildPayload();
@@ -161,6 +160,8 @@ class InadPollingServiceTest {
                 .verifyComplete();
 
         verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INAD, "{\"result\":\"not-found\"}", true);
+        verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verifyNoInteractions(infoCamereService);
     }
 
     @Test
@@ -180,6 +181,7 @@ class InadPollingServiceTest {
         when(inadConverter.mapResponseByTaxId(resultResponse)).thenReturn(Map.of());
         when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(nationalRegistriesConfig.isEnableOldInipecFlow()).thenReturn(false);
         when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC)).thenReturn(Mono.empty());
         when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD)).thenReturn(Mono.empty());
 
@@ -187,6 +189,38 @@ class InadPollingServiceTest {
 
         verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
         verify(pollingService, never()).markRequestAsWorked(eq(request), eq(GatewayDownstreamService.INAD), any(), eq(true));
+        verifyNoInteractions(infoCamereService);
+    }
+
+    @Test
+    void handleMessage_shouldUseOldInipecFlow_whenPfAndAddressNotFound() {
+        PnPollingEvent.Payload payload = buildPayload();
+        ResponseStatusListDigitalAddress statusResponse = mock(ResponseStatusListDigitalAddress.class);
+        when(statusResponse.getState()).thenReturn(StatusProcessingRequest.DISPONIBILE);
+        ResponseListDigitalAddress resultResponse = mock(ResponseListDigitalAddress.class);
+        when(inadClient.checkMassiveRequestStatus(POLLING_ID)).thenReturn(Mono.just(statusResponse));
+        when(inadClient.getMassiveRequestResult(POLLING_ID)).thenReturn(Mono.just(resultResponse));
+
+        NationalRegistriesRequest request = buildRequest();
+        request.setRecipientType(RecipientType.PF.name());
+        request.setClientId("client-id");
+        request.setReferenceRequestDate("2026-01-01");
+
+        Page<NationalRegistriesRequest> page = Page.create(List.of(request));
+
+        when(inadConverter.mapResponseByTaxId(resultResponse)).thenReturn(Map.of());
+        when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.just(page)));
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(nationalRegistriesConfig.isEnableOldInipecFlow()).thenReturn(true);
+        when(infoCamereService.getIniPecDigitalAddress(eq("client-id"), any(), eq(java.sql.Date.valueOf("2026-01-01")), eq(RecipientType.PF))).thenReturn(Mono.empty());
+        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD)).thenReturn(Mono.empty());
+
+        StepVerifier.create(inadPollingService.handleMessage(payload)).verifyComplete();
+
+        verify(infoCamereService).getIniPecDigitalAddress(eq("client-id"), any(), eq(java.sql.Date.valueOf("2026-01-01")), eq(RecipientType.PF));
+        verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verify(pollingService, never()).markRequestAsWorked(eq(request), eq(GatewayDownstreamService.INAD), any(), eq(true));
+        verify(pollingService).markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD);
     }
 
     @Test
@@ -279,6 +313,7 @@ class InadPollingServiceTest {
                         && "personal@pec.it".equals(dto.getDigitalAddress().get(0).getAddress())));
         verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INAD, "payload", true);
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verifyNoInteractions(infoCamereService);
         verify(pollingService).markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD);
     }
 
@@ -295,6 +330,7 @@ class InadPollingServiceTest {
         verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
                 dto.getDigitalAddress().size() == 1 && "personal@pec.it".equals(dto.getDigitalAddress().get(0).getAddress())));
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verifyNoInteractions(infoCamereService);
     }
 
     @Test
@@ -310,6 +346,7 @@ class InadPollingServiceTest {
         verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
                 dto.getDigitalAddress().size() == 1 && "pro@pec.it".equals(dto.getDigitalAddress().get(0).getAddress())));
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verifyNoInteractions(infoCamereService);
     }
 
     @Test
@@ -325,6 +362,7 @@ class InadPollingServiceTest {
         verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
                 dto.getDigitalAddress() != null && dto.getDigitalAddress().isEmpty()));
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verifyNoInteractions(infoCamereService);
     }
 
     @Test
@@ -332,11 +370,32 @@ class InadPollingServiceTest {
         NationalRegistriesRequest request = buildRequest();
         prepareAvailableResult(request, buildInadResponse(TAX_ID));
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(nationalRegistriesConfig.isEnableOldInipecFlow()).thenReturn(false);
         when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC)).thenReturn(Mono.empty());
 
         StepVerifier.create(inadPollingService.handleMessage(buildPayload())).verifyComplete();
 
         verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+        verifyNoInteractions(infoCamereService);
+        verify(pollingService).markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD);
+    }
+
+    @Test
+    void handleMessage_shouldUseOldInipecFlow_whenPfHasNoAddressInResponseAndFallbackEnabled() {
+        NationalRegistriesRequest request = buildRequest();
+        request.setClientId("client-id");
+        request.setReferenceRequestDate("2026-01-01");
+        prepareAvailableResult(request, buildInadResponse(TAX_ID));
+
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(nationalRegistriesConfig.isEnableOldInipecFlow()).thenReturn(true);
+        when(infoCamereService.getIniPecDigitalAddress(eq("client-id"), any(), eq(java.sql.Date.valueOf("2026-01-01")), eq(RecipientType.PF))).thenReturn(Mono.empty());
+
+        StepVerifier.create(inadPollingService.handleMessage(buildPayload())).verifyComplete();
+
+        verify(infoCamereService).getIniPecDigitalAddress(eq("client-id"), any(), eq(java.sql.Date.valueOf("2026-01-01")), eq(RecipientType.PF));
+        verify(pollingService, never()).createFallbackRequest(any(), any(), any());
         verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
         verify(pollingService).markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD);
     }
@@ -352,6 +411,7 @@ class InadPollingServiceTest {
         StepVerifier.create(inadPollingService.handleMessage(buildPayload())).verifyComplete();
 
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verifyNoInteractions(infoCamereService);
         verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INAD, "payload", true);
     }
 
@@ -368,6 +428,41 @@ class InadPollingServiceTest {
         verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
                 dto.getDigitalAddress() != null && dto.getDigitalAddress().isEmpty()));
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verifyNoInteractions(infoCamereService);
+    }
+
+    @Test
+    void handleMessage_shouldCreateInipecFallback_whenPersonalEmailIsInvalidAndFallbackEnabled() {
+        NationalRegistriesRequest request = buildRequest();
+        prepareAvailableResult(request, buildInadResponse(TAX_ID, address("not-an-email", null)));
+
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(nationalRegistriesConfig.isEnableOldInipecFlow()).thenReturn(false);
+        when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC)).thenReturn(Mono.empty());
+
+        StepVerifier.create(inadPollingService.handleMessage(buildPayload())).verifyComplete();
+
+        verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+        verifyNoInteractions(infoCamereService);
+    }
+
+    @Test
+    void handleMessage_shouldUseOldInipecFlow_whenPersonalEmailIsInvalidAndFallbackEnabled() {
+        NationalRegistriesRequest request = buildRequest();
+        request.setClientId("client-id");
+        request.setReferenceRequestDate("2026-01-01");
+        prepareAvailableResult(request, buildInadResponse(TAX_ID, address("not-an-email", null)));
+
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(nationalRegistriesConfig.isEnableOldInipecFlow()).thenReturn(true);
+        when(infoCamereService.getIniPecDigitalAddress(eq("client-id"), any(), eq(java.sql.Date.valueOf("2026-01-01")), eq(RecipientType.PF))).thenReturn(Mono.empty());
+
+        StepVerifier.create(inadPollingService.handleMessage(buildPayload())).verifyComplete();
+
+        verify(infoCamereService).getIniPecDigitalAddress(eq("client-id"), any(), eq(java.sql.Date.valueOf("2026-01-01")), eq(RecipientType.PF));
+        verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
     }
 
     @Test
@@ -385,6 +480,7 @@ class InadPollingServiceTest {
 
         verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
                 dto.getDigitalAddress().size() == 1 && "company@pec.it".equals(dto.getDigitalAddress().get(0).getAddress())));
+        verifyNoInteractions(infoCamereService);
     }
 
     @Test
@@ -401,7 +497,28 @@ class InadPollingServiceTest {
         StepVerifier.create(inadPollingService.handleMessage(buildPayload())).verifyComplete();
 
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verifyNoInteractions(infoCamereService);
         verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INAD, "payload", true);
+    }
+
+    @Test
+    void handleMessage_shouldNeverUseOldInipecFlowForPg_evenWhenBothFlagsAreEnabled() {
+        String pIva = "12345678901";
+        NationalRegistriesRequest request = buildRequest();
+        request.setTaxId(pIva);
+        request.setRecipientType(RecipientType.PG.name());
+        prepareAvailableResult(request, buildInadResponse(pIva));
+
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("payload");
+        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, "payload", true)).thenReturn(Mono.empty());
+
+        StepVerifier.create(inadPollingService.handleMessage(buildPayload())).verifyComplete();
+
+        verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verifyNoInteractions(infoCamereService);
+        verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INAD, "payload", true);
+        verify(nationalRegistriesConfig, never()).isEnableOldInipecFlow();
     }
 
     @Test
@@ -422,6 +539,7 @@ class InadPollingServiceTest {
         when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING))
                 .thenReturn(SdkPublisher.adapt(Flux.just(Page.create(List.of(found, missing)))));
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(nationalRegistriesConfig.isEnableOldInipecFlow()).thenReturn(false);
         when(pollingService.createFallbackRequest(missing, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC)).thenReturn(Mono.empty());
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("payload");
         when(pollingService.markRequestAsWorked(found, GatewayDownstreamService.INAD, "payload", true)).thenReturn(Mono.empty());
@@ -432,6 +550,7 @@ class InadPollingServiceTest {
         verify(pollingService).markRequestAsWorked(found, GatewayDownstreamService.INAD, "payload", true);
         verify(pollingService).createFallbackRequest(missing, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
         verify(pollingService, never()).markRequestAsWorked(eq(missing), any(), any(), anyBoolean());
+        verifyNoInteractions(infoCamereService);
     }
 
     private void prepareAvailableResult(NationalRegistriesRequest request, ResponseRequestDigitalAddress inadResponse) {
