@@ -76,8 +76,9 @@ public class InfoCamereController implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
+        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange);
+
         var mono = getAddressRegistroImpreseRequestBodyDto
-                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
                 .flatMap(infoCamereService::getRegistroImpreseLegalAddress)
                 .doOnNext(responseDto -> {
                     logCfRequestedMetric(null, GatewayDownstreamService.REGISTRO_IMPRESE, 1);
@@ -90,8 +91,7 @@ public class InfoCamereController implements InfoCamereApi {
                         );
                     }
                 })
-                .map(ResponseEntity::ok)
-                .publishOn(scheduler);
+                .map(ResponseEntity::ok);
 
         return MDCUtils.addMDCToContextAndExecute(mono);
     }
