@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.rest;
 
+import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.AddressAnprApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
@@ -7,6 +8,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddre
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.AnprService;
 import it.pagopa.pn.national.registries.service.GatewayService;
+import it.pagopa.pn.national.registries.utils.RequestIdUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
@@ -45,7 +47,9 @@ public class AnprController implements AddressAnprApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(Mono<GetAddressANPRRequestBodyDto> getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
-        return getAddressANPRRequestBodyDto.flatMap(anprService::getAddressANPR)
+        var mono = getAddressANPRRequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
+                .flatMap(anprService::getAddressANPR)
                 .doOnNext(getAddressANPROKDto -> {
                     logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1);
                     if(!CollectionUtils.isEmpty(getAddressANPROKDto.getResidentialAddresses())){
@@ -58,7 +62,9 @@ public class AnprController implements AddressAnprApi {
                     }
                 })
                 .doOnError(isAnprAddressNotFound, e -> logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1))
-                .map(t -> ResponseEntity.ok().body(t))
+                .map(ResponseEntity::ok)
                 .publishOn(scheduler);
+
+        return MDCUtils.addMDCToContextAndExecute(mono);
     }
 }
