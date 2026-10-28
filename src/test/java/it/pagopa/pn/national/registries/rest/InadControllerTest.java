@@ -14,6 +14,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -22,12 +24,15 @@ import reactor.test.StepVerifier;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
 @ExtendWith(MockitoExtension.class)
 class InadControllerTest {
-    private static final String AWS_XRAY_TRACE_ID = "AWS_XRAY_TRACE_ID";
+    private ServerWebExchange serverWebExchange;
+    private HttpHeaders httpHeaders;
+    private static final String AWS_XRAY_TRACE_ID = "AWS-XRAY-TRACE-ID";
 
     @InjectMocks
     InadController inadController;
@@ -35,11 +40,14 @@ class InadControllerTest {
     @Mock
     InadService inadService;
 
-    @Mock
-    ServerWebExchange serverWebExchange;
-
     @BeforeEach
     void init() {
+        serverWebExchange = mock(ServerWebExchange.class);
+        ServerHttpResponse serverHttpResponse = mock(ServerHttpResponse.class);
+        httpHeaders = new HttpHeaders();
+
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
         inadController = new InadController(inadService, Schedulers.immediate());
     }
 
@@ -71,7 +79,7 @@ class InadControllerTest {
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(getDigitalAddressINADOKDto, response.getBody());
-                    assertEquals(traceId, response.getHeaders().getFirst("X-Request-ID"));
+                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

@@ -11,6 +11,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -21,12 +23,15 @@ import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
 @ExtendWith(MockitoExtension.class)
 class InfoCamereControllerTest {
-    private static final String AWS_XRAY_TRACE_ID = "AWS_XRAY_TRACE_ID";
+    private ServerWebExchange serverWebExchange;
+    private HttpHeaders httpHeaders;
+    private static final String AWS_XRAY_TRACE_ID = "AWS-XRAY-TRACE-ID";
 
     @InjectMocks
     InfoCamereController infoCamereController;
@@ -34,11 +39,14 @@ class InfoCamereControllerTest {
     @Mock
     InfoCamereService infoCamereService;
 
-    @Mock
-    ServerWebExchange serverWebExchange;
-
     @BeforeEach
     void init() {
+        serverWebExchange = mock(ServerWebExchange.class);
+        ServerHttpResponse serverHttpResponse = mock(ServerHttpResponse.class);
+        httpHeaders = new HttpHeaders();
+
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
         infoCamereController = new InfoCamereController(infoCamereService, Schedulers.immediate());
     }
 
@@ -69,7 +77,7 @@ class InfoCamereControllerTest {
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(getDigitalAddressINADOKDto, response.getBody());
-                    assertEquals(correlationId, response.getHeaders().getFirst("X-Request-ID"));
+                    assertEquals(correlationId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
@@ -97,7 +105,7 @@ class InfoCamereControllerTest {
                 .assertNext(res -> {
                     assertEquals(200, res.getStatusCode().value());
                     assertEquals(response, res.getBody());
-                    assertEquals(traceId, res.getHeaders().getFirst("X-Request-ID"));
+                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
@@ -127,7 +135,7 @@ class InfoCamereControllerTest {
                 .assertNext(res -> {
                     assertEquals(200, res.getStatusCode().value());
                     assertEquals(response, res.getBody());
-                    assertEquals(traceId, res.getHeaders().getFirst("X-Request-ID"));
+                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
@@ -157,7 +165,7 @@ class InfoCamereControllerTest {
                 .assertNext(res -> {
                     assertEquals(200, res.getStatusCode().value());
                     assertEquals(response, res.getBody());
-                    assertEquals(traceId, res.getHeaders().getFirst("X-Request-ID"));
+                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

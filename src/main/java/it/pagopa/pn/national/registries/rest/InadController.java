@@ -43,12 +43,10 @@ public class InadController implements DigitalAddressInadApi {
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
         RecipientType recipientTypeEnum = RecipientType.fromString(recipientType);
-        String requestId = RequestIdUtils.putRequestIdToMDC();
         var mono = extractDigitalAddressINADRequestBodyDto
+                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
                 .flatMap(requestBody -> inadService.callEService(requestBody, recipientTypeEnum, null))
-                .map(t -> ResponseEntity.ok()
-                        .header("X-Request-ID", requestId)
-                        .body(t))
+                .map(ResponseEntity::ok)
                 .publishOn(scheduler);
 
         return MDCUtils.addMDCToContextAndExecute(mono);

@@ -11,7 +11,9 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
@@ -20,22 +22,28 @@ import reactor.test.StepVerifier;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
 @ExtendWith(MockitoExtension.class)
 class GatewayControllerTest {
+    private ServerWebExchange serverWebExchange;
+    private HttpHeaders httpHeaders;
+    private ServerHttpResponse serverHttpResponse;
 
     @InjectMocks
     GatewayController gatewayController;
 
     @Mock
     GatewayService gatewayService;
-    @Mock
-    ServerWebExchange serverWebExchange;
 
     @BeforeEach
     void init() {
+        serverWebExchange = mock(ServerWebExchange.class);
+        serverHttpResponse = mock(ServerHttpResponse.class);
+        httpHeaders = new HttpHeaders();
+
         gatewayController = new GatewayController(gatewayService, Schedulers.immediate());
     }
 
@@ -72,6 +80,8 @@ class GatewayControllerTest {
 
         PhysicalAddressesResponseDto physicalAddressesResponseDto = getPhysicalAddressesResponseDto();
 
+        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
+        when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
         when(gatewayService.retrieveSyncPhysicalAddresses(physicalAddressesRequestBodyDto))
                 .thenReturn(Mono.fromSupplier(() -> {
                     assertEquals(correlationId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
@@ -82,7 +92,7 @@ class GatewayControllerTest {
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(physicalAddressesResponseDto, response.getBody());
-                    assertEquals(correlationId, response.getHeaders().getFirst("X-Request-ID"));
+                    assertEquals(correlationId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
