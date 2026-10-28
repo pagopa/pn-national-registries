@@ -7,6 +7,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
 import it.pagopa.pn.national.registries.utils.RequestIdUtils;
+import org.slf4j.MDC;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
@@ -70,6 +71,7 @@ public class InfoCamereController implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
+        log.info("Request received for addressRegistroImprese - MDC: {}", MDC.getCopyOfContextMap());
         RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange);
         var mono = getAddressRegistroImpreseRequestBodyDto
                 .flatMap(infoCamereService::getRegistroImpreseLegalAddress)
