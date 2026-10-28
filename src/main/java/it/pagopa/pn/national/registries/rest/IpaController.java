@@ -6,12 +6,10 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDt
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.service.IpaService;
 import it.pagopa.pn.national.registries.utils.RequestIdUtils;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 
 @RestController
 @lombok.CustomLog
@@ -19,12 +17,8 @@ public class IpaController implements IpaApi {
 
     private final IpaService ipaService;
 
-    @Qualifier("nationalRegistriesScheduler")
-    private final Scheduler scheduler;
-
-    public IpaController(IpaService ipaService, Scheduler scheduler) {
+    public IpaController(IpaService ipaService) {
         this.ipaService = ipaService;
-        this.scheduler = scheduler;
     }
 
     /**
@@ -39,11 +33,10 @@ public class IpaController implements IpaApi {
      */
     @Override
     public Mono<ResponseEntity<IPAPecDto>> ipaPec(Mono<IPARequestBodyDto> ipARequestBodyDto, ServerWebExchange exchange) {
+        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange);
         var mono = ipARequestBodyDto
-                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
                 .flatMap(ipaService::getIpaPec)
-                .map(ResponseEntity::ok)
-                .publishOn(scheduler);
+                .map(ResponseEntity::ok);
 
         return MDCUtils.addMDCToContextAndExecute(mono);
     }

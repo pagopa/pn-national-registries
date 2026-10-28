@@ -17,12 +17,10 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(SpringExtension.class)
 class IpaControllerTest {
@@ -44,7 +42,7 @@ class IpaControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        ipaController = new IpaController(ipaService, Schedulers.immediate());
+        ipaController = new IpaController(ipaService);
     }
 
     @AfterEach
