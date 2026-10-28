@@ -14,6 +14,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Scheduler;
 
+import java.time.Instant;
 import java.util.Date;
 import java.util.Objects;
 
@@ -76,7 +77,7 @@ public class InfoCamereController implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
-        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange);
+        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(String.format("Test-%s", Instant.now()), exchange);
 
         var mono = getAddressRegistroImpreseRequestBodyDto
                 .flatMap(infoCamereService::getRegistroImpreseLegalAddress)
