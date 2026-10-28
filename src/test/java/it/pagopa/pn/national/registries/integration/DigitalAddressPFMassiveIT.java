@@ -8,6 +8,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressR
 import it.pagopa.pn.national.registries.job.InadBatchRequestJob;
 import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;
 import it.pagopa.pn.national.registries.service.InadPollingService;
@@ -33,7 +34,7 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.enable-inad-massive-api=true",
         "pn.national-registries.inad.max-batch-request-size=9",
         "pn.national-registries.query-limit=2",
-        "pn.national-registries.inad.oldest-request-max-waiting-seconds=60",
+        "pn.national-registries.inad.oldest-request-max-waiting-seconds=0",
         "pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0",
         "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0",
         "pn.national-registries.inad.batch-polling-max-retry=5",
@@ -375,6 +376,53 @@ public class DigitalAddressPFMassiveIT extends AbstractNationalRegistriesCompone
 
         verify(inadClient, never()).callEService(any(), any());
         verifyNoInteractions(ipaClient, anprClient);
+    }
+
+    @Test
+    void PF_Digital_INAD_Massive_DuplicateTaxIdKeepsFirstProviderResult() {
+        String correlationId = "pf-duplicate-taxid-" + UUID.randomUUID();
+        String taxId = "RSSMRA80A01H501L";
+        enqueueGatewayRequest("PF", taxId, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        String pollingId = "polling-duplicate-" + UUID.randomUUID();
+        ResponseRequestListDigitalAddress submitResponse = new ResponseRequestListDigitalAddress();
+        submitResponse.setId(pollingId);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.just(submitResponse));
+        inadBatchRequestJob.batchRequest();
+
+        Map<String, AttributeValue> request = findNationalRegistriesRequestsByCorrelationId(correlationId).getFirst();
+        assertEquals("WORKING", request.get("status").s());
+        assertNotNull(request.get("batchId"));
+        String batchId = request.get("batchId").s();
+
+        pollingJob.polling();
+
+        ResponseStatusListDigitalAddress statusResponse = new ResponseStatusListDigitalAddress();
+        statusResponse.setState(StatusProcessingRequest.DISPONIBILE);
+        when(inadClient.checkMassiveRequestStatus(pollingId)).thenReturn(Mono.just(statusResponse));
+
+        ResponseListDigitalAddress massiveResponse = new ResponseListDigitalAddress();
+        massiveResponse.setList(List.of(
+                inadResponse(taxId, "first@pec.it", null),
+                inadResponse(taxId, "second@pec.it", null)
+        ));
+        when(inadClient.getMassiveRequestResult(pollingId)).thenReturn(Mono.just(massiveResponse));
+
+        inadPollingService.handleMessage(PnPollingEvent.Payload.builder()
+                .registry(GatewayDownstreamService.INAD)
+                .batchId(batchId)
+                .pollingId(pollingId)
+                .batchSize(1)
+                .errorRetryCount(0)
+                .inProgressRetryCount(0)
+                .build()).block();
+
+        request = findNationalRegistriesRequestsByCorrelationId(correlationId).getFirst();
+        assertEquals("WORKED", request.get("status").s());
+        CodeSqsDto payload = readOutputMessage(request.get("resultPayload").s());
+        assertEquals("first@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        assertFalse(request.get("resultPayload").s().contains("second@pec.it"));
     }
 
     @Test

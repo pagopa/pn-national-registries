@@ -292,4 +292,95 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
         verify(inadClient).callEService(VALID_PF_CF, correlationId);
         verifyNoInteractions(ipaClient, anprClient);
     }
+
+    @Test
+    void PF_Digital_INAD_PersonalWithoutUsageInfo_IsValid() {
+        String correlationId = "pf-digital-personal-no-usage-info-" + UUID.randomUUID();
+        ElementDigitalAddress personal = new ElementDigitalAddress();
+        personal.setDigitalAddress("personal-no-usage@pec.it");
+        personal.setPracticedProfession(null);
+
+        when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId)))
+                .thenReturn(Mono.just(inadResponse(VALID_PF_CF, List.of(personal))));
+
+        AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        assertEquals(correlationId, response.getCorrelationId());
+        Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
+        assertNotNull(outputMessage);
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        assertEquals("INAD", payload.getRegistry());
+        assertEquals(1, payload.getDigitalAddress().size());
+        assertEquals("personal-no-usage@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
+    }
+
+    @Test
+    void PF_Digital_INAD_PersonalWithoutEndValidity_IsValid() {
+        String correlationId = "pf-digital-personal-no-end-validity-" + UUID.randomUUID();
+        ElementDigitalAddress personal = inadAddress("personal-no-end@pec.it", null);
+        personal.getUsageInfo().setDateEndValidity(null);
+
+        when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId)))
+                .thenReturn(Mono.just(inadResponse(VALID_PF_CF, List.of(personal))));
+
+        AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        assertEquals(correlationId, response.getCorrelationId());
+        Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
+        assertNotNull(outputMessage);
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        assertEquals("INAD", payload.getRegistry());
+        assertEquals(1, payload.getDigitalAddress().size());
+        assertEquals("personal-no-end@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
+    }
+
+    @Test
+    void PF_Digital_INAD_FirstPersonalInvalid_SecondPersonalValid_FirstIsSelected() {
+        String correlationId = "pf-digital-first-personal-invalid-" + UUID.randomUUID();
+        when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId)))
+                .thenReturn(Mono.just(inadResponse(VALID_PF_CF, List.of(
+                        inadAddress("invalid-personal", null),
+                        inadAddress("second-valid@pec.it", null)
+                ))));
+
+        AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        assertEquals(correlationId, response.getCorrelationId());
+        Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
+        assertNotNull(outputMessage);
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        assertEquals("INAD", payload.getRegistry());
+        assertTrue(payload.getDigitalAddress().isEmpty());
+        assertFalse(outputMessage.body().contains("second-valid@pec.it"));
+        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
+    }
+
+    @Test
+    void PF_Digital_INAD_OnlyProfessionalExpired_NoFallback() {
+        String correlationId = "pf-digital-only-professional-expired-" + UUID.randomUUID();
+        ElementDigitalAddress expiredProfessional = inadAddress("expired-professional@pec.it", "AVVOCATO");
+        expiredProfessional.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
+
+        when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId)))
+                .thenReturn(Mono.just(inadResponse(VALID_PF_CF, List.of(expiredProfessional))));
+
+        AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        assertEquals(correlationId, response.getCorrelationId());
+        Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
+        assertNotNull(outputMessage);
+        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        assertEquals("INAD", payload.getRegistry());
+        assertTrue(payload.getDigitalAddress().isEmpty());
+        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
+    }
+
 }

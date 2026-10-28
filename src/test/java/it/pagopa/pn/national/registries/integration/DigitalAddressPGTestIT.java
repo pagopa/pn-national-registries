@@ -235,6 +235,23 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
         verify(inadClient).callEService(VALID_PG_PIVA, correlationId);
     }
 
+
+    @Test
+    void PG_Digital_IPA_TechnicalError_DoesNotFallback() {
+        String correlationId = "pg-digital-ipa-technical-" + UUID.randomUUID();
+        RuntimeException technicalError = new RuntimeException("IPA unavailable");
+        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA), any())).thenReturn(Mono.error(technicalError));
+
+        AddressOKDto response = enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        assertEquals(correlationId, response.getCorrelationId());
+        RuntimeException thrown = processNextGatewayInputMessageExpectingFailure();
+
+        assertSame(technicalError, thrown.getCause() != null ? thrown.getCause() : thrown);
+        assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
+        verify(ipaClient).callEServiceWS23(eq(VALID_PG_PIVA), any());
+        verifyNoInteractions(infoCamereClient, inadClient);
+    }
+
     private String submitInipecBatch(String correlationId, String pollingId) {
         when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
         iniPecBatchRequestJob.batchRequestScheduled();

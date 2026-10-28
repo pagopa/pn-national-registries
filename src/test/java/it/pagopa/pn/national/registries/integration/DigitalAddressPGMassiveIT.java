@@ -39,7 +39,12 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inipec.polling-first-attempt-fixed-delay-seconds=0",
         "pn.national-registries.inad.max-batch-request-size=4",
         "pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0",
-        "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0"
+        "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0",
+        "pn.national-registries.inad.batch-polling-max-retry=5",
+        "pn.national-registries.inad.batch-polling-in-progress-max-retry=10",
+        "pn.national-registries.inad.polling-error-retry-after=1",
+        "pn.national-registries.inad.polling-in-progress-retry-after=1",
+        "pn.national-registries.inad.oldest-request-max-waiting-seconds=0",
 })
 public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesComponentIT {
 
@@ -172,6 +177,159 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         verify(inadClient, never()).callEService(any(), any());
     }
 
+    @Test
+    void PG_Digital_FullFlow_InadMassive_InvalidMultipleAndProfessionalProduceEmptyResult() {
+        String invalidCorrelationId = "pg-massive-invalid-inad-" + UUID.randomUUID();
+        String multipleCorrelationId = "pg-massive-multiple-inad-" + UUID.randomUUID();
+        String professionalCorrelationId = "pg-massive-professional-inad-" + UUID.randomUUID();
+
+        List<TestRequest> requests = List.of(
+                new TestRequest(PG_INAD_FOUND, invalidCorrelationId),
+                new TestRequest(PG_INAD_NOT_FOUND, multipleCorrelationId),
+                new TestRequest(PG_INAD_EXPIRED, professionalCorrelationId)
+        );
+
+        when(ipaClient.callEServiceWS23(PG_INAD_FOUND, IPA_AUTH_ID)).thenReturn(Mono.just(ipaNotFoundResponse()));
+        when(ipaClient.callEServiceWS23(PG_INAD_NOT_FOUND, IPA_AUTH_ID)).thenReturn(Mono.just(ipaNotFoundResponse()));
+        when(ipaClient.callEServiceWS23(PG_INAD_EXPIRED, IPA_AUTH_ID)).thenReturn(Mono.just(ipaNotFoundResponse()));
+
+        for (TestRequest request : requests) {
+            enqueueGatewayRequest("PG", request.taxId(), AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, request.correlationId());
+            processNextGatewayInputMessage();
+            assertInipecPendingRequest(request);
+        }
+
+        String inipecPollingId = "inipec-polling-" + UUID.randomUUID();
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(inipecPollingId)));
+        iniPecBatchRequestJob.batchRequestScheduled();
+        String inipecBatchId = assertSameWorkingBatch(requests, "INIPEC");
+        pollingJob.polling();
+
+        when(infoCamereClient.callEServiceRequestPec(inipecPollingId)).thenReturn(Mono.just(inipecPollingResponse(
+                pecResponseWithState(PG_INAD_FOUND, "ignored-1@pec.it", Pec.StatoImpresaEnum.NF),
+                pecResponseWithState(PG_INAD_NOT_FOUND, "ignored-2@pec.it", Pec.StatoImpresaEnum.NF),
+                pecResponseWithState(PG_INAD_EXPIRED, "ignored-3@pec.it", Pec.StatoImpresaEnum.NF)
+        )));
+        processPollingEvent(pollingPayload(GatewayDownstreamService.INIPEC, inipecBatchId, inipecPollingId, 3));
+
+        String inadPollingId = "inad-polling-" + UUID.randomUUID();
+        ResponseRequestListDigitalAddress batchResponse = new ResponseRequestListDigitalAddress();
+        batchResponse.setId(inadPollingId);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.just(batchResponse));
+        inadBatchRequestJob.batchRequest();
+        String inadBatchId = assertSameWorkingBatch(requests, "INAD");
+        pollingJob.polling();
+
+        ResponseStatusListDigitalAddress statusResponse = new ResponseStatusListDigitalAddress();
+        statusResponse.setState(StatusProcessingRequest.DISPONIBILE);
+        when(inadClient.checkMassiveRequestStatus(inadPollingId)).thenReturn(Mono.just(statusResponse));
+        when(inadClient.getMassiveRequestResult(inadPollingId)).thenReturn(Mono.just(massiveResponse(
+                inadResponse(PG_INAD_FOUND, "not-an-email", null),
+                inadResponse(PG_INAD_NOT_FOUND, List.of(
+                        inadAddress("first@pec.it", null),
+                        inadAddress("second@pec.it", null)
+                )),
+                inadResponse(PG_INAD_EXPIRED, "professional@pec.it", "INGEGNERE")
+        )));
+
+        processPollingEvent(pollingPayload(GatewayDownstreamService.INAD, inadBatchId, inadPollingId, 3));
+
+        assertInadEmptyResult(invalidCorrelationId);
+        assertInadEmptyResult(multipleCorrelationId);
+        assertInadEmptyResult(professionalCorrelationId);
+        assertEquals("WORKED", findBatch(inadBatchId).get("status").s());
+    }
+
+    @Test
+    void PG_Digital_FullFlow_InadMassive_ValidAndExpiredReturnsValid() {
+        PgInadFlow flow = createSinglePgInadFallback("pg-massive-valid-expired-");
+        ResponseStatusListDigitalAddress statusResponse = new ResponseStatusListDigitalAddress();
+        statusResponse.setState(StatusProcessingRequest.DISPONIBILE);
+        when(inadClient.checkMassiveRequestStatus(flow.pollingId())).thenReturn(Mono.just(statusResponse));
+
+        ElementDigitalAddress expired = inadAddress("expired@pec.it", null);
+        expired.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
+        when(inadClient.getMassiveRequestResult(flow.pollingId())).thenReturn(Mono.just(massiveResponse(
+                inadResponse(VALID_PG_PIVA, List.of(inadAddress("valid@pec.it", null), expired))
+        )));
+
+        processPollingEvent(pollingPayload(GatewayDownstreamService.INAD, flow.batchId(), flow.pollingId(), 1));
+
+        assertInadFinalResult(flow.correlationId(), "valid@pec.it");
+        assertEquals("WORKED", findBatch(flow.batchId()).get("status").s());
+    }
+
+    @Test
+    void PG_Digital_FullFlow_InadMassive_InProgressSchedulesRetry() {
+        PgInadFlow flow = createSinglePgInadFallback("pg-massive-in-progress-");
+        ResponseStatusListDigitalAddress statusResponse = new ResponseStatusListDigitalAddress();
+        statusResponse.setState(StatusProcessingRequest.PRESA_IN_CARICO);
+        when(inadClient.checkMassiveRequestStatus(flow.pollingId())).thenReturn(Mono.just(statusResponse));
+
+        processPollingEvent(pollingPayload(GatewayDownstreamService.INAD, flow.batchId(), flow.pollingId(), 1));
+
+        Map<String, AttributeValue> batch = findBatch(flow.batchId());
+        assertEquals("REQUEST_SENT", batch.get("status").s());
+        assertEquals("0", batch.get("errorRetryCount").n());
+        assertEquals("1", batch.get("inProgressRetryCount").n());
+        assertNotNull(batch.get("attemptAfter"));
+        assertEquals("WORKING", findRequestByRegistry(flow.correlationId(), "INAD").get("status").s());
+    }
+
+    @Test
+    void PG_Digital_FullFlow_InadMassive_ResultErrorSchedulesRetry() {
+        PgInadFlow flow = createSinglePgInadFallback("pg-massive-result-error-");
+        ResponseStatusListDigitalAddress statusResponse = new ResponseStatusListDigitalAddress();
+        statusResponse.setState(StatusProcessingRequest.DISPONIBILE);
+        when(inadClient.checkMassiveRequestStatus(flow.pollingId())).thenReturn(Mono.just(statusResponse));
+        when(inadClient.getMassiveRequestResult(flow.pollingId())).thenReturn(Mono.error(new IllegalStateException("INAD unavailable")));
+
+        processPollingEvent(pollingPayload(GatewayDownstreamService.INAD, flow.batchId(), flow.pollingId(), 1));
+
+        Map<String, AttributeValue> batch = findBatch(flow.batchId());
+        assertEquals("REQUEST_SENT", batch.get("status").s());
+        assertEquals("1", batch.get("errorRetryCount").n());
+        assertEquals("0", batch.get("inProgressRetryCount").n());
+        assertNotNull(batch.get("attemptAfter"));
+        assertEquals("WORKING", findRequestByRegistry(flow.correlationId(), "INAD").get("status").s());
+    }
+
+    private PgInadFlow createSinglePgInadFallback(String prefix) {
+        String correlationId = prefix + UUID.randomUUID();
+        when(ipaClient.callEServiceWS23(VALID_PG_PIVA, IPA_AUTH_ID)).thenReturn(Mono.just(ipaNotFoundResponse()));
+        enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        String inipecPollingId = "inipec-polling-" + UUID.randomUUID();
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(inipecPollingId)));
+        iniPecBatchRequestJob.batchRequestScheduled();
+        String inipecBatchId = assertSameWorkingBatch(List.of(new TestRequest(VALID_PG_PIVA, correlationId)), "INIPEC");
+        pollingJob.polling();
+
+        Pec pec = pecResponse(VALID_PG_PIVA, "ignored@pec.it");
+        pec.setStatoImpresa(Pec.StatoImpresaEnum.NF);
+        when(infoCamereClient.callEServiceRequestPec(inipecPollingId)).thenReturn(Mono.just(inipecPollingResponse(pec)));
+        processPollingEvent(pollingPayload(GatewayDownstreamService.INIPEC, inipecBatchId, inipecPollingId, 1));
+        assertEquals("NOT_WORKED", findRequestByRegistry(correlationId, "INAD").get("status").s());
+
+        String inadPollingId = "inad-polling-" + UUID.randomUUID();
+        ResponseRequestListDigitalAddress batchResponse = new ResponseRequestListDigitalAddress();
+        batchResponse.setId(inadPollingId);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.just(batchResponse));
+        inadBatchRequestJob.batchRequest();
+        String inadBatchId = assertSameWorkingBatch(List.of(new TestRequest(VALID_PG_PIVA, correlationId)), "INAD");
+        assertEquals("REQUEST_SENT", findBatch(inadBatchId).get("status").s());
+        pollingJob.polling();
+        assertEquals("WORKING", findBatch(inadBatchId).get("status").s());
+        return new PgInadFlow(correlationId, inadBatchId, inadPollingId);
+    }
+
+    private ResponseListDigitalAddress massiveResponse(ResponseRequestDigitalAddress... responses) {
+        ResponseListDigitalAddress response = new ResponseListDigitalAddress();
+        response.setList(List.of(responses));
+        return response;
+    }
+
     private void assertInipecPendingRequest(TestRequest request) {
         Map<String, AttributeValue> storedRequest = findRequestByRegistry(request.correlationId(), "INIPEC");
         assertEquals(request.taxId(), storedRequest.get("taxId").s());
@@ -183,6 +341,35 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
     }
 
     private String assertSameWorkingBatch(List<TestRequest> requests, String registry) {
+        long deadline = System.currentTimeMillis() + 3000;
+        while (System.currentTimeMillis() < deadline) {
+            String batchId = null;
+            boolean ready = true;
+            for (TestRequest request : requests) {
+                Map<String, AttributeValue> storedRequest = findRequestByRegistry(request.correlationId(), registry);
+                AttributeValue status = storedRequest.get("status");
+                AttributeValue requestBatchId = storedRequest.get("batchId");
+                if (status == null || !"WORKING".equals(status.s()) || requestBatchId == null || requestBatchId.s() == null) {
+                    ready = false;
+                    break;
+                }
+                if (batchId == null) {
+                    batchId = requestBatchId.s();
+                } else if (!batchId.equals(requestBatchId.s())) {
+                    fail("Requests have different batchId for registry " + registry);
+                }
+            }
+            if (ready && batchId != null) {
+                return batchId;
+            }
+            try {
+                Thread.sleep(25);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                fail("Interrupted while waiting for " + registry + " batch");
+            }
+        }
+
         String batchId = null;
         for (TestRequest request : requests) {
             Map<String, AttributeValue> storedRequest = findRequestByRegistry(request.correlationId(), registry);
@@ -268,6 +455,9 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         Pec pec = pecResponse(taxId, pecAddress);
         pec.setStatoImpresa(statoImpresa);
         return pec;
+    }
+
+    private record PgInadFlow(String correlationId, String batchId, String pollingId) {
     }
 
     private record TestRequest(String taxId, String correlationId) {
