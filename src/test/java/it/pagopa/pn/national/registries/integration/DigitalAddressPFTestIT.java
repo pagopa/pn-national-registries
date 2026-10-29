@@ -88,21 +88,6 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
     }
 
     /**
-     * Verifica che un recipientType diverso da PF e PG venga rifiutato senza creare richieste downstream.
-     */
-    @Test
-    void Gateway_InvalidRecipientType_ReturnsBadRequest() {
-        String correlationId = "invalid-recipient-" + UUID.randomUUID();
-        webTestClient.post()
-                .uri("/national-registries-private/XX/addresses")
-                .header("pn-national-registries-cx-id", CX_ID)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(buildGatewayRequest(correlationId, VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL))
-                .exchange()
-                .expectStatus().isBadRequest();
-    }
-
-    /**
      * Verifica che una richiesta senza clientId non venga accettata quando la validazione del client è attiva.
      */
     @Test

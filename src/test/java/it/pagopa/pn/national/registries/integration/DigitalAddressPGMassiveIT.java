@@ -69,6 +69,8 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inad.polling-error-retry-after=1",
         "pn.national-registries.inad.polling-in-progress-retry-after=1",
         "pn.national-registries.inad.oldest-request-max-waiting-seconds=0",
+        "pn.national-registries.inipec.batch-request-max-retry=2",
+        "pn.national-registries.inipec.request-retry-after=0",
 })
 public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesComponentIT {
 
@@ -343,47 +345,89 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
     }
 
     /**
-     * Verifica che il replay del polling INIPEC dopo la creazione del fallback PG non generi una seconda richiesta INAD.
+     * Simula il caso in cui tutte le request INIPEC sono state completate e i fallback INAD sono già stati creati,
+     * ma l'update finale del batch è fallito lasciandolo WORKING.
+     * Al replay non deve essere creata nessuna nuova richiesta INAD e deve essere chiuso solamente il batch.
      */
     @Test
-    void InipecToInad_FallbackCreatedThenSourceCloseFails_ReplayDoesNotDuplicateFallback() {
-        String correlationId = "inipec-inad-replay-" + UUID.randomUUID();
-        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA), anyString())).thenReturn(Mono.just(ipaNotFoundResponse()));
-        enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
-        processNextGatewayInputMessage();
+    void InipecToInad_AllRequestsWorked_BatchUpdateFailed_ReplayOnlyClosesBatch() {
+        String correlationId1 = "inipec-inad-all-worked-1-" + UUID.randomUUID();
+        String correlationId2 = "inipec-inad-all-worked-2-" + UUID.randomUUID();
 
-        String pollingId = "inipec-polling-" + UUID.randomUUID();
-        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
-        iniPecBatchRequestJob.batchRequestScheduled();
-        Map<String, AttributeValue> inipecRequest = requestsByRegistry(correlationId, "INIPEC").getFirst();
-        String batchId = inipecRequest.get("batchId").s();
-        pollingJob.polling();
+        InipecFlow flow = startInipecFlow(correlationId1, VALID_PG_PIVA);
+        addRequestToInipecBatch(flow.batchId(), correlationId1, correlationId2, PG_FALLBACK);
 
-        AtomicBoolean failSourceCloseOnce = new AtomicBoolean(true);
-        doAnswer(invocation -> {
-            String pk = invocation.getArgument(0);
-            GatewayDownstreamService registry = invocation.getArgument(3);
-            boolean isFinal = invocation.getArgument(4);
-            if (correlationId.equals(pk) && GatewayDownstreamService.INIPEC.equals(registry) && !isFinal && failSourceCloseOnce.getAndSet(false)) {
-                return Mono.error(new IllegalStateException("simulated source close failure"));
-            }
-            return invocation.callRealMethod();
-        }).when(nationalRegistriesRequestsRepository).updateStatusToWorked(anyString(), anyString(), nullable(String.class), any(GatewayDownstreamService.class), anyBoolean());
+        Pec nf1 = pecResponse(VALID_PG_PIVA, "ignored@pec.it");
+        nf1.setStatoImpresa(Pec.StatoImpresaEnum.NF);
+        Pec nf2 = pecResponse(requestsByRegistry(correlationId2, "INIPEC").getFirst().get("taxId").s(), "ignored@pec.it");
+        nf2.setStatoImpresa(Pec.StatoImpresaEnum.NF);
 
-        Pec nf = pecResponse(VALID_PG_PIVA, "ignored@pec.it");
-        nf.setStatoImpresa(Pec.StatoImpresaEnum.NF);
         IniPecPollingResponse response = new IniPecPollingResponse();
-        response.setElencoPec(List.of(nf));
-        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(response));
+        response.setElencoPec(List.of(nf1, nf2));
 
-        PnPollingEvent.Payload payload = pollingPayload(GatewayDownstreamService.INIPEC, batchId, pollingId, 1);
-        assertThrows(RuntimeException.class, () -> inipecPollingService.handleMessage(payload).block());
-        assertEquals(1, requestsByRegistry(correlationId, "INAD").size());
+        when(infoCamereClient.callEServiceRequestPec(flow.pollingId())).thenReturn(Mono.just(response));
+
+        PnPollingEvent.Payload payload = pollingPayload(GatewayDownstreamService.INIPEC, flow.batchId(), flow.pollingId(), 2);
+
+        markInipecRequestAsWorkedAndCreateInadFallback(correlationId1);
+        markInipecRequestAsWorkedAndCreateInadFallback(correlationId2);
+
+        assertEquals("WORKED", requestsByRegistry(correlationId1, "INIPEC").getFirst().get("status").s());
+        assertEquals("WORKED", requestsByRegistry(correlationId2, "INIPEC").getFirst().get("status").s());
+        assertEquals(1, requestsByRegistry(correlationId1, "INAD").size());
+        assertEquals(1, requestsByRegistry(correlationId2, "INAD").size());
+        assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
 
         inipecPollingService.handleMessage(payload).block();
 
-        assertEquals(1, requestsByRegistry(correlationId, "INAD").size());
-        assertEquals("WORKED", requestsByRegistry(correlationId, "INIPEC").getFirst().get("status").s());
+        assertEquals(1, requestsByRegistry(correlationId1, "INAD").size());
+        assertEquals(1, requestsByRegistry(correlationId2, "INAD").size());
+        assertEquals("WORKED", requestsByRegistry(correlationId1, "INIPEC").getFirst().get("status").s());
+        assertEquals("WORKED", requestsByRegistry(correlationId2, "INIPEC").getFirst().get("status").s());
+        assertEquals("WORKED", findBatch(flow.batchId()).get("status").s());
+    }
+
+    /**
+     * Simula il caso in cui il processing si interrompe dopo aver completato solo una parte delle request INIPEC.
+     * Al replay deve essere elaborata solamente la request ancora WORKING, creando il fallback INAD solo per quella non completata.
+     */
+    @Test
+    void InipecToInad_RequestProcessingFailed_ReplayProcessesOnlyWorkingRequests() {
+        String correlationId1 = "inipec-inad-partial-1-" + UUID.randomUUID();
+        String correlationId2 = "inipec-inad-partial-2-" + UUID.randomUUID();
+
+        InipecFlow flow = startInipecFlow(correlationId1, VALID_PG_PIVA);
+        addRequestToInipecBatch(flow.batchId(), correlationId1, correlationId2, PG_FALLBACK);
+
+        String taxId2 = requestsByRegistry(correlationId2, "INIPEC").getFirst().get("taxId").s();
+
+        Pec nf1 = pecResponse(VALID_PG_PIVA, "ignored@pec.it");
+        nf1.setStatoImpresa(Pec.StatoImpresaEnum.NF);
+        Pec nf2 = pecResponse(taxId2, "ignored@pec.it");
+        nf2.setStatoImpresa(Pec.StatoImpresaEnum.NF);
+
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        response.setElencoPec(List.of(nf1, nf2));
+
+        when(infoCamereClient.callEServiceRequestPec(flow.pollingId())).thenReturn(Mono.just(response));
+
+        PnPollingEvent.Payload payload = pollingPayload(GatewayDownstreamService.INIPEC, flow.batchId(), flow.pollingId(), 2);
+
+        markInipecRequestAsWorkedAndCreateInadFallback(correlationId1);
+
+        assertEquals("WORKED", requestsByRegistry(correlationId1, "INIPEC").getFirst().get("status").s());
+        assertEquals("WORKING", requestsByRegistry(correlationId2, "INIPEC").getFirst().get("status").s());
+        assertEquals(1, requestsByRegistry(correlationId1, "INAD").size());
+        assertTrue(requestsByRegistry(correlationId2, "INAD").isEmpty());
+        assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
+
+        inipecPollingService.handleMessage(payload).block();
+
+        assertEquals(1, requestsByRegistry(correlationId1, "INAD").size());
+        assertEquals(1, requestsByRegistry(correlationId2, "INAD").size());
+        assertEquals("WORKED", requestsByRegistry(correlationId1, "INIPEC").getFirst().get("status").s());
+        assertEquals("WORKED", requestsByRegistry(correlationId2, "INIPEC").getFirst().get("status").s());
+        assertEquals("WORKED", findBatch(flow.batchId()).get("status").s());
     }
 
     /**
@@ -434,6 +478,58 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         verify(infoCamereClient, atLeastOnce()).callEServiceRequestId(captor.capture());
         IniPecBatchRequest last = captor.getAllValues().getLast();
         assertEquals(List.of(PG_ER), last.getElencoCf().stream().map(IniPecBatchRequest.IniPecCf::getCf).toList());
+    }
+
+    private InipecFlow startInipecFlow(String correlationId, String taxId) {
+        when(ipaClient.callEServiceWS23(eq(taxId), anyString())).thenReturn(Mono.just(ipaNotFoundResponse()));
+        enqueueGatewayRequest("PG", taxId, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+        String pollingId = "inipec-polling-" + UUID.randomUUID();
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
+        iniPecBatchRequestJob.batchRequestScheduled();
+        Map<String, AttributeValue> request = requestsByRegistry(correlationId, "INIPEC").getFirst();
+        String batchId = request.get("batchId").s();
+        pollingJob.polling();
+        return new InipecFlow(batchId, pollingId);
+    }
+
+    private void addRequestToInipecBatch(String batchId, String sourceCorrelationId, String newCorrelationId, String newTaxId) {
+        Map<String, AttributeValue> source = requestsByRegistry(sourceCorrelationId, "INIPEC").getFirst();
+        Map<String, AttributeValue> newRequest = new HashMap<>(source);
+        newRequest.put("correlationId", AttributeValue.builder().s(newCorrelationId).build());
+        newRequest.put("taxId", AttributeValue.builder().s(newTaxId).build());
+        newRequest.put("batchId", AttributeValue.builder().s(batchId).build());
+        newRequest.put("status", AttributeValue.builder().s("WORKING").build());
+        newRequest.put("registryStatus", AttributeValue.builder().s("INIPEC#WORKING").build());
+        newRequest.remove("resultPayload");
+        dynamoDbClient.putItem(builder -> builder.tableName(NATIONAL_REGISTRIES_REQUESTS_TABLE).item(newRequest));
+
+        Map<String, AttributeValue> batch = new HashMap<>(findBatch(batchId));
+        batch.put("batchSize", AttributeValue.builder().n("2").build());
+        dynamoDbClient.putItem(builder -> builder.tableName(NATIONAL_REGISTRIES_BATCHES_TABLE).item(batch));
+    }
+
+    private void markInipecRequestAsWorkedAndCreateInadFallback(String correlationId) {
+        Map<String, AttributeValue> inipecRequest = requestsByRegistry(correlationId, "INIPEC").getFirst();
+
+        Map<String, AttributeValue> workedInipecRequest = new HashMap<>(inipecRequest);
+        workedInipecRequest.put("status", AttributeValue.builder().s("WORKED").build());
+        workedInipecRequest.put("registryStatus", AttributeValue.builder().s("INIPEC#WORKED").build());
+        workedInipecRequest.remove("resultPayload");
+        dynamoDbClient.putItem(builder -> builder.tableName(NATIONAL_REGISTRIES_REQUESTS_TABLE).item(workedInipecRequest));
+
+        Map<String, AttributeValue> inadRequest = new HashMap<>(inipecRequest);
+        String fallbackCreatedAt = Instant.parse(inipecRequest.get("createdAt").s()).plusNanos(1).toString();
+        inadRequest.put("createdAt", AttributeValue.builder().s(fallbackCreatedAt).build());
+        inadRequest.put("attemptAfter", AttributeValue.builder().s(fallbackCreatedAt).build());
+        inadRequest.put("registry", AttributeValue.builder().s("INAD").build());
+        inadRequest.put("status", AttributeValue.builder().s("NOT_WORKED").build());
+        inadRequest.put("registryStatus", AttributeValue.builder().s("INAD#NOT_WORKED").build());
+        inadRequest.remove("batchId");
+        inadRequest.remove("resultPayload");
+        inadRequest.remove("updatedAt");
+        inadRequest.remove("retryCount");
+        dynamoDbClient.putItem(builder -> builder.tableName(NATIONAL_REGISTRIES_REQUESTS_TABLE).item(inadRequest));
     }
 
     private String correlationForTaxId(Map<String, String> cases, String taxId) {
@@ -618,6 +714,9 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         Pec pec = pecResponse(taxId, pecAddress);
         pec.setStatoImpresa(statoImpresa);
         return pec;
+    }
+
+    private record InipecFlow(String batchId, String pollingId) {
     }
 
     private record PgInadFlow(String correlationId, String batchId, String pollingId) {

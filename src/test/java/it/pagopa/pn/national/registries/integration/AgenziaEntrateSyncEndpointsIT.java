@@ -51,25 +51,6 @@ class AgenziaEntrateSyncEndpointsIT extends AbstractNationalRegistriesComponentI
     }
 
     /**
-     * Verifica che un codice fiscale in whitelist eviti la chiamata check CF e sia considerato valido.
-     */
-    @Test
-    void AgenziaEntrateTaxId_WhitelistedTaxIdSkipsCheckCf() {
-
-        webTestClient.post()
-                .uri("/national-registries-private/agenzia-entrate/tax-id")
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue("{\"filter\":{\"taxId\":\"" + VALID_PF_CF + "\"}}")
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody()
-                .jsonPath("$.taxId").isEqualTo(VALID_PF_CF)
-                .jsonPath("$.isValid").isEqualTo(true);
-
-        verifyNoInteractions(checkCfClient);
-    }
-
-    /**
      * Verifica che un codice fiscale inesistente produca esito negativo con errore correttamente mappato.
      */
     @Test

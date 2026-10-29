@@ -32,7 +32,10 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -848,6 +851,85 @@ class InadPollingServiceTest {
                 "payload",
                 true
         );
+    }
+
+    /**
+     * Regression: se tutte le request del batch sono già WORKED al replay, il repository non restituisce
+     * elementi WORKING. Il polling non deve ricreare fallback o risultati e deve solo chiudere il batch.
+     */
+    @Test
+    void handleMessage_shouldOnlyCloseBatch_whenReplayFindsNoWorkingRequests() {
+        ResponseStatusListDigitalAddress statusResponse = mock(ResponseStatusListDigitalAddress.class);
+        when(statusResponse.getState()).thenReturn(StatusProcessingRequest.DISPONIBILE);
+        ResponseListDigitalAddress resultResponse = mock(ResponseListDigitalAddress.class);
+        when(inadClient.checkMassiveRequestStatus(POLLING_ID)).thenReturn(Mono.just(statusResponse));
+        when(inadClient.getMassiveRequestResult(POLLING_ID)).thenReturn(Mono.just(resultResponse));
+        when(inadConverter.mapResponseByTaxId(resultResponse)).thenReturn(Map.of());
+        when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.empty()));
+        AtomicBoolean batchCloseSubscribed = new AtomicBoolean(false);
+        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD)).thenReturn(Mono.defer(() -> {
+            batchCloseSubscribed.set(true);
+            return Mono.empty();
+        }));
+
+        StepVerifier.create(inadPollingService.handleMessage(buildPayload())).verifyComplete();
+
+        assertTrue(batchCloseSubscribed.get());
+        verify(nationalRegistriesRequestsRepository).getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING);
+        verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+    }
+
+    /**
+     * Regression: se il processing di una request fallisce, il Mono di chiusura batch non deve essere sottoscritto.
+     * Il batch resta quindi WORKING e la request può essere recuperata al replay successivo.
+     */
+    @Test
+    void handleMessage_shouldNotCloseBatch_whenRequestProcessingFails() {
+        NationalRegistriesRequest request = buildRequest();
+        ResponseStatusListDigitalAddress statusResponse = mock(ResponseStatusListDigitalAddress.class);
+        when(statusResponse.getState()).thenReturn(StatusProcessingRequest.DISPONIBILE);
+        ResponseListDigitalAddress resultResponse = mock(ResponseListDigitalAddress.class);
+        when(inadClient.checkMassiveRequestStatus(POLLING_ID)).thenReturn(Mono.just(statusResponse));
+        when(inadClient.getMassiveRequestResult(POLLING_ID)).thenReturn(Mono.just(resultResponse));
+        when(inadConverter.mapResponseByTaxId(resultResponse)).thenReturn(Map.of());
+        when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.just(Page.create(List.of(request)))));
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC)).thenReturn(Mono.error(new IllegalStateException("request update failed")));
+        AtomicBoolean batchCloseSubscribed = new AtomicBoolean(false);
+        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD)).thenReturn(Mono.defer(() -> {
+            batchCloseSubscribed.set(true);
+            return Mono.empty();
+        }));
+
+        StepVerifier.create(inadPollingService.handleMessage(buildPayload())).expectError(IllegalStateException.class).verify();
+
+        assertFalse(batchCloseSubscribed.get());
+        verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
+    }
+
+    /**
+     * Regression: se tutte le request sono state completate ma fallisce solo l'update finale del batch,
+     * l'errore deve essere propagato dopo gli effetti sulle request; il replay potrà poi chiudere il batch vuoto.
+     */
+    @Test
+    void handleMessage_shouldPropagateBatchCloseFailure_afterRequestsAreCompleted() {
+        NationalRegistriesRequest request = buildRequest();
+        ResponseStatusListDigitalAddress statusResponse = mock(ResponseStatusListDigitalAddress.class);
+        when(statusResponse.getState()).thenReturn(StatusProcessingRequest.DISPONIBILE);
+        ResponseListDigitalAddress resultResponse = mock(ResponseListDigitalAddress.class);
+        when(inadClient.checkMassiveRequestStatus(POLLING_ID)).thenReturn(Mono.just(statusResponse));
+        when(inadClient.getMassiveRequestResult(POLLING_ID)).thenReturn(Mono.just(resultResponse));
+        when(inadConverter.mapResponseByTaxId(resultResponse)).thenReturn(Map.of());
+        when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.just(Page.create(List.of(request)))));
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+        when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC)).thenReturn(Mono.empty());
+        IllegalStateException batchError = new IllegalStateException("batch update failed");
+        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD)).thenReturn(Mono.error(batchError));
+
+        StepVerifier.create(inadPollingService.handleMessage(buildPayload())).expectErrorMatches(error -> error == batchError).verify();
+
+        verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
     }
 
     @Test

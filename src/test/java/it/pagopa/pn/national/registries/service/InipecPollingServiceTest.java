@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -429,6 +430,82 @@ class InipecPollingServiceTest {
         StepVerifier.create(service.handleMessage(payload(0, 0)))
                 .expectError(IllegalStateException.class)
                 .verify();
+    }
+
+    /**
+     * Regression: al replay di un batch con tutte le request già WORKED il repository non restituisce elementi
+     * WORKING. Non deve essere ricreato alcun fallback INAD e deve essere completata solo la chiusura del batch.
+     */
+    @Test
+    void successfulPollingReplayWithoutWorkingRequestsOnlyClosesBatch() {
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        when(infoCamereService.callIniPecEService(BATCH_ID, POLLING_ID)).thenReturn(Mono.just(response));
+        when(infoCamereConverter.mapPecByTaxId(response)).thenReturn(Map.of());
+        when(requestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.empty()));
+        AtomicBoolean batchCloseSubscribed = new AtomicBoolean(false);
+        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC)).thenReturn(Mono.defer(() -> {
+            batchCloseSubscribed.set(true);
+            return Mono.empty();
+        }));
+
+        StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
+
+        assertTrue(batchCloseSubscribed.get());
+        verify(requestsRepository).getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING);
+        verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+    }
+
+    /**
+     * Regression: se la creazione del fallback INAD fallisce durante il processing della request INIPEC,
+     * il Mono di chiusura batch non deve essere sottoscritto e il batch deve restare recuperabile in WORKING.
+     */
+    @Test
+    void successfulPollingDoesNotCloseBatchWhenFallbackCreationFails() {
+        config.setEnableInadMassiveApi(true);
+        NationalRegistriesRequest request = request("PG", TAX_ID_PG, null);
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        Map<String, Pec> pecByTaxId = Map.of();
+        when(infoCamereService.callIniPecEService(BATCH_ID, POLLING_ID)).thenReturn(Mono.just(response));
+        when(infoCamereConverter.mapPecByTaxId(response)).thenReturn(pecByTaxId);
+        when(infoCamereConverter.retrievePec(TAX_ID_PG, pecByTaxId)).thenReturn(null);
+        when(page.items()).thenReturn(List.of(request));
+        when(requestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.just(page)));
+        when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD)).thenReturn(Mono.error(new IllegalStateException("request update failed")));
+        AtomicBoolean batchCloseSubscribed = new AtomicBoolean(false);
+        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC)).thenReturn(Mono.defer(() -> {
+            batchCloseSubscribed.set(true);
+            return Mono.empty();
+        }));
+
+        StepVerifier.create(service.handleMessage(payload(0, 0))).expectError(IllegalStateException.class).verify();
+
+        assertFalse(batchCloseSubscribed.get());
+        verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD);
+    }
+
+    /**
+     * Regression: se il fallback è stato creato ma fallisce solo la chiusura finale del batch, l'errore deve
+     * essere propagato dopo il processing della request, lasciando al replay il solo compito di chiudere il batch.
+     */
+    @Test
+    void successfulPollingPropagatesBatchCloseFailureAfterFallbackCreation() {
+        config.setEnableInadMassiveApi(true);
+        NationalRegistriesRequest request = request("PG", TAX_ID_PG, null);
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        Map<String, Pec> pecByTaxId = Map.of();
+        when(infoCamereService.callIniPecEService(BATCH_ID, POLLING_ID)).thenReturn(Mono.just(response));
+        when(infoCamereConverter.mapPecByTaxId(response)).thenReturn(pecByTaxId);
+        when(infoCamereConverter.retrievePec(TAX_ID_PG, pecByTaxId)).thenReturn(null);
+        when(page.items()).thenReturn(List.of(request));
+        when(requestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.just(page)));
+        when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD)).thenReturn(Mono.empty());
+        IllegalStateException batchError = new IllegalStateException("batch update failed");
+        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC)).thenReturn(Mono.error(batchError));
+
+        StepVerifier.create(service.handleMessage(payload(0, 0))).expectErrorMatches(error -> error == batchError).verify();
+
+        verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD);
     }
 
     // ---- richieste multiple ----

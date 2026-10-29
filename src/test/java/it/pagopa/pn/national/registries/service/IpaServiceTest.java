@@ -5,9 +5,9 @@ import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.converter.IpaConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.TaxIdFilterDto;
 import it.pagopa.pn.national.registries.model.ipa.IpaSecret;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
@@ -244,7 +244,7 @@ class IpaServiceTest {
 
     private IPARequestBodyDto request(String taxId) {
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId(taxId);
         ipaRequestBodyDto.setFilter(filter);
         return ipaRequestBodyDto;

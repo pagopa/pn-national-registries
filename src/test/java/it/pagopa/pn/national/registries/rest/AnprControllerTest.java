@@ -44,7 +44,7 @@ class AnprControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        anprController = new AnprController(anprService, new GatewayService(null, null, null, null, null, null, null), Schedulers.immediate());
+        anprController = new AnprController(anprService, new GatewayService(null, null, null, null, null, null, null));
     }
 
     @AfterEach

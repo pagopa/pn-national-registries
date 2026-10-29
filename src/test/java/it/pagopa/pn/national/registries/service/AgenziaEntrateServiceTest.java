@@ -114,7 +114,7 @@ class AgenziaEntrateServiceTest {
     @Test
     void callEServiceShouldPropagateReactiveClientError() {
         CheckTaxIdRequestBodyDto requestBodyDto = new CheckTaxIdRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("test");
         requestBodyDto.setFilter(filter);
         RuntimeException error = new RuntimeException("service unavailable");

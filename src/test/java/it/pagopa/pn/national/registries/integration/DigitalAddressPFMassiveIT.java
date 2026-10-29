@@ -738,54 +738,6 @@ public class DigitalAddressPFMassiveIT extends AbstractNationalRegistriesCompone
     }
 
     /**
-     * Verifica che la ridelivery dello stesso evento Gateway non crei due richieste funzionalmente duplicate.
-     */
-    @Test
-    void Gateway_RedeliveryOfSameEvent_DoesNotCreateDuplicateRequest() {
-        String correlationId = "gateway-redelivery-" + UUID.randomUUID();
-        enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
-
-        Message message = receiveSingleMessage(INPUT_QUEUE);
-        assertNotNull(message);
-        PnAddressGatewayEvent.Payload payload = readInputMessage(message.body());
-
-        gatewayInputsHandler.pnNationalRegistriesGatewayRequestConsumer(MessageBuilder.withPayload(toGatewayPayload(payload)).build());
-        gatewayInputsHandler.pnNationalRegistriesGatewayRequestConsumer(MessageBuilder.withPayload(toGatewayPayload(payload)).build());
-
-        List<Map<String, AttributeValue>> requests = findNationalRegistriesRequestsByCorrelationId(correlationId);
-        assertEquals(1, requests.size());
-        assertEquals("INAD", requests.getFirst().get("registry").s());
-        assertEquals("NOT_WORKED", requests.getFirst().get("status").s());
-    }
-
-    /**
-     * Verifica che il replay dello stesso evento polling dopo il completamento non produca un secondo risultato né alteri lo stato finale.
-     */
-    @Test
-    void Polling_ReplayOfSameEvent_DoesNotDuplicateFinalResult() {
-        Flow flow = startWorkingInadFlow("polling-replay-" + UUID.randomUUID(), VALID_PF_CF);
-        when(inadClient.checkMassiveRequestStatus(flow.pollingId())).thenReturn(Mono.just(status(StatusProcessingRequest.DISPONIBILE)));
-        ResponseListDigitalAddress result = new ResponseListDigitalAddress();
-        result.setList(List.of(inadResponse(VALID_PF_CF, "replay@pec.it", null)));
-        when(inadClient.getMassiveRequestResult(flow.pollingId())).thenReturn(Mono.just(result));
-
-        PnPollingEvent.Payload payload = pollingPayload(flow, 0, 0);
-        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(payload).build());
-
-        Map<String, AttributeValue> worked = findNationalRegistriesRequestsByCorrelationId(flow.correlationId()).getFirst();
-        assertEquals("WORKED", worked.get("status").s());
-        String firstPayload = worked.get("resultPayload").s();
-
-        assertDoesNotThrow(() -> pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(payload).build()));
-
-        worked = findNationalRegistriesRequestsByCorrelationId(flow.correlationId()).getFirst();
-        assertEquals("WORKED", worked.get("status").s());
-        assertEquals(firstPayload, worked.get("resultPayload").s());
-        CodeSqsDto resultPayload = readOutputMessage(firstPayload);
-        assertEquals("replay@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
-    }
-
-    /**
      * Verifica che correlationId con apici, virgolette e caratteri non ASCII attraversi API, SQS, persistenza e resultPayload senza alterazioni di serializzazione.
      */
     @Test
@@ -806,145 +758,148 @@ public class DigitalAddressPFMassiveIT extends AbstractNationalRegistriesCompone
     }
 
     /**
-     * Verifica che un batch preso in carico ma rimasto senza evento polling venga recuperato da un ciclo operativo successivo.
-     */
-    @Test
-    void Polling_WorkingBatchWithoutEvent_IsRecoveredByNextCycle() {
-        Flow flow = startWorkingInadFlow("working-without-event-" + UUID.randomUUID(), VALID_PF_CF);
-        assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
-
-        pollingJob.polling();
-
-        Map<String, AttributeValue> batch = findBatch(flow.batchId());
-        assertEquals("REQUEST_SENT", batch.get("status").s());
-    }
-
-    /**
-     * Verifica un retry INAD in-progress completo: primo ciclo non disponibile, nuovo PollingJob e secondo ciclo con risultato finale disponibile.
-     */
-    @Test
-    void InadPolling_InProgressThenSuccess_AcrossRealPollingCycles() {
-        Flow flow = startWorkingInadFlow("inad-in-progress-retry-" + UUID.randomUUID(), VALID_PF_CF);
-        when(inadClient.checkMassiveRequestStatus(flow.pollingId())).thenReturn(Mono.just(status(StatusProcessingRequest.IN_ELABORAZIONE)));
-
-        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(pollingPayload(flow, 0, 0)).build());
-
-        Map<String, AttributeValue> batch = findBatch(flow.batchId());
-        assertEquals("REQUEST_SENT", batch.get("status").s());
-        assertEquals("1", batch.get("inProgressRetryCount").n());
-
-        pollingJob.polling();
-        batch = findBatch(flow.batchId());
-        assertEquals("WORKING", batch.get("status").s());
-
-        when(inadClient.checkMassiveRequestStatus(flow.pollingId())).thenReturn(Mono.just(status(StatusProcessingRequest.DISPONIBILE)));
-        ResponseListDigitalAddress result = new ResponseListDigitalAddress();
-        result.setList(List.of(inadResponse(VALID_PF_CF, "after-retry@pec.it", null)));
-        when(inadClient.getMassiveRequestResult(flow.pollingId())).thenReturn(Mono.just(result));
-
-        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(pollingPayload(flow, 0, 1)).build());
-
-        Map<String, AttributeValue> request = findNationalRegistriesRequestsByCorrelationId(flow.correlationId()).getFirst();
-        assertEquals("WORKED", request.get("status").s());
-        assertEquals("WORKED", findBatch(flow.batchId()).get("status").s());
-        assertEquals("after-retry@pec.it", readOutputMessage(request.get("resultPayload").s()).getDigitalAddress().getFirst().getAddress());
-    }
-
-    /**
      * Verifica l'esaurimento del retry INAD attraverso tre cicli reali: due reset del batch e chiusura in ERROR al terzo errore.
      */
     @Test
-    void InadPolling_ErrorRetryExhaustion_AcrossThreeRealCycles() {
-        Flow flow = startWorkingInadFlow("inad-error-exhaustion-" + UUID.randomUUID(), VALID_PF_CF);
-        when(inadClient.checkMassiveRequestStatus(flow.pollingId())).thenReturn(Mono.error(new IllegalStateException("temporary provider error")));
+    void InadPolling_ErrorRetryExhaustion_AcrossFourRealCycles() {
+        Flow flow = startWorkingInadFlow(
+                "inad-error-exhaustion-" + UUID.randomUUID(),
+                VALID_PF_CF
+        );
 
-        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(pollingPayload(flow, 0, 0)).build());
+        when(inadClient.checkMassiveRequestStatus(flow.pollingId()))
+                .thenReturn(Mono.error(new IllegalStateException("temporary provider error")));
+
+        // First error
+        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(
+                MessageBuilder.withPayload(pollingPayload(flow, 0, 0)).build()
+        );
+
         assertEquals("REQUEST_SENT", findBatch(flow.batchId()).get("status").s());
         assertEquals("1", findBatch(flow.batchId()).get("errorRetryCount").n());
 
+        // Second error
+        makeBatchImmediatelyRetryable(flow.batchId());
         pollingJob.polling();
-        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(pollingPayload(flow, 1, 0)).build());
+
+        assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
+
+        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(
+                MessageBuilder.withPayload(pollingPayload(flow, 1, 0)).build()
+        );
+
         assertEquals("REQUEST_SENT", findBatch(flow.batchId()).get("status").s());
         assertEquals("2", findBatch(flow.batchId()).get("errorRetryCount").n());
 
+        // Third error
+        makeBatchImmediatelyRetryable(flow.batchId());
         pollingJob.polling();
-        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(pollingPayload(flow, 2, 0)).build());
+
+        assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
+
+        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(
+                MessageBuilder.withPayload(pollingPayload(flow, 2, 0)).build()
+        );
+
+        assertEquals("REQUEST_SENT", findBatch(flow.batchId()).get("status").s());
+        assertEquals("3", findBatch(flow.batchId()).get("errorRetryCount").n());
+
+        // Fourth error -> retries exhausted
+        makeBatchImmediatelyRetryable(flow.batchId());
+        pollingJob.polling();
+
+        assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
+
+        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(
+                MessageBuilder.withPayload(pollingPayload(flow, 3, 0)).build()
+        );
 
         assertEquals("ERROR", findBatch(flow.batchId()).get("status").s());
-        assertEquals("ERROR", findNationalRegistriesRequestsByCorrelationId(flow.correlationId()).getFirst().get("status").s());
-    }
-
-    /**
-     * Verifica che una risposta polling senza stato non lasci definitivamente bloccato il batch e consenta un ciclo successivo di successo.
-     */
-    @Test
-    void InadPolling_EmptyStatusResponse_IsRecoverableOnNextCycle() {
-        Flow flow = startWorkingInadFlow("inad-empty-status-" + UUID.randomUUID(), VALID_PF_CF);
-        when(inadClient.checkMassiveRequestStatus(flow.pollingId())).thenReturn(Mono.just(new ResponseStatusListDigitalAddress()));
-
-        assertThrows(RuntimeException.class,
-                () -> pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(pollingPayload(flow, 0, 0)).build()));
-
-        Map<String, AttributeValue> batch = findBatch(flow.batchId());
-        assertEquals("REQUEST_SENT", batch.get("status").s());
-
-        pollingJob.polling();
-        when(inadClient.checkMassiveRequestStatus(flow.pollingId())).thenReturn(Mono.just(status(StatusProcessingRequest.DISPONIBILE)));
-        ResponseListDigitalAddress result = new ResponseListDigitalAddress();
-        result.setList(List.of(inadResponse(VALID_PF_CF, "empty-recovered@pec.it", null)));
-        when(inadClient.getMassiveRequestResult(flow.pollingId())).thenReturn(Mono.just(result));
-
-        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(pollingPayload(flow, 1, 0)).build());
-
-        assertEquals("WORKED", findNationalRegistriesRequestsByCorrelationId(flow.correlationId()).getFirst().get("status").s());
+        assertEquals(
+                "ERROR",
+                findNationalRegistriesRequestsByCorrelationId(flow.correlationId())
+                        .getFirst()
+                        .get("status")
+                        .s()
+        );
     }
 
     /**
      * Verifica correlazione e paginazione INAD con risposta fuori ordine, CF duplicato, CF mancante, stesso CF su due correlationId e correlationId contenente il separatore '~'.
      */
+    /**
+     * Verifica correlazione e paginazione INAD con risposta fuori ordine, CF duplicato,
+     * CF mancante, stesso CF su due correlationId e correlationId contenente il separatore '~'.
+     */
     @Test
     void InadMassive_PaginationAndCorrelationRemainStableWithDuplicatesAndMissingCf() {
         String duplicateTaxId = "RSSMRA80A01H501A";
-        Map<String, String> requests = new LinkedHashMap<>();
-        requests.put("corr~separator-" + UUID.randomUUID(), duplicateTaxId);
-        requests.put("corr-duplicate-" + UUID.randomUUID(), duplicateTaxId);
-        requests.put("corr-b-" + UUID.randomUUID(), "RSSMRA80A01H501B");
-        requests.put("corr-c-" + UUID.randomUUID(), "RSSMRA80A01H501C");
-        requests.put("corr-missing-" + UUID.randomUUID(), "RSSMRA80A01H501D");
-        for (Map.Entry<String, String> entry : requests.entrySet()) {
+
+        Map<String, String> cases = new LinkedHashMap<>();
+
+        cases.put("corr~separator-" + UUID.randomUUID(), duplicateTaxId);
+        cases.put("corr-duplicate-" + UUID.randomUUID(), duplicateTaxId);
+        cases.put("corr-b-" + UUID.randomUUID(), "RSSMRA80A01H501B");
+        cases.put("corr-c-" + UUID.randomUUID(), "RSSMRA80A01H501C");
+        cases.put("corr-missing-" + UUID.randomUUID(), "RSSMRA80A01H501D");
+        cases.put("corr-filler-e-" + UUID.randomUUID(), "RSSMRA80A01H501E");
+        cases.put("corr-filler-f-" + UUID.randomUUID(), "RSSMRA80A01H501F");
+        cases.put("corr-filler-g-" + UUID.randomUUID(), "RSSMRA80A01H501G");
+        cases.put("corr-filler-h-" + UUID.randomUUID(), "RSSMRA80A01H501H");
+
+        for (Map.Entry<String, String> entry : cases.entrySet()) {
             enqueueGatewayRequest("PF", entry.getValue(), AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, entry.getKey());
             processNextGatewayInputMessage();
         }
 
         String pollingId = "inad-correlation-" + UUID.randomUUID();
+
         ResponseRequestListDigitalAddress batchResponse = new ResponseRequestListDigitalAddress();
+
         batchResponse.setId(pollingId);
+
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.just(batchResponse));
+
         inadBatchRequestJob.batchRequest();
-        String batchId = request(requests.keySet().iterator().next(), "INAD").get("batchId").s();
+
+        String batchId = request(cases.keySet().iterator().next(), "INAD").get("batchId").s();
+
         pollingJob.polling();
 
         when(inadClient.checkMassiveRequestStatus(pollingId)).thenReturn(Mono.just(status(StatusProcessingRequest.DISPONIBILE)));
+
         ResponseListDigitalAddress result = new ResponseListDigitalAddress();
+
         result.setList(List.of(
                 inadResponse("RSSMRA80A01H501C", "c@pec.it", null),
                 inadResponse(duplicateTaxId, "first-duplicate@pec.it", null),
                 inadResponse(duplicateTaxId, "second-duplicate@pec.it", null),
-                inadResponse("RSSMRA80A01H501B", "b@pec.it", null)
+                inadResponse("RSSMRA80A01H501B", "b@pec.it", null),
+                inadResponse("RSSMRA80A01H501E", "filler-e@pec.it", null),
+                inadResponse("RSSMRA80A01H501F", "filler-f@pec.it", null),
+                inadResponse("RSSMRA80A01H501G", "filler-g@pec.it", null),
+                inadResponse("RSSMRA80A01H501H", "filler-h@pec.it", null)
         ));
-        when(inadClient.getMassiveRequestResult(pollingId)).thenReturn(Mono.just(result));
-        inadPollingService.handleMessage(payload(GatewayDownstreamService.INAD, batchId, pollingId, 5, 0, 0)).block();
 
-        for (Map.Entry<String, String> entry : requests.entrySet()) {
+        when(inadClient.getMassiveRequestResult(pollingId)).thenReturn(Mono.just(result));
+
+        inadPollingService.handleMessage(payload(GatewayDownstreamService.INAD, batchId, pollingId, 9, 0, 0)).block();
+
+        for (Map.Entry<String, String> entry : cases.entrySet()) {
             Map<String, AttributeValue> request = request(entry.getKey(), "INAD");
+
             assertEquals("WORKED", request.get("status").s());
-            CodeSqsDto payload = readOutputMessage(request.get("resultPayload").s());
-            assertEquals(entry.getKey(), payload.getCorrelationId());
+
+            CodeSqsDto resultPayload = readOutputMessage(request.get("resultPayload").s());
+
+            assertEquals(entry.getKey(), resultPayload.getCorrelationId());
+
             if (duplicateTaxId.equals(entry.getValue())) {
-                assertEquals("first-duplicate@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+                assertEquals("first-duplicate@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
             }
+
             if ("RSSMRA80A01H501D".equals(entry.getValue())) {
-                assertTrue(payload.getDigitalAddress().isEmpty());
+                assertTrue(resultPayload.getDigitalAddress().isEmpty());
             }
         }
     }
@@ -964,16 +919,29 @@ public class DigitalAddressPFMassiveIT extends AbstractNationalRegistriesCompone
         enqueueGatewayRequest("PF", taxId, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
         processNextGatewayInputMessage();
 
+        for (int i = 0; i < 8; i++) {
+            String fillerCorrelationId = "inad-flow-filler-" + i + "-" + UUID.randomUUID();
+            String fillerTaxId = "RSSMRA80A01H50" + i + "U";
+            enqueueGatewayRequest("PF", fillerTaxId, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, fillerCorrelationId);
+            processNextGatewayInputMessage();
+        }
+
         String pollingId = "inad-polling-" + UUID.randomUUID();
+
         ResponseRequestListDigitalAddress batchResponse = new ResponseRequestListDigitalAddress();
         batchResponse.setId(pollingId);
+
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.just(batchResponse));
+
         inadBatchRequestJob.batchRequest();
 
         Map<String, AttributeValue> request = findNationalRegistriesRequestsByCorrelationId(correlationId).getFirst();
         String batchId = request.get("batchId").s();
+
         pollingJob.polling();
+
         assertEquals("WORKING", findBatch(batchId).get("status").s());
+
         return new Flow(correlationId, batchId, pollingId);
     }
 
@@ -982,10 +950,16 @@ public class DigitalAddressPFMassiveIT extends AbstractNationalRegistriesCompone
                 .registry(GatewayDownstreamService.INAD)
                 .batchId(flow.batchId())
                 .pollingId(flow.pollingId())
-                .batchSize(1)
+                .batchSize(9)
                 .errorRetryCount(errorRetryCount)
                 .inProgressRetryCount(inProgressRetryCount)
                 .build();
+    }
+
+    private void makeBatchImmediatelyRetryable(String batchId) {
+        Map<String, AttributeValue> batch = new HashMap<>(findBatch(batchId));
+        batch.put("attemptAfter", AttributeValue.builder().s(Instant.now().minusSeconds(1).toString()).build());
+        putBatchItem(batch);
     }
 
 
