@@ -8,12 +8,10 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.Physical
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressesResponseDto;
 import it.pagopa.pn.national.registries.service.GatewayService;
 import it.pagopa.pn.national.registries.utils.RequestIdUtils;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 
 @RestController
 @lombok.CustomLog
@@ -21,13 +19,9 @@ public class GatewayController implements AddressApi {
 
     private final GatewayService gatewayService;
 
-    @Qualifier("nationalRegistriesScheduler")
-    private final Scheduler scheduler;
 
-
-    public GatewayController(GatewayService gatewayService, Scheduler scheduler) {
+    public GatewayController(GatewayService gatewayService) {
         this.gatewayService = gatewayService;
-        this.scheduler = scheduler;
     }
 
     /**
@@ -43,14 +37,14 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<AddressOKDto>> getAddresses(String recipientType, Mono<AddressRequestBodyDto> monoAddressRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
-        var mono = monoAddressRequestBodyDto
-                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange))
-                .flatMap(addressRequestBodyDto -> gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, addressRequestBodyDto))
-                .map(ResponseEntity::ok)
-                .publishOn(scheduler);
-
-        return MDCUtils.addMDCToContextAndExecute(mono);
+        return monoAddressRequestBodyDto
+                .flatMap(requestBody -> {
+                    RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
+                    return MDCUtils.addMDCToContextAndExecute(gatewayService.retrieveDigitalOrPhysicalAddressAsync(recipientType, pnNationalRegistriesCxId, requestBody)
+                            .map(ResponseEntity::ok));
+                });
     }
+
 
     /**
      * POST /national-registries-private/physical-addresses : Questo servizio si occupa di smistare le richieste in ingresso al fine di fornire uno o più indirizzi fisici per la PF o la PG indicata
@@ -64,13 +58,12 @@ public class GatewayController implements AddressApi {
      */
     @Override
     public Mono<ResponseEntity<PhysicalAddressesResponseDto>> getPhysicalAddresses(Mono<PhysicalAddressesRequestBodyDto> physicalAddressesRequestBodyDto, final ServerWebExchange exchange) {
-        var mono = physicalAddressesRequestBodyDto
-                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getCorrelationId(), exchange))
-                .flatMap(gatewayService::retrieveSyncPhysicalAddresses)
-                .map(ResponseEntity::ok)
-                .publishOn(scheduler);
-
-        return MDCUtils.addMDCToContextAndExecute(mono);
+        return physicalAddressesRequestBodyDto
+                .flatMap(requestBody -> {
+                    RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getCorrelationId(), exchange);
+                    return MDCUtils.addMDCToContextAndExecute(gatewayService.retrieveSyncPhysicalAddresses(requestBody)
+                            .map(ResponseEntity::ok));
+                });
     }
 
 }

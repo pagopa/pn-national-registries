@@ -206,7 +206,7 @@ public class GatewayConverter {
 
     public static GetAddressRegistroImpreseRequestBodyDto convertToGetAddressRegistroImpreseRequest(AddressRequestBodyDto addressRequestBodyDto) {
         GetAddressRegistroImpreseRequestBodyDto dto = new GetAddressRegistroImpreseRequestBodyDto();
-        GetAddressRegistroImpreseRequestBodyFilterDto filterDto = new GetAddressRegistroImpreseRequestBodyFilterDto();
+        TaxIdFilterDto filterDto = new TaxIdFilterDto();
 
         filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
 
@@ -227,7 +227,7 @@ public class GatewayConverter {
 
     public static IPARequestBodyDto convertToGetIpaPecRequest(AddressRequestBodyDto addressRequestBodyDto) {
         IPARequestBodyDto dto = new IPARequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filterDto = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filterDto = new TaxIdFilterDto();
         filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
         dto.setFilter(filterDto);
         return dto;
@@ -282,7 +282,7 @@ public class GatewayConverter {
 
     public static GetAddressRegistroImpreseRequestBodyDto convertToGetAddressRegistroImpreseRequest(AddressQueryRequest addressQueryRequest) {
         GetAddressRegistroImpreseRequestBodyDto dto = new GetAddressRegistroImpreseRequestBodyDto();
-        GetAddressRegistroImpreseRequestBodyFilterDto filterDto = new GetAddressRegistroImpreseRequestBodyFilterDto();
+        TaxIdFilterDto filterDto = new TaxIdFilterDto();
 
         filterDto.setTaxId(addressQueryRequest.getTaxId());
 

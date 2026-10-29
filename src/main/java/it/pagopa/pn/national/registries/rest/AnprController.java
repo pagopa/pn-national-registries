@@ -10,13 +10,11 @@ import it.pagopa.pn.national.registries.service.AnprService;
 import it.pagopa.pn.national.registries.service.GatewayService;
 import it.pagopa.pn.national.registries.utils.RequestIdUtils;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 
 import static it.pagopa.pn.national.registries.converter.GatewayConverter.isAnprAddressNotFound;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
@@ -30,11 +28,6 @@ public class AnprController implements AddressAnprApi {
     private final AnprService anprService;
     private final GatewayService gatewayService;
 
-    @Qualifier("nationalRegistriesScheduler")
-    private final Scheduler scheduler;
-
-
-
     /**
      * POST /national-registries-private/anpr/address : Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta
      * Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta
@@ -47,24 +40,24 @@ public class AnprController implements AddressAnprApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(Mono<GetAddressANPRRequestBodyDto> getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
-        var mono = getAddressANPRRequestBodyDto
-                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
-                .flatMap(anprService::getAddressANPR)
-                .doOnNext(getAddressANPROKDto -> {
-                    logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1);
-                    if(!CollectionUtils.isEmpty(getAddressANPROKDto.getResidentialAddresses())){
-                        logCfWithAddressMetric(
-                                null,
-                                GatewayDownstreamService.ANPR,
-                                RecipientType.PF,
-                                null
-                        );
-                    }
-                })
-                .doOnError(isAnprAddressNotFound, e -> logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1))
-                .map(ResponseEntity::ok)
-                .publishOn(scheduler);
-
-        return MDCUtils.addMDCToContextAndExecute(mono);
+        return getAddressANPRRequestBodyDto
+                .flatMap(requestBody -> {
+                    RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
+                    var response = anprService.getAddressANPR(requestBody)
+                            .doOnNext(getAddressANPROKDto -> {
+                                logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1);
+                                if(!CollectionUtils.isEmpty(getAddressANPROKDto.getResidentialAddresses())){
+                                    logCfWithAddressMetric(
+                                            null,
+                                            GatewayDownstreamService.ANPR,
+                                            RecipientType.PF,
+                                            null
+                                    );
+                                }
+                            })
+                            .doOnError(isAnprAddressNotFound, e -> logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1))
+                            .map(ResponseEntity::ok);
+                    return MDCUtils.addMDCToContextAndExecute(response);
+                });
     }
 }

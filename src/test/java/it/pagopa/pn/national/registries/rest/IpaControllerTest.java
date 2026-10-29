@@ -1,9 +1,9 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.TaxIdFilterDto;
 import it.pagopa.pn.national.registries.service.IpaService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,18 +17,15 @@ import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
-import static org.mockito.Mockito.mock;
 
 @ExtendWith(SpringExtension.class)
 class IpaControllerTest {
     private ServerWebExchange serverWebExchange;
     private HttpHeaders httpHeaders;
-    private static final String AWS_XRAY_TRACE_ID = "AWS-XRAY-TRACE-ID";
 
     @InjectMocks
     private IpaController ipaController;
@@ -44,7 +41,7 @@ class IpaControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        ipaController = new IpaController(ipaService, Schedulers.immediate());
+        ipaController = new IpaController(ipaService);
     }
 
     @AfterEach
@@ -55,11 +52,11 @@ class IpaControllerTest {
     @Test
     void testIpaPec4() {
         String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
         IPAPecDto ipaPecDto = new IPAPecDto();
         when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaPecDto));
 
-        CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto checkTaxIdRequestBodyFilterDto = new TaxIdFilterDto();
         checkTaxIdRequestBodyFilterDto.taxId("42");
 
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();

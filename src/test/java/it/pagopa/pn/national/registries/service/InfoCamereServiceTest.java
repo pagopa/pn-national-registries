@@ -149,7 +149,7 @@ class InfoCamereServiceTest {
     @Test
     void getAddress() {
         GetAddressRegistroImpreseRequestBodyDto request = new GetAddressRegistroImpreseRequestBodyDto();
-        GetAddressRegistroImpreseRequestBodyFilterDto dto = new GetAddressRegistroImpreseRequestBodyFilterDto();
+        TaxIdFilterDto dto = new TaxIdFilterDto();
         dto.setTaxId("cf");
         request.setFilter(dto);
 
@@ -176,7 +176,7 @@ class InfoCamereServiceTest {
     @Test
     void getAddressWhenNotFound() {
         GetAddressRegistroImpreseRequestBodyDto request = new GetAddressRegistroImpreseRequestBodyDto();
-        GetAddressRegistroImpreseRequestBodyFilterDto dto = new GetAddressRegistroImpreseRequestBodyFilterDto();
+        TaxIdFilterDto dto = new TaxIdFilterDto();
         dto.setTaxId("cf");
         request.setFilter(dto);
 
@@ -259,7 +259,7 @@ class InfoCamereServiceTest {
     @Test
     void getInstitutions() {
         InfoCamereLegalInstitutionsRequestBodyDto request = new InfoCamereLegalInstitutionsRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto dto = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto dto = new TaxIdFilterDto();
         dto.setTaxId("cf");
         request.setFilter(dto);
 
