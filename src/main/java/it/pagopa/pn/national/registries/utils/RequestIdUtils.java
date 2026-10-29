@@ -20,10 +20,10 @@ public class RequestIdUtils {
     }
 
     private static String normalizeTraceId(String traceId) {
-        if (StringUtils.isNotBlank(traceId)) {
-            return StringUtils.removeStart(traceId, "Root=");
+        if (StringUtils.isBlank(traceId)) {
+            return traceId;
         }
-        return traceId;
+        return StringUtils.defaultIfBlank(StringUtils.substringBetween(traceId + ";", "Root=", ";"), traceId);
     }
 
 }
