@@ -16,7 +16,6 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 import reactor.test.StepVerifier;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -28,7 +27,6 @@ class AgenziaEntrateControllerTest {
     private AgenziaEntrateController agenziaEntrateController;
     private ServerWebExchange serverWebExchange;
     private HttpHeaders httpHeaders;
-    private static final String AWS_XRAY_TRACE_ID = "AWS-XRAY-TRACE-ID";
 
     @Mock
     AgenziaEntrateService agenziaEntrateService;
@@ -41,7 +39,7 @@ class AgenziaEntrateControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        agenziaEntrateController = new AgenziaEntrateController(agenziaEntrateService, Schedulers.immediate());
+        agenziaEntrateController = new AgenziaEntrateController(agenziaEntrateService);
     }
 
     @AfterEach
@@ -52,10 +50,10 @@ class AgenziaEntrateControllerTest {
     @Test
     void checkTaxId() {
         String traceId = "trace-id-123";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
         CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto = new CheckTaxIdRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto dto = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto dto = new TaxIdFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
         checkTaxIdRequestBodyDto.setFilter(dto);
 
@@ -81,7 +79,7 @@ class AgenziaEntrateControllerTest {
     @Test
     void checkTaxIdAndVatNumber() {
         String traceId = "trace-id-456";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
         ADELegalRequestBodyDto adeLegalRequestBodyDto = new ADELegalRequestBodyDto();
         ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();

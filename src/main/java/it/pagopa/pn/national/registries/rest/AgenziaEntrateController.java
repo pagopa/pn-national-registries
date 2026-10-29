@@ -12,20 +12,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 
 @RestController
 @lombok.CustomLog
 public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     private final AgenziaEntrateService agenziaEntrateService;
-    private final Scheduler scheduler;
 
 
 
-    public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService, Scheduler scheduler) {
+    public AgenziaEntrateController(AgenziaEntrateService agenziaEntrateService) {
         this.agenziaEntrateService = agenziaEntrateService;
-        this.scheduler = scheduler;
 
     }
 
@@ -40,13 +37,12 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
      */
     @Override
     public Mono<ResponseEntity<CheckTaxIdOKDto>> checkTaxId(Mono<CheckTaxIdRequestBodyDto> checkTaxIdRequestBodyDto, final ServerWebExchange exchange) {
-        var mono = checkTaxIdRequestBodyDto
-                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
-                .flatMap(agenziaEntrateService::callEService)
-                .map(ResponseEntity::ok)
-                .publishOn(scheduler);
-
-        return MDCUtils.addMDCToContextAndExecute(mono);
+        return checkTaxIdRequestBodyDto
+                .flatMap(requestBody -> {
+                    RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
+                    return MDCUtils.addMDCToContextAndExecute(agenziaEntrateService.callEService(requestBody))
+                            .map(ResponseEntity::ok);
+                });
     }
 
     /**
@@ -62,12 +58,11 @@ public class AgenziaEntrateController implements AgenziaEntrateApi {
 
     @Override
     public Mono<ResponseEntity<ADELegalOKDto>> adeLegal(Mono<ADELegalRequestBodyDto> adELegalRequestBodyDto, final ServerWebExchange exchange) {
-        var mono = adELegalRequestBodyDto
-                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
-                .flatMap(agenziaEntrateService::checkTaxIdAndVatNumber)
-                .map(ResponseEntity::ok)
-                .publishOn(scheduler);
-
-        return MDCUtils.addMDCToContextAndExecute(mono);
+        return adELegalRequestBodyDto
+                .flatMap(requestBody -> {
+                    RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
+                    return MDCUtils.addMDCToContextAndExecute(agenziaEntrateService.checkTaxIdAndVatNumber(requestBody))
+                            .map(ResponseEntity::ok);
+                });
     }
 }

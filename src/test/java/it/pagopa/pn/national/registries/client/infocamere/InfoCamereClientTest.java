@@ -12,8 +12,8 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.PecApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.SedeApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.TaxIdFilterDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -91,7 +91,7 @@ class InfoCamereClientTest {
     void testGetLegalInstitutions() {
         InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
 
-        CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto checkTaxIdRequestBodyFilterDto = new TaxIdFilterDto();
         checkTaxIdRequestBodyFilterDto.setTaxId("taxId");
 
         InfoCamereLegalInstituionsResponse infoCamereLegalInstituionsResponse = new InfoCamereLegalInstituionsResponse();
@@ -354,7 +354,7 @@ class InfoCamereClientTest {
     void testGetLegalInstitutionsExceptionOnRetry() {
         InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
         WebClientResponseException ex = buildExceptionUnauthorized();
-        CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto checkTaxIdRequestBodyFilterDto = new TaxIdFilterDto();
         checkTaxIdRequestBodyFilterDto.setTaxId("taxId");
 
         when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(mock(AccessTokenCacheEntry.class)));

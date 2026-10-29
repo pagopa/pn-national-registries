@@ -151,7 +151,7 @@ class InfoCamereConverterTest {
     void testMapToResponseOkByRequest() {
 
         GetAddressRegistroImpreseRequestBodyDto getAddressRegistroImpreseRequestBodyDto = new GetAddressRegistroImpreseRequestBodyDto();
-        GetAddressRegistroImpreseRequestBodyFilterDto filter = new GetAddressRegistroImpreseRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("taxId");
         getAddressRegistroImpreseRequestBodyDto.filter(filter);
 

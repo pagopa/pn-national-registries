@@ -11,20 +11,17 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Scheduler;
 
 @RestController
 @lombok.CustomLog
 public class InadController implements DigitalAddressInadApi {
 
     private final InadService inadService;
-    private final Scheduler scheduler;
 
 
 
-    public InadController(InadService inadService, Scheduler scheduler) {
+    public InadController(InadService inadService) {
         this.inadService = inadService;
-        this.scheduler = scheduler;
     }
 
     /**
@@ -43,12 +40,11 @@ public class InadController implements DigitalAddressInadApi {
     @Override
     public Mono<ResponseEntity<GetDigitalAddressINADOKDto>> digitalAddressINAD(String recipientType, Mono<GetDigitalAddressINADRequestBodyDto> extractDigitalAddressINADRequestBodyDto, final ServerWebExchange exchange) {
         RecipientType recipientTypeEnum = RecipientType.fromString(recipientType);
-        var mono = extractDigitalAddressINADRequestBodyDto
-                .doOnNext(requestBody -> RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange))
-                .flatMap(requestBody -> inadService.callEService(requestBody, recipientTypeEnum, null))
-                .map(ResponseEntity::ok)
-                .publishOn(scheduler);
-
-        return MDCUtils.addMDCToContextAndExecute(mono);
+        return extractDigitalAddressINADRequestBodyDto
+                .flatMap(requestBody -> {
+                    RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
+                    return MDCUtils.addMDCToContextAndExecute(inadService.callEService(requestBody, recipientTypeEnum, requestBody.getFilter().getCorrelationId()))
+                            .map(ResponseEntity::ok);
+                });
     }
 }

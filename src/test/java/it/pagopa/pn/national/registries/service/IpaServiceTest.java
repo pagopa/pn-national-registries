@@ -4,9 +4,9 @@ import it.pagopa.pn.national.registries.client.ipa.IpaClient;
 import it.pagopa.pn.national.registries.config.ipa.IpaSecretConfig;
 import it.pagopa.pn.national.registries.converter.IpaConverter;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.TaxIdFilterDto;
 import it.pagopa.pn.national.registries.model.ipa.*;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
@@ -60,7 +60,7 @@ class IpaServiceTest {
         ws23ResponseDto.setData(list);
         when(ipaClient.callEServiceWS23(any(), any())).thenReturn(Mono.just(ws23ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("42");
         ipaRequestBodyDto.setFilter(filter);
 
@@ -131,7 +131,7 @@ class IpaServiceTest {
         when(ipaClient.callEServiceWS23(any(), any())).thenReturn(Mono.just(ws23ResponseDto));
         when(ipaClient.callEServiceWS05(any(), any())).thenReturn(Mono.just(ws05ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("42");
         ipaRequestBodyDto.setFilter(filter);
 
@@ -164,7 +164,7 @@ class IpaServiceTest {
 
         when(ipaClient.callEServiceWS23(any(), any())).thenReturn(Mono.just(ws23ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("42");
         ipaRequestBodyDto.setFilter(filter);
 
@@ -198,7 +198,7 @@ class IpaServiceTest {
         when(ipaClient.callEServiceWS23(any(), any())).thenReturn(Mono.just(ws23ResponseDto));
         when(ipaSecretConfig.getIpaSecret()).thenReturn("ipaSecret");
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("42");
         ipaRequestBodyDto.setFilter(filter);
         IpaSecret ipaSecret = new IpaSecret();
@@ -262,7 +262,7 @@ class IpaServiceTest {
         when(ipaClient.callEServiceWS23(any(), any())).thenReturn(Mono.just(ws23ResponseDto));
         when(ipaClient.callEServiceWS05(any(), any())).thenReturn(Mono.just(ws05ResponseDto));
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("42");
         ipaRequestBodyDto.setFilter(filter);
         IpaSecret ipaSecret = new IpaSecret();
