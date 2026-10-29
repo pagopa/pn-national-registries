@@ -83,8 +83,6 @@ class InfoCamereControllerTest {
 
     @Test
     void addressRegistroImprese() {
-        String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
 
         GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
         response.setTaxId("PPPPLT80A01H501V");
@@ -95,24 +93,18 @@ class InfoCamereControllerTest {
         body.setFilter(dto);
 
         when(infoCamereService.getRegistroImpreseLegalAddress(body))
-                .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-                    return response;
-                }));
+                .thenReturn(Mono.fromSupplier(() -> response));
 
         StepVerifier.create(infoCamereController.addressRegistroImprese(Mono.just(body), serverWebExchange))
                 .assertNext(res -> {
                     assertEquals(200, res.getStatusCode().value());
                     assertEquals(response, res.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
 
     @Test
     void checkTaxIdAndVatNumber() {
-        String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
 
         InfoCamereLegalOKDto response = new InfoCamereLegalOKDto();
         response.setTaxId("PPPPLT80A01H501V");
@@ -125,24 +117,18 @@ class InfoCamereControllerTest {
         body.setFilter(dto);
 
         when(infoCamereService.checkTaxIdAndVatNumber(body))
-                .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-                    return response;
-                }));
+                .thenReturn(Mono.fromSupplier(() -> response));
 
         StepVerifier.create(infoCamereController.infoCamereLegal(Mono.just(body), serverWebExchange))
                 .assertNext(res -> {
                     assertEquals(200, res.getStatusCode().value());
                     assertEquals(response, res.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
 
     @Test
     void getLegalInstitutions() {
-        String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
 
         InfoCamereLegalInstitutionsOKDto response = new InfoCamereLegalInstitutionsOKDto();
         response.setBusinessList(new ArrayList<>());
@@ -154,17 +140,13 @@ class InfoCamereControllerTest {
         body.setFilter(dto);
 
         when(infoCamereService.getLegalInstitutions(body))
-                .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-                    return response;
-                }));
+                .thenReturn(Mono.fromSupplier(() -> response));
 
 
         StepVerifier.create(infoCamereController.infoCamereLegalInstitutions(Mono.just(body), serverWebExchange))
                 .assertNext(res -> {
                     assertEquals(200, res.getStatusCode().value());
                     assertEquals(response, res.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

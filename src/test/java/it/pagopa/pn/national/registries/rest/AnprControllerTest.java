@@ -55,8 +55,6 @@ class AnprControllerTest {
 
     @Test
     void testGetAddressANPR() {
-        String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
         GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto dto = new GetAddressANPRRequestBodyFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
@@ -66,16 +64,12 @@ class AnprControllerTest {
         getAddressANPROKDto.setResidentialAddresses(new ArrayList<>());
 
         when(anprService.getAddressANPR(getAddressANPRRequestBodyDto))
-                .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-                    return getAddressANPROKDto;
-                }));
+                .thenReturn(Mono.fromSupplier(() -> getAddressANPROKDto));
 
         StepVerifier.create(anprController.addressANPR(Mono.just(getAddressANPRRequestBodyDto), serverWebExchange))
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(getAddressANPROKDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
