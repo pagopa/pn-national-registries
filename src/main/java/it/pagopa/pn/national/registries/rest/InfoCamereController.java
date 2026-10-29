@@ -71,7 +71,7 @@ public class InfoCamereController implements InfoCamereApi {
      */
     @Override
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
-        log.info("Request received for addressRegistroImprese - MDC: {}", MDC.getCopyOfContextMap());
+        log.info("Request received for addressRegistroImprese - headers: {}", exchange.getRequest().getHeaders().entrySet());
         RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange);
         var mono = getAddressRegistroImpreseRequestBodyDto
                 .flatMap(infoCamereService::getRegistroImpreseLegalAddress)

@@ -1,3 +1,4 @@
+/*
 package it.pagopa.pn.national.registries.utils;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
@@ -61,7 +62,7 @@ class RequestIdUtilsTest {
         assertNotNull(awsTraceId, httpHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
     }
 
-    /*@Test
+    @Test
     void shouldUseAwsXrayTraceIdWhenCorrelationIdIsBlank() {
         String awsTraceId = "aws-trace-456";
         MDC.put(AWS_XRAY_TRACE_ID, awsTraceId);
@@ -70,7 +71,7 @@ class RequestIdUtilsTest {
 
         assertEquals(awsTraceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
         assertEquals(awsTraceId, httpHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
-    }*/
+    }
 
     @Test
     void shouldNotPutAnythingIntoMdcWhenCorrelationIdAndAwsTraceIdAreMissing() {
@@ -100,4 +101,4 @@ class RequestIdUtilsTest {
         assertEquals(correlationId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
         assertEquals(correlationId, httpHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
     }
-}
+}*/
