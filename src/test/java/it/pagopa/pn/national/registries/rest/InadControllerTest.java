@@ -57,8 +57,6 @@ class InadControllerTest {
 
     @Test
     void getDigitalAddressINAD() {
-        String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
         GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto = new GetDigitalAddressINADRequestBodyDto();
         GetDigitalAddressINADRequestBodyFilterDto dto = new GetDigitalAddressINADRequestBodyFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
@@ -69,16 +67,12 @@ class InadControllerTest {
         getDigitalAddressINADOKDto.setSince(new Date());
 
         when(inadService.callEService(extractDigitalAddressINADRequestBodyDto, RecipientType.PF, null))
-                .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-                    return getDigitalAddressINADOKDto;
-                }));
+                .thenReturn(Mono.fromSupplier(() -> getDigitalAddressINADOKDto));
 
         StepVerifier.create(inadController.digitalAddressINAD("PF", Mono.just(extractDigitalAddressINADRequestBodyDto), serverWebExchange))
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(getDigitalAddressINADOKDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

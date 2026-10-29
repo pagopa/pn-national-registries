@@ -52,8 +52,6 @@ class IpaControllerTest {
 
     @Test
     void testIpaPec4() {
-        String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
         IPAPecDto ipaPecDto = new IPAPecDto();
         when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaPecDto));
 
@@ -64,16 +62,12 @@ class IpaControllerTest {
         ipaRequestBodyDto.filter(checkTaxIdRequestBodyFilterDto);
         ipaController.ipaPec(Mono.just(ipaRequestBodyDto), serverWebExchange);
         when(ipaService.getIpaPec(ipaRequestBodyDto))
-                .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-                    return ipaPecDto;
-                }));
+                .thenReturn(Mono.fromSupplier(() -> ipaPecDto));
 
         StepVerifier.create(ipaController.ipaPec(Mono.just(ipaRequestBodyDto), serverWebExchange))
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(ipaPecDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

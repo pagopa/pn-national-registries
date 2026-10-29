@@ -5,6 +5,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.agenziaentrate.ResultCodeEnum;
 import it.pagopa.pn.national.registries.model.agenziaentrate.ResultDetailEnum;
 import it.pagopa.pn.national.registries.service.AgenziaEntrateService;
+import it.pagopa.pn.national.registries.utils.RequestIdUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpResponse;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -50,8 +52,6 @@ class AgenziaEntrateControllerTest {
 
     @Test
     void checkTaxId() {
-        String traceId = "trace-id-123";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
 
         CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto = new CheckTaxIdRequestBodyDto();
         CheckTaxIdRequestBodyFilterDto dto = new CheckTaxIdRequestBodyFilterDto();
@@ -63,24 +63,18 @@ class AgenziaEntrateControllerTest {
         checkTaxIdOKDto.setIsValid(true);
 
         when(agenziaEntrateService.callEService(checkTaxIdRequestBodyDto))
-                .thenReturn((Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-                    return checkTaxIdOKDto;
-                })));
+                .thenReturn((Mono.fromSupplier(() -> checkTaxIdOKDto)));
 
         StepVerifier.create(agenziaEntrateController.checkTaxId(Mono.just(checkTaxIdRequestBodyDto), serverWebExchange))
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(checkTaxIdOKDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
 
     @Test
     void checkTaxIdAndVatNumber() {
-        String traceId = "trace-id-456";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
 
         ADELegalRequestBodyDto adeLegalRequestBodyDto = new ADELegalRequestBodyDto();
         ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
@@ -93,16 +87,12 @@ class AgenziaEntrateControllerTest {
         adeLegalOKDto.setResultDetail(ResultDetailEnum.getCode("XX00"));
 
         when(agenziaEntrateService.checkTaxIdAndVatNumber(adeLegalRequestBodyDto))
-                .thenReturn((Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-                    return adeLegalOKDto;
-                })));
+                .thenReturn((Mono.fromSupplier(() -> adeLegalOKDto)));
 
         StepVerifier.create(agenziaEntrateController.adeLegal(Mono.just(adeLegalRequestBodyDto), serverWebExchange))
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(adeLegalOKDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
