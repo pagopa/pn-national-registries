@@ -30,7 +30,6 @@ import static org.mockito.Mockito.when;
 class AnprControllerTest {
     private ServerWebExchange serverWebExchange;
     private HttpHeaders httpHeaders;
-    private static final String AWS_XRAY_TRACE_ID = "AWS-XRAY-TRACE-ID";
 
     AnprController anprController;
 
@@ -46,7 +45,7 @@ class AnprControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        anprController = new AnprController(anprService, new GatewayService(null, null, null, null, null), Schedulers.immediate());
+        anprController = new AnprController(anprService, new GatewayService(null, null, null, null, null));
     }
 
     @AfterEach
@@ -57,7 +56,7 @@ class AnprControllerTest {
     @Test
     void testGetAddressANPR() {
         String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
         GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto dto = new GetAddressANPRRequestBodyFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");

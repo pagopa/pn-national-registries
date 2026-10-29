@@ -44,7 +44,7 @@ class GatewayControllerTest {
         serverHttpResponse = mock(ServerHttpResponse.class);
         httpHeaders = new HttpHeaders();
 
-        gatewayController = new GatewayController(gatewayService, Schedulers.immediate());
+        gatewayController = new GatewayController(gatewayService);
     }
 
     @AfterEach

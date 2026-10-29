@@ -31,7 +31,6 @@ import static org.mockito.Mockito.when;
 class InfoCamereControllerTest {
     private ServerWebExchange serverWebExchange;
     private HttpHeaders httpHeaders;
-    private static final String AWS_XRAY_TRACE_ID = "AWS-XRAY-TRACE-ID";
 
     @InjectMocks
     InfoCamereController infoCamereController;
@@ -47,7 +46,7 @@ class InfoCamereControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        infoCamereController = new InfoCamereController(infoCamereService, Schedulers.immediate());
+        infoCamereController = new InfoCamereController(infoCamereService);
     }
 
     @AfterEach
@@ -85,13 +84,13 @@ class InfoCamereControllerTest {
     @Test
     void addressRegistroImprese() {
         String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
         GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
         response.setTaxId("PPPPLT80A01H501V");
 
         GetAddressRegistroImpreseRequestBodyDto body = new GetAddressRegistroImpreseRequestBodyDto();
-        GetAddressRegistroImpreseRequestBodyFilterDto dto = new GetAddressRegistroImpreseRequestBodyFilterDto();
+        TaxIdFilterDto dto = new TaxIdFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
         body.setFilter(dto);
 
@@ -113,7 +112,7 @@ class InfoCamereControllerTest {
     @Test
     void checkTaxIdAndVatNumber() {
         String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
         InfoCamereLegalOKDto response = new InfoCamereLegalOKDto();
         response.setTaxId("PPPPLT80A01H501V");
@@ -143,14 +142,14 @@ class InfoCamereControllerTest {
     @Test
     void getLegalInstitutions() {
         String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
         InfoCamereLegalInstitutionsOKDto response = new InfoCamereLegalInstitutionsOKDto();
         response.setBusinessList(new ArrayList<>());
         response.setLegalTaxId("PPPPLT80A01H501V");
 
         InfoCamereLegalInstitutionsRequestBodyDto body = new InfoCamereLegalInstitutionsRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto dto = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto dto = new TaxIdFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
         body.setFilter(dto);
 

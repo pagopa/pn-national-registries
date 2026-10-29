@@ -4,9 +4,6 @@ import it.pagopa.pn.commons.utils.MDCUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.MDC;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.server.reactive.ServerHttpResponse;
@@ -14,26 +11,21 @@ import org.springframework.web.server.ServerWebExchange;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class RequestIdUtilsTest {
 
-    @Mock
-    private ServerWebExchange serverWebExchange;
-
-    @Mock
-    private ServerHttpResponse serverHttpResponse;
-
-    private HttpHeaders httpHeaders;
-
-    private static final String AWS_XRAY_TRACE_ID = "AWS-XRAY-TRACE-ID";
+    private ServerWebExchange exchange;
+    private HttpHeaders responseHeaders;
 
     @BeforeEach
     void setUp() {
-        httpHeaders = new HttpHeaders();
-        when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
-        when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
+        exchange = mock(ServerWebExchange.class);
+        ServerHttpResponse response = mock(ServerHttpResponse.class);
+        responseHeaders = new HttpHeaders();
+        when(exchange.getResponse()).thenReturn(response);
+        when(response.getHeaders()).thenReturn(responseHeaders);
     }
 
     @AfterEach
@@ -42,63 +34,65 @@ class RequestIdUtilsTest {
     }
 
     @Test
-    void shouldPutCorrelationIdIntoMdcWhenCorrelationIdHasText() {
-        String correlationId = "corr-id-123";
+    void shouldUseCorrelationIdWhenPresent() {
+        String correlationId = "correlation-id-123";
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, "Root=1-6ae31dcc-7de57c8214838adc1da3772d");
 
-        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(correlationId, serverWebExchange);
-
+        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(correlationId, exchange);
         assertEquals(correlationId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-        assertEquals(correlationId, httpHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
+        assertEquals(correlationId, responseHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
     }
 
     @Test
-    void shouldUseAwsXrayTraceIdWhenCorrelationIdIsNull() {
-        String awsTraceId = "aws-trace-123";
-        MDC.put(AWS_XRAY_TRACE_ID, awsTraceId);
+    void shouldUseNormalizedTraceIdWhenCorrelationIdIsNull() {
+        String traceId = "Root=1-6ae31dcc-7de57c8214838adc1da3772d";
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
-        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, serverWebExchange);
+        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange);
 
-        assertEquals(awsTraceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-        assertEquals(awsTraceId, httpHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
+        String expected = "1-6ae31dcc-7de57c8214838adc1da3772d";
+        assertEquals(expected, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+        assertEquals(expected, responseHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
     }
 
     @Test
-    void shouldUseAwsXrayTraceIdWhenCorrelationIdIsBlank() {
-        String awsTraceId = "aws-trace-456";
-        MDC.put(AWS_XRAY_TRACE_ID, awsTraceId);
+    void shouldUseNormalizedTraceIdWhenCorrelationIdIsBlank() {
+        String traceId = "Root=1-6ae31dcc-7de57c8214838adc1da3772d";
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
-        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader("   ", serverWebExchange);
+        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader("   ", exchange);
 
-        assertEquals(awsTraceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-        assertEquals(awsTraceId, httpHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
+        String expected = "1-6ae31dcc-7de57c8214838adc1da3772d";
+        assertEquals(expected, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+        assertEquals(expected, responseHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
     }
 
     @Test
-    void shouldNotPutAnythingIntoMdcWhenCorrelationIdAndAwsTraceIdAreMissing() {
-        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, serverWebExchange);
+    void shouldKeepTraceIdUnchangedWhenRootPrefixIsMissing() {
+        String traceId = "1-6ae31dcc-7de57c8214838adc1da3772d";
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
+
+        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange);
+
+        assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+        assertEquals(traceId, responseHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
+    }
+
+    @Test
+    void shouldNotSetRequestIdWhenCorrelationIdAndTraceIdAreNull() {
+        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(null, exchange);
 
         assertNull(MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-        assertNull(httpHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
+        assertNull(responseHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
     }
 
     @Test
-    void shouldNotPutAnythingIntoMdcWhenCorrelationIdIsBlankAndAwsTraceIdIsBlank() {
-        MDC.put(AWS_XRAY_TRACE_ID, "   ");
+    void shouldNotSetRequestIdWhenCorrelationIdAndTraceIdAreBlank() {
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, "   ");
 
-        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader("   ", serverWebExchange);
+        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader("   ", exchange);
 
         assertNull(MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-    }
-
-    @Test
-    void shouldPreferCorrelationIdOverAwsXrayTraceId() {
-        String correlationId = "corr-id-preferred";
-        String awsTraceId = "aws-trace-id";
-        MDC.put(AWS_XRAY_TRACE_ID, awsTraceId);
-
-        RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(correlationId, serverWebExchange);
-
-        assertEquals(correlationId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
-        assertEquals(correlationId, httpHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
+        assertNull(responseHeaders.getFirst(RequestIdUtils.X_REQUEST_ID));
     }
 }

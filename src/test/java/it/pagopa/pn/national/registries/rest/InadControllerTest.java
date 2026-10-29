@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 class InadControllerTest {
     private ServerWebExchange serverWebExchange;
     private HttpHeaders httpHeaders;
-    private static final String AWS_XRAY_TRACE_ID = "AWS-XRAY-TRACE-ID";
 
     @InjectMocks
     InadController inadController;
@@ -48,7 +47,7 @@ class InadControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        inadController = new InadController(inadService, Schedulers.immediate());
+        inadController = new InadController(inadService);
     }
 
     @AfterEach
@@ -59,7 +58,7 @@ class InadControllerTest {
     @Test
     void getDigitalAddressINAD() {
         String traceId = "traceId";
-        MDC.put(AWS_XRAY_TRACE_ID, traceId);
+        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
         GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto = new GetDigitalAddressINADRequestBodyDto();
         GetDigitalAddressINADRequestBodyFilterDto dto = new GetDigitalAddressINADRequestBodyFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
