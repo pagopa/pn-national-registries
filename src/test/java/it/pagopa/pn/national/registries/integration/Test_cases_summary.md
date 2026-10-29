@@ -2,6 +2,8 @@
 
 Questo documento riepiloga **solo gli scenari end-to-end presenti nella cartella `integration/`**.
 
+La suite contiene **154 test E2E in 26 classi concrete**. Le classi vengono consolidate quando condividono recipientType, domicileType e property compatibili: una classe può avere property aggiuntive, purché nessuna property comune abbia valori diversi. Gli scenari con configurazioni in conflitto restano separati.
+
 La struttura segue quella della dev validation: configurazioni C1-C8, separazione PF/PG, fisico/digitale e dettaglio degli scenari funzionali coperti.
 
 ## 1. Configurazioni
@@ -28,10 +30,10 @@ Gli scenari fisici non dipendono dai tre flag digitali.
 | Scenario E2E | Esito atteso | Test / classe |
 |---|---|---|
 | Residenza valida ANPR | Risultato `ANPR` con indirizzo fisico | `PhysicalAddressTestIT` |
-| Nessuna residenza utile | Risultato ANPR senza indirizzo fisico | `AnprPhysicalScenariosIT` |
+| Nessuna residenza utile | Risultato ANPR senza indirizzo fisico | `PhysicalAddressTestIT` |
 | CF non trovato / EN122 | Risultato vuoto senza fallback | `PhysicalAddressTestIT` |
-| Residenza estera | Mapping coerente di stato/comune/provincia/CAP | `AnprPhysicalScenariosIT` |
-| Più soggetti in risposta | Selezione del soggetto con CF corretto | `AnprPhysicalScenariosIT` |
+| Residenza estera | Mapping coerente di stato/comune/provincia/CAP | `PhysicalAddressTestIT` |
+| Più soggetti in risposta | Selezione del soggetto con CF corretto | `PhysicalAddressTestIT` |
 | Campi completi | Mapping completo indirizzo | `PhysicalAddressTestIT` |
 | Campi parziali | Campi opzionali coerenti | `PhysicalAddressTestIT` |
 | Caratteri accentati | Mapping preservato | `PhysicalAddressTestIT` |
@@ -42,7 +44,7 @@ Gli scenari fisici non dipendono dai tre flag digitali.
 | Colore / scala | Mapping coerente | `PhysicalAddressTestIT` |
 | Struttura indirizzo complessa | Mapping completo | `PhysicalAddressTestIT` |
 | CAP internazionale | Valore preservato | `PhysicalAddressTestIT` |
-| Contatore ANPR / id operazione | Incremento e mapping richiesta corretti | `AnprPhysicalScenariosIT` |
+| Contatore ANPR / id operazione | Incremento e mapping richiesta corretti | `PhysicalAddressTestIT` |
 | Errore tecnico ANPR | Errore propagato | `PhysicalAddressTestIT` |
 | Modalità `MINIMAL` | Composizione minimal | `PhysicalAddressTestIT` |
 | Modalità `OLD` | Composizione legacy | `PhysicalAddressOldModeIT` |
@@ -50,8 +52,8 @@ Gli scenari fisici non dipendono dai tre flag digitali.
 | FULL oltre limite lunghezza | Rispetto del limite massimo | `PhysicalAddressFullModeIT` |
 | Modalità `OLD_MINIMAL` | Composizione old-minimal | `PhysicalAddressOldMinimalModeIT` |
 | Modalità sconosciuta | Fallback a `OLD` | `PhysicalAddressInvalidModeIT` |
-| Batch physical PF/PG misto | Elementi indipendenti e ordinati | `PhysicalAddressesSyncIT` |
-| Errore singolo elemento batch | Non blocca gli altri elementi | `PhysicalAddressesSyncIT` |
+| Batch physical PF/PG misto | Elementi indipendenti e ordinati | `PhysicalAddressTestIT` |
+| Errore singolo elemento batch | Non blocca gli altri elementi | `PhysicalAddressTestIT` |
 
 ---
 
@@ -224,7 +226,7 @@ Gli scenari fisici non dipendono dai tre flag digitali.
 | Caratteri accentati | Mapping preservato | `PhysicalAddressTestIT` |
 | Sede secondaria | Mapping coerente | `PhysicalAddressTestIT` |
 | Errore tecnico | Errore propagato | `PhysicalAddressTestIT` |
-| Batch PF/PG misto | Elementi indipendenti | `PhysicalAddressesSyncIT` |
+| Batch PF/PG misto | Elementi indipendenti | `PhysicalAddressTestIT` |
 
 ---
 
@@ -383,6 +385,31 @@ Gli scenari fisici non dipendono dai tre flag digitali.
 
 ---
 
+## 4.1 Resilienza e gap E2E aggiunti
+
+Questi scenari completano la copertura funzionale con replay, recovery, concorrenza e cicli reali di retry, senza includere contract test verso registri esterni o scenari DLQ.
+
+| Scenario E2E | Esito atteso | Test / classe |
+|---|---|---|
+| Validazioni HTTP del Gateway | Richieste non valide rifiutate dall'entry point reale | `GatewayInvalidRequestIT` |
+| Replay dello stesso evento Gateway | Nessuna duplicazione funzionale del risultato | `GatewayPollingResilienceIT` |
+| Replay dello stesso evento polling | Stato finale idempotente e coerente | `GatewayPollingResilienceIT` |
+| Retry INAD attraverso più cicli reali | Contatori persistiti e successivo completamento/esaurimento | `GatewayPollingResilienceIT` |
+| Batch accettato con persistenza locale interrotta | Ripartenza senza perdita o duplicazione funzionale | `BatchPersistenceRecoveryIT` |
+| Aggiornamento parziale delle request del batch | Le request già lavorate restano coerenti e le restanti vengono recuperate | `BatchPersistenceRecoveryIT` |
+| Concorrenza sulla prenotazione dello stesso batch | Una sola lavorazione effettiva del batch | `BatchPersistenceRecoveryIT` |
+| Fallback INAD -> IniPEC interrotto | Replay senza duplicare la request di fallback | `FallbackRecoveryIT` |
+| Fallback IniPEC -> INAD interrotto | Replay senza duplicare la request successiva | `FallbackRecoveryIT` |
+| Identità e data preservate nel fallback/recovery | CorrelationId, client e referenceRequestDate restano coerenti | `FallbackRecoveryIT` |
+| Errore dopo risultati parziali del batch | Replay completa gli elementi mancanti senza duplicare quelli già chiusi | `BatchPersistenceRecoveryIT` |
+| Correlazione massiva su più pagine | Matching corretto con ordine diverso, duplicati e paginazione | `MassiveCorrelationAndInipecMixedIT` |
+| Batch IniPEC misto FOUND / fallback / ER | Ogni CF segue il proprio esito e solo l'ER resta retryabile | `MassiveCorrelationAndInipecMixedIT` |
+| Selezione PF massiva prima del fallback | Regole personale/professionale applicate prima di creare il fallback | `PfMassiveFallbackSelectionIT` |
+| Legacy: consegna e recovery sendStatus | Stato di consegna coerente anche dopo recovery | `DigitalAddressPFFallbackOldInipecTestIT` |
+| Coerenza endpoint diretto / Gateway | Stessa fixture produce lo stesso risultato funzionale sui due ingressi | `DirectEndpointGatewayConsistencyIT` |
+
+---
+
 ## 5. Perimetro non E2E / non incluso nel summary
 
 Questo file non include i test tecnici spostati fuori da `integration/`, ad esempio:
@@ -402,7 +429,9 @@ Tali scenari non sono considerati test E2E finché non vengono verificati all'in
 
 ## 6. Stato finale
 
-- `integration/` contiene esclusivamente test end-to-end.
+- `integration/` contiene **154 test E2E in 26 classi concrete**.
+- Gli scenari PHYSICAL con configurazione standard sono consolidati in `PhysicalAddressTestIT`; le classi con property differenti restano separate.
 - Ogni scenario qui riportato è associato a un flusso E2E della suite.
 - I test tecnici non E2E non sono inclusi in questo riepilogo.
-- I flussi nuovi verificano l'esito tramite stato persistito e `resultPayload`.
+- I contract test verso registri esterni e gli scenari DLQ restano volutamente esclusi.
+- I flussi nuovi verificano l'esito tramite stato persistito, `resultPayload` e, dove previsto, replay/recovery nello stesso test.

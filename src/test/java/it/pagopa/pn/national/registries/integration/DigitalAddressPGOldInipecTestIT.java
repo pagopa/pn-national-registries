@@ -19,6 +19,17 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
+/**
+ * Scenari funzionali: Copre il fallback digitale PG da IPA non trovato al flusso legacy IniPEC.
+ *
+ * <p>Configurazione specifica della classe:</p>
+ * <ul>
+ *   <li>{@code pn.national-registries.enable-inad-massive-api=false}</li>
+ *   <li>{@code pn.national-registries.enable-old-inipec-flow=true}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-delay-seconds-per-cf=0}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-fixed-delay-seconds=0}</li>
+ * </ul>
+ */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
         "pn.national-registries.enable-inad-massive-api=false",
@@ -28,6 +39,9 @@ import static org.mockito.Mockito.*;
 })
 public class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponentIT {
 
+    /**
+     * Verifica che un PG non trovato su IPA prosegua sul fallback legacy IniPEC.
+     */
     @Test
     void PG_Digital_IPA_NotFound_OldInipecFallback() {
         String correlationId = "pg-old-inipec-fallback-" + UUID.randomUUID();

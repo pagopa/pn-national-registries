@@ -13,6 +13,8 @@ import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollin
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
+import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
+import it.pagopa.pn.national.registries.service.InipecPollingService;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,11 +26,33 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
 import java.time.Instant;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Scenari funzionali: Copre il full flow PG con fallback IniPEC e INAD massive, includendo selezione degli indirizzi, scadenze e retry di polling per in-progress/error.
+ *
+ * <p>Configurazione specifica della classe:</p>
+ * <ul>
+ *   <li>{@code pn.national-registries.dao.batchesTableName=pn-NationalRegistriesBatches}</li>
+ *   <li>{@code pn.national-registries.inipec.batch-request-pk-separator=~}</li>
+ *   <li>{@code pn.national-registries.enable-inad-massive-api=true}</li>
+ *   <li>{@code pn.national-registries.inipec.max-batch-request-size=4}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-delay-seconds-per-cf=0}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-fixed-delay-seconds=0}</li>
+ *   <li>{@code pn.national-registries.inad.max-batch-request-size=4}</li>
+ *   <li>{@code pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0}</li>
+ *   <li>{@code pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0}</li>
+ *   <li>{@code pn.national-registries.inad.batch-polling-max-retry=5}</li>
+ *   <li>{@code pn.national-registries.inad.batch-polling-in-progress-max-retry=10}</li>
+ *   <li>{@code pn.national-registries.inad.polling-error-retry-after=1}</li>
+ *   <li>{@code pn.national-registries.inad.polling-in-progress-retry-after=1}</li>
+ *   <li>{@code pn.national-registries.inad.oldest-request-max-waiting-seconds=0}</li>
+ * </ul>
+ */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
         "pn.national-registries.dao.batchesTableName=pn-NationalRegistriesBatches",
@@ -53,6 +77,9 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
     private static final String PG_INAD_NOT_FOUND = "33068456921";
     private static final String PG_INAD_EXPIRED = "49603127470";
     private static final String PG_IPA_INVALID = "32383524660";
+    private static final String PG_FOUND = "75120855137";
+    private static final String PG_FALLBACK = "33068456921";
+    private static final String PG_ER = "49603127470";
 
     @Autowired
     private IniPecBatchRequestJob iniPecBatchRequestJob;
@@ -66,6 +93,15 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
     @Autowired
     private PollingJob pollingJob;
 
+    @Autowired
+    private NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
+
+    @Autowired
+    private InipecPollingService inipecPollingService;
+
+    /**
+     * Verifica end-to-end il fallback PG da IniPEC a INAD massive fino al risultato finale.
+     */
     @Test
     void PG_Digital_FullFlow_InipecFallback_InadMassive() {
         String foundCorrelationId = "pg-massive-found-" + UUID.randomUUID();
@@ -177,6 +213,9 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         verify(inadClient, never()).callEService(any(), any());
     }
 
+    /**
+     * Verifica che risultati INAD massive PG invalidi, multipli o professionali producano risultato vuoto secondo le regole PG.
+     */
     @Test
     void PG_Digital_FullFlow_InadMassive_InvalidMultipleAndProfessionalProduceEmptyResult() {
         String invalidCorrelationId = "pg-massive-invalid-inad-" + UUID.randomUUID();
@@ -240,6 +279,9 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         assertEquals("WORKED", findBatch(inadBatchId).get("status").s());
     }
 
+    /**
+     * Verifica che, tra indirizzi INAD massive validi e scaduti, venga restituito quello valido.
+     */
     @Test
     void PG_Digital_FullFlow_InadMassive_ValidAndExpiredReturnsValid() {
         PgInadFlow flow = createSinglePgInadFallback("pg-massive-valid-expired-");
@@ -259,6 +301,9 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         assertEquals("WORKED", findBatch(flow.batchId()).get("status").s());
     }
 
+    /**
+     * Verifica che uno stato in-progress nel polling INAD massive programmi il retry.
+     */
     @Test
     void PG_Digital_FullFlow_InadMassive_InProgressSchedulesRetry() {
         PgInadFlow flow = createSinglePgInadFallback("pg-massive-in-progress-");
@@ -276,6 +321,9 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         assertEquals("WORKING", findRequestByRegistry(flow.correlationId(), "INAD").get("status").s());
     }
 
+    /**
+     * Verifica che un errore di risultato nel polling INAD massive programmi il retry.
+     */
     @Test
     void PG_Digital_FullFlow_InadMassive_ResultErrorSchedulesRetry() {
         PgInadFlow flow = createSinglePgInadFallback("pg-massive-result-error-");
@@ -292,6 +340,121 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         assertEquals("0", batch.get("inProgressRetryCount").n());
         assertNotNull(batch.get("attemptAfter"));
         assertEquals("WORKING", findRequestByRegistry(flow.correlationId(), "INAD").get("status").s());
+    }
+
+    /**
+     * Verifica che il replay del polling INIPEC dopo la creazione del fallback PG non generi una seconda richiesta INAD.
+     */
+    @Test
+    void InipecToInad_FallbackCreatedThenSourceCloseFails_ReplayDoesNotDuplicateFallback() {
+        String correlationId = "inipec-inad-replay-" + UUID.randomUUID();
+        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA), anyString())).thenReturn(Mono.just(ipaNotFoundResponse()));
+        enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        String pollingId = "inipec-polling-" + UUID.randomUUID();
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
+        iniPecBatchRequestJob.batchRequestScheduled();
+        Map<String, AttributeValue> inipecRequest = requestsByRegistry(correlationId, "INIPEC").getFirst();
+        String batchId = inipecRequest.get("batchId").s();
+        pollingJob.polling();
+
+        AtomicBoolean failSourceCloseOnce = new AtomicBoolean(true);
+        doAnswer(invocation -> {
+            String pk = invocation.getArgument(0);
+            GatewayDownstreamService registry = invocation.getArgument(3);
+            boolean isFinal = invocation.getArgument(4);
+            if (correlationId.equals(pk) && GatewayDownstreamService.INIPEC.equals(registry) && !isFinal && failSourceCloseOnce.getAndSet(false)) {
+                return Mono.error(new IllegalStateException("simulated source close failure"));
+            }
+            return invocation.callRealMethod();
+        }).when(nationalRegistriesRequestsRepository).updateStatusToWorked(anyString(), anyString(), nullable(String.class), any(GatewayDownstreamService.class), anyBoolean());
+
+        Pec nf = pecResponse(VALID_PG_PIVA, "ignored@pec.it");
+        nf.setStatoImpresa(Pec.StatoImpresaEnum.NF);
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        response.setElencoPec(List.of(nf));
+        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(response));
+
+        PnPollingEvent.Payload payload = pollingPayload(GatewayDownstreamService.INIPEC, batchId, pollingId, 1);
+        assertThrows(RuntimeException.class, () -> inipecPollingService.handleMessage(payload).block());
+        assertEquals(1, requestsByRegistry(correlationId, "INAD").size());
+
+        inipecPollingService.handleMessage(payload).block();
+
+        assertEquals(1, requestsByRegistry(correlationId, "INAD").size());
+        assertEquals("WORKED", requestsByRegistry(correlationId, "INIPEC").getFirst().get("status").s());
+    }
+
+    /**
+     * Verifica che nello stesso batch INIPEC un CF trovato venga chiuso, un CF NF generi fallback INAD e un CF ER venga riprocessato da solo al ciclo successivo.
+     */
+    @Test
+    void Inipec_MixedBatch_FoundFallbackAndEr_RetriesOnlyEr() {
+        Map<String, String> cases = new LinkedHashMap<>();
+        cases.put("mixed-found-" + UUID.randomUUID(), PG_FOUND);
+        cases.put("mixed-fallback-" + UUID.randomUUID(), PG_FALLBACK);
+        cases.put("mixed-er-" + UUID.randomUUID(), PG_ER);
+        for (Map.Entry<String, String> entry : cases.entrySet()) {
+            when(ipaClient.callEServiceWS23(eq(entry.getValue()), anyString())).thenReturn(Mono.just(ipaNotFoundResponse()));
+            enqueueGatewayRequest("PG", entry.getValue(), AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, entry.getKey());
+            processNextGatewayInputMessage();
+        }
+
+        String pollingId = "inipec-mixed-" + UUID.randomUUID();
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
+        iniPecBatchRequestJob.batchRequestScheduled();
+        String batchId = request(cases.keySet().iterator().next(), "INIPEC").get("batchId").s();
+        pollingJob.polling();
+
+        Pec found = pecResponse(PG_FOUND, "found@pec.it");
+        Pec nf = pecResponse(PG_FALLBACK, "ignored@pec.it");
+        nf.setStatoImpresa(Pec.StatoImpresaEnum.NF);
+        Pec er = pecResponse(PG_ER, "ignored@pec.it");
+        er.setStatoImpresa(Pec.StatoImpresaEnum.ER);
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        response.setElencoPec(List.of(found, nf, er));
+        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(response));
+        inipecPollingService.handleMessage(payload(GatewayDownstreamService.INIPEC, batchId, pollingId, 3, 0, 0)).block();
+
+        String foundCorrelation = correlationForTaxId(cases, PG_FOUND);
+        String fallbackCorrelation = correlationForTaxId(cases, PG_FALLBACK);
+        String erCorrelation = correlationForTaxId(cases, PG_ER);
+        assertEquals("WORKED", request(foundCorrelation, "INIPEC").get("status").s());
+        assertNotNull(request(foundCorrelation, "INIPEC").get("resultPayload"));
+        assertEquals("WORKED", request(fallbackCorrelation, "INIPEC").get("status").s());
+        assertEquals("NOT_WORKED", request(fallbackCorrelation, "INAD").get("status").s());
+        assertEquals("NOT_WORKED", request(erCorrelation, "INIPEC").get("status").s());
+        assertEquals("1", request(erCorrelation, "INIPEC").get("retryCount").n());
+
+        String secondPollingId = "inipec-er-second-" + UUID.randomUUID();
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(secondPollingId)));
+        iniPecBatchRequestJob.batchRequestScheduled();
+        ArgumentCaptor<IniPecBatchRequest> captor = ArgumentCaptor.forClass(IniPecBatchRequest.class);
+        verify(infoCamereClient, atLeastOnce()).callEServiceRequestId(captor.capture());
+        IniPecBatchRequest last = captor.getAllValues().getLast();
+        assertEquals(List.of(PG_ER), last.getElencoCf().stream().map(IniPecBatchRequest.IniPecCf::getCf).toList());
+    }
+
+    private String correlationForTaxId(Map<String, String> cases, String taxId) {
+        return cases.entrySet().stream().filter(e -> taxId.equals(e.getValue())).map(Map.Entry::getKey).findFirst().orElseThrow();
+    }
+
+    private Map<String, AttributeValue> request(String correlationId, String registry) {
+        return findNationalRegistriesRequestsByCorrelationId(correlationId).stream()
+                .filter(item -> registry.equals(item.get("registry").s()))
+                .findFirst().orElseThrow();
+    }
+
+    private PnPollingEvent.Payload payload(GatewayDownstreamService registry, String batchId, String pollingId, int batchSize, int errorRetry, int inProgressRetry) {
+        return PnPollingEvent.Payload.builder().registry(registry).batchId(batchId).pollingId(pollingId).batchSize(batchSize)
+                .errorRetryCount(errorRetry).inProgressRetryCount(inProgressRetry).build();
+    }
+
+    private List<Map<String, AttributeValue>> requestsByRegistry(String correlationId, String registry) {
+        return findNationalRegistriesRequestsByCorrelationId(correlationId).stream()
+                .filter(request -> registry.equals(request.get("registry").s()))
+                .toList();
     }
 
     private PgInadFlow createSinglePgInadFallback(String prefix) {

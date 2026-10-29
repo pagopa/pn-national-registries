@@ -30,6 +30,26 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+/**
+ * Scenari funzionali: Copre l’esaurimento dei retry nel flusso PG con INAD massive, sia per errori tecnici sia per stato in-progress, verificando la chiusura in errore.
+ *
+ * <p>Configurazione specifica della classe:</p>
+ * <ul>
+ *   <li>{@code pn.national-registries.enable-inad-massive-api=true}</li>
+ *   <li>{@code pn.national-registries.inipec.max-batch-request-size=1}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-delay-seconds-per-cf=0}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-fixed-delay-seconds=0}</li>
+ *   <li>{@code pn.national-registries.inad.max-batch-request-size=1}</li>
+ *   <li>{@code pn.national-registries.inad.oldest-request-max-waiting-seconds=0}</li>
+ *   <li>{@code pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0}</li>
+ *   <li>{@code pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0}</li>
+ *   <li>{@code pn.national-registries.inad.batch-polling-max-retry=1}</li>
+ *   <li>{@code pn.national-registries.inad.batch-polling-in-progress-max-retry=1}</li>
+ *   <li>{@code pn.national-registries.inad.polling-error-retry-after=0}</li>
+ *   <li>{@code pn.national-registries.inad.polling-in-progress-retry-after=0}</li>
+ *   <li>{@code spring.task.scheduling.enabled=false}</li>
+ * </ul>
+ */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
         "pn.national-registries.enable-inad-massive-api=true",
@@ -62,6 +82,9 @@ class DigitalAddressPGMassiveRetryExhaustionIT extends AbstractNationalRegistrie
     @Autowired
     private PollingInputsHandler pollingInputsHandler;
 
+    /**
+     * Verifica che l’esaurimento dei retry per errore INAD massive chiuda in errore sia richiesta sia batch.
+     */
     @Test
     void PG_Digital_FullFlow_InadMassive_ErrorRetryExhaustionMarksRequestAndBatchError() {
         Flow flow = createInadPollingFlow("pg-massive-error-exhausted-");
@@ -77,6 +100,9 @@ class DigitalAddressPGMassiveRetryExhaustionIT extends AbstractNationalRegistrie
         assertEquals("INAD#ERROR", findRequest(flow.correlationId(), "INAD").get("registryStatus").s());
     }
 
+    /**
+     * Verifica che l’esaurimento dei retry in-progress INAD massive chiuda in errore sia richiesta sia batch.
+     */
     @Test
     void PG_Digital_FullFlow_InadMassive_InProgressRetryExhaustionMarksRequestAndBatchError() {
         Flow flow = createInadPollingFlow("pg-massive-in-progress-exhausted-");

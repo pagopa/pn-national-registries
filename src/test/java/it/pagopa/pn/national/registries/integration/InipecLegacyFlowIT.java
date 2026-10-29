@@ -23,6 +23,21 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+/**
+ * Scenari funzionali: Copre il flusso legacy IniPEC PF/PG: happy path, not found, fallback INAD, PEC impresa/professionista, validazione indirizzi, retry, bad request, ER ed errori tecnici.
+ *
+ * <p>Configurazione specifica della classe:</p>
+ * <ul>
+ *   <li>{@code pn.national-registries.enable-old-inipec-flow=true}</li>
+ *   <li>{@code pn.national-registries.enable-pf-pec-fallback-flow=true}</li>
+ *   <li>{@code pn.national-registries.enable-inad-massive-api=false}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-delay-seconds-per-cf=0}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-fixed-delay-seconds=0}</li>
+ *   <li>{@code pn.national-registries.inipec.batch-polling-max-retry=2}</li>
+ *   <li>{@code pn.national-registries.inipec.batch-polling-in-progress-max-retry=2}</li>
+ *   <li>{@code spring.task.scheduling.enabled=false}</li>
+ * </ul>
+ */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
         "pn.national-registries.enable-old-inipec-flow=true",
@@ -36,6 +51,9 @@ import static org.mockito.Mockito.*;
 })
 class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
 
+    /**
+     * Verifica il happy path completo PF del legacy IniPEC con PEC valida e risultato finale.
+     */
     @Test
     void LegacyInipec_FullPfHappyPath() {
         String correlationId = "legacy-pf-found-" + UUID.randomUUID();
@@ -66,6 +84,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertLegacyPolling(batchId, pollingId, "WORKED", 0, 0);
     }
 
+    /**
+     * Verifica che un not found legacy IniPEC per PF produca un risultato finale vuoto.
+     */
     @Test
     void LegacyInipec_PfNotFoundProducesEmptyFinalResult() {
         String correlationId = "legacy-pf-not-found-" + UUID.randomUUID();
@@ -88,6 +109,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         verify(inadClient).callEService(VALID_PF_CF, correlationId);
     }
 
+    /**
+     * Verifica che un not found legacy IniPEC per PG attivi il fallback a INAD sincrono.
+     */
     @Test
     void LegacyInipec_PgNotFoundFallsBackToInadSync() {
         String correlationId = "legacy-pg-inad-found-" + UUID.randomUUID();
@@ -112,6 +136,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertLegacyPolling(batchId, pollingId, "WORKED", 0, 0);
     }
 
+    /**
+     * Verifica che il doppio not found legacy IniPEC e INAD per PG produca risultato vuoto.
+     */
     @Test
     void LegacyInipec_PgInadNotFoundProducesEmptyResult() {
         String correlationId = "legacy-pg-inad-not-found-" + UUID.randomUUID();
@@ -136,6 +163,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertLegacyPolling(batchId, pollingId, "WORKED", 0, 0);
     }
 
+    /**
+     * Verifica che tutte le PEC professionali valide restituite dal legacy IniPEC siano preservate.
+     */
     @Test
     void LegacyInipec_AllProfessionalPecsArePreserved() {
         String correlationId = "legacy-professionals-" + UUID.randomUUID();
@@ -158,6 +188,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertLegacyPolling(batchId, pollingId, "WORKED", 0, 0);
     }
 
+    /**
+     * Verifica che una PEC impresa invalida venga scartata mantenendo la PEC professionale valida.
+     */
     @Test
     void LegacyInipec_InvalidBusinessPecKeepsValidProfessionalPec() {
         String correlationId = "legacy-mixed-validity-" + UUID.randomUUID();
@@ -178,6 +211,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertLegacyPolling(batchId, pollingId, "WORKED", 0, 0);
     }
 
+    /**
+     * Verifica che lo stato ND ignori eventuali PEC presenti e produca risultato PF vuoto.
+     */
     @Test
     void LegacyInipec_NdIgnoresPecsAndProducesEmptyPfResult() {
         String correlationId = "legacy-nd-with-pec-" + UUID.randomUUID();
@@ -197,6 +233,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertLegacyPolling(batchId, pollingId, "WORKED", 0, 0);
     }
 
+    /**
+     * Verifica che PEC impresa e PEC professionale valide siano entrambe mantenute.
+     */
     @Test
     void LegacyInipec_BusinessAndProfessionalPecsAreBothPreserved() {
         String correlationId = "legacy-business-professional-" + UUID.randomUUID();
@@ -216,6 +255,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertLegacyPolling(batchId, pollingId, "WORKED", 0, 0);
     }
 
+    /**
+     * Verifica che PEC tutte invalide siano trattate funzionalmente come not found per PF.
+     */
     @Test
     void LegacyInipec_AllInvalidPecsAreTreatedAsNotFoundForPf() {
         String correlationId = "legacy-invalid-pecs-" + UUID.randomUUID();
@@ -234,6 +276,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertLegacyPolling(batchId, pollingId, "WORKED", 0, 0);
     }
 
+    /**
+     * Verifica che l’assenza del codice fiscale atteso nella risposta sia trattata come not found per PF.
+     */
     @Test
     void LegacyInipec_MissingTaxIdInResponseIsTreatedAsNotFoundForPf() {
         String correlationId = "legacy-missing-cf-" + UUID.randomUUID();
@@ -250,6 +295,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertLegacyPolling(batchId, pollingId, "WORKED", 0, 0);
     }
 
+    /**
+     * Verifica che un errore di submit incrementi il retry senza chiudere definitivamente la richiesta.
+     */
     @Test
     void LegacyInipec_SubmitErrorIncrementsRetryWithoutClosingRequest() {
         String correlationId = "legacy-submit-retry-" + UUID.randomUUID();
@@ -264,6 +312,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertNotEquals("NO_BATCH_ID", request.get("batchId").s());
     }
 
+    /**
+     * Verifica che un bad request durante il polling chiuda immediatamente in errore polling e richiesta legacy.
+     */
     @Test
     void LegacyInipec_PollingBadRequestMarksRequestAndPollingErrorImmediately() {
         String correlationId = "legacy-polling-bad-request-" + UUID.randomUUID();
@@ -283,6 +334,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertNotNull(request.get("message"));
     }
 
+    /**
+     * Verifica che i metadata di errore del provider siano gestiti come retry normale del polling.
+     */
     @Test
     void LegacyInipec_ErrorMetadataIsHandledAsPollingRetry() {
         String correlationId = "legacy-polling-metadata-error-" + UUID.randomUUID();
@@ -299,6 +353,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertEquals("WORKING", findBatchRequestsByCorrelationPrefix(correlationId).getFirst().get("status").s());
     }
 
+    /**
+     * Verifica che lo stato ER incrementi il retry della richiesta senza produrre un risultato finale.
+     */
     @Test
     void LegacyInipec_ErIncrementsRequestRetryWithoutProducingResult() {
         String correlationId = "legacy-er-" + UUID.randomUUID();
@@ -319,6 +376,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertLegacyPolling(batchId, pollingId, "WORKED", 0, 0);
     }
 
+    /**
+     * Verifica che un polling in-progress incrementi il relativo contatore di retry mantenendo la richiesta lavorabile.
+     */
     @Test
     void LegacyInipec_PollingInProgressIncrementsInProgressRetry() {
         String correlationId = "legacy-in-progress-" + UUID.randomUUID();
@@ -337,6 +397,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertEquals("WORKING", findBatchRequestsByCorrelationPrefix(correlationId).getFirst().get("status").s());
     }
 
+    /**
+     * Verifica che un errore generico di polling incrementi il contatore di retry normale.
+     */
     @Test
     void LegacyInipec_GenericPollingErrorIncrementsNormalRetry() {
         String correlationId = "legacy-polling-error-" + UUID.randomUUID();
@@ -351,6 +414,9 @@ class InipecLegacyFlowIT extends AbstractNationalRegistriesComponentIT {
         assertEquals("WORKING", findBatchRequestsByCorrelationPrefix(correlationId).getFirst().get("status").s());
     }
 
+    /**
+     * Verifica che un errore tecnico INAD dopo il not found IniPEC PG chiuda la richiesta legacy in errore.
+     */
     @Test
     void LegacyInipec_PgInadTechnicalErrorMarksLegacyRequestError() {
         String correlationId = "legacy-pg-inad-error-" + UUID.randomUUID();

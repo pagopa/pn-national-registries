@@ -29,6 +29,22 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+/**
+ * Scenari funzionali: Copre il full flow PF da INAD massive non trovato al fallback legacy IniPEC fino al risultato finale.
+ *
+ * <p>Configurazione specifica della classe:</p>
+ * <ul>
+ *   <li>{@code pn.national-registries.enable-inad-massive-api=true}</li>
+ *   <li>{@code pn.national-registries.enable-pf-pec-fallback-flow=true}</li>
+ *   <li>{@code pn.national-registries.enable-old-inipec-flow=true}</li>
+ *   <li>{@code pn.national-registries.inad.max-batch-request-size=1}</li>
+ *   <li>{@code pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0}</li>
+ *   <li>{@code pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-delay-seconds-per-cf=0}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-fixed-delay-seconds=0}</li>
+ *   <li>{@code spring.task.scheduling.enabled=false}</li>
+ * </ul>
+ */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
         "pn.national-registries.enable-inad-massive-api=true",
@@ -52,6 +68,9 @@ class DigitalAddressPFMassiveOldInipecIT extends AbstractNationalRegistriesCompo
     @Autowired
     private InadPollingService inadPollingService;
 
+    /**
+     * Verifica end-to-end che un not found INAD massive attivi il legacy IniPEC e completi il flusso con il risultato finale.
+     */
     @Test
     void PF_Digital_FullFlow_InadMassiveNotFoundFallsBackToLegacyInipecAndCompletes() {
         String correlationId = "pf-massive-old-inipec-" + UUID.randomUUID();

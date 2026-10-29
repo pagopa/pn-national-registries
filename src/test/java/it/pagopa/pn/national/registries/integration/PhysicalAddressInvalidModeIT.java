@@ -13,10 +13,21 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+/**
+ * Scenari funzionali: Verifica il comportamento di fallback della composizione indirizzo quando viene configurata una modalità non riconosciuta.
+ *
+ * <p>Configurazione specifica della classe:</p>
+ * <ul>
+ *   <li>{@code pn.national-registries.address-composition-mode=UNKNOWN}</li>
+ * </ul>
+ */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = "pn.national-registries.address-composition-mode=UNKNOWN")
 class PhysicalAddressInvalidModeIT extends AbstractNationalRegistriesComponentIT {
 
+    /**
+     * Verifica che una modalità di composizione non valida ricada funzionalmente sulla modalità OLD.
+     */
     @Test
     void PF_Physical_ANPR_InvalidAddressCompositionFallsBackToOLD() {
         String correlationId = "corr-invalid-mode-" + UUID.randomUUID();

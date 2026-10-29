@@ -183,7 +183,6 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
                 .getResponseBody();
     }
 
-
     protected void startLegacyInipecFromGateway(String correlationId, String taxId) {
         String recipientType = taxId != null && taxId.length() == 11 ? "PG" : "PF";
         if ("PF".equals(recipientType)) {

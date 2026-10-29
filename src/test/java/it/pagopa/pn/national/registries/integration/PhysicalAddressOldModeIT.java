@@ -13,10 +13,21 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
+/**
+ * Scenari funzionali: Copre la composizione dell’indirizzo fisico PF nella modalità OLD.
+ *
+ * <p>Configurazione specifica della classe:</p>
+ * <ul>
+ *   <li>{@code pn.national-registries.address-composition-mode=OLD}</li>
+ * </ul>
+ */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = "pn.national-registries.address-composition-mode=OLD")
 class PhysicalAddressOldModeIT extends AbstractNationalRegistriesComponentIT {
 
+    /**
+     * Verifica la composizione dell’indirizzo ANPR PF secondo la modalità OLD.
+     */
     @Test
     void PF_Physical_ANPR_AddressComposition_OLD() {
         String correlationId = "corr-old-" + UUID.randomUUID();

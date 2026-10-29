@@ -30,6 +30,22 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+/**
+ * Scenari funzionali: Copre il passaggio dal legacy IniPEC PG non trovato a INAD massive, sia fino alla creazione della richiesta massive sia fino al completamento finale.
+ *
+ * <p>Configurazione specifica della classe:</p>
+ * <ul>
+ *   <li>{@code pn.national-registries.enable-old-inipec-flow=true}</li>
+ *   <li>{@code pn.national-registries.enable-inad-massive-api=true}</li>
+ *   <li>{@code pn.national-registries.inad.max-batch-request-size=1}</li>
+ *   <li>{@code pn.national-registries.inad.oldest-request-max-waiting-seconds=0}</li>
+ *   <li>{@code pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0}</li>
+ *   <li>{@code pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-delay-seconds-per-cf=0}</li>
+ *   <li>{@code pn.national-registries.inipec.polling-first-attempt-fixed-delay-seconds=0}</li>
+ *   <li>{@code spring.task.scheduling.enabled=false}</li>
+ * </ul>
+ */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
         "pn.national-registries.enable-old-inipec-flow=true",
@@ -53,6 +69,9 @@ class InipecLegacyMassiveFlowIT extends AbstractNationalRegistriesComponentIT {
     @Autowired
     private InadPollingService inadPollingService;
 
+    /**
+     * Verifica che il not found legacy IniPEC PG crei una richiesta INAD massive e chiuda correttamente la richiesta legacy.
+     */
     @Test
     void LegacyInipec_PgNotFoundCreatesMassiveInadRequestAndClosesLegacyRequest() {
         String correlationId = "legacy-pg-massive-" + UUID.randomUUID();
@@ -85,6 +104,9 @@ class InipecLegacyMassiveFlowIT extends AbstractNationalRegistriesComponentIT {
         verifyNoInteractions(inadClient);
     }
 
+    /**
+     * Verifica end-to-end che il not found legacy IniPEC PG completi il flusso tramite il risultato INAD massive.
+     */
     @Test
     void LegacyInipec_PgNotFoundCompletesThroughMassiveInadResult() {
         String correlationId = "legacy-pg-massive-full-" + UUID.randomUUID();
