@@ -1507,8 +1507,6 @@ components:
         - recIndex
         - recipientType
       properties:
-        correlationId:
-          type: string
         taxId:
           x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
           type: string
