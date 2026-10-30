@@ -14,12 +14,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Scenari funzionali: Copre gli endpoint sincroni di Agenzia Entrate per validazione del codice fiscale e verifica del rappresentante legale, inclusi whitelist, esito negativo ed errore XML.
- *
- * <p>Configurazione specifica della classe:</p>
- * <ul>
- *   <li>Nessun override locale: usa la configurazione comune definita in {@link AbstractNationalRegistriesComponentIT}.</li>
- * </ul>
+ * Scenari funzionali: Copre gli endpoint sincroni di Agenzia Entrate per validazione del codice fiscale e
+ * verifica del rappresentante legale, inclusi whitelist, esito negativo ed errore XML.
+ * Il client di Agenzia delle entrate è mockato
  */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 class AgenziaEntrateSyncEndpointsIT extends AbstractNationalRegistriesComponentIT {

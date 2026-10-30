@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.integration;
+package it.pagopa.pn.national.registries.integration.digital.PF;
 
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
@@ -6,6 +6,8 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressR
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
+import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
+import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

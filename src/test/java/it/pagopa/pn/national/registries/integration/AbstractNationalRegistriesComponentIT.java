@@ -94,7 +94,7 @@ import java.util.*;
         "pn.national.registries.sqs.input.dlq.queue.name=pn-national_registry_gateway_inputs_DLQ",
         "pn.national.registries.health-check-path=http://localhost"
 })
-abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalStack {
+public abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalStack {
 
     protected static final String INPUT_QUEUE = "pn-national_registry_gateway_inputs";
     protected static final String OUTPUT_QUEUE = "pn-national_registry_gateway_outputs";

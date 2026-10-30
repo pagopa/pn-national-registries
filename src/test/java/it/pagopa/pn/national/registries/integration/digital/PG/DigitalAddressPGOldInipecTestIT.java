@@ -1,7 +1,9 @@
-package it.pagopa.pn.national.registries.integration;
+package it.pagopa.pn.national.registries.integration.digital.PG;
 
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
+import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import org.junit.jupiter.api.Test;

@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.integration;
+package it.pagopa.pn.national.registries.integration.digital.PG;
 
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.RequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
@@ -7,6 +7,8 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.S
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
+import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.job.InadBatchRequestJob;
 import it.pagopa.pn.national.registries.job.IniPecBatchRequestJob;
 import it.pagopa.pn.national.registries.job.PollingJob;

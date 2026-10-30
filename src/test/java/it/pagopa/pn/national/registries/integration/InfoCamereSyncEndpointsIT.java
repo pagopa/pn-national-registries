@@ -17,12 +17,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 /**
- * Scenari funzionali: Copre gli endpoint sincroni InfoCamere/Registro Imprese per indirizzo legale, rappresentante legale e imprese rappresentate, inclusi errori applicativi e risultati vuoti.
- *
- * <p>Configurazione specifica della classe:</p>
- * <ul>
- *   <li>Nessun override locale: usa la configurazione comune definita in {@link AbstractNationalRegistriesComponentIT}.</li>
- * </ul>
+ * Scenari funzionali: Copre gli endpoint sincroni InfoCamere/Registro Imprese per indirizzo legale,
+ * rappresentante legale e imprese rappresentate, inclusi errori applicativi e risultati vuoti.
  */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 class InfoCamereSyncEndpointsIT extends AbstractNationalRegistriesComponentIT {

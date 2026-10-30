@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.integration;
+package it.pagopa.pn.national.registries.integration.digital.PG;
 
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.DataWS05Dto;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.DataWS23Dto;
@@ -11,6 +11,8 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressO
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
+import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
+import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.job.IniPecBatchRequestJob;
 import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;

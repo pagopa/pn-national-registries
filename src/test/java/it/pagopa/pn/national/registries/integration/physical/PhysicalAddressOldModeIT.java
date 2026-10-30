@@ -1,6 +1,8 @@
-package it.pagopa.pn.national.registries.integration;
+package it.pagopa.pn.national.registries.integration.physical;
 
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
+import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -15,11 +17,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Scenari funzionali: Copre la composizione dell’indirizzo fisico PF nella modalità OLD.
- *
- * <p>Configurazione specifica della classe:</p>
- * <ul>
- *   <li>{@code pn.national-registries.address-composition-mode=OLD}</li>
- * </ul>
+ * Il client di ANPR è mockato
  */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = "pn.national-registries.address-composition-mode=OLD")

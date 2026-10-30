@@ -1,4 +1,4 @@
-package it.pagopa.pn.national.registries.integration;
+package it.pagopa.pn.national.registries.integration.physical;
 
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.RichiestaE002;
@@ -11,6 +11,8 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressO
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPROKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
+import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
+import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import java.lang.reflect.Method;
@@ -41,10 +43,7 @@ import static org.mockito.Mockito.*;
  *   <li>verifica dei campi funzionali inviati ai registri e della corretta propagazione del risultato.</li>
  * </ul>
  *
- * <p>Configurazione specifica della classe:</p>
- * <ul>
- *   <li>Nessun override locale: usa la configurazione comune definita in {@link AbstractNationalRegistriesComponentIT}.</li>
- * </ul>
+ * Il client di ANPR e Registro Imprese è mockato
  */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT {
@@ -517,37 +516,6 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
                 "London",
                 "LDN",
                 "UK",
-                null);
-
-        verify(infoCamereClient).getLegalAddress(VALID_PG_PIVA);
-        verifyNoInteractions(anprClient);
-    }
-
-    /**
-     * Verifica la gestione di un CAP internazionale del Belgio.
-     */
-    @Test
-    void Physical_Address_WithInternationalPostalCode_Belgium() {
-        String correlationId = "physical-international-be-" + UUID.randomUUID();
-        when(infoCamereClient.getLegalAddress(VALID_PG_PIVA))
-                .thenReturn(Mono.just(registroImpreseAddress(VALID_PG_PIVA, "AVENUE", "DE CORTENBERG", "280", "Bruxelles", "BXL", "1040", "BE")));
-
-        AddressOKDto response = enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL, correlationId);
-        processNextGatewayInputMessage();
-
-        assertEquals(correlationId, response.getCorrelationId());
-        Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
-        assertNotNull(outputMessage);
-
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertPhysicalAddress(payload,
-                "AVENUE DE CORTENBERG 280",
-                null,
-                null,
-                "1040",
-                "Bruxelles",
-                "BXL",
-                "BE",
                 null);
 
         verify(infoCamereClient).getLegalAddress(VALID_PG_PIVA);

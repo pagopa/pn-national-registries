@@ -1,7 +1,9 @@
-package it.pagopa.pn.national.registries.integration;
+package it.pagopa.pn.national.registries.integration.digital.PF;
 
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
+import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
+import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.job.IniPecBatchRequestJob;
 import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
@@ -36,8 +38,7 @@ import static org.mockito.Mockito.when;
  * Scenari funzionali PF DIGITAL con fallback INAD verso il nuovo IniPEC: selezione PEC personale/professionale,
  * validità degli indirizzi, fallback, full flow IniPEC, esiti ND/NF/ER, metadata di errore e retry di polling.
  *
- * <p>Configurazione: fallback PF attivo, INAD massive disattivato, old IniPEC disattivato; viene usato il superset
- * compatibile delle property IniPEC necessarie agli scenari di batching e retry, senza valori in conflitto.</p>
+ * <p>Configurazione: fallback PF attivo, INAD massive disattivato, old IniPEC disattivato;</p>
  */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
@@ -120,7 +121,7 @@ public class DigitalAddressPFFallbackTestIT extends AbstractNationalRegistriesCo
     }
 
     /**
-     * Verifica il fallback a IniPEC quando la PEC personale INAD risulta scaduta e non utilizzabile.
+     * Verifica il fallback a IniPEC quando la PEC personale INAD risulta scaduta e non utilizzabile e la professionale non esiste.
      */
     @Test
     void shouldFallbackToInipecWhenPersonalExpired() {
@@ -218,7 +219,7 @@ public class DigitalAddressPFFallbackTestIT extends AbstractNationalRegistriesCo
 
 
     /**
-     * Verifica end-to-end che una PEC personale INAD scaduta porti al fallback IniPEC e a un risultato valido.
+     * Verifica end-to-end che una PEC personale INAD scaduta e professionale non esistente porti al fallback IniPEC e a un risultato valido.
      */
     @Test
     void PF_Digital_INAD_ExpiredPersonal_InipecValid_FullFlow() {
