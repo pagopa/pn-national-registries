@@ -14,8 +14,8 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.PecApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.SedeApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.CheckTaxIdRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.InfoCamereLegalRequestBodyFilterDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.TaxIdFilterDto;
 import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
@@ -143,7 +143,7 @@ public class InfoCamereClient {
                 .doOnError(handleErrorCall());
     }
 
-    public Mono<InfoCamereLegalInstituionsResponse> getLegalInstitutions(CheckTaxIdRequestBodyFilterDto filter) {
+    public Mono<InfoCamereLegalInstituionsResponse> getLegalInstitutions(TaxIdFilterDto filter) {
         return accessTokenExpiringMap.getInfoCamereToken(InipecScopeEnum.LEGALE_RAPPRESENTANTE.value())
                 .flatMap(token -> callGetLegalInstitutions(filter.getTaxId(), token.getTokenValue()))
                 .retryWhen(Retry.max(1).filter(this::shouldRetry)

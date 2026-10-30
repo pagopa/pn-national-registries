@@ -724,15 +724,7 @@ components:
       type: object
       properties:
         filter:
-          type: object
-          required:
-            - taxId
-          properties:
-            taxId:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-              format: password # NO EXTERNAL
-              example: AAAZZZ00H00T000Z
+          $ref: '#/components/schemas/TaxIdFilter'
     CheckTaxIdOK:
       type: object
       properties:
@@ -793,6 +785,8 @@ components:
             - referenceRequestDate
             - requestReason
           properties:
+            correlationId:
+              type: string
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
@@ -886,6 +880,8 @@ components:
             - taxId
             - practicalReference
           properties:
+            correlationId:
+              type: string
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
@@ -1005,15 +1001,7 @@ components:
       type: object
       properties:
         filter:
-          type: object
-          required:
-            - taxId
-          properties:
-            taxId:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-              format: password # NO EXTERNAL
-              example: AAAZZZ00H00T0
+          $ref: '#/components/schemas/TaxIdFilter'
     IPAPec:
       type: object
       properties:
@@ -1117,19 +1105,23 @@ components:
                 type: string
               detail:
                 type: string
+    TaxIdFilter:
+      type: object
+      required:
+        - taxId
+      properties:
+        correlationId:
+          type: string
+        taxId:
+          x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
+          type: string
+          format: password # NO EXTERNAL
+          example: AAAZZZ00H00T000Z
     InfoCamereLegalInstitutionsRequestBody:
       type: object
       properties:
         filter:
-          type: object
-          required:
-            - taxId
-          properties:
-            taxId:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-              format: password # NO EXTERNAL
-              example: AAAZZZ00H00T000Z
+          $ref: '#/components/schemas/TaxIdFilter'
     InfoCamereLegalInstitutionsOK:
       type: object
       properties:
@@ -1195,6 +1187,8 @@ components:
             - taxId
             - vatNumber
           properties:
+            correlationId:
+              type: string
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string
@@ -1253,15 +1247,7 @@ components:
       type: object
       properties:
         filter:
-          type: object
-          required:
-            - taxId
-          properties:
-            taxId:
-              x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
-              type: string
-              format: password # NO EXTERNAL
-              example: AAAZZZ00H00T000Z
+          $ref: '#/components/schemas/TaxIdFilter'
     ADELegalRequestBody:
       type: object
       properties:
@@ -1271,6 +1257,8 @@ components:
             - taxId
             - vatNumber
           properties:
+            correlationId:
+              type: string
             taxId:
               x-field-extra-annotation: "@lombok.ToString.Exclude" # NO EXTERNAL
               type: string

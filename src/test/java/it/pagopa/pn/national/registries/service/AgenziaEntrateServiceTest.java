@@ -47,7 +47,7 @@ class AgenziaEntrateServiceTest {
     @Test
     void callEService() {
         CheckTaxIdRequestBodyDto requestBodyDto = new CheckTaxIdRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("test");
         requestBodyDto.setFilter(filter);
 
@@ -75,7 +75,7 @@ class AgenziaEntrateServiceTest {
     @Test
     void callEService2() {
         CheckTaxIdRequestBodyDto requestBodyDto = new CheckTaxIdRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("test");
         requestBodyDto.setFilter(filter);
 
@@ -101,7 +101,7 @@ class AgenziaEntrateServiceTest {
     void testCallEService3() {
         when(checkCfClient.callEService(Mockito.any())).thenThrow(new IllegalArgumentException());
 
-        CheckTaxIdRequestBodyFilterDto checkTaxIdRequestBodyFilterDto = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto checkTaxIdRequestBodyFilterDto = new TaxIdFilterDto();
         checkTaxIdRequestBodyFilterDto.taxId("42");
 
         CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto = new CheckTaxIdRequestBodyDto();
