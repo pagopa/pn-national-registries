@@ -51,20 +51,19 @@ class IpaControllerTest {
 
     @Test
     void testIpaPec4() {
-        String traceId = "traceId";
-        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
         IPAPecDto ipaPecDto = new IPAPecDto();
         when(ipaService.getIpaPec(any())).thenReturn(Mono.just(ipaPecDto));
 
         TaxIdFilterDto checkTaxIdRequestBodyFilterDto = new TaxIdFilterDto();
         checkTaxIdRequestBodyFilterDto.taxId("42");
+        checkTaxIdRequestBodyFilterDto.setCorrelationId("correlation-id");
 
         IPARequestBodyDto ipaRequestBodyDto = new IPARequestBodyDto();
         ipaRequestBodyDto.filter(checkTaxIdRequestBodyFilterDto);
         ipaController.ipaPec(Mono.just(ipaRequestBodyDto), serverWebExchange);
         when(ipaService.getIpaPec(ipaRequestBodyDto))
                 .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+                    assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return ipaPecDto;
                 }));
 
@@ -72,7 +71,7 @@ class IpaControllerTest {
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(ipaPecDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
+                    assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

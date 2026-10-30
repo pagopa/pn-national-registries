@@ -465,7 +465,7 @@ class InfoCamereServiceTest {
     @Test
     void getRegistroImpreseLegalAddress_shouldValidateTaxIdAndPropagateClientError() {
         GetAddressRegistroImpreseRequestBodyDto request = new GetAddressRegistroImpreseRequestBodyDto();
-        GetAddressRegistroImpreseRequestBodyFilterDto filter = new GetAddressRegistroImpreseRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("cf");
         request.setFilter(filter);
         RuntimeException error = new RuntimeException("infocamere down");
@@ -481,7 +481,7 @@ class InfoCamereServiceTest {
     @Test
     void getLegalInstitutions_shouldPropagateClientError() {
         InfoCamereLegalInstitutionsRequestBodyDto request = new InfoCamereLegalInstitutionsRequestBodyDto();
-        CheckTaxIdRequestBodyFilterDto filter = new CheckTaxIdRequestBodyFilterDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
         filter.setTaxId("cf");
         request.setFilter(filter);
         RuntimeException error = new RuntimeException("infocamere down");
