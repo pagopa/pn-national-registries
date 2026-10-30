@@ -227,6 +227,45 @@ class AgenziaEntrateServiceTest {
         assertThrows(jakarta.xml.bind.JAXBException.class, () -> agenziaEntrateService.unmarshaller("<invalid/>"));
     }
 
+    /**
+     * N16 - un SOAP Fault deve restare un errore tecnico e non diventare un esito funzionale negativo.
+     */
+    @Test
+    void checkTaxIdAndVatNumberSoapFault_shouldFailWithoutCallingConverter() {
+        ADELegalRequestBodyFilterDto filter = new ADELegalRequestBodyFilterDto();
+        filter.setTaxId("RSSMRA80A01H501U");
+        filter.setVatNumber("00123456789");
+        ADELegalRequestBodyDto request = new ADELegalRequestBodyDto();
+        request.setFilter(filter);
+
+        when(adELegalClient.checkTaxIdAndVatNumberAdE(filter)).thenReturn(Mono.just(soapFaultResponse()));
+
+        StepVerifier.create(agenziaEntrateService.checkTaxIdAndVatNumber(request))
+                .expectError()
+                .verify();
+
+        verify(agenziaEntrateConverter, never()).adELegalResponseToDto(any());
+    }
+
+    private String soapFaultResponse() {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?>" +
+                "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
+                "<soapenv:Body><soapenv:Fault><faultcode>soapenv:Server</faultcode>" +
+                "<faultstring>temporary provider failure</faultstring></soapenv:Fault></soapenv:Body></soapenv:Envelope>";
+    }
+
+    private String validSoapResponseWithAlternatePrefix() {
+        return "<?xml version=\"1.0\" encoding=\"UTF-8\"?> " +
+                "<s:Envelope xmlns:s=\"http://schemas.xmlsoap.org/soap/envelope/\">" +
+                "  <s:Header/>" +
+                "  <s:Body>\n" +
+                "    <a:checkValidityRappresentanteResp xmlns:a=\"http://anagrafica.verifica.rappresentante.ente\">\n" +
+                "      <a:valido>true</a:valido><a:dettaglioEsito>XX00</a:dettaglioEsito><a:codiceRitorno>00</a:codiceRitorno>\n" +
+                "    </a:checkValidityRappresentanteResp>\n" +
+                "  </s:Body>\n" +
+                "</s:Envelope>";
+    }
+
     private String validSoapResponse() {
         return "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n" +
                 "<soapenv:Envelope xmlns:soapenv=\"http://schemas.xmlsoap.org/soap/envelope/\" xmlns:anag=\"http://anagrafica.verifica.rappresentante.ente\">" +

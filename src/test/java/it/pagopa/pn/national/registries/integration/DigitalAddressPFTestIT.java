@@ -469,25 +469,40 @@ public class DigitalAddressPFTestIT extends AbstractNationalRegistriesComponentI
     /**
      * Verifica il comportamento corrente con più PEC personali: viene selezionata la prima anche se invalida.
      */
+    /**
+     * Verifica che con più PEC personali venga ignorata quella invalida
+     * e selezionata la prima PEC valida disponibile.
+     */
     @Test
-    void PF_Digital_INAD_FirstPersonalInvalid_SecondPersonalValid_FirstIsSelected() {
+    void PF_Digital_INAD_FirstPersonalInvalid_SecondPersonalValid_SecondIsSelected() {
         String correlationId = "pf-digital-first-personal-invalid-" + UUID.randomUUID();
+
         when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId)))
                 .thenReturn(Mono.just(inadResponse(VALID_PF_CF, List.of(
                         inadAddress("invalid-personal", null),
                         inadAddress("second-valid@pec.it", null)
                 ))));
 
-        AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        AddressOKDto response = enqueueGatewayRequest(
+                "PF",
+                VALID_PF_CF,
+                AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL,
+                correlationId
+        );
+
         processNextGatewayInputMessage();
 
         assertEquals(correlationId, response.getCorrelationId());
+
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
+
         CodeSqsDto payload = readOutputMessage(outputMessage.body());
+
         assertEquals("INAD", payload.getRegistry());
-        assertTrue(payload.getDigitalAddress().isEmpty());
-        assertFalse(outputMessage.body().contains("second-valid@pec.it"));
+        assertEquals(1, payload.getDigitalAddress().size());
+        assertEquals("second-valid@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
     }
 

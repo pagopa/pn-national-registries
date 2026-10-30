@@ -761,7 +761,9 @@ public class DigitalAddressPFMassiveIT extends AbstractNationalRegistriesCompone
      * Verifica l'esaurimento del retry INAD attraverso tre cicli reali: due reset del batch e chiusura in ERROR al terzo errore.
      */
     @Test
-    void InadPolling_ErrorRetryExhaustion_AcrossFourRealCycles() {
+    void InadPolling_ErrorRetryExhaustion_AcrossRealCycles() {
+        int maxRetry = 4;
+
         Flow flow = startWorkingInadFlow(
                 "inad-error-exhaustion-" + UUID.randomUUID(),
                 VALID_PF_CF
@@ -770,48 +772,24 @@ public class DigitalAddressPFMassiveIT extends AbstractNationalRegistriesCompone
         when(inadClient.checkMassiveRequestStatus(flow.pollingId()))
                 .thenReturn(Mono.error(new IllegalStateException("temporary provider error")));
 
-        // First error
-        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(
-                MessageBuilder.withPayload(pollingPayload(flow, 0, 0)).build()
-        );
+        for (int retry = 0; retry < maxRetry; retry++) {
+            pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(
+                    MessageBuilder.withPayload(pollingPayload(flow, retry, 0)).build()
+            );
 
-        assertEquals("REQUEST_SENT", findBatch(flow.batchId()).get("status").s());
-        assertEquals("1", findBatch(flow.batchId()).get("errorRetryCount").n());
+            Map<String, AttributeValue> batch = findBatch(flow.batchId());
 
-        // Second error
-        makeBatchImmediatelyRetryable(flow.batchId());
-        pollingJob.polling();
+            assertEquals("REQUEST_SENT", batch.get("status").s());
+            assertEquals(String.valueOf(retry + 1), batch.get("errorRetryCount").n());
 
-        assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
+            makeBatchImmediatelyRetryable(flow.batchId());
+            pollingJob.polling();
 
-        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(
-                MessageBuilder.withPayload(pollingPayload(flow, 1, 0)).build()
-        );
-
-        assertEquals("REQUEST_SENT", findBatch(flow.batchId()).get("status").s());
-        assertEquals("2", findBatch(flow.batchId()).get("errorRetryCount").n());
-
-        // Third error
-        makeBatchImmediatelyRetryable(flow.batchId());
-        pollingJob.polling();
-
-        assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
+            assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
+        }
 
         pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(
-                MessageBuilder.withPayload(pollingPayload(flow, 2, 0)).build()
-        );
-
-        assertEquals("REQUEST_SENT", findBatch(flow.batchId()).get("status").s());
-        assertEquals("3", findBatch(flow.batchId()).get("errorRetryCount").n());
-
-        // Fourth error -> retries exhausted
-        makeBatchImmediatelyRetryable(flow.batchId());
-        pollingJob.polling();
-
-        assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
-
-        pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(
-                MessageBuilder.withPayload(pollingPayload(flow, 3, 0)).build()
+                MessageBuilder.withPayload(pollingPayload(flow, maxRetry, 0)).build()
         );
 
         assertEquals("ERROR", findBatch(flow.batchId()).get("status").s());

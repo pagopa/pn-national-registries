@@ -20,9 +20,9 @@ import reactor.test.StepVerifier;
 import java.nio.charset.Charset;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Objects;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_INAD_ADDRESS;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
@@ -46,9 +46,9 @@ class InadServiceTest {
     NationalRegistriesConfig nationalRegistriesConfig;
 
     private static final String TAX_ID = "CMUJFD29M22L916P";
-    private static final String DIGITAL_ADDRESS_1 = "da_1";
-    private static final String DIGITAL_ADDRESS_2 = "da_2";
-    private static final String DIGITAL_ADDRESS_3 = "da_3";
+    private static final String DIGITAL_ADDRESS_1 = "da1@test.it";
+    private static final String DIGITAL_ADDRESS_2 = "da2@test.it";
+    private static final String DIGITAL_ADDRESS_3 = "da3@test.it";
 
     @Test
     void callEServiceOldWorkflow() {
@@ -75,7 +75,7 @@ class InadServiceTest {
         usageInfo3.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
         usageInfo3.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
         ElementDigitalAddress elementDigitalAddressDto3 = new ElementDigitalAddress();
-        elementDigitalAddressDto1.setPracticedProfession("practicedProfession");
+        elementDigitalAddressDto3.setPracticedProfession("practicedProfession");
         elementDigitalAddressDto3.setDigitalAddress(DIGITAL_ADDRESS_3);
         elementDigitalAddressDto3.setUsageInfo(usageInfo3);
 
@@ -94,9 +94,10 @@ class InadServiceTest {
         filterDto.setPracticalReference(practicalReference);
         req.setFilter(filterDto);
 
-
         StepVerifier.create(inadService.callEService(req, PF, "correlationId"))
-                .expectNextMatches(getDigitalAddressINADOKDto -> Objects.isNull(getDigitalAddressINADOKDto.getDigitalAddress().getPracticedProfession()))
+                .expectNextMatches(response ->
+                        DIGITAL_ADDRESS_2.equals(response.getDigitalAddress().getDigitalAddress())
+                                && response.getDigitalAddress().getPracticedProfession() == null)
                 .verifyComplete();
     }
 
@@ -154,8 +155,7 @@ class InadServiceTest {
                                 .dateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()))
                                 .motivation(UsageInfoDto.MotivationEnum.CESSAZIONE_UFFICIO)));
 
-
-        StepVerifier.create(inadService.callEService(req, PF,"correlationId"))
+        StepVerifier.create(inadService.callEService(req, PF, "correlationId"))
                 .expectNext(response)
                 .verifyComplete();
     }
@@ -209,9 +209,36 @@ class InadServiceTest {
                                 .dateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()))
                                 .motivation(UsageInfoDto.MotivationEnum.CESSAZIONE_UFFICIO)));
 
-
         StepVerifier.create(inadService.callEService(req, PF, "correlationId"))
                 .expectNext(response)
+                .verifyComplete();
+    }
+
+    @Test
+    void callEServiceShouldIgnoreNullDigitalAddressElements() {
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(false);
+
+        String practicalReference = "00001";
+
+        ElementDigitalAddress validAddress = new ElementDigitalAddress();
+        validAddress.setDigitalAddress(DIGITAL_ADDRESS_2);
+
+        ResponseRequestDigitalAddress responseRequestDigitalAddressDto = new ResponseRequestDigitalAddress();
+        responseRequestDigitalAddressDto.setCodiceFiscale(TAX_ID);
+        responseRequestDigitalAddressDto.setDigitalAddress(Arrays.asList(null, validAddress));
+
+        when(inadClient.callEService(TAX_ID, practicalReference))
+                .thenReturn(Mono.just(responseRequestDigitalAddressDto));
+
+        GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
+        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
+        filterDto.setTaxId(TAX_ID);
+        filterDto.setPracticalReference(practicalReference);
+        req.setFilter(filterDto);
+
+        StepVerifier.create(inadService.callEService(req, PF, "correlationId"))
+                .expectNextMatches(response ->
+                        DIGITAL_ADDRESS_2.equals(response.getDigitalAddress().getDigitalAddress()))
                 .verifyComplete();
     }
 
@@ -219,6 +246,7 @@ class InadServiceTest {
     void callEServiceShouldPropagateClientError() {
         String practicalReference = "00001";
         RuntimeException error = new RuntimeException("INAD unavailable");
+
         GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
         GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
         filterDto.setTaxId(TAX_ID);
@@ -239,6 +267,7 @@ class InadServiceTest {
     @Test
     void callEServiceShouldStopWhenTaxIdValidationFails() {
         String practicalReference = "00001";
+
         PnNationalRegistriesException validationError = new PnNationalRegistriesException(
                 "invalid tax id",
                 org.springframework.http.HttpStatus.BAD_REQUEST.value(),
@@ -248,19 +277,22 @@ class InadServiceTest {
                 Charset.defaultCharset(),
                 Object.class
         );
+
         GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
         GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
         filterDto.setTaxId(TAX_ID);
         filterDto.setPracticalReference(practicalReference);
         req.setFilter(filterDto);
 
-        doThrow(validationError).when(validateTaxIdUtils).validateTaxId(TAX_ID, PROCESS_NAME_INAD_ADDRESS, false);
+        doThrow(validationError).when(validateTaxIdUtils)
+                .validateTaxId(TAX_ID, PROCESS_NAME_INAD_ADDRESS, false);
 
-        PnNationalRegistriesException thrown = assertThrows(PnNationalRegistriesException.class,
-                () -> inadService.callEService(req, PF, "correlationId"));
+        PnNationalRegistriesException thrown = assertThrows(
+                PnNationalRegistriesException.class,
+                () -> inadService.callEService(req, PF, "correlationId")
+        );
 
         assertSame(validationError, thrown);
         verifyNoInteractions(inadClient, nationalRegistriesConfig);
     }
-
 }

@@ -17,8 +17,7 @@ import reactor.test.StepVerifier;
 import java.nio.charset.Charset;
 import java.util.Date;
 
-import static it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType.IMPRESA;
-import static it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType.PERSONALE;
+import static it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType.*;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static org.junit.jupiter.api.Assertions.*;
@@ -210,28 +209,6 @@ class DigitalAddressServiceTest {
                 .verifyComplete();
 
         verifyNoInteractions(gatewayUtils);
-    }
-
-    @Test
-    void retrieveDigitalAddressFromInadSync_shouldReturnNotFoundWhenSelectedEmailIsInvalid() {
-        AddressRequestBodyDto request = buildRequest();
-        DigitalAddressDto digitalAddress = new DigitalAddressDto();
-        digitalAddress.setDigitalAddress("not-an-email");
-
-        GetDigitalAddressINADOKDto inadResponse = new GetDigitalAddressINADOKDto();
-        inadResponse.setTaxId(TAX_ID);
-        inadResponse.setDigitalAddress(digitalAddress);
-
-        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class), eq(PF), eq(CORRELATION_ID)))
-                .thenReturn(Mono.just(inadResponse));
-
-        StepVerifier.create(digitalAddressService.retrieveDigitalAddressFromInadSync(request, CORRELATION_ID, PF))
-                .assertNext(result -> {
-                    assertInstanceOf(AddressInternalResult.NotFound.class, result);
-                    AddressInternalResult.NotFound notFound = (AddressInternalResult.NotFound) result;
-                    assertNotNull(notFound.codeSqsDto());
-                })
-                .verifyComplete();
     }
 
     @Test

@@ -480,6 +480,94 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         assertEquals(List.of(PG_ER), last.getElencoCf().stream().map(IniPecBatchRequest.IniPecCf::getCf).toList());
     }
 
+    @Test
+    void InipecBatch_PartialRequestWorkingUpdate_RestartProcessesOnlyRemainingRequest() {
+        String firstCorrelationId = "inipec-partial-first-" + UUID.randomUUID();
+        String secondCorrelationId = "inipec-partial-second-" + UUID.randomUUID();
+
+        when(ipaClient.callEServiceWS23(anyString(), anyString()))
+                .thenReturn(Mono.just(ipaNotFoundResponse()));
+
+        enqueueGatewayRequest(
+                "PG",
+                PG_FOUND,
+                AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL,
+                firstCorrelationId
+        );
+        processNextGatewayInputMessage();
+
+        enqueueGatewayRequest(
+                "PG",
+                PG_FALLBACK,
+                AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL,
+                secondCorrelationId
+        );
+        processNextGatewayInputMessage();
+
+        Map<String, AttributeValue> firstRequest =
+                requestsByRegistry(firstCorrelationId, "INIPEC").getFirst();
+
+        Map<String, AttributeValue> secondRequest =
+                requestsByRegistry(secondCorrelationId, "INIPEC").getFirst();
+
+        assertEquals("NOT_WORKED", firstRequest.get("status").s());
+        assertEquals("NOT_WORKED", secondRequest.get("status").s());
+
+        String firstBatchId = "inipec-partial-batch-" + UUID.randomUUID();
+
+        Map<String, AttributeValue> firstWorkingRequest = new HashMap<>(firstRequest);
+        firstWorkingRequest.put("status", AttributeValue.builder().s("WORKING").build());
+        firstWorkingRequest.put("registryStatus", AttributeValue.builder().s("INIPEC#WORKING").build());
+        firstWorkingRequest.put("batchId", AttributeValue.builder().s(firstBatchId).build());
+
+        dynamoDbClient.putItem(builder -> builder
+                .tableName(NATIONAL_REGISTRIES_REQUESTS_TABLE)
+                .item(firstWorkingRequest));
+
+        firstRequest = requestsByRegistry(firstCorrelationId, "INIPEC").getFirst();
+        secondRequest = requestsByRegistry(secondCorrelationId, "INIPEC").getFirst();
+
+        assertEquals("WORKING", firstRequest.get("status").s());
+        assertEquals(firstBatchId, firstRequest.get("batchId").s());
+
+        assertEquals("NOT_WORKED", secondRequest.get("status").s());
+        assertNull(secondRequest.get("batchId"));
+
+        String secondPollingId = "inipec-recovery-polling-" + UUID.randomUUID();
+
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class)))
+                .thenReturn(Mono.just(iniPecBatchResponse(secondPollingId)));
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+
+        ArgumentCaptor<IniPecBatchRequest> captor =
+                ArgumentCaptor.forClass(IniPecBatchRequest.class);
+
+        verify(infoCamereClient, times(1))
+                .callEServiceRequestId(captor.capture());
+
+        assertEquals(
+                List.of(PG_FALLBACK),
+                captor.getValue()
+                        .getElencoCf()
+                        .stream()
+                        .map(IniPecBatchRequest.IniPecCf::getCf)
+                        .toList()
+        );
+
+        String secondBatchId = assertSameWorkingBatch(
+                List.of(new TestRequest(PG_FALLBACK, secondCorrelationId)),
+                "INIPEC"
+        );
+
+        firstRequest = requestsByRegistry(firstCorrelationId, "INIPEC").getFirst();
+
+        assertEquals("WORKING", firstRequest.get("status").s());
+        assertEquals(firstBatchId, firstRequest.get("batchId").s());
+
+        assertNotEquals(firstBatchId, secondBatchId);
+    }
+
     private InipecFlow startInipecFlow(String correlationId, String taxId) {
         when(ipaClient.callEServiceWS23(eq(taxId), anyString())).thenReturn(Mono.just(ipaNotFoundResponse()));
         enqueueGatewayRequest("PG", taxId, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);

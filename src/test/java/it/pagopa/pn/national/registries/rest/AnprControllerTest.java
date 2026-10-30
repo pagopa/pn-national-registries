@@ -54,11 +54,10 @@ class AnprControllerTest {
 
     @Test
     void testGetAddressANPR() {
-        String traceId = "traceId";
-        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
         GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto dto = new GetAddressANPRRequestBodyFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
+        dto.setCorrelationId("correlation-id");
         getAddressANPRRequestBodyDto.setFilter(dto);
 
         GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
@@ -66,7 +65,7 @@ class AnprControllerTest {
 
         when(anprService.getAddressANPR(getAddressANPRRequestBodyDto))
                 .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+                    assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return getAddressANPROKDto;
                 }));
 
@@ -74,7 +73,7 @@ class AnprControllerTest {
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(getAddressANPROKDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
+                    assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

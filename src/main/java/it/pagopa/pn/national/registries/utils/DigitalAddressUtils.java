@@ -37,14 +37,6 @@ public class DigitalAddressUtils {
         sqsDto.setDigitalAddress(digitalAddresses);
     }
 
-    public static Mono<GetDigitalAddressINADOKDto> emailValidation(GetDigitalAddressINADOKDto inadResponse) {
-        if (Objects.nonNull(inadResponse.getDigitalAddress()) && !isValidEmail(inadResponse.getDigitalAddress().getDigitalAddress())) {
-            return Mono.error(new PnNationalRegistriesException(CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
-                    HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class));
-        }
-        return Mono.just(inadResponse);
-    }
-
     public static boolean isValidEmail(String email) {
         if (!StringUtils.hasText(email)) {
             log.warn("Email {} contains no text", email);

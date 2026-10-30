@@ -120,7 +120,6 @@ public class InadPollingService {
         String correlationId = request.getCorrelationId();
 
         return Mono.fromCallable(() -> InadConverter.mapToResponseOk(inadResponse, recipientType, request.getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow(), correlationId))
-                .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(unused -> log.info("INAD - retrieved digital address from massive response for correlationId: {}", correlationId))
                 .map(response -> GatewayConverter.inadToSqsDto(correlationId, response))
                 .flatMap(codeSqsDto -> {

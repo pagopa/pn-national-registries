@@ -477,6 +477,33 @@ class InfoCamereConverterTest {
         assertEquals("businessName", actualResult.getBusinessList().get(0).getBusinessName());
     }
 
+    /**
+     * N17 - tutte le imprese rappresentate devono essere mantenute con CF e denominazioni distinti.
+     */
+    @Test
+    void mapToResponseOkByResponseShouldPreserveMultipleDistinctBusinesses() {
+        InfoCamereLegalInstituionsResponse response = new InfoCamereLegalInstituionsResponse();
+        response.setCfPersona("legalTaxId");
+        response.setDataOraEstrazione(OffsetDateTime.now().toString());
+        InfoCamereInstitution first = new InfoCamereInstitution();
+        first.setCfImpresa("11111111111");
+        first.setDenominazione("Impresa Uno");
+        InfoCamereInstitution second = new InfoCamereInstitution();
+        second.setCfImpresa("22222222222");
+        second.setDenominazione("Impresa Due");
+        response.setElencoImpreseRappresentate(List.of(first, second));
+
+        InfoCamereLegalInstitutionsOKDto result = infoCamereConverter.mapToResponseOkByResponse(response);
+
+        assertEquals("legalTaxId", result.getLegalTaxId());
+        assertEquals(2, result.getBusinessList().size());
+        assertEquals("11111111111", result.getBusinessList().get(0).getBusinessTaxId());
+        assertEquals("Impresa Uno", result.getBusinessList().get(0).getBusinessName());
+        assertEquals("22222222222", result.getBusinessList().get(1).getBusinessTaxId());
+        assertEquals("Impresa Due", result.getBusinessList().get(1).getBusinessName());
+    }
+
+
     @Test
     void mapToResponseOkByResponse2() {
         InfoCamereLegalInstituionsResponse response = new InfoCamereLegalInstituionsResponse();

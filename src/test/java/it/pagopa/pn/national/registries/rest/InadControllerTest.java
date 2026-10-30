@@ -56,20 +56,19 @@ class InadControllerTest {
 
     @Test
     void getDigitalAddressINAD() {
-        String traceId = "traceId";
-        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
         GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto = new GetDigitalAddressINADRequestBodyDto();
         GetDigitalAddressINADRequestBodyFilterDto dto = new GetDigitalAddressINADRequestBodyFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
+        dto.setCorrelationId("correlation-id");
         extractDigitalAddressINADRequestBodyDto.setFilter(dto);
 
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
         getDigitalAddressINADOKDto.setTaxId("DDDFGF52F52H501S");
         getDigitalAddressINADOKDto.setSince(new Date());
 
-        when(inadService.callEService(extractDigitalAddressINADRequestBodyDto, RecipientType.PF, null))
+        when(inadService.callEService(extractDigitalAddressINADRequestBodyDto, RecipientType.PF, "correlation-id"))
                 .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+                    assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return getDigitalAddressINADOKDto;
                 }));
 
@@ -77,7 +76,7 @@ class InadControllerTest {
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(getDigitalAddressINADOKDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
+                    assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

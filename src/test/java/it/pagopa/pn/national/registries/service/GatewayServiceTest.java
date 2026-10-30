@@ -773,6 +773,21 @@ class GatewayServiceTest {
                 .verifyComplete();
     }
 
+    /**
+     * N01 - client obbligatorio: anche un clientId assente deve fallire prima di qualsiasi side effect.
+     */
+    @Test
+    void retrieveDigitalOrPhysicalAddressAsync_missingClientId_shouldNotQueueOrPersistAnything() {
+        AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+        when(nationalRegistriesConfig.isValCxIdEnabled()).thenReturn(true);
+
+        StepVerifier.create(Mono.defer(() -> gatewayService.retrieveDigitalOrPhysicalAddressAsync("PF", null, request)))
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
+
+        verifyNoInteractions(sqsService, nationalRegistriesRequestsRepository, digitalAddressService, physicalAddressService, infoCamereService);
+    }
+
     private AddressInternalResult.Found foundResult(GatewayDownstreamService registry, boolean physical) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId(C_ID);

@@ -89,7 +89,6 @@ public class InipecPollingService {
     private Mono<Void> callInadSync(NationalRegistriesRequest request, RecipientType recipientType, String correlationId) {
         return inadService.callEService(GatewayConverter.convertToGetDigitalAddressInadRequest(request.getCorrelationId(), request.getTaxId()), recipientType, correlationId)
                 .doOnNext(unused -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
-                .flatMap(DigitalAddressUtils::emailValidation)
                 .onErrorResume(e -> handleInadError(request, correlationId, e)
                         .then(Mono.empty()))
                 .flatMap(response -> handleInadResponse(request, correlationId, response))

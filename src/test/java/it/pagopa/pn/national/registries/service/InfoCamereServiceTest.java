@@ -42,6 +42,7 @@ import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
@@ -509,6 +510,25 @@ class InfoCamereServiceTest {
                 .verify();
 
         verify(validateTaxIdUtils).validateTaxId(eq("taxId"), anyString(), eq(false));
+    }
+
+    /**
+     * N17 - un timeout del registro deve essere propagato come guasto tecnico, non trasformato in lista vuota.
+     */
+    @Test
+    void getLegalInstitutions_timeout_shouldBePropagatedAndNotConvertedToEmptyResult() {
+        InfoCamereLegalInstitutionsRequestBodyDto request = new InfoCamereLegalInstitutionsRequestBodyDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
+        filter.setTaxId("cf");
+        request.setFilter(filter);
+        TimeoutException timeout = new TimeoutException("infocamere timeout");
+        when(infoCamereClient.getLegalInstitutions(any())).thenReturn(Mono.error(timeout));
+
+        StepVerifier.create(infoCamereService.getLegalInstitutions(request))
+                .expectErrorMatches(error -> error == timeout)
+                .verify();
+
+        verify(infoCamereConverter, never()).mapToResponseOkByResponse((InfoCamereLegalInstituionsResponse) any());
     }
 
     private static CodeSqsDto codeSqsDtoWithAddresses(String... addresses) {
