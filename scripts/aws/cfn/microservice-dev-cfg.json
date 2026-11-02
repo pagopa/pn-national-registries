@@ -79,7 +79,7 @@
     "IniPecReadTimeoutMillis": "15000",
     "EnablePfPecFallbackFlow": "true",
     "EnableInadMassiveApi": "true",
-    "CpuArchitecture": "AMD",
+    "CpuArchitecture": "ARM",
     "EnableOldInipecFlow": "false"
   }
 }
