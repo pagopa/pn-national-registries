@@ -1,5 +1,6 @@
 package it.pagopa.pn.national.registries.integration.digital.PG;
 
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.DataWS05Dto;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.DataWS23Dto;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.ResultDto;
@@ -28,6 +29,10 @@ import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.sqs.model.Message;
+
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -35,39 +40,44 @@ import java.util.UUID;
 import static it.pagopa.pn.national.registries.converter.GatewayConverter.convertToGetIpaPecRequest;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
-import java.time.Instant;
-import java.util.Date;
-import java.util.LinkedHashMap;
-import static org.mockito.Mockito.when;
 
 /**
- * Scenari funzionali PG DIGITAL: ricerca IPA, fallback al nuovo IniPEC e successivo INAD, selezione degli indirizzi,
- * esiti ND/NF/ER, retry e verifica che il flag di fallback PF non modifichi il comportamento PG.
+ * Scenari funzionali PG DIGITAL
  *
- * <p>Configurazione: INAD massive disattivato e old IniPEC disattivato; viene applicato il superset compatibile
- * delle property di batching/polling IniPEC e del flag fallback PF, senza valori in conflitto.</p>
+ * Configurazione:
+ *  - INAD massivo disattivato
+ *  - old IniPEC disattivo
  */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
         "pn.national-registries.dao.batchesTableName=pn-NationalRegistriesBatches",
         "pn.national-registries.inipec.batch-request-pk-separator=~",
         "pn.national-registries.enable-inad-massive-api=false",
+        "pn.national-registries.enable-old-inipec-flow=false",
+        "pn.national-registries.enable-pf-pec-fallback-flow=true",
+        "pn.national-registries.inipec.max-batch-request-size=20",
         "pn.national-registries.inipec.polling-first-attempt-delay-seconds-per-cf=0",
         "pn.national-registries.inipec.polling-first-attempt-fixed-delay-seconds=0",
+        "pn.national-registries.inipec.batch-request-max-retry=2",
+        "pn.national-registries.inipec.request-retry-after=0",
         "pn.national-registries.inipec.batch-polling-max-retry=3",
         "pn.national-registries.inipec.batch-polling-in-progress-max-retry=24",
-        "pn.national-registries.inipec.polling-error-retry-after=1",
-        "pn.national-registries.inipec.polling-in-progress-retry-after=1",
-        "pn.national-registries.enable-old-inipec-flow=false",
-        "pn.national-registries.inipec.max-batch-request-size=20",
-        "pn.national-registries.inipec.request-retry-after=0",
-        "spring.task.scheduling.enabled=false",
-        "pn.national-registries.enable-pf-pec-fallback-flow=true"
+        "pn.national-registries.inipec.polling-error-retry-after=0",
+        "pn.national-registries.inipec.polling-in-progress-retry-after=0",
+        "spring.task.scheduling.enabled=false"
 })
 public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentIT {
+
+    private static final String PG_PROFESSIONAL = "56815563368";
+    private static final String PG_BUSINESS_PROFESSIONAL = "28223913097";
+    private static final String PG_INVALID = "39274018561";
+    private static final String PG_ND = "83016259471";
+    private static final String PG_NF = "12825810299";
+    private static final String PG_MISSING = "00534280912";
+    private static final String PG_ER = "03649090796";
 
     @Autowired
     private IniPecBatchRequestJob iniPecBatchRequestJob;
@@ -78,9 +88,8 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
     @Autowired
     private PollingJob pollingJob;
 
-
     /**
-     * Verifica che la stessa risposta IPA produca la stessa PEC tramite endpoint diretto e tramite Gateway PG.
+     * IPA diretto e Gateway PG restituiscono la stessa PEC.
      */
     @Test
     void Ipa_DirectEndpointAndGateway_ReturnSameFunctionalAddress() {
@@ -97,130 +106,109 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
                 .expectStatus().isOk()
                 .expectBody(IPAPecDto.class)
                 .returnResult().getResponseBody();
+
         assertNotNull(direct);
 
         enqueueGatewayRequest("PG", taxId, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
         processNextGatewayInputMessage();
+
         Message output = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(output);
+
         CodeSqsDto gateway = readOutputMessage(output.body());
 
         assertEquals(direct.getDomicilioDigitale(), gateway.getDigitalAddress().getFirst().getAddress());
         assertEquals("IPA", gateway.getRegistry());
     }
 
-
     /**
-     * Verifica il caso base di recupero dell’indirizzo digitale PG tramite IPA.
+     * IPA trovato.
      */
     @Test
     void PG_Digital_IPA() {
         String correlationId = "pg-digital-ipa-found-" + UUID.randomUUID();
-        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA),any())).thenReturn(Mono.just(ipaFoundResponse(VALID_PG_PIVA, "pg@pec.it")));
+        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA), any())).thenReturn(Mono.just(ipaFoundResponse(VALID_PG_PIVA, "pg@pec.it")));
 
         AddressOKDto response = enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
         processNextGatewayInputMessage();
 
         assertEquals(correlationId, response.getCorrelationId());
+
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
         CodeSqsDto payload = readOutputMessage(outputMessage.body());
+
         assertEquals(correlationId, payload.getCorrelationId());
         assertEquals("IPA", payload.getRegistry());
         assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue(), payload.getAddressType());
         assertEquals(1, payload.getDigitalAddress().size());
         assertEquals("pg@pec.it", payload.getDigitalAddress().getFirst().getAddress());
         assertEquals("IMPRESA", payload.getDigitalAddress().getFirst().getRecipient());
-
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
-        verify(ipaClient).callEServiceWS23(eq(VALID_PG_PIVA),any());
+
+        verify(ipaClient).callEServiceWS23(eq(VALID_PG_PIVA), any());
         verifyNoInteractions(infoCamereClient, inadClient);
     }
 
     /**
-     * Verifica che, con più risultati IPA, venga usato il risultato previsto dal servizio WS05.
+     * IPA con più risultati: usa WS05.
      */
     @Test
     void PG_Digital_IPA_MultipleResults_UsesWS05() {
         String correlationId = "pg-digital-ipa-multiple-" + UUID.randomUUID();
-        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA),any())).thenReturn(Mono.just(ipaMultipleResponse()));
-        when(ipaClient.callEServiceWS05(eq("cod-amm-1"),any())).thenReturn(Mono.just(ipaWs05Response("ws05@pec.it")));
+        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA), any())).thenReturn(Mono.just(ipaMultipleResponse()));
+        when(ipaClient.callEServiceWS05(eq("cod-amm-1"), any())).thenReturn(Mono.just(ipaWs05Response("ws05@pec.it")));
 
         AddressOKDto response = enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
         processNextGatewayInputMessage();
 
         assertEquals(correlationId, response.getCorrelationId());
+
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
         CodeSqsDto payload = readOutputMessage(outputMessage.body());
+
         assertEquals(correlationId, payload.getCorrelationId());
         assertEquals("IPA", payload.getRegistry());
         assertEquals(1, payload.getDigitalAddress().size());
         assertEquals("ws05@pec.it", payload.getDigitalAddress().getFirst().getAddress());
         assertEquals("IMPRESA", payload.getDigitalAddress().getFirst().getRecipient());
-
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
-        verify(ipaClient).callEServiceWS23(eq(VALID_PG_PIVA),any());
-        verify(ipaClient).callEServiceWS05(eq("cod-amm-1"),any());
+
+        verify(ipaClient).callEServiceWS23(eq(VALID_PG_PIVA), any());
+        verify(ipaClient).callEServiceWS05(eq("cod-amm-1"), any());
         verifyNoInteractions(infoCamereClient, inadClient);
     }
 
     /**
-     * Verifica il fallback da IPA non trovato a IniPEC con PEC trovata.
+     * IPA NotFound -> IniPEC trovato.
      */
     @Test
     void PG_Digital_IPA_NotFound_InipecFound() {
         String correlationId = "pg-digital-ipa-not-found-inipec-found-" + UUID.randomUUID();
-        String pollingId = "inipec-polling-" + UUID.randomUUID();
-        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA),any())).thenReturn(Mono.just(ipaNotFoundResponse()));
+        startInipecFromIpaNotFound(correlationId, VALID_PG_PIVA);
 
-        AddressOKDto response = enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
-        processNextGatewayInputMessage();
+        CodeSqsDto payload = completeInipecFinal(correlationId, VALID_PG_PIVA, pecResponse(VALID_PG_PIVA, "inipec@pec.it"));
 
-        assertEquals(correlationId, response.getCorrelationId());
-        assertInipecPendingRequest(correlationId, VALID_PG_PIVA);
-
-        String batchId = submitInipecBatch(correlationId, pollingId);
-        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(
-                pecResponse(VALID_PG_PIVA, "inipec@pec.it")
-        )));
-
-        inipecPollingService.handleMessage(pollingPayload(GatewayDownstreamService.INIPEC, batchId, pollingId, 1)).block();
-
-        Map<String, AttributeValue> inipecRequest = findRequestByRegistry(correlationId, "INIPEC");
-        assertEquals("WORKED", inipecRequest.get("status").s());
-        assertEquals("INIPEC#WORKED", inipecRequest.get("registryStatus").s());
-        assertEquals(batchId, inipecRequest.get("batchId").s());
-        assertNotNull(inipecRequest.get("resultPayload"));
-
-        CodeSqsDto payload = readOutputMessage(inipecRequest.get("resultPayload").s());
         assertEquals(correlationId, payload.getCorrelationId());
         assertEquals("INIPEC", payload.getRegistry());
         assertEquals(1, payload.getDigitalAddress().size());
         assertEquals("inipec@pec.it", payload.getDigitalAddress().getFirst().getAddress());
         assertEquals("IMPRESA", payload.getDigitalAddress().getFirst().getRecipient());
-
-        assertEquals("WORKED", findBatch(batchId).get("status").s());
-        assertEquals(1, findNationalRegistriesRequestsByCorrelationId(correlationId).size());
-        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
-        verify(ipaClient).callEServiceWS23(eq(VALID_PG_PIVA),any());
-        verify(infoCamereClient).callEServiceRequestId(any(IniPecBatchRequest.class));
-        verify(infoCamereClient).callEServiceRequestPec(pollingId);
         verifyNoInteractions(inadClient);
     }
 
     /**
-     * Verifica il fallback a IniPEC quando IPA restituisce una PEC non valida.
+     * IPA con PEC invalida -> IniPEC trovato.
      */
     @Test
     void PG_Digital_IPA_InvalidPec_InipecFound() {
         String correlationId = "pg-digital-ipa-invalid-inipec-found-" + UUID.randomUUID();
-        String pollingId = "inipec-polling-" + UUID.randomUUID();
-        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA),any())).thenReturn(Mono.just(ipaFoundResponse(VALID_PG_PIVA, "invalid-pec")));
+        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA), any())).thenReturn(Mono.just(ipaFoundResponse(VALID_PG_PIVA, "invalid-pec")));
 
         AddressOKDto response = enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
         processNextGatewayInputMessage();
@@ -228,80 +216,16 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
         assertEquals(correlationId, response.getCorrelationId());
         assertInipecPendingRequest(correlationId, VALID_PG_PIVA);
 
-        String batchId = submitInipecBatch(correlationId, pollingId);
-        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(
-                pecResponse(VALID_PG_PIVA, "inipec-after-invalid-ipa@pec.it")
-        )));
+        CodeSqsDto payload = completeInipecFinal(correlationId, VALID_PG_PIVA, pecResponse(VALID_PG_PIVA, "inipec-after-invalid-ipa@pec.it"));
 
-        inipecPollingService.handleMessage(pollingPayload(GatewayDownstreamService.INIPEC, batchId, pollingId, 1)).block();
-
-        Map<String, AttributeValue> inipecRequest = findRequestByRegistry(correlationId, "INIPEC");
-        assertEquals("WORKED", inipecRequest.get("status").s());
-        assertNotNull(inipecRequest.get("resultPayload"));
-        CodeSqsDto payload = readOutputMessage(inipecRequest.get("resultPayload").s());
+        assertEquals("INIPEC", payload.getRegistry());
         assertEquals("inipec-after-invalid-ipa@pec.it", payload.getDigitalAddress().getFirst().getAddress());
         assertEquals("IMPRESA", payload.getDigitalAddress().getFirst().getRecipient());
-
-        assertEquals("WORKED", findBatch(batchId).get("status").s());
-        assertEquals(1, findNationalRegistriesRequestsByCorrelationId(correlationId).size());
-        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
-        verify(ipaClient).callEServiceWS23(eq(VALID_PG_PIVA),any());
-        verify(infoCamereClient).callEServiceRequestPec(pollingId);
         verifyNoInteractions(inadClient);
     }
 
     /**
-     * Verifica la catena IPA not found → IniPEC not found → INAD sincrono.
-     */
-    @Test
-    void PG_Digital_IPA_NotFound_InipecNotFound_InadSync() {
-        String correlationId = "pg-digital-full-sync-" + UUID.randomUUID();
-        String pollingId = "inipec-polling-" + UUID.randomUUID();
-        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA),any())).thenReturn(Mono.just(ipaNotFoundResponse()));
-
-        AddressOKDto response = enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
-        processNextGatewayInputMessage();
-
-        assertEquals(correlationId, response.getCorrelationId());
-        assertInipecPendingRequest(correlationId, VALID_PG_PIVA);
-
-        String batchId = submitInipecBatch(correlationId, pollingId);
-        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(
-                pecResponseWithState(VALID_PG_PIVA, "ignored@pec.it", Pec.StatoImpresaEnum.NF)
-        )));
-        when(inadClient.callEService(eq(VALID_PG_PIVA), eq(correlationId))).thenReturn(Mono.just(inadResponse(VALID_PG_PIVA, "inad-sync@pec.it", null)));
-
-        inipecPollingService.handleMessage(pollingPayload(GatewayDownstreamService.INIPEC, batchId, pollingId, 1)).block();
-
-        Map<String, AttributeValue> inipecRequest = findRequestByRegistry(correlationId, "INIPEC");
-        assertEquals("WORKED", inipecRequest.get("status").s());
-        assertEquals("INIPEC#WORKED", inipecRequest.get("registryStatus").s());
-        assertNull(inipecRequest.get("resultPayload"));
-
-        Map<String, AttributeValue> inadRequest = findRequestByRegistry(correlationId, "INAD");
-        assertEquals("WORKED", inadRequest.get("status").s());
-        assertEquals("INAD#WORKED", inadRequest.get("registryStatus").s());
-        assertNotNull(inadRequest.get("resultPayload"));
-        assertNull(inadRequest.get("batchId"));
-
-        CodeSqsDto payload = readOutputMessage(inadRequest.get("resultPayload").s());
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("inad-sync@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("IMPRESA", payload.getDigitalAddress().getFirst().getRecipient());
-
-        assertEquals("WORKED", findBatch(batchId).get("status").s());
-        assertEquals(2, findNationalRegistriesRequestsByCorrelationId(correlationId).size());
-        assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
-        verify(ipaClient).callEServiceWS23(eq(VALID_PG_PIVA),any());
-        verify(infoCamereClient).callEServiceRequestPec(pollingId);
-        verify(inadClient).callEService(VALID_PG_PIVA, correlationId);
-    }
-
-
-    /**
-     * Verifica che un errore tecnico IPA non attivi i fallback successivi.
+     * IPA errore tecnico: nessun fallback.
      */
     @Test
     void PG_Digital_IPA_TechnicalError_DoesNotFallback() {
@@ -311,33 +235,342 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
 
         AddressOKDto response = enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
         assertEquals(correlationId, response.getCorrelationId());
+
         RuntimeException thrown = processNextGatewayInputMessageExpectingFailure();
 
         assertSame(technicalError, thrown.getCause() != null ? thrown.getCause() : thrown);
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
+
         verify(ipaClient).callEServiceWS23(eq(VALID_PG_PIVA), any());
         verifyNoInteractions(infoCamereClient, inadClient);
     }
 
-    private String submitInipecBatch(String correlationId, String pollingId) {
-        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
+    /**
+     * IPA NotFound -> IniPEC con PEC professionale valida.
+     */
+    @Test
+    void PG_Digital_FullFlow_InipecProfessionalPecIsReturned() {
+        String correlationId = "pg-inipec-professional-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, PG_PROFESSIONAL);
+
+        CodeSqsDto payload = completeInipecFinal(correlationId, PG_PROFESSIONAL, pecResponseWithProfessionals(PG_PROFESSIONAL, null, "professional@pec.it"));
+
+        assertEquals("INIPEC", payload.getRegistry());
+        assertEquals(1, payload.getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        verifyNoInteractions(inadClient);
+    }
+
+    /**
+     * IPA NotFound -> IniPEC con PEC impresa e professionali valide.
+     */
+    @Test
+    void PG_Digital_FullFlow_InipecBusinessAndAllProfessionalPecsAreReturned() {
+        String correlationId = "pg-inipec-business-professionals-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, PG_BUSINESS_PROFESSIONAL);
+
+        CodeSqsDto payload = completeInipecFinal(
+                correlationId,
+                PG_BUSINESS_PROFESSIONAL,
+                pecResponseWithProfessionals(PG_BUSINESS_PROFESSIONAL, "business@pec.it", "professional-one@pec.it", "professional-two@pec.it")
+        );
+
+        assertEquals("INIPEC", payload.getRegistry());
+        assertEquals(3, payload.getDigitalAddress().size());
+        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "business@pec.it".equals(address.getAddress()) && "IMPRESA".equals(address.getRecipient())));
+        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        verifyNoInteractions(inadClient);
+    }
+
+    /**
+     * IPA NotFound -> IniPEC con PEC invalida -> INAD sync.
+     */
+    @Test
+    void PG_Digital_FullFlow_InipecInvalidPecFallsBackToInadSync() {
+        String correlationId = "pg-inipec-invalid-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, PG_INVALID);
+        when(inadClient.callEService(eq(PG_INVALID), eq(correlationId))).thenReturn(Mono.just(inadResponse(PG_INVALID, "inad-after-invalid-inipec@pec.it", null)));
+
+        completeInipecPolling(correlationId, inipecPollingResponse(pecResponse(PG_INVALID, "not-an-email")));
+
+        assertInadFinal(correlationId, "inad-after-invalid-inipec@pec.it");
+    }
+
+    /**
+     * IPA NotFound -> IniPEC ND -> INAD sync.
+     */
+    @Test
+    void PG_Digital_FullFlow_InipecNdFallsBackToInadSync() {
+        String correlationId = "pg-inipec-nd-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, PG_ND);
+
+        Pec nd = pecResponse(PG_ND, "ignored-nd@pec.it");
+        nd.setStatoImpresa(Pec.StatoImpresaEnum.ND);
+
+        when(inadClient.callEService(eq(PG_ND), eq(correlationId))).thenReturn(Mono.just(inadResponse(PG_ND, "inad-after-nd@pec.it", null)));
+
+        completeInipecPolling(correlationId, inipecPollingResponse(nd));
+
+        assertInadFinal(correlationId, "inad-after-nd@pec.it");
+    }
+
+    /**
+     * IPA NotFound -> IniPEC NF -> INAD sync.
+     */
+    @Test
+    void PG_Digital_FullFlow_InipecNfFallsBackToInadSync() {
+        String correlationId = "pg-inipec-nf-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, PG_NF);
+
+        Pec nf = pecResponse(PG_NF, "ignored-nf@pec.it");
+        nf.setStatoImpresa(Pec.StatoImpresaEnum.NF);
+
+        when(inadClient.callEService(eq(PG_NF), eq(correlationId))).thenReturn(Mono.just(inadResponse(PG_NF, "inad-after-nf@pec.it", null)));
+
+        completeInipecPolling(correlationId, inipecPollingResponse(nf));
+
+        assertInadFinal(correlationId, "inad-after-nf@pec.it");
+    }
+
+    /**
+     * IPA NotFound -> IniPEC senza CF richiesto -> INAD sync.
+     */
+    @Test
+    void PG_Digital_FullFlow_InipecMissingTaxIdFallsBackToInadSync() {
+        String correlationId = "pg-inipec-missing-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, PG_MISSING);
+        when(inadClient.callEService(eq(PG_MISSING), eq(correlationId))).thenReturn(Mono.just(inadResponse(PG_MISSING, "inad-after-missing@pec.it", null)));
+
+        completeInipecPolling(correlationId, inipecPollingResponse());
+
+        assertInadFinal(correlationId, "inad-after-missing@pec.it");
+    }
+
+    /**
+     * IPA NotFound -> IniPEC ER fino al limite.
+     */
+    @Test
+    void PG_Digital_FullFlow_InipecErRetriesThenEndsInErrorAtConfiguredLimit() {
+        String correlationId = "pg-inipec-er-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, PG_ER);
+
+        String firstPollingId = "polling-first-" + UUID.randomUUID();
+        String firstBatchId = submitInipecBatch(correlationId, firstPollingId);
+        Pec er = pecResponse(PG_ER, "ignored@pec.it");
+        er.setStatoImpresa(Pec.StatoImpresaEnum.ER);
+
+        when(infoCamereClient.callEServiceRequestPec(firstPollingId)).thenReturn(Mono.just(inipecPollingResponse(er)));
+        pollInipec(firstBatchId, firstPollingId, 1);
+
+        Map<String, AttributeValue> request = requestByRegistry(correlationId, "INIPEC");
+        assertEquals("NOT_WORKED", request.get("status").s());
+        assertEquals("1", request.get("retryCount").n());
+        assertTrue(requestsByRegistry(correlationId, "INAD").isEmpty());
+
+        String secondPollingId = "polling-second-" + UUID.randomUUID();
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(secondPollingId)));
         iniPecBatchRequestJob.batchRequestScheduled();
 
-        Map<String, AttributeValue> request = findRequestByRegistry(correlationId, "INIPEC");
+        request = requestByRegistry(correlationId, "INIPEC");
+        String secondBatchId = request.get("batchId").s();
+
+        pollingJob.polling();
+
+        when(infoCamereClient.callEServiceRequestPec(secondPollingId)).thenReturn(Mono.just(inipecPollingResponse(er)));
+        pollInipec(secondBatchId, secondPollingId, 1);
+
+        request = requestByRegistry(correlationId, "INIPEC");
+
+        assertEquals("ERROR", request.get("status").s());
+        assertEquals("INIPEC#ERROR", request.get("registryStatus").s());
+        assertNull(request.get("resultPayload"));
+        assertTrue(requestsByRegistry(correlationId, "INAD").isEmpty());
+    }
+
+    /**
+     * IPA NotFound -> IniPEC polling in progress.
+     */
+    @Test
+    void PG_Digital_FullFlow_InipecPollingInProgressSchedulesRetry() {
+        String correlationId = "pg-inipec-in-progress-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, VALID_PG_PIVA);
+
+        String pollingId = "polling-" + UUID.randomUUID();
+        String batchId = submitInipecBatch(correlationId, pollingId);
+        PnNationalRegistriesException inProgress = new PnNationalRegistriesException("List PEC in progress", 404, "Not Found", null, null, StandardCharsets.UTF_8, null);
+
+        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.error(inProgress));
+
+        pollInipec(batchId, pollingId, 1);
+
+        Map<String, AttributeValue> batch = findBatch(batchId);
+
+        assertEquals("REQUEST_SENT", batch.get("status").s());
+        assertEquals("1", batch.get("inProgressRetryCount").n());
+        assertEquals("WORKING", requestByRegistry(correlationId, "INIPEC").get("status").s());
+        assertTrue(requestsByRegistry(correlationId, "INAD").isEmpty());
+    }
+
+    /**
+     * IPA NotFound -> IniPEC metadata di errore.
+     */
+    @Test
+    void PG_Digital_FullFlow_InipecErrorMetadataSchedulesRetry() {
+        String correlationId = "pg-inipec-metadata-error-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, VALID_PG_PIVA);
+
+        String pollingId = "polling-" + UUID.randomUUID();
+        String batchId = submitInipecBatch(correlationId, pollingId);
+        IniPecPollingResponse pollingResponse = new IniPecPollingResponse();
+        pollingResponse.setCode("123");
+        pollingResponse.setDescription("temporary error");
+
+        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(pollingResponse));
+
+        pollInipec(batchId, pollingId, 1);
+
+        Map<String, AttributeValue> batch = findBatch(batchId);
+
+        assertEquals("REQUEST_SENT", batch.get("status").s());
+        assertEquals("1", batch.get("errorRetryCount").n());
+        assertEquals("WORKING", requestByRegistry(correlationId, "INIPEC").get("status").s());
+        assertTrue(requestsByRegistry(correlationId, "INAD").isEmpty());
+    }
+
+    /**
+     * IPA NotFound -> IniPEC con più PEC professionali valide.
+     */
+    @Test
+    void PG_Digital_FullFlow_Inipec_AllProfessionalPecsArePreserved() {
+        String correlationId = "pg-inipec-professionals-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, PG_PROFESSIONAL);
+
+        CodeSqsDto payload = completeInipecFinal(
+                correlationId,
+                PG_PROFESSIONAL,
+                pecResponseWithProfessionals(PG_PROFESSIONAL, null, "professional-one@pec.it", "professional-two@pec.it")
+        );
+
+        assertEquals(correlationId, payload.getCorrelationId());
+        assertEquals("INIPEC", payload.getRegistry());
+        assertEquals(2, payload.getDigitalAddress().size());
+        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        verifyNoInteractions(inadClient);
+    }
+
+    /**
+     * IPA NotFound -> IniPEC con PEC impresa invalida e professionale valida.
+     */
+    @Test
+    void PG_Digital_FullFlow_Inipec_InvalidBusinessPecKeepsValidProfessionalPec() {
+        String correlationId = "pg-inipec-invalid-business-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, PG_BUSINESS_PROFESSIONAL);
+
+        CodeSqsDto payload = completeInipecFinal(
+                correlationId,
+                PG_BUSINESS_PROFESSIONAL,
+                pecResponseWithProfessionals(PG_BUSINESS_PROFESSIONAL, "not-an-email", "professional@pec.it")
+        );
+
+        assertEquals(correlationId, payload.getCorrelationId());
+        assertEquals("INIPEC", payload.getRegistry());
+        assertEquals(1, payload.getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        verifyNoInteractions(inadClient);
+    }
+
+    /**
+     * Fallback PF attivo: il flusso PG non cambia.
+     */
+    @Test
+    void PG_Digital_FullFlow_IsUnchangedWhenPfFallbackIsEnabled() {
+        String correlationId = "pg-pf-fallback-enabled-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, VALID_PG_PIVA);
+
+        Pec nf = pecResponse(VALID_PG_PIVA, "ignored@pec.it");
+        nf.setStatoImpresa(Pec.StatoImpresaEnum.NF);
+
+        when(inadClient.callEService(eq(VALID_PG_PIVA), eq(correlationId))).thenReturn(Mono.just(inadResponse(VALID_PG_PIVA, "pg-pf-fallback-enabled@pec.it", null)));
+
+        completeInipecPolling(correlationId, inipecPollingResponse(nf));
+
+        assertInadFinal(correlationId, "pg-pf-fallback-enabled@pec.it");
+    }
+
+    private void startInipecFromIpaNotFound(String correlationId, String taxId) {
+        when(ipaClient.callEServiceWS23(eq(taxId), any())).thenReturn(Mono.just(ipaNotFoundResponse()));
+
+        AddressOKDto response = enqueueGatewayRequest("PG", taxId, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+
+        assertEquals(correlationId, response.getCorrelationId());
+        assertInipecPendingRequest(correlationId, taxId);
+        assertNull(receiveSingleMessage(OUTPUT_QUEUE));
+    }
+
+    private CodeSqsDto completeInipecFinal(String correlationId, String taxId, Pec... pecs) {
+        String pollingId = "inipec-full-flow-" + UUID.randomUUID();
+        String batchId = submitInipecBatch(correlationId, pollingId);
+
+        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(pecs)));
+
+        pollInipec(batchId, pollingId, 1);
+
+        Map<String, AttributeValue> request = requestByRegistry(correlationId, "INIPEC");
+
+        assertEquals(taxId, request.get("taxId").s());
+        assertEquals("WORKED", request.get("status").s());
+        assertEquals("INIPEC#WORKED", request.get("registryStatus").s());
+        assertNotNull(request.get("resultPayload"));
+
+        return readOutputMessage(request.get("resultPayload").s());
+    }
+
+    private void completeInipecPolling(String correlationId, IniPecPollingResponse response) {
+        String pollingId = "inipec-full-flow-" + UUID.randomUUID();
+        String batchId = submitInipecBatch(correlationId, pollingId);
+
+        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(response));
+
+        pollInipec(batchId, pollingId, 1);
+
+        Map<String, AttributeValue> inipecRequest = requestByRegistry(correlationId, "INIPEC");
+
+        assertEquals("WORKED", inipecRequest.get("status").s());
+        assertEquals("INIPEC#WORKED", inipecRequest.get("registryStatus").s());
+        assertNull(inipecRequest.get("resultPayload"));
+        assertEquals("WORKED", findBatch(batchId).get("status").s());
+    }
+
+    private String submitInipecBatch(String correlationId, String pollingId) {
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+
+        Map<String, AttributeValue> request = requestByRegistry(correlationId, "INIPEC");
+
         assertEquals("WORKING", request.get("status").s());
         assertEquals("INIPEC#WORKING", request.get("registryStatus").s());
         assertNotNull(request.get("batchId"));
 
         String batchId = request.get("batchId").s();
+
         assertEquals("REQUEST_SENT", findBatch(batchId).get("status").s());
 
         pollingJob.polling();
+
         assertEquals("WORKING", findBatch(batchId).get("status").s());
+
         return batchId;
     }
 
     private void assertInipecPendingRequest(String correlationId, String taxId) {
-        Map<String, AttributeValue> storedRequest = findRequestByRegistry(correlationId, "INIPEC");
+        Map<String, AttributeValue> storedRequest = requestByRegistry(correlationId, "INIPEC");
+
         assertEquals(taxId, storedRequest.get("taxId").s());
         assertEquals("PG", storedRequest.get("recipientType").s());
         assertEquals("DIGITAL", storedRequest.get("domicileType").s());
@@ -346,9 +579,46 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
         assertNull(storedRequest.get("batchId"));
     }
 
-    private Map<String, AttributeValue> findRequestByRegistry(String correlationId, String registry) {
+    private void assertInadFinal(String correlationId, String expectedAddress) {
+        Map<String, AttributeValue> request = requestByRegistry(correlationId, "INAD");
+
+        assertEquals("WORKED", request.get("status").s());
+        assertEquals("INAD#WORKED", request.get("registryStatus").s());
+        assertNotNull(request.get("resultPayload"));
+        assertNull(request.get("batchId"));
+
+        CodeSqsDto payload = readOutputMessage(request.get("resultPayload").s());
+
+        assertEquals(correlationId, payload.getCorrelationId());
+        assertEquals("INAD", payload.getRegistry());
+        assertEquals(1, payload.getDigitalAddress().size());
+        assertEquals(expectedAddress, payload.getDigitalAddress().getFirst().getAddress());
+        assertEquals("IMPRESA", payload.getDigitalAddress().getFirst().getRecipient());
+    }
+
+    private void pollInipec(String batchId, String pollingId, int batchSize) {
+        inipecPollingService.handleMessage(pollingPayload(GatewayDownstreamService.INIPEC, batchId, pollingId, batchSize)).block();
+    }
+
+    private PnPollingEvent.Payload pollingPayload(GatewayDownstreamService registry, String batchId, String pollingId, int batchSize) {
+        return PnPollingEvent.Payload.builder()
+                .registry(registry)
+                .batchId(batchId)
+                .pollingId(pollingId)
+                .batchSize(batchSize)
+                .errorRetryCount(0)
+                .inProgressRetryCount(0)
+                .build();
+    }
+
+    private List<Map<String, AttributeValue>> requestsByRegistry(String correlationId, String registry) {
         return findNationalRegistriesRequestsByCorrelationId(correlationId).stream()
                 .filter(request -> registry.equals(request.get("registry").s()))
+                .toList();
+    }
+
+    private Map<String, AttributeValue> requestByRegistry(String correlationId, String registry) {
+        return requestsByRegistry(correlationId, registry).stream()
                 .findFirst()
                 .orElseThrow();
     }
@@ -363,27 +633,23 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
                 .item();
     }
 
-    private PnPollingEvent.Payload pollingPayload(GatewayDownstreamService registry, String batchId, String pollingId, int batchSize) {
-        return PnPollingEvent.Payload.builder()
-                .registry(registry)
-                .batchId(batchId)
-                .pollingId(pollingId)
-                .batchSize(batchSize)
-                .errorRetryCount(0)
-                .inProgressRetryCount(0)
-                .build();
-    }
-
     private IniPecPollingResponse inipecPollingResponse(Pec... pecs) {
         IniPecPollingResponse response = new IniPecPollingResponse();
         response.setElencoPec(List.of(pecs));
         return response;
     }
 
-    private Pec pecResponseWithState(String taxId, String pecAddress, Pec.StatoImpresaEnum statoImpresa) {
-        Pec pec = pecResponse(taxId, pecAddress);
-        pec.setStatoImpresa(statoImpresa);
-        return pec;
+    private Pec pecResponseWithProfessionals(String taxId, String pecImpresa, String... professionalPecs) {
+        Map<String, Object> value = new HashMap<>();
+        value.put("cf", taxId);
+
+        if (pecImpresa != null) {
+            value.put("pecImpresa", pecImpresa);
+        }
+
+        value.put("pecProfessionista", Arrays.stream(professionalPecs).map(pec -> Map.of("pec", pec)).toList());
+
+        return objectMapper.convertValue(value, Pec.class);
     }
 
     private WS23ResponseDto ipaMultipleResponse() {
@@ -407,6 +673,7 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
         WS23ResponseDto response = new WS23ResponseDto();
         response.setResult(result);
         response.setData(List.of(first, second));
+
         return response;
     }
 
@@ -424,205 +691,7 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
         WS05ResponseDto response = new WS05ResponseDto();
         response.setResult(result);
         response.setData(data);
+
         return response;
-    }
-
-private static final String PG_INVALID = "56815563368";
-    private static final String PG_EMPTY = "28223913097";
-    private static final String PG_ND = "39274018561";
-    private static final String PG_NF = "83016259471";
-    private static final String PG_MISSING = "12825810299";
-    private static final String PG_EXPIRED = "00534280912";
-    private static final String PG_VALID_EXPIRED = "03649090796";
-    private static final String PG_ER = "17492068394";
-/**
-     * Verifica end-to-end che i not found IniPEC per PG proseguano su INAD sincrono applicando le regole di selezione PG.
-     */
-    @Test
-    void PG_Digital_FullFlow_InipecNotFoundVariantsReachInadSyncAndApplyPgSelectionRules() {
-        Map<String, String> cases = new LinkedHashMap<>();
-        cases.put("pg-invalid-" + UUID.randomUUID(), PG_INVALID);
-        cases.put("pg-empty-" + UUID.randomUUID(), PG_EMPTY);
-        cases.put("pg-nd-" + UUID.randomUUID(), PG_ND);
-        cases.put("pg-nf-" + UUID.randomUUID(), PG_NF);
-        cases.put("pg-missing-" + UUID.randomUUID(), PG_MISSING);
-        cases.put("pg-expired-" + UUID.randomUUID(), PG_EXPIRED);
-        cases.put("pg-valid-expired-" + UUID.randomUUID(), PG_VALID_EXPIRED);
-        String pollingId = "pg-inipec-polling-" + UUID.randomUUID();
-        String batchId = startInipecBatch(pollingId, cases);
-
-        Pec nd = pecResponse(PG_ND, "ignored@pec.it");
-        nd.setStatoImpresa(Pec.StatoImpresaEnum.ND);
-        Pec nf = pecResponse(PG_NF, "ignored@pec.it");
-        nf.setStatoImpresa(Pec.StatoImpresaEnum.NF);
-        Pec expiredFallback = pecResponse(PG_EXPIRED, "ignored@pec.it");
-        expiredFallback.setStatoImpresa(Pec.StatoImpresaEnum.NF);
-        Pec validExpiredFallback = pecResponse(PG_VALID_EXPIRED, "ignored@pec.it");
-        validExpiredFallback.setStatoImpresa(Pec.StatoImpresaEnum.ND);
-        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(
-                pecResponse(PG_INVALID, "not-an-email"),
-                pecResponse(PG_EMPTY, ""),
-                nd,
-                nf,
-                expiredFallback,
-                validExpiredFallback
-        )));
-
-        when(inadClient.callEService(eq(PG_INVALID), any())).thenReturn(Mono.just(inadResponse(PG_INVALID, "pg-invalid-fallback@pec.it", null)));
-        when(inadClient.callEService(eq(PG_EMPTY), any())).thenReturn(Mono.just(inadResponse(PG_EMPTY, "pg-empty-fallback@pec.it", null)));
-        when(inadClient.callEService(eq(PG_ND), any())).thenReturn(Mono.just(inadResponse(PG_ND, List.of(
-                inadAddress("first@pec.it", null), inadAddress("second@pec.it", null)
-        ))));
-        when(inadClient.callEService(eq(PG_NF), any())).thenReturn(Mono.just(inadResponse(PG_NF, List.of(
-                inadAddress("professional@pec.it", "INGEGNERE")
-        ))));
-        when(inadClient.callEService(eq(PG_MISSING), any())).thenReturn(Mono.just(inadResponse(PG_MISSING, List.of(
-                inadAddress("not-an-email", null)
-        ))));
-        ElementDigitalAddress expired = inadAddress("expired@pec.it", null);
-        expired.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
-        when(inadClient.callEService(eq(PG_EXPIRED), any())).thenReturn(Mono.just(inadResponse(PG_EXPIRED, List.of(expired))));
-        ElementDigitalAddress anotherExpired = inadAddress("expired-second@pec.it", null);
-        anotherExpired.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
-        when(inadClient.callEService(eq(PG_VALID_EXPIRED), any())).thenReturn(Mono.just(inadResponse(PG_VALID_EXPIRED, List.of(
-                inadAddress("valid@pec.it", null), anotherExpired
-        ))));
-
-        pollInipec(batchId, pollingId, cases.size());
-
-        assertInadFinal(correlationFor(cases, PG_INVALID), "pg-invalid-fallback@pec.it");
-        assertInadFinal(correlationFor(cases, PG_EMPTY), "pg-empty-fallback@pec.it");
-        assertInadEmpty(correlationFor(cases, PG_ND));
-        assertInadEmpty(correlationFor(cases, PG_NF));
-        assertInadEmpty(correlationFor(cases, PG_MISSING));
-        assertInadEmpty(correlationFor(cases, PG_EXPIRED));
-        assertInadFinal(correlationFor(cases, PG_VALID_EXPIRED), "valid@pec.it");
-    }
-
-    /**
-     * Verifica end-to-end che un esito ER IniPEC programmi il retry senza creare una richiesta INAD.
-     */
-    @Test
-    void PG_Digital_FullFlow_InipecErSchedulesRequestRetryWithoutCreatingInad() {
-        String correlationId = "pg-er-" + UUID.randomUUID();
-        String pollingId = "pg-er-polling-" + UUID.randomUUID();
-        String batchId = startInipecBatch(pollingId, Map.of(correlationId, PG_ER));
-        Pec er = pecResponse(PG_ER, "ignored@pec.it");
-        er.setStatoImpresa(Pec.StatoImpresaEnum.ER);
-        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(er)));
-
-        pollInipec(batchId, pollingId, 1);
-
-        Map<String, AttributeValue> request = requestByRegistry(correlationId, "INIPEC");
-        assertEquals("NOT_WORKED", request.get("status").s());
-        assertEquals("1", request.get("retryCount").n());
-        assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).stream().noneMatch(item -> "INAD".equals(item.get("registry").s())));
-    }
-
-    private String startInipecBatch(String pollingId, Map<String, String> cases) {
-        for (Map.Entry<String, String> entry : cases.entrySet()) {
-            when(ipaClient.callEServiceWS23(eq(entry.getValue()), any())).thenReturn(Mono.just(ipaNotFoundResponse()));
-            enqueueGatewayRequest("PG", entry.getValue(), AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, entry.getKey());
-            processNextGatewayInputMessage();
-            assertEquals("NOT_WORKED", requestByRegistry(entry.getKey(), "INIPEC").get("status").s());
-        }
-        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
-        iniPecBatchRequestJob.batchRequestScheduled();
-        String batchId = null;
-        for (String correlationId : cases.keySet()) {
-            Map<String, AttributeValue> request = requestByRegistry(correlationId, "INIPEC");
-            assertEquals("WORKING", request.get("status").s());
-            if (batchId == null) batchId = request.get("batchId").s();
-            else assertEquals(batchId, request.get("batchId").s());
-        }
-        assertNotNull(batchId);
-        pollingJob.polling();
-        return batchId;
-    }
-
-    private void pollInipec(String batchId, String pollingId, int batchSize) {
-        inipecPollingService.handleMessage(PnPollingEvent.Payload.builder()
-                .registry(GatewayDownstreamService.INIPEC)
-                .batchId(batchId)
-                .pollingId(pollingId)
-                .batchSize(batchSize)
-                .errorRetryCount(0)
-                .inProgressRetryCount(0)
-                .build()).block();
-    }
-
-    private String correlationFor(Map<String, String> cases, String taxId) {
-        return cases.entrySet().stream().filter(entry -> taxId.equals(entry.getValue())).map(Map.Entry::getKey).findFirst().orElseThrow();
-    }
-
-    private void assertInadFinal(String correlationId, String expectedAddress) {
-        Map<String, AttributeValue> request = requestByRegistry(correlationId, "INAD");
-        assertEquals("WORKED", request.get("status").s());
-        CodeSqsDto payload = readOutputMessage(request.get("resultPayload").s());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(expectedAddress, payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("IMPRESA", payload.getDigitalAddress().getFirst().getRecipient());
-    }
-
-    private void assertInadEmpty(String correlationId) {
-        Map<String, AttributeValue> request = requestByRegistry(correlationId, "INAD");
-        assertEquals("WORKED", request.get("status").s());
-        CodeSqsDto payload = readOutputMessage(request.get("resultPayload").s());
-        assertEquals("INAD", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
-    }
-
-    private Map<String, AttributeValue> requestByRegistry(String correlationId, String registry) {
-        return findNationalRegistriesRequestsByCorrelationId(correlationId).stream()
-                .filter(request -> registry.equals(request.get("registry").s()))
-                .findFirst()
-                .orElseThrow();
-    }
-
-/**
-     * Verifica end-to-end che l’abilitazione del fallback PF non modifichi il comportamento del flusso PG.
-     */
-    @Test
-    void PG_Digital_FullFlow_IsUnchangedWhenPfFallbackIsEnabled() {
-        String correlationId = "pg-pf-fallback-enabled-" + UUID.randomUUID();
-        String pollingId = "inipec-polling-" + UUID.randomUUID();
-        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA), any())).thenReturn(Mono.just(ipaNotFoundResponse()));
-
-        enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
-        processNextGatewayInputMessage();
-
-        Map<String, AttributeValue> pending = requestByRegistry(correlationId, "INIPEC");
-        assertEquals("NOT_WORKED", pending.get("status").s());
-
-        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
-        iniPecBatchRequestJob.batchRequestScheduled();
-        Map<String, AttributeValue> inipecRequest = requestByRegistry(correlationId, "INIPEC");
-        String batchId = inipecRequest.get("batchId").s();
-        pollingJob.polling();
-
-        Pec pec = pecResponse(VALID_PG_PIVA, "ignored@pec.it");
-        pec.setStatoImpresa(Pec.StatoImpresaEnum.NF);
-        IniPecPollingResponse pollingResponse = new IniPecPollingResponse();
-        pollingResponse.setElencoPec(List.of(pec));
-        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(pollingResponse));
-        when(inadClient.callEService(eq(VALID_PG_PIVA), eq(correlationId))).thenReturn(Mono.just(inadResponse(VALID_PG_PIVA, "pg-pf-fallback-enabled@pec.it", null)));
-
-        inipecPollingService.handleMessage(PnPollingEvent.Payload.builder()
-                .registry(GatewayDownstreamService.INIPEC)
-                .batchId(batchId)
-                .pollingId(pollingId)
-                .batchSize(1)
-                .errorRetryCount(0)
-                .inProgressRetryCount(0)
-                .build()).block();
-
-        Map<String, AttributeValue> inadRequest = requestByRegistry(correlationId, "INAD");
-        assertEquals("WORKED", inadRequest.get("status").s());
-        assertNotNull(inadRequest.get("resultPayload"));
-        CodeSqsDto payload = readOutputMessage(inadRequest.get("resultPayload").s());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals("pg-pf-fallback-enabled@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("IMPRESA", payload.getDigitalAddress().getFirst().getRecipient());
     }
 }

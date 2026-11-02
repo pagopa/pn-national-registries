@@ -1,10 +1,9 @@
 # pn-national-registries - Test cases summary E2E
 
-Questo documento riepiloga **solo gli scenari presenti nella cartella `integration/`**, aggiornati allo stato corrente della suite e includendo i test aggiunti/corretti durante la revisione.
+Questo documento riepiloga **solo gli scenari presenti nella cartella `integration/`**
 
-La suite contiene **150 test annotati `@Test` in 19 classi concrete di integrazione**. `AbstractNationalRegistriesComponentIT` e `PnNationalRegistriesTestApplication` sono classi di supporto e non vengono conteggiate come classi di test concrete.
-
-La struttura segue quella della dev validation: configurazioni C1-C8, separazione PF/PG, fisico/digitale e dettaglio degli scenari funzionali coperti.
+La struttura segue le configurazioni C1-C8, separando PF/PG, fisico/digitale e i principali scenari funzionali, 
+di resilienza e recovery effettivamente coperti.
 
 ## 1. Configurazioni
 
@@ -21,418 +20,408 @@ La struttura segue quella della dev validation: configurazioni C1-C8, separazion
 
 Gli scenari fisici non dipendono dai tre flag digitali.
 
----
-
 ## 2. PF - Persona fisica
 
 ### 2.1 PF fisico - valido per C1-C8
 
 | Scenario E2E                          | Esito atteso                                          | Test / classe                     |
 |---------------------------------------|-------------------------------------------------------|-----------------------------------|
+| ANPR diretto vs Gateway               | Stessa fixture produce lo stesso indirizzo funzionale | `PhysicalAddressTestIT`           |
 | Residenza valida ANPR                 | Risultato `ANPR` con indirizzo fisico                 | `PhysicalAddressTestIT`           |
-| Nessuna residenza utile               | Risultato ANPR senza indirizzo fisico                 | `PhysicalAddressTestIT`           |
-| CF non trovato / EN122                | Risultato vuoto senza fallback                        | `PhysicalAddressTestIT`           |
-| Residenza estera                      | Mapping coerente di stato/comune/provincia/CAP        | `PhysicalAddressTestIT`           |
-| Più soggetti in risposta              | Selezione del soggetto con CF corretto                | `PhysicalAddressTestIT`           |
-| Campi completi                        | Mapping completo indirizzo                            | `PhysicalAddressTestIT`           |
-| Campi parziali                        | Campi opzionali coerenti                              | `PhysicalAddressTestIT`           |
-| Caratteri accentati                   | Mapping preservato                                    | `PhysicalAddressTestIT`           |
+| Tutti i dettagli indirizzo            | Mapping completo                                      | `PhysicalAddressTestIT`           |
+| Dettagli parziali                     | Campi opzionali coerenti                              | `PhysicalAddressTestIT`           |
+| Caratteri accentati                   | Valori preservati                                     | `PhysicalAddressTestIT`           |
 | Civico non standard                   | Mapping coerente                                      | `PhysicalAddressTestIT`           |
+| Denominazione stradale molto lunga    | Gestione coerente                                     | `PhysicalAddressTestIT`           |
+| ANPR NotFound                         | Risultato funzionale senza indirizzo                  | `PhysicalAddressTestIT`           |
+| Errore tecnico ANPR                   | Errore propagato                                      | `PhysicalAddressTestIT`           |
+| Residenza estera                      | Mapping coerente                                      | `PhysicalAddressTestIT`           |
+| Più soggetti in risposta              | Selezione del soggetto con CF richiesto               | `PhysicalAddressTestIT`           |
+| Nessuna residenza utile               | Nessun indirizzo fisico valido                        | `PhysicalAddressTestIT`           |
 | Civico metrico                        | Mapping coerente                                      | `PhysicalAddressTestIT`           |
 | Numero + lettera civico               | Mapping coerente                                      | `PhysicalAddressTestIT`           |
 | SNC                                   | Mapping coerente                                      | `PhysicalAddressTestIT`           |
 | Colore / scala                        | Mapping coerente                                      | `PhysicalAddressTestIT`           |
+| Solo strada e numero                  | Composizione minima coerente                          | `PhysicalAddressTestIT`           |
 | Struttura indirizzo complessa         | Mapping completo                                      | `PhysicalAddressTestIT`           |
+| Specie/denominazione numerica         | Mapping coerente                                      | `PhysicalAddressTestIT`           |
 | CAP internazionale                    | Valore preservato                                     | `PhysicalAddressTestIT`           |
-| Contatore ANPR / id operazione        | Incremento e mapping richiesta corretti               | `PhysicalAddressTestIT`           |
-| Errore tecnico ANPR                   | Errore propagato                                      | `PhysicalAddressTestIT`           |
-| Endpoint ANPR diretto vs Gateway      | Stessa fixture produce lo stesso indirizzo funzionale | `PhysicalAddressTestIT`           |
-| Modalità `MINIMAL`                    | Composizione minimal                                  | `PhysicalAddressTestIT`           |
-| Modalità `OLD`                        | Composizione legacy                                   | `PhysicalAddressOldModeIT`        |
+| Contatore ANPR / campi richiesta      | Mapping e incremento corretti                         | `PhysicalAddressTestIT`           |
+| Batch physical PF/PG misto            | Elementi indipendenti e correlati all'input           | `PhysicalAddressTestIT`           |
+| Lista physical vuota                  | Bad request                                           | `PhysicalAddressTestIT`           |
+| ANPR NotFound su un elemento batch    | Gli altri elementi non falliscono                     | `PhysicalAddressTestIT`           |
+| Too many requests su singolo elemento | Errore confinato all'elemento                         | `PhysicalAddressTestIT`           |
+| Errore generico su singolo elemento   | Errore confinato all'elemento                         | `PhysicalAddressTestIT`           |
 | Modalità `FULL`                       | Composizione completa                                 | `PhysicalAddressFullModeIT`       |
-| FULL oltre limite lunghezza           | Rispetto del limite massimo                           | `PhysicalAddressFullModeIT`       |
+| `FULL` oltre limite                   | Rispetto del limite massimo                           | `PhysicalAddressFullModeIT`       |
+| Modalità `OLD`                        | Composizione legacy                                   | `PhysicalAddressOldModeIT`        |
 | Modalità `OLD_MINIMAL`                | Composizione old-minimal                              | `PhysicalAddressOldMinimalModeIT` |
-| Modalità sconosciuta                  | Fallback a `OLD`                                      | `PhysicalAddressInvalidModeIT`    |
-| Batch physical PF/PG misto            | Elementi indipendenti e ordinati                      | `PhysicalAddressTestIT`           |
-| Lista physical vuota                  | Richiesta rifiutata come bad request                  | `PhysicalAddressTestIT`           |
-| Errore ANPR singolo elemento batch    | Non blocca gli altri elementi                         | `PhysicalAddressTestIT`           |
-| Too many requests su singolo elemento | Errore confinato all'elemento fallito                 | `PhysicalAddressTestIT`           |
-| Errore generico su singolo elemento   | Errore confinato all'elemento fallito                 | `PhysicalAddressTestIT`           |
+| Modalità sconosciuta                  | Fallback funzionale a `OLD`                           | `PhysicalAddressInvalidModeIT`    |
+
+### 2.2 PG fisico - valido per C1-C8
+
+| Scenario E2E                    | Esito atteso                     | Test / classe           |
+|---------------------------------|----------------------------------|-------------------------|
+| Sede legale valida              | `REGISTRO_IMPRESE` con indirizzo | `PhysicalAddressTestIT` |
+| Tutti i campi                   | Mapping completo                 | `PhysicalAddressTestIT` |
+| Paese estero                    | Mapping coerente                 | `PhysicalAddressTestIT` |
+| Caratteri accentati             | Mapping preservato               | `PhysicalAddressTestIT` |
+| Sede secondaria                 | Mapping coerente                 | `PhysicalAddressTestIT` |
+| Nessuna sede legale             | Elemento senza `physicalAddress` | `PhysicalAddressTestIT` |
+| Errore tecnico Registro Imprese | Errore propagato                 | `PhysicalAddressTestIT` |
+| Batch PF/PG misto               | Elementi indipendenti            | `PhysicalAddressTestIT` |
 
 ---
 
-### 2.2 PF digitale - C1
+## 3. PF digitale
 
-**Configurazione:** INAD sync, fallback OFF, nuovo IniPEC.
+### 3.1 C1 - INAD sync, fallback OFF, nuovo IniPEC
 
-| Scenario E2E                              | Esito atteso                                                           | Test / classe            |
-|-------------------------------------------|------------------------------------------------------------------------|--------------------------|
-| PEC personale valida                      | Risultato finale INAD                                                  | `DigitalAddressPFTestIT` |
-| Personale + professionale valide          | Prevale la personale                                                   | `DigitalAddressPFTestIT` |
-| Solo professionale valida                 | Risultato vuoto                                                        | `DigitalAddressPFTestIT` |
-| Personale invalida + professionale valida | Risultato vuoto con fallback OFF                                       | `DigitalAddressPFTestIT` |
-| Più professionali senza personale         | Risultato vuoto                                                        | `DigitalAddressPFTestIT` |
-| Lista INAD vuota                          | Risultato vuoto                                                        | `DigitalAddressPFTestIT` |
-| CF non trovato                            | Risultato vuoto                                                        | `DigitalAddressPFTestIT` |
-| Personale scaduta                         | Risultato vuoto                                                        | `DigitalAddressPFTestIT` |
-| Personale scaduta + professionale valida  | Risultato vuoto con fallback OFF                                       | `DigitalAddressPFTestIT` |
-| Personale senza `usageInfo`               | PEC considerata valida                                                 | `DigitalAddressPFTestIT` |
-| Personale senza `dateEndValidity`         | PEC considerata valida                                                 | `DigitalAddressPFTestIT` |
-| Prima personale invalida, seconda valida  | La prima invalida viene filtrata e viene selezionata la seconda valida | `DigitalAddressPFTestIT` |
-| Sola professionale scaduta                | Risultato vuoto                                                        | `DigitalAddressPFTestIT` |
-| Errore tecnico INAD                       | Errore propagato, nessun fallback                                      | `DigitalAddressPFTestIT` |
-| Endpoint INAD diretto vs Gateway          | Stessa fixture produce lo stesso indirizzo funzionale                  | `DigitalAddressPFTestIT` |
-| Gateway JSON malformato                   | Bad request                                                            | `DigitalAddressPFTestIT` |
-| Gateway senza clientId                    | Bad request                                                            | `DigitalAddressPFTestIT` |
-| Gateway senza taxId                       | Bad request                                                            | `DigitalAddressPFTestIT` |
+**Classe principale:** `DigitalAddressPFNoFallbackTestIT`
 
----
+| Scenario E2E                                       | Esito atteso                                |
+|----------------------------------------------------|---------------------------------------------|
+| PEC personale valida                               | Risultato finale INAD                       |
+| INAD NotFound                                      | Risultato vuoto, nessun fallback            |
+| Lista INAD vuota                                   | Risultato vuoto                             |
+| PEC personale scaduta                              | Risultato vuoto                             |
+| Personale senza `usageInfo`                        | PEC considerata valida                      |
+| Personale senza `dateEndValidity`                  | PEC considerata valida                      |
+| Prima personale non valida/scaduta, seconda valida | Selezionata la prima PEC valida disponibile |
+| Personale + professionale valide                   | Prevale la personale                        |
+| Solo professionale valida                          | Risultato vuoto                             |
+| Personale invalida + professionale valida          | Risultato vuoto                             |
+| Più professionali senza personale                  | Risultato vuoto                             |
+| Errore tecnico INAD                                | Errore propagato                            |
+| Personale scaduta + professionale valida           | Risultato vuoto                             |
+| Sola professionale scaduta                         | Risultato vuoto                             |
 
-### 2.3 PF digitale - C2
+### 3.2 C2 - INAD sync, fallback OFF, legacy IniPEC
 
-**Configurazione:** INAD sync, fallback OFF, legacy IniPEC.
+Con fallback PF disabilitato, il flag old/new IniPEC non viene attraversato dal flusso PF: gli scenari funzionali 
+restano quelli di `DigitalAddressPFNoFallbackTestIT` e un INAD non risolutivo termina senza creare fallback IniPEC.
 
-| Scenario E2E | Esito atteso | Test / classe |
-|---|---|---|
-| Tutti gli scenari INAD sync di C1 | Stesso risultato funzionale di C1 | `DigitalAddressPFTestIT` |
-| INAD NotFound con `oldInipec=true` e fallback OFF | Nessuna request legacy creata | configurazione legacy PF |
+### 3.3 C3 - INAD sync, fallback ON, nuovo IniPEC
 
----
+**Classe:** `DigitalAddressPFFallbackNewInipecTestIT`
 
-### 2.4 PF digitale - C3
+| Scenario E2E                                       | Esito atteso                                  |
+|----------------------------------------------------|-----------------------------------------------|
+| Personale valida                                   | Risultato INAD, nessun fallback               |
+| INAD NotFound / lista vuota / personale scaduta    | Avvio fallback nuovo IniPEC                   |
+| Personale senza `usageInfo` / `dateEndValidity`    | PEC considerata valida                        |
+| Prima personale invalida, seconda valida           | Selezione della PEC valida                    |
+| Personale + professionale                          | Prevale la personale                          |
+| Solo professionale valida                          | Professionale utilizzata senza avviare IniPEC |
+| Personale invalida/scaduta + professionale valida  | Professionale utilizzata                      |
+| Più professionali valide                           | Gestione coerente senza fallback improprio    |
+| Errore tecnico INAD                                | Nessun fallback improprio verso IniPEC        |
+| IniPEC con sola PEC professionale                  | Risultato finale IniPEC                       |
+| IniPEC con impresa + professionisti                | Tutti gli indirizzi validi mantenuti          |
+| IniPEC con PEC invalida                            | Risultato finale vuoto                        |
+| IniPEC `ND` / `NF`                                 | Risultato finale vuoto                        |
+| IniPEC senza CF richiesto                          | Risultato finale vuoto                        |
+| IniPEC `ER`                                        | Retry fino a `ERROR` al limite                |
+| IniPEC polling in-progress                         | Retry in-progress                             |
+| IniPEC metadata errore                             | Retry polling                                 |
+| Più PEC professionali IniPEC                       | Tutte preservate                              |
+| PEC impresa IniPEC invalida + professionale valida | Professionale preservata                      |
 
-**Configurazione:** INAD sync, fallback ON, nuovo IniPEC.
+### 3.4 C4 - INAD sync, fallback ON, legacy IniPEC
 
-| Scenario E2E                              | Esito atteso                           | Test / classe                    |
-|-------------------------------------------|----------------------------------------|----------------------------------|
-| Personale valida                          | Risultato INAD, nessun fallback        | `DigitalAddressPFFallbackTestIT` |
-| Solo professionale valida                 | PEC professionale utilizzata           | `DigitalAddressPFFallbackTestIT` |
-| Personale invalida + professionale valida | PEC professionale utilizzata           | `DigitalAddressPFFallbackTestIT` |
-| Personale scaduta + professionale valida  | PEC professionale utilizzata           | `DigitalAddressPFFallbackTestIT` |
-| INAD NotFound -> IniPEC impresa           | Risultato finale IniPEC                | `DigitalAddressPFFallbackTestIT` |
-| INAD NotFound -> IniPEC professionisti    | Tutte le PEC valide mantenute          | `DigitalAddressPFFallbackTestIT` |
-| INAD NotFound -> impresa + professionisti | Tutti gli indirizzi validi mantenuti   | `DigitalAddressPFFallbackTestIT` |
-| INAD NotFound -> IniPEC senza PEC         | Risultato finale vuoto                 | `DigitalAddressPFFallbackTestIT` |
-| INAD scaduto -> IniPEC valido             | Risultato finale IniPEC                | `DigitalAddressPFFallbackTestIT` |
-| PEC IniPEC invalide                       | Filtrate; zero valide -> NotFound      | `DigitalAddressPFFallbackTestIT` |
-| IniPEC `ND`                               | Risultato finale vuoto                 | `DigitalAddressPFFallbackTestIT` |
-| IniPEC `NF`                               | Risultato finale vuoto                 | `DigitalAddressPFFallbackTestIT` |
-| IniPEC CF assente                         | Gestione NotFound                      | `DigitalAddressPFFallbackTestIT` |
-| IniPEC `ER`                               | Retry request                          | `DigitalAddressPFFallbackTestIT` |
-| IniPEC in-progress                        | Retry in-progress                      | `DigitalAddressPFFallbackTestIT` |
-| IniPEC metadata errore                    | Retry polling                          | `DigitalAddressPFFallbackTestIT` |
-| Retry IniPEC esaurito                     | Request finale `ERROR`                 | `DigitalAddressPFFallbackTestIT` |
-| Errore tecnico INAD                       | Nessun fallback improprio verso IniPEC | `DigitalAddressPFFallbackTestIT` |
+**Classe:** `DigitalAddressPFFallbackOldInipecTestIT`
 
----
+Copre gli stessi scenari INAD funzionali della configurazione C3, ma il fallback viene eseguito tramite **legacy IniPEC**. 
+In aggiunta sono coperti i comportamenti specifici del flusso legacy:
 
-### 2.5 PF digitale - C4
+| Scenario E2E                                        | Esito atteso                           |
+|-----------------------------------------------------|----------------------------------------|
+| INAD NotFound / lista vuota / personale scaduta     | Avvio legacy IniPEC                    |
+| Legacy IniPEC professionale                         | Risultato finale IniPEC                |
+| Legacy impresa + professionisti                     | Tutti gli indirizzi validi mantenuti   |
+| Legacy PEC invalida / `ND` / `NF` / CF assente      | Risultato finale vuoto                 |
+| Legacy `ER`                                         | Retry fino al limite configurato       |
+| Legacy polling in-progress                          | Retry coerente                         |
+| Legacy polling metadata errore                      | Retry coerente                         |
+| Submit legacy: errore a soglia                      | Request finale `ERROR`                 |
+| Submit legacy: `BAD_REQUEST`                        | Errore immediato                       |
+| Polling legacy: error retry exhaustion              | Polling e request finali `ERROR`       |
+| Polling legacy: in-progress retry exhaustion        | Polling e request finali `ERROR`       |
+| Polling legacy: `BAD_REQUEST`                       | Errore immediato                       |
+| Output legacy consumato                             | `sendStatus=SENT`                      |
+| Output inviato ma persistenza `sendStatus` fallisce | Recovery completa lo stato di delivery |
+| Più professionali legacy                            | Tutte preservate                       |
+| Impresa legacy invalida + professionale valida      | Professionale preservata               |
 
-**Configurazione:** INAD sync, fallback ON, legacy IniPEC.
+### 3.5 C5 - INAD massive, fallback OFF, nuovo IniPEC
 
-| Scenario E2E                                        | Esito atteso                                                                   | Test / classe                             |
-|-----------------------------------------------------|--------------------------------------------------------------------------------|-------------------------------------------|
-| INAD NotFound -> legacy IniPEC                      | Creazione flusso legacy                                                        | `DigitalAddressPFFallbackOldInipecTestIT` |
-| Legacy submit error                                 | Retry request fino a soglia                                                    | `DigitalAddressPFFallbackOldInipecTestIT` |
-| Legacy submit `BAD_REQUEST`                         | Errore immediato                                                               | `DigitalAddressPFFallbackOldInipecTestIT` |
-| Legacy `ER` a soglia                                | Request finale `ERROR`                                                         | `DigitalAddressPFFallbackOldInipecTestIT` |
-| Legacy polling error a soglia                       | Polling/request finali `ERROR`                                                 | `DigitalAddressPFFallbackOldInipecTestIT` |
-| Legacy polling in-progress a soglia                 | Polling/request finali `ERROR`                                                 | `DigitalAddressPFFallbackOldInipecTestIT` |
-| Output legacy realmente consumato                   | `sendStatus` diventa `SENT`                                                    | `DigitalAddressPFFallbackOldInipecTestIT` |
-| Output inviato ma persistenza `sendStatus` fallisce | Recovery completa lo stato di delivery senza duplicare il risultato funzionale | `DigitalAddressPFFallbackOldInipecTestIT` |
-| Happy path PF legacy                                | Risultato finale IniPEC                                                        | `InipecLegacyFlowIT`                      |
-| Legacy NotFound PF                                  | Risultato finale vuoto                                                         | `InipecLegacyFlowIT`                      |
-| Legacy più PEC professionali                        | Tutte le PEC valide mantenute                                                  | `InipecLegacyFlowIT`                      |
-| Legacy impresa + professionisti                     | Tutti gli indirizzi validi mantenuti                                           | `InipecLegacyFlowIT`                      |
-| Legacy PEC invalide                                 | PEC invalide filtrate                                                          | `InipecLegacyFlowIT`                      |
-| Legacy missing tax-id                               | Risultato finale vuoto                                                         | `InipecLegacyFlowIT`                      |
-| Legacy `ND`                                         | Risultato finale vuoto                                                         | `InipecLegacyFlowIT`                      |
-| Legacy `ER`                                         | Retry request                                                                  | `InipecLegacyFlowIT`                      |
-| Legacy polling error/in-progress                    | Retry coerente                                                                 | `InipecLegacyFlowIT`                      |
+**Classe:** `DigitalAddressPFMassiveNoFallbackIT`
 
----
+| Scenario E2E                                        | Esito atteso                                                        |
+|-----------------------------------------------------|---------------------------------------------------------------------|
+| PEC personale valida                                | Risultato finale INAD                                               |
+| NotFound / lista vuota                              | Risultato vuoto                                                     |
+| Personale scaduta                                   | Risultato vuoto                                                     |
+| Personale senza `usageInfo` / `dateEndValidity`     | PEC valida                                                          |
+| Prima personale invalida, seconda valida            | Selezione della PEC valida                                          |
+| Personale + professionale                           | Prevale personale                                                   |
+| Solo professionale / più professionali              | Risultato vuoto                                                     |
+| Personale invalida/scaduta + professionale valida   | Risultato vuoto                                                     |
+| Sola professionale scaduta                          | Risultato vuoto                                                     |
+| Errore tecnico risultato INAD massive               | Retry del batch                                                     |
+| CF duplicato nella risposta                         | Primo risultato provider mantenuto                                  |
+| Provider accetta batch, persistenza locale fallisce | Restart ricrea il batch per le request rimaste recuperabili         |
+| Aggiornamento request parziale                      | Nuovo batch prende solo le request `NOT_WORKED`                     |
+| Due worker sullo stesso batch                       | Una sola reservation effettiva                                      |
+| Persistenza parziale del risultato                  | Replay completa solo la request rimasta `WORKING`                   |
+| Error retry exhaustion su cicli reali               | Batch/request finali `ERROR`                                        |
+| Paginazione/correlazione massive                    | Matching stabile con ordine diverso, duplicati e risultati mancanti |
 
-### 2.6 PF digitale - C5
+### 3.6 C6 - INAD massive, fallback OFF, legacy IniPEC
 
-**Configurazione:** INAD massive, fallback OFF, nuovo IniPEC.
+Con fallback PF disabilitato, il legacy IniPEC non viene attraversato. Gli scenari funzionali 
+sono quelli di `DigitalAddressPFMassiveNoFallbackIT`; un esito INAD massive non risolutivo termina senza creare fallback legacy.
 
-| Scenario E2E                                        | Esito atteso                                                                                 | Test / classe               |
-|-----------------------------------------------------|----------------------------------------------------------------------------------------------|-----------------------------|
-| Creazione request INAD massive                      | Request `INAD/NOT_WORKED`                                                                    | `DigitalAddressPFMassiveIT` |
-| Submit batch e polling                              | Flusso completa la request                                                                   | `DigitalAddressPFMassiveIT` |
-| Scenari funzionali INAD massive PF                  | PEC personale valida / professionale / invalida / scaduta / CF assente gestiti correttamente | `DigitalAddressPFMassiveIT` |
-| CF duplicato nella risposta                         | Primo risultato provider mantenuto                                                           | `DigitalAddressPFMassiveIT` |
-| Provider accetta batch, persistenza locale fallisce | Restart non duplica la submission al provider                                                | `DigitalAddressPFMassiveIT` |
-| Aggiornamento request del batch parziale            | Restart mantiene un solo batch coerente                                                      | `DigitalAddressPFMassiveIT` |
-| Due worker competono sullo stesso batch             | Una sola reservation vince                                                                   | `DigitalAddressPFMassiveIT` |
-| Persistenza parziale durante polling risultato      | Replay completa solo la request rimanente                                                    | `DigitalAddressPFMassiveIT` |
-| Caratteri speciali nel payload                      | Preservati nell'intero flusso async                                                          | `DigitalAddressPFMassiveIT` |
-| Error retry exhaustion su cicli reali               | Contatori persistiti e batch/request finali `ERROR`                                          | `DigitalAddressPFMassiveIT` |
-| Paginazione/correlazione massive                    | Matching stabile con duplicati, ordine diverso e CF assente                                  | `DigitalAddressPFMassiveIT` |
+### 3.7 C7 - INAD massive, fallback ON, nuovo IniPEC
 
----
+**Classe:** `DigitalAddressPFMassiveFallbackNewInipecIT`
 
-### 2.7 PF digitale - C6
+La classe combina gli scenari funzionali INAD massive della C5 con il fallback nuovo IniPEC 
+e aggiunge copertura full-flow e recovery della transizione INAD -> IniPEC.
 
-**Configurazione:** INAD massive, fallback OFF, legacy IniPEC.
+| Scenario E2E                                            | Esito atteso                                        |
+|---------------------------------------------------------|-----------------------------------------------------|
+| INAD massive personale valida                           | Risultato INAD, nessun fallback                     |
+| INAD massive NotFound / lista vuota / personale scaduta | Avvio nuovo IniPEC                                  |
+| Professionale valida disponibile                        | Selezionata prima di creare fallback IniPEC         |
+| Full-flow INAD massive -> IniPEC professionale          | Risultato finale IniPEC                             |
+| Full-flow -> impresa + professionisti                   | Tutti gli indirizzi validi mantenuti                |
+| IniPEC invalida / `ND` / `NF` / CF assente              | Risultato finale vuoto                              |
+| IniPEC `ER`                                             | Retry fino a errore al limite                       |
+| IniPEC polling in-progress / metadata errore            | Retry coerente                                      |
+| Duplicate tax-id INAD                                   | Primo risultato provider mantenuto                  |
+| Recovery batch INAD dopo persistenza fallita            | Request recuperate senza perdere correlazione       |
+| Aggiornamento parziale request                          | Solo request rimaste `NOT_WORKED` nel nuovo batch   |
+| Concorrenza polling                                     | Una sola reservation                                |
+| Replay processing parziale                              | Solo request ancora `WORKING` completate            |
+| Error retry exhaustion                                  | Batch/request `ERROR`                               |
+| Paginazione/correlazione                                | Matching stabile                                    |
+| Batch INAD lavorato ma chiusura batch fallita           | Replay chiude il batch senza duplicare fallback     |
+| Processing INAD interrotto dopo parte delle request     | Replay processa solo request ancora `WORKING`       |
+| Identità fallback                                       | `correlationId` e `referenceRequestDate` preservati |
 
-| Scenario E2E                         | Esito atteso                                                    | Test / classe               |
-|--------------------------------------|-----------------------------------------------------------------|-----------------------------|
-| Tutti gli scenari INAD massive di C5 | Stesso comportamento funzionale di C5                           | `DigitalAddressPFMassiveIT` |
-| INAD NotFound                        | Risultato finale vuoto, nessuna legacy request con fallback OFF | configurazione C6           |
+### 3.8 C8 - INAD massive, fallback ON, legacy IniPEC
 
----
+**Classe:** `DigitalAddressPFMassiveFallbackOldInipecIT`
 
-### 2.8 PF digitale - C7
+La classe combina gli scenari INAD massive della C5 con il fallback legacy e include anche i casi specifici del legacy IniPEC.
 
-**Configurazione:** INAD massive, fallback ON, nuovo IniPEC.
-
-| Scenario E2E                                            | Esito atteso                                                           | Test / classe                       |
-|---------------------------------------------------------|------------------------------------------------------------------------|-------------------------------------|
-| Full-flow INAD massive -> IniPEC found                  | Risultato finale IniPEC                                                | `DigitalAddressPFMassiveFallbackIT` |
-| Full-flow INAD massive -> IniPEC NotFound               | Risultato finale vuoto                                                 | `DigitalAddressPFMassiveFallbackIT` |
-| Full-flow INAD massive -> IniPEC `ER`                   | Retry request IniPEC                                                   | `DigitalAddressPFMassiveFallbackIT` |
-| Batch INAD già completato ma chiusura batch fallita     | Replay chiude solo il batch senza duplicare fallback                   | `DigitalAddressPFMassiveFallbackIT` |
-| Processing INAD interrotto dopo una parte delle request | Replay processa solo le request ancora `WORKING`                       | `DigitalAddressPFMassiveFallbackIT` |
-| Fallback INAD -> IniPEC                                 | CorrelationId e referenceRequestDate preservati                        | `DigitalAddressPFMassiveFallbackIT` |
-| Fallback ON con professionale valida                    | La professionale viene selezionata prima di creare fallback IniPEC     | `DigitalAddressPFMassiveFallbackIT` |
-| Personale invalida + professionale valida               | La professionale viene selezionata e non viene avviato fallback IniPEC | `DigitalAddressPFMassiveFallbackIT` |
-
----
-
-### 2.9 PF digitale - C8
-
-**Configurazione:** INAD massive, fallback ON, legacy IniPEC.
-
-| Scenario E2E                            | Esito atteso                     | Test / classe                                                   |
-|-----------------------------------------|----------------------------------|-----------------------------------------------------------------|
-| INAD massive NotFound -> legacy IniPEC  | Fallback legacy creato           | `DigitalAddressPFMassiveOldInipecIT`                            |
-| Full-flow INAD massive -> legacy IniPEC | Risultato finale legacy          | `DigitalAddressPFMassiveOldInipecIT`                            |
-| Retry/errori legacy                     | Gestiti secondo le regole legacy | `DigitalAddressPFFallbackOldInipecTestIT`, `InipecLegacyFlowIT` |
-
----
-
-## 3. PG - Persona giuridica
-
-### 3.1 PG fisico - valido per C1-C8
-
-| Scenario E2E                   | Esito atteso                                | Test / classe           |
-|--------------------------------|---------------------------------------------|-------------------------|
-| Sede legale valida             | `REGISTRO_IMPRESE` con indirizzo            | `PhysicalAddressTestIT` |
-| Nessuna sede                   | Risultato senza `physicalAddress`           | `PhysicalAddressTestIT` |
-| Tutti i campi                  | Mapping completo                            | `PhysicalAddressTestIT` |
-| Paese estero                   | Mapping coerente                            | `PhysicalAddressTestIT` |
-| Caratteri accentati            | Mapping preservato                          | `PhysicalAddressTestIT` |
-| Sede secondaria                | Mapping coerente                            | `PhysicalAddressTestIT` |
-| Errore tecnico                 | Errore propagato                            | `PhysicalAddressTestIT` |
-| Batch PF/PG misto              | Elementi indipendenti                       | `PhysicalAddressTestIT` |
-| PG senza sede legale nel batch | Elemento restituito senza `physicalAddress` | `PhysicalAddressTestIT` |
+| Scenario E2E                                            | Esito atteso                                           |
+|---------------------------------------------------------|--------------------------------------------------------|
+| INAD massive NotFound / lista vuota / personale scaduta | Avvio legacy IniPEC                                    |
+| Full-flow -> legacy IniPEC                              | Risultato finale coerente                              |
+| Legacy professionale / impresa + professionisti         | Indirizzi validi preservati                            |
+| Legacy invalida / `ND` / `NF` / CF assente              | Risultato finale vuoto                                 |
+| Legacy `ER`, in-progress, metadata errore               | Retry coerenti                                         |
+| Duplicate tax-id INAD                                   | Primo risultato provider mantenuto                     |
+| Recovery batch / request INAD                           | Stato coerente dopo restart                            |
+| Concorrenza polling                                     | Una sola reservation                                   |
+| Replay processing parziale                              | Solo request ancora `WORKING` completate               |
+| Error retry exhaustion INAD                             | Batch/request `ERROR`                                  |
+| Paginazione/correlazione                                | Matching stabile                                       |
+| Batch INAD lavorato ma chiusura fallita                 | Replay chiude il batch senza duplicare fallback legacy |
+| Processing INAD parziale                                | Replay processa solo request ancora `WORKING`          |
+| Submit legacy error / bad request                       | Retry o errore immediato secondo il caso               |
+| Polling legacy error / in-progress exhaustion           | Polling e request `ERROR`                              |
+| Polling legacy bad request                              | Errore immediato                                       |
+| Output legacy consumato                                 | `sendStatus=SENT`                                      |
+| Persistenza `sendStatus` fallita                        | Recovery completa la delivery                          |
 
 ---
 
-### 3.2 PG digitale - C1
+## 4. PG - Persona giuridica digitale
 
-**Configurazione:** INAD sync, nuovo IniPEC.
+Per PG la catena è sempre **IPA -> IniPEC -> INAD**. 
 
-| Scenario E2E                                            | Esito atteso                                          | Test / classe            |
-|---------------------------------------------------------|-------------------------------------------------------|--------------------------|
-| IPA PEC valida                                          | Risultato finale IPA                                  | `DigitalAddressPGTestIT` |
-| IPA più risultati                                       | Uso WS05 e risultato IPA                              | `DigitalAddressPGTestIT` |
-| IPA NotFound -> IniPEC found                            | Risultato finale IniPEC                               | `DigitalAddressPGTestIT` |
-| IPA PEC invalida -> IniPEC found                        | Fallback IniPEC                                       | `DigitalAddressPGTestIT` |
-| Errore tecnico IPA                                      | Errore propagato, nessun fallback improprio           | `DigitalAddressPGTestIT` |
-| IniPEC NotFound / `ND` / `NF` / CF assente -> INAD sync | Fallback INAD                                         | `DigitalAddressPGTestIT` |
-| IniPEC `ER`                                             | Retry request IniPEC senza creare INAD                | `DigitalAddressPGTestIT` |
-| INAD singolo indirizzo valido                           | Risultato finale INAD                                 | `DigitalAddressPGTestIT` |
-| INAD più indirizzi                                      | Risultato vuoto                                       | `DigitalAddressPGTestIT` |
-| INAD con professione                                    | Risultato vuoto                                       | `DigitalAddressPGTestIT` |
-| INAD PEC invalida/scaduta                               | Risultato vuoto                                       | `DigitalAddressPGTestIT` |
-| INAD una PEC valida + una scaduta                       | Viene restituita la PEC valida                        | `DigitalAddressPGTestIT` |
-| Endpoint IPA diretto vs Gateway                         | Stessa fixture produce lo stesso indirizzo funzionale | `DigitalAddressPGTestIT` |
-| PF fallback flag abilitato                              | Comportamento PG invariato                            | `DigitalAddressPGTestIT` |
+### 4.1 C1 / C3 - INAD sync, nuovo IniPEC
 
----
+**Classe:** `DigitalAddressPGTestIT`
 
-### 3.3 PG digitale - C2
+La classe è eseguita con `pfFallback=true`; il test dedicato verifica esplicitamente che il flag PF non modifichi il comportamento PG. 
+Funzionalmente copre quindi gli scenari PG sync con nuovo IniPEC.
 
-**Configurazione:** INAD sync, legacy IniPEC.
+| Scenario E2E                                | Esito atteso                                     |
+|---------------------------------------------|--------------------------------------------------|
+| IPA diretto vs Gateway                      | Stesso indirizzo funzionale                      |
+| IPA PEC valida                              | Risultato finale IPA                             |
+| IPA con più risultati                       | Uso WS05 e risultato IPA                         |
+| IPA NotFound -> IniPEC found                | Risultato finale IniPEC                          |
+| IPA PEC invalida -> IniPEC found            | Prosecuzione su IniPEC                           |
+| Errore tecnico IPA                          | Errore propagato, nessun proseguimento improprio |
+| IniPEC solo professionale                   | Risultato IniPEC professionale                   |
+| IniPEC impresa + professionisti             | Tutti gli indirizzi validi mantenuti             |
+| IniPEC PEC invalida                         | Prosecuzione a INAD sync                         |
+| IniPEC `ND` / `NF`                          | Prosecuzione a INAD sync                         |
+| IniPEC senza CF richiesto                   | Prosecuzione a INAD sync                         |
+| IniPEC `ER`                                 | Retry fino a `ERROR`, senza creare INAD          |
+| IniPEC polling in-progress                  | Retry in-progress                                |
+| IniPEC metadata errore                      | Retry polling                                    |
+| Più PEC professionali IniPEC                | Tutte preservate                                 |
+| PEC impresa invalida + professionale valida | Professionale preservata                         |
+| PF fallback attivo                          | Comportamento PG invariato                       |
 
-| Scenario E2E                    | Esito atteso                    | Test / classe                     |
-|---------------------------------|---------------------------------|-----------------------------------|
-| IPA NotFound -> legacy IniPEC   | Creazione flusso legacy         | `DigitalAddressPGOldInipecTestIT` |
-| Legacy PG NotFound -> INAD sync | Fallback INAD                   | `InipecLegacyFlowIT`              |
-| Legacy PG INAD NotFound         | Risultato finale vuoto          | `InipecLegacyFlowIT`              |
-| Legacy PG INAD technical error  | Request legacy finale in errore | `InipecLegacyFlowIT`              |
-| Retry/errori legacy             | Retry request/polling coerenti  | `InipecLegacyFlowIT`              |
+### 4.2 C2 / C4 - INAD sync, legacy IniPEC
 
----
+**Classe:** `DigitalAddressPGOldInipecTestIT`
 
-### 3.4 PG digitale - C3
+| Scenario E2E                                   | Esito atteso                                           |
+|------------------------------------------------|--------------------------------------------------------|
+| IPA diretto vs Gateway                         | Stesso indirizzo funzionale                            |
+| IPA PEC valida                                 | Risultato finale IPA                                   |
+| IPA con più risultati                          | Uso WS05                                               |
+| IPA NotFound -> old IniPEC found               | Risultato finale IniPEC                                |
+| IPA PEC invalida -> old IniPEC found           | Prosecuzione su legacy IniPEC                          |
+| Errore tecnico IPA                             | Nessun proseguimento                                   |
+| Legacy IniPEC professionale                    | Risultato professionale                                |
+| Legacy impresa + professionisti                | Tutti gli indirizzi validi mantenuti                   |
+| Legacy IniPEC PEC invalida                     | Prosecuzione a INAD sync                               |
+| Legacy `ND` / `NF`                             | Prosecuzione a INAD sync                               |
+| Legacy senza CF richiesto                      | Prosecuzione a INAD sync                               |
+| Più PEC professionali legacy                   | Tutte preservate                                       |
+| Impresa legacy invalida + professionale valida | Professionale preservata                               |
+| PF fallback attivo                             | Comportamento PG legacy invariato                      |
+| Legacy NF -> INAD NotFound                     | Risultato finale INAD vuoto                            |
+| Legacy NF -> errore tecnico INAD               | Request legacy finale `ERROR`, nessun messaggio finale |
 
-**Configurazione:** INAD sync, PF fallback ON, nuovo IniPEC.
+### 4.3 C5 / C7 - INAD massive, nuovo IniPEC
 
-| Scenario E2E                       | Esito atteso           | Test / classe            |
-|------------------------------------|------------------------|--------------------------|
-| Tutti i casi di C1                 | Stesso risultato di C1 | `DigitalAddressPGTestIT` |
-| Invarianza rispetto a `pfFallback` | Risultato PG invariato | `DigitalAddressPGTestIT` |
+**Classe:** `DigitalAddressPGMassiveIT`
 
----
+| Scenario E2E                                        | Esito atteso                                                        |
+|-----------------------------------------------------|---------------------------------------------------------------------|
+| IPA diretto vs Gateway                              | Stesso indirizzo funzionale                                         |
+| IPA found / multiple / technical error              | Comportamento coerente con flusso sync                              |
+| IPA NotFound / PEC invalida -> IniPEC               | Prosecuzione su nuovo IniPEC                                        |
+| IniPEC professionale                                | Risultato finale IniPEC                                             |
+| IniPEC impresa + professionisti                     | Tutti gli indirizzi validi mantenuti                                |
+| IniPEC `ER`                                         | Retry fino a `ERROR`, senza creare INAD                             |
+| IniPEC polling in-progress / metadata errore        | Retry coerente                                                      |
+| IniPEC PEC invalida / `ND` / `NF` / CF assente      | Creazione request `INAD#NOT_WORKED`                                 |
+| INAD massive PEC impresa valida                     | Risultato finale INAD                                               |
+| INAD massive NotFound / lista vuota                 | Risultato finale vuoto; INAD terminale                              |
+| PEC impresa scaduta                                 | Risultato vuoto                                                     |
+| Impresa senza `usageInfo` / `dateEndValidity`       | PEC valida                                                          |
+| Prima impresa scaduta, seconda valida               | Selezionata la valida                                               |
+| Impresa + professionale                             | Prevale l'indirizzo impresa                                         |
+| Solo professionale                                  | Risultato vuoto                                                     |
+| Impresa invalida + professionale valida             | Risultato vuoto                                                     |
+| Più professionali                                   | Risultato vuoto                                                     |
+| Impresa scaduta + professionale valida              | Risultato vuoto                                                     |
+| Sola professionale scaduta                          | Risultato vuoto                                                     |
+| Errore tecnico risultato INAD                       | Retry normale                                                       |
+| Duplicate tax-id                                    | Primo risultato provider mantenuto                                  |
+| Provider accetta batch, persistenza locale fallisce | Recovery delle request                                              |
+| Aggiornamento request parziale                      | Nuovo batch solo per request `NOT_WORKED`                           |
+| Due worker sullo stesso batch                       | Una sola reservation                                                |
+| Replay processing parziale                          | Completa solo request ancora `WORKING`                              |
+| Error retry exhaustion                              | Batch/request `ERROR`, INAD terminale                               |
+| In-progress retry exhaustion                        | Batch/request `ERROR`, `INAD#ERROR`                                 |
+| Paginazione/correlazione                            | Matching stabile con duplicati, ordine diverso e risultato mancante |
 
-### 3.5 PG digitale - C4
+### 4.4 C6 / C8 - INAD massive, legacy IniPEC
 
-**Configurazione:** INAD sync, PF fallback ON, legacy IniPEC.
+**Classe:** `DigitalAddressPGOldInipecMassiveIT`
 
-| Scenario E2E                       | Esito atteso           | Test / classe                                           |
-|------------------------------------|------------------------|---------------------------------------------------------|
-| Tutti i casi legacy di C2          | Stesso risultato di C2 | `DigitalAddressPGOldInipecTestIT`, `InipecLegacyFlowIT` |
-| Invarianza rispetto a `pfFallback` | Risultato PG invariato | copertura PG legacy                                     |
-
----
-
-### 3.6 PG digitale - C5
-
-**Configurazione:** INAD massive, nuovo IniPEC.
-
-| Scenario E2E                                                             | Esito atteso                                                                                             | Test / classe                              |
-|--------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------|--------------------------------------------|
-| IPA NotFound / invalida -> IniPEC                                        | Prosecuzione su IniPEC                                                                                   | `DigitalAddressPGMassiveIT`                |
-| IniPEC NotFound / `ND` / `NF` -> INAD massive                            | Creazione request INAD                                                                                   | `DigitalAddressPGMassiveIT`                |
-| Full-flow IPA -> IniPEC -> INAD massive                                  | Risultato finale INAD                                                                                    | `DigitalAddressPGMassiveIT`                |
-| INAD PEC invalida / multipla / professionale                             | Risultato vuoto secondo regole PG                                                                        | `DigitalAddressPGMassiveIT`                |
-| INAD una PEC valida + una scaduta                                        | Viene restituita la PEC valida                                                                           | `DigitalAddressPGMassiveIT`                |
-| Retry in-progress INAD                                                   | `attemptAfter` e contatore aggiornati                                                                    | `DigitalAddressPGMassiveIT`                |
-| Errore result INAD                                                       | Retry normale                                                                                            | `DigitalAddressPGMassiveIT`                |
-| Error retry exhaustion                                                   | Request/batch `ERROR`                                                                                    | `DigitalAddressPGMassiveRetryExhaustionIT` |
-| In-progress retry exhaustion                                             | Request/batch `ERROR`                                                                                    | `DigitalAddressPGMassiveRetryExhaustionIT` |
-| Batch IniPEC già lavorato ma chiusura batch fallita                      | Replay chiude solo il batch senza duplicare fallback INAD                                                | `DigitalAddressPGMassiveIT`                |
-| Processing IniPEC interrotto dopo una parte delle request                | Replay processa solo le request ancora `WORKING`                                                         | `DigitalAddressPGMassiveIT`                |
-| Batch IniPEC misto FOUND / NF / ER                                       | Ogni CF segue il proprio esito; solo ER viene riprocessato                                               | `DigitalAddressPGMassiveIT`                |
-| Preparazione batch IniPEC con request già `WORKING` e altra `NOT_WORKED` | Al nuovo ciclo viene sottomessa solo la request rimanente; la già `WORKING` conserva il batch precedente | `DigitalAddressPGMassiveIT`                |
-
----
-
-### 3.7 PG digitale - C6
-
-**Configurazione:** INAD massive, legacy IniPEC.
-
-| Scenario E2E                              | Esito atteso                                          | Test / classe               |
-|-------------------------------------------|-------------------------------------------------------|-----------------------------|
-| Legacy IniPEC PG NotFound -> INAD massive | Creazione request `INAD/NOT_WORKED` e chiusura legacy | `InipecLegacyMassiveFlowIT` |
-| Full-flow legacy -> INAD massive          | Risultato finale INAD                                 | `InipecLegacyMassiveFlowIT` |
-| Retry/errori legacy prima del fallback    | Gestiti dal flusso legacy                             | `InipecLegacyFlowIT`        |
-
----
-
-### 3.8 PG digitale - C7
-
-**Configurazione:** INAD massive, PF fallback ON, nuovo IniPEC.
-
-| Scenario E2E                       | Esito atteso           | Test / classe               |
-|------------------------------------|------------------------|-----------------------------|
-| Tutti i casi di C5                 | Stesso risultato di C5 | `DigitalAddressPGMassiveIT` |
-| Invarianza rispetto a `pfFallback` | Risultato PG invariato | `DigitalAddressPGMassiveIT` |
-
----
-
-### 3.9 PG digitale - C8
-
-**Configurazione:** INAD massive, PF fallback ON, legacy IniPEC.
-
-| Scenario E2E                       | Esito atteso           | Test / classe               |
-|------------------------------------|------------------------|-----------------------------|
-| Tutti i casi di C6                 | Stesso risultato di C6 | `InipecLegacyMassiveFlowIT` |
-| Full-flow legacy -> INAD massive   | Risultato finale INAD  | `InipecLegacyMassiveFlowIT` |
-| Invarianza rispetto a `pfFallback` | Risultato PG invariato | copertura PG legacy/massive |
-
----
-
-## 4. Flussi digitali condivisi coperti E2E
-
-| Scenario E2E                                      | Esito atteso                                        | Test / classe                                                                                                                |
-|---------------------------------------------------|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| INAD massive: batch + polling fino al risultato   | Request finale `WORKED` / `ERROR`                   | `DigitalAddressPFMassiveIT`, `DigitalAddressPGMassiveIT`, `DigitalAddressPGMassiveRetryExhaustionIT`                         |
-| IniPEC nuovo: submit + polling fino al risultato  | Request finale `WORKED` / `ERROR`                   | `DigitalAddressPFFallbackTestIT`, `DigitalAddressPFMassiveFallbackIT`, `DigitalAddressPGTestIT`, `DigitalAddressPGMassiveIT` |
-| IniPEC legacy: submit + polling fino al risultato | Request/batch legacy finale coerente                | `InipecLegacyFlowIT`, `DigitalAddressPFFallbackOldInipecTestIT`                                                              |
-| Retry polling normale                             | Nuovo tentativo con `attemptAfter` aggiornato       | test PF/PG massive e IniPEC                                                                                                  |
-| Retry polling in-progress                         | Nuovo tentativo con contatore dedicato              | test PF/PG massive e IniPEC                                                                                                  |
-| Retry request IniPEC `ER`                         | Request riportata a `NOT_WORKED` / `ERROR` a soglia | test PF/PG IniPEC                                                                                                            |
-| Bad request nel polling legacy                    | Errore immediato                                    | `InipecLegacyFlowIT`, `DigitalAddressPFFallbackOldInipecTestIT`                                                              |
-| Risultati finali senza dipendere dalla sola SQS   | Stato persistito e `resultPayload` verificati       | full-flow nuovi                                                                                                              |
+| Scenario E2E                                    | Esito atteso                              |
+|-------------------------------------------------|-------------------------------------------|
+| IPA diretto vs Gateway                          | Stesso indirizzo funzionale               |
+| IPA found / multiple / technical error          | Comportamento coerente                    |
+| IPA NotFound / PEC invalida -> old IniPEC       | Prosecuzione sul legacy                   |
+| Legacy IniPEC professionale                     | Risultato finale IniPEC                   |
+| Legacy impresa + professionisti                 | Tutti gli indirizzi validi mantenuti      |
+| Più professionali legacy                        | Tutte preservate                          |
+| Impresa legacy invalida + professionale valida  | Professionale preservata                  |
+| Legacy PEC invalida / `ND` / `NF` / CF assente  | Creazione request `INAD#NOT_WORKED`       |
+| PF fallback attivo                              | Flusso PG legacy invariato                |
+| INAD massive PEC impresa valida                 | Risultato finale INAD                     |
+| INAD NotFound / lista vuota                     | Risultato finale vuoto; INAD terminale    |
+| PEC impresa scaduta                             | Risultato vuoto                           |
+| Impresa senza `usageInfo` / `dateEndValidity`   | PEC valida                                |
+| Prima impresa scaduta, seconda valida           | Selezione della valida                    |
+| Impresa + professionale                         | Prevale impresa                           |
+| Solo professionale / più professionali          | Risultato vuoto                           |
+| Impresa invalida/scaduta + professionale valida | Risultato vuoto                           |
+| Sola professionale scaduta                      | Risultato vuoto                           |
+| Errore tecnico risultato INAD                   | Retry normale                             |
+| Duplicate tax-id                                | Primo risultato provider mantenuto        |
+| Recovery batch dopo persistenza fallita         | Request recuperate                        |
+| Aggiornamento request parziale                  | Nuovo batch solo per request `NOT_WORKED` |
+| Concorrenza polling                             | Una sola reservation                      |
+| Replay processing parziale                      | Completa solo request ancora `WORKING`    |
+| Error retry exhaustion                          | Batch/request finali `ERROR`              |
+| Paginazione/correlazione                        | Matching stabile                          |
 
 ---
 
-## 4.1 Resilienza, replay, recovery e concorrenza
+## 5. Flussi digitali condivisi coperti E2E
 
-| Scenario E2E                                                    | Esito atteso                                                                     | Test / classe                             |
-|-----------------------------------------------------------------|----------------------------------------------------------------------------------|-------------------------------------------|
-| Gateway JSON malformato                                         | Richiesta rifiutata dall'entry point reale                                       | `DigitalAddressPFTestIT`                  |
-| Gateway senza clientId                                          | Richiesta rifiutata dall'entry point reale                                       | `DigitalAddressPFTestIT`                  |
-| Gateway senza taxId                                             | Richiesta rifiutata dall'entry point reale                                       | `DigitalAddressPFTestIT`                  |
-| INAD batch accettato, persistenza batch fallita                 | Restart non duplica la submission provider                                       | `DigitalAddressPFMassiveIT`               |
-| INAD aggiornamento request parziale durante preparazione batch  | Restart mantiene il batch coerente                                               | `DigitalAddressPFMassiveIT`               |
-| Due worker competono sullo stesso batch                         | Una sola prenotazione effettiva                                                  | `DigitalAddressPFMassiveIT`               |
-| INAD processing risultato parziale                              | Replay completa solo gli elementi rimanenti                                      | `DigitalAddressPFMassiveIT`               |
-| INAD error retry su cicli reali                                 | Contatori persistiti fino a esaurimento                                          | `DigitalAddressPFMassiveIT`               |
-| INAD massive paginato/correlato                                 | Matching stabile con duplicati e CF mancanti                                     | `DigitalAddressPFMassiveIT`               |
-| Fallback INAD -> IniPEC: batch già completato, chiusura fallita | Replay chiude il batch senza duplicare fallback                                  | `DigitalAddressPFMassiveFallbackIT`       |
-| Fallback INAD -> IniPEC: processing parziale                    | Replay processa solo le request ancora `WORKING`                                 | `DigitalAddressPFMassiveFallbackIT`       |
-| Fallback INAD -> IniPEC: identità richiesta                     | CorrelationId e referenceRequestDate preservati                                  | `DigitalAddressPFMassiveFallbackIT`       |
-| Fallback IniPEC -> INAD: batch già completato, chiusura fallita | Replay chiude il batch senza duplicare fallback                                  | `DigitalAddressPGMassiveIT`               |
-| Fallback IniPEC -> INAD: processing parziale                    | Replay processa solo le request ancora `WORKING`                                 | `DigitalAddressPGMassiveIT`               |
-| IniPEC batch misto FOUND/NF/ER                                  | Solo ER resta retryabile e viene sottomesso al ciclo successivo                  | `DigitalAddressPGMassiveIT`               |
-| Recovery preparazione batch IniPEC parziale                     | Request già `WORKING` non viene reinviata; viene sottomessa solo la `NOT_WORKED` | `DigitalAddressPGMassiveIT`               |
-| Legacy output inviato ma persistence `sendStatus` fallita       | Recovery completa lo stato di delivery                                           | `DigitalAddressPFFallbackOldInipecTestIT` |
-| Special characters nel payload async                            | Nessuna perdita/corruzione nel ciclo completo                                    | `DigitalAddressPFMassiveIT`               |
+| Scenario E2E                    | Esito atteso                                   | Classi principali                                                                                                                                                                     |
+|---------------------------------|------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| INAD sync                       | Risultato finale o errore coerente             | `DigitalAddressPFNoFallbackTestIT`, `DigitalAddressPFFallbackNewInipecTestIT`, `DigitalAddressPFFallbackOldInipecTestIT`, `DigitalAddressPGTestIT`, `DigitalAddressPGOldInipecTestIT` |
+| INAD massive: batch + polling   | Request finale `WORKED` / `ERROR`              | tutte le classi `*Massive*IT`                                                                                                                                                         |
+| Nuovo IniPEC: submit + polling  | Request finale `WORKED` / `ERROR`              | `DigitalAddressPFFallbackNewInipecTestIT`, `DigitalAddressPFMassiveFallbackNewInipecIT`, `DigitalAddressPGTestIT`, `DigitalAddressPGMassiveIT`                                        |
+| Legacy IniPEC: submit + polling | Request/batch legacy finale coerente           | `DigitalAddressPFFallbackOldInipecTestIT`, `DigitalAddressPFMassiveFallbackOldInipecIT`, `DigitalAddressPGOldInipecTestIT`, `DigitalAddressPGOldInipecMassiveIT`                      |
+| Retry polling normale           | Nuovo tentativo con contatori/stato aggiornati | classi PF/PG massive e IniPEC                                                                                                                                                         |
+| Retry polling in-progress       | Contatore dedicato e retry / errore a soglia   | classi PF/PG massive e IniPEC                                                                                                                                                         |
+| Retry request IniPEC `ER`       | `NOT_WORKED` fino alla soglia, poi `ERROR`     | classi PF/PG IniPEC                                                                                                                                                                   |
+| Risultato finale persistito     | `resultPayload` coerente con il flusso         | full-flow nuovi e massive                                                                                                                                                             |
+| INAD terminale per PG           | Nessun registro successivo a INAD              | `DigitalAddressPGTestIT`, `DigitalAddressPGOldInipecTestIT`, `DigitalAddressPGMassiveIT`, `DigitalAddressPGOldInipecMassiveIT`                                                        |
 
----
+### 5.1 Resilienza, replay, recovery e concorrenza
 
-## 4.2 Coerenza endpoint diretti / Gateway e endpoint sincroni
-
-| Scenario E2E                                       | Esito atteso                               | Test / classe                   |
-|----------------------------------------------------|--------------------------------------------|---------------------------------|
-| ANPR diretto vs Gateway                            | Stesso risultato funzionale                | `PhysicalAddressTestIT`         |
-| INAD diretto vs Gateway                            | Stesso risultato funzionale                | `DigitalAddressPFTestIT`        |
-| IPA diretto vs Gateway                             | Stesso risultato funzionale                | `DigitalAddressPGTestIT`        |
-| Agenzia Entrate tax-id valido                      | Check CF positivo                          | `AgenziaEntrateSyncEndpointsIT` |
-| Agenzia Entrate tax-id inesistente                 | Esito negativo con errore provider mappato | `AgenziaEntrateSyncEndpointsIT` |
-| Agenzia Entrate rappresentante legale matching     | Esito positivo                             | `AgenziaEntrateSyncEndpointsIT` |
-| Agenzia Entrate rappresentante legale non matching | Esito negativo                             | `AgenziaEntrateSyncEndpointsIT` |
-| Agenzia Entrate XML malformato                     | `RuntimeJAXBException`                     | `AgenziaEntrateSyncEndpointsIT` |
-| Registro Imprese indirizzo legale                  | Indirizzo restituito                       | `InfoCamereSyncEndpointsIT`     |
-| Registro Imprese errore applicativo                | Request restituita senza indirizzo         | `InfoCamereSyncEndpointsIT`     |
-| InfoCamere rappresentante legale matching          | `true`                                     | `InfoCamereSyncEndpointsIT`     |
-| InfoCamere rappresentante legale non matching      | `false`                                    | `InfoCamereSyncEndpointsIT`     |
-| InfoCamere errore applicativo rappresentante       | Esito negativo                             | `InfoCamereSyncEndpointsIT`     |
-| InfoCamere legal institutions                      | Lista imprese rappresentate                | `InfoCamereSyncEndpointsIT`     |
-| InfoCamere legal institutions vuota                | Lista vuota                                | `InfoCamereSyncEndpointsIT`     |
+| Scenario E2E                                                | Esito atteso                                                        | Test / classe                                                                           |
+|-------------------------------------------------------------|---------------------------------------------------------------------|-----------------------------------------------------------------------------------------|
+| INAD batch accettato, persistenza batch fallita             | Recovery senza perdere le request                                   | PF/PG massive                                                                           |
+| Aggiornamento request parziale durante preparazione batch   | Solo request rimaste `NOT_WORKED` vengono riprese                   | PF/PG massive                                                                           |
+| Due worker competono sullo stesso batch                     | Una sola reservation effettiva                                      | PF/PG massive                                                                           |
+| Processing risultato parziale                               | Replay completa solo gli elementi ancora `WORKING`                  | PF/PG massive                                                                           |
+| Error retry exhaustion su cicli reali                       | Contatori persistiti e batch/request finali `ERROR`                 | PF/PG massive                                                                           |
+| In-progress retry exhaustion PG massive nuovo IniPEC        | Batch/request finali `ERROR`, `INAD#ERROR`                          | `DigitalAddressPGMassiveIT`                                                             |
+| Paginazione/correlazione massive                            | Matching stabile con duplicati, ordine diverso e risultati mancanti | PF/PG massive                                                                           |
+| INAD -> nuovo IniPEC: batch già lavorato, chiusura fallita  | Replay chiude solo il batch                                         | `DigitalAddressPFMassiveFallbackNewInipecIT`                                            |
+| INAD -> nuovo IniPEC: processing parziale                   | Replay solo sulle request ancora `WORKING`                          | `DigitalAddressPFMassiveFallbackNewInipecIT`                                            |
+| INAD -> nuovo IniPEC: identità richiesta                    | `correlationId` e `referenceRequestDate` preservati                 | `DigitalAddressPFMassiveFallbackNewInipecIT`                                            |
+| INAD -> legacy IniPEC: batch già lavorato, chiusura fallita | Replay chiude solo il batch                                         | `DigitalAddressPFMassiveFallbackOldInipecIT`                                            |
+| INAD -> legacy IniPEC: processing parziale                  | Replay solo sulle request ancora `WORKING`                          | `DigitalAddressPFMassiveFallbackOldInipecIT`                                            |
+| Legacy output inviato ma persistenza `sendStatus` fallisce  | Recovery completa la delivery                                       | `DigitalAddressPFFallbackOldInipecTestIT`, `DigitalAddressPFMassiveFallbackOldInipecIT` |
 
 ---
 
-## 5. Perimetro non E2E / non incluso nel summary
+## 6. Endpoint sincroni coperti
 
-Questo file non include i test tecnici presenti fuori da `integration/`, ad esempio:
+### 6.1 Agenzia Entrate
 
-- paginazione interna dei repository/job non attraversata da un flusso applicativo completo;
-- max batch size isolato;
-- missing polling id isolato;
-- conditional update failure isolato;
-- classificazione retry HTTP/network a livello client;
-- configurazione `retry.on-timeout` isolata;
-- test isolati di `PollingJob` / `PollingInputsHandler`;
-- contract test HTTP/SOAP verso registri esterni reali;
-- EventBridge Pipe / SQS / DLQ infrastrutturali non esercitati da uno scenario completo.
+**Classe:** `AgenziaEntrateSyncEndpointsIT`
 
-Tali scenari non sono considerati E2E in questo riepilogo finché non vengono verificati all'interno di un flusso completo partendo dal relativo ingresso applicativo.
+| Scenario E2E                       | Esito atteso                               |
+|------------------------------------|--------------------------------------------|
+| Tax-id valido                      | Check CF positivo                          |
+| Tax-id inesistente                 | Esito negativo con errore provider mappato |
+| Rappresentante legale matching     | Esito positivo                             |
+| Rappresentante legale non matching | Esito negativo                             |
+| XML malformato                     | `RuntimeJAXBException`                     |
 
----
+### 6.2 InfoCamere / Registro Imprese
 
-## 6. Stato finale
+**Classe:** `InfoCamereSyncEndpointsIT`
 
-- `integration/` contiene **150 test `@Test` in 19 classi concrete di integrazione**.
-- Gli scenari PHYSICAL con configurazione standard sono consolidati in `PhysicalAddressTestIT`; le classi con property differenti restano separate.
-- I flussi digitali PF/PG coprono combinazioni sync/massive, fallback nuovo/legacy e le principali transizioni di retry/error.
-- La suite copre ora anche recovery/replay su processing parziale, concorrenza batch, correlazione massive e recovery della preparazione batch IniPEC parzialmente persistita.
-- Il caso PF massive fallback ON con PEC professionale valida è coperto da `PF_Massive_FallbackOn_SelectsProfessionalBeforeStartingInipecFallback`; non è più considerato gap.
-- Il caso di recovery preparazione batch IniPEC parziale è coperto da `InipecBatch_PartialRequestWorkingUpdate_RestartProcessesOnlyRemainingRequest`.
-- I test tecnici fuori da `integration/` non sono inclusi nel conteggio.
-- I contract test verso registri esterni e gli scenari infrastrutturali DLQ restano fuori dal perimetro di questo summary.
+| Scenario E2E                       | Esito atteso                |
+|------------------------------------|-----------------------------|
+| Indirizzo sede legale              | Indirizzo restituito        |
+| Errore applicativo indirizzo       | Request senza indirizzo     |
+| Rappresentante legale matching     | `true`                      |
+| Rappresentante legale non matching | `false`                     |
+| Errore applicativo rappresentante  | Esito negativo              |
+| Legal institutions                 | Lista imprese rappresentate |
+| Legal institutions vuota           | Lista vuota                 |
+
