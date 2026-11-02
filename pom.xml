@@ -277,7 +277,7 @@
                         </goals>
                         <phase>process-resources</phase>
                         <configuration>
-                            <inputSpec>${project.basedir}/docs/external/anpr/C001-serviziNotifica.yaml</inputSpec>
+                            <inputSpec>${project.basedir}/docs/external/anpr/C001-servizioNotifica.yaml</inputSpec>
                             <generatorName>java</generatorName>
                             <library>webclient</library>
                             <generateApiDocumentation>false</generateApiDocumentation>
