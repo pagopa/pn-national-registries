@@ -14,7 +14,7 @@ import org.mockito.ArgumentCaptor;
 import reactor.test.StepVerifier;
 
 import static it.pagopa.pn.national.registries.service.SqsService.NR_GATEWAY_INPUT;
-import static it.pagopa.pn.national.registries.service.SqsService.NR_GATEWAY_OUTPUT;
+import static it.pagopa.pn.national.registries.service.SqsService.NR_GATEWAY_RESPONSE;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -64,7 +64,7 @@ class SqsServiceTest {
 
         assertNotNull(event);
         assertNotNull(event.getHeader());
-        assertEquals(NR_GATEWAY_OUTPUT, event.getHeader().getEventType());
+        assertEquals(NR_GATEWAY_RESPONSE, event.getHeader().getEventType());
         assertEquals(clientId, event.getHeader().getClientId());
         assertNotNull(event.getHeader().getCreatedAt());
 

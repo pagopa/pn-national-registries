@@ -27,7 +27,7 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @RequiredArgsConstructor
 public class SqsService {
 
-    public static final String NR_GATEWAY_OUTPUT = "NR_GATEWAY_OUTPUT";
+    public static final String NR_GATEWAY_RESPONSE = "NR_GATEWAY_RESPONSE";
     public static final String NR_GATEWAY_INPUT = "NR_GATEWAY_INPUT";
     public static final String PN_NATIONAL_REGISTRIES = "pn-national-registries";
     private final OutputQueueMomProducer outputQueueMomProducer;
@@ -40,12 +40,12 @@ public class SqsService {
                 .publisher(PN_NATIONAL_REGISTRIES)
                 .createdAt(Instant.now())
                 .eventId(UUID.randomUUID().toString())
-                .eventType(NR_GATEWAY_OUTPUT)
+                .eventType(NR_GATEWAY_RESPONSE)
                 .clientId(clientId)
                 .build();
 
         var outputEvent = new GatewayOutputEvent(header, codeSqsDto);
-        return Mono.fromRunnable(() -> outputQueueMomProducer.push(outputEvent)).then();
+        return Mono.fromRunnable(() -> outputQueueMomProducer.push(outputEvent));
     }
 
     public Mono<Void> pushToInputQueue(InternalCodeSqsDto internalCodeSqsDto, String clientId) {
@@ -58,7 +58,7 @@ public class SqsService {
                 .build();
 
         var inputEvent = new GatewayInputEvent(header, internalCodeSqsDto);
-        return Mono.fromRunnable(() -> internalQueueMomProducer.push(inputEvent)).then();
+        return Mono.fromRunnable(() -> internalQueueMomProducer.push(inputEvent));
 
     }
 
@@ -72,7 +72,7 @@ public class SqsService {
                 .build();
 
         var inputDlqEvent = new GatewayInputEvent(header, internalCodeSqsDto);
-        return Mono.fromRunnable(() -> internalDlqQueueMomProducer.push(inputDlqEvent)).then();
+        return Mono.fromRunnable(() -> internalDlqQueueMomProducer.push(inputDlqEvent));
 
     }
 

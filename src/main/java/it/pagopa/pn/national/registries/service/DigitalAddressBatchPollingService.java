@@ -167,9 +167,8 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
 
     private Mono<Void> handlePolling(BatchPolling polling) {
         return callIniPecEService(polling.getBatchId(), polling.getPollingId())
-                .onErrorResume(t -> incrementAndCheckRetry(polling, t).then(Mono.error(t)))
                 .flatMap(response -> handleSuccessfulPolling(polling, response))
-                .onErrorResume(e -> Mono.empty());
+                .onErrorResume(t -> incrementAndCheckRetry(polling, t));
     }
 
     private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
