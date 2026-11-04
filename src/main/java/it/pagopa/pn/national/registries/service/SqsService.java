@@ -30,7 +30,7 @@ public class SqsService {
 
     private static final String PUSHING_OUTPUT_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}, from source: {}";
     private static final String PUSHING_INPUT_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}";
-    private static final String INSERTING_MSG_WITHOUT_DATA = "Inserted data in SQS {}";
+    private static final String INSERTING_MSG_WITHOUT_DATA = "Inserting data in SQS queue: {}";
 
     private final SqsAsyncClient sqsClient;
     private final ObjectMapper mapper;
