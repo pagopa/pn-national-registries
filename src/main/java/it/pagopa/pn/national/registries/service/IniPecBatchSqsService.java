@@ -139,13 +139,10 @@ public class IniPecBatchSqsService {
         }
 
         return sqsService.pushToInputDlqQueue(internalCodeSqsDto, item.getClientId())
-                .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
-                        item.getCorrelationId().split(batchRequestPkSeparator)[0],
-                        sendMessageResponse))
                 .thenReturn(item)
-                .doOnNext(r -> {
-                    item.setSendStatus(BatchSendStatus.SENT_TO_DLQ.getValue());
-                    item.setTtl(now.plusSeconds(nationalRegistriesConfig.getInipec().getTtl()).getEpochSecond());
+                .doOnNext(batchRequest -> {
+                    batchRequest.setSendStatus(BatchSendStatus.SENT_TO_DLQ.getValue());
+                    batchRequest.setTtl(now.plusSeconds(nationalRegistriesConfig.getInipec().getTtl()).getEpochSecond());
                 });
     }
 
