@@ -120,9 +120,6 @@ public class IniPecBatchSqsService {
                                         .domicileType(DOMICILE_TYPE)
                                         .recipientType(recipientType.name())
                                         .build(), item.getClientId())
-                                .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
-                                        item.getCorrelationId().split(batchRequestPkSeparator)[0],
-                                        sendMessageResponse))
                                 .thenReturn(item)
                                 .doOnNext(r -> {
                                     log.info("PG - DigitalAddress - send to dlq queue message for correlationId: {}", item.getCorrelationId());
@@ -154,8 +151,7 @@ public class IniPecBatchSqsService {
         if(batchRequest.getReferenceRequestDate() != null){
             internalCodeSqsDto.setReferenceRequestDate(java.util.Date.from(batchRequest.getReferenceRequestDate().atZone(ZoneId.systemDefault()).toInstant()));
         }
-        return sqsService.pushToInputDlqQueue(internalCodeSqsDto, batchRequest.getClientId())
-                .then();
+        return sqsService.pushToInputDlqQueue(internalCodeSqsDto, batchRequest.getClientId());
     }
 
     private InternalCodeSqsDto toInternalCodeSqsDto(BatchRequest batchRequest) {
