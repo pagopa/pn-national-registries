@@ -74,11 +74,11 @@ public class NationalRegistriesConfig {
         private Integer pollingErrorRetryAfter;
         private Integer pollingInProgressRetryAfter;
     }
+
     @Data
     public static class Topic {
         private String outputQueueName;
         private String inputQueueName;
         private String inputDlqQueueName;
     }
-
 }

@@ -7,13 +7,7 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.AddressRegistroImprese;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.InfoCamereLegalInstituionsResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.InfoCamereVerification;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.LegalAddress;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
@@ -37,25 +31,17 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.OffsetDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertInstanceOf;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.argThat;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @Slf4j
 @TestPropertySource(properties = {
@@ -106,6 +92,10 @@ class InfoCamereServiceTest {
         getDigitalAddressIniPECOKDto.setCorrelationId("correlationId");
         when(infoCamereConverter.convertToGetAddressIniPecOKDto(any()))
                 .thenReturn(getDigitalAddressIniPECOKDto);
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec())
+                .thenReturn(inipec);
 
         StepVerifier.create(infoCamereService.getIniPecDigitalAddress("clientId", requestBodyDto, new Date(), RecipientType.PG))
                 .expectNext(getDigitalAddressIniPECOKDto)
@@ -434,12 +424,12 @@ class InfoCamereServiceTest {
                 .assertNext(batchRequest -> {
                     assertEquals(BatchStatus.NO_BATCH_ID.getValue(), batchRequest.getBatchId());
                     assertEquals(BatchStatus.NOT_WORKED.getValue(), batchRequest.getStatus());
-                    assertEquals(0, batchRequest.getRetry());
+                    assertEquals(Optional.of(0), batchRequest.getRetry());
                     assertNull(batchRequest.getReferenceRequestDate());
                     assertNull(batchRequest.getAwsMessageId());
                     assertEquals("correlationId~" + batchRequest.getCreatedAt(), batchRequest.getCorrelationId());
                     // ttl configurato a 0: coincide con createdAt in epoch seconds
-                    assertEquals(batchRequest.getCreatedAt().toEpochSecond(ZoneOffset.UTC), batchRequest.getTtl());
+                    assertEquals(Optional.of(batchRequest.getCreatedAt().toEpochSecond(ZoneOffset.UTC)), batchRequest.getTtl());
                 })
                 .verifyComplete();
     }
