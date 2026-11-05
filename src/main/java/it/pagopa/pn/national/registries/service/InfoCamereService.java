@@ -147,7 +147,6 @@ public class InfoCamereService {
         batchRequest.setRetry(0);
         batchRequest.setLastReserved(now);
         batchRequest.setCreatedAt(now);
-        batchRequest.setTtl(now.plusSeconds(nationalRegistriesConfig.getTtl()).toEpochSecond(ZoneOffset.UTC));
         log.trace("New Batch Request: {}", batchRequest);
         return batchRequest;
     }

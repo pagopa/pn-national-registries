@@ -94,18 +94,18 @@ import java.util.*;
         "pn.national.registries.sqs.input.dlq.queue.name=pn-national_registry_gateway_inputs_DLQ",
         "pn.national.registries.health-check-path=http://localhost"
 })
-abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalStack {
+public abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalStack {
 
     protected static final String INPUT_QUEUE = "pn-national_registry_gateway_inputs";
     protected static final String OUTPUT_QUEUE = "pn-national_registry_gateway_outputs";
-    protected static final String INPUT_DLQ_QUEUE = "pn-national_registry_gateway_inputs_DLQ";
+    protected static final String INPUT_DLQ_QUEUE = "pn-national_registry_gateway_inputs-DLQ";
     protected static final String BATCH_REQUESTS_TABLE = "pn-batchRequests";
     protected static final String BATCH_POLLING_TABLE = "pn-batchPolling";
     protected static final String NATIONAL_REGISTRIES_BATCHES_TABLE = "pn-NationalRegistriesBatches";
     protected static final String NATIONAL_REGISTRIES_REQUESTS_TABLE = "pn-NationalRegistriesRequests";
     protected static final String COUNTER_TABLE = "pn-counter";
     protected static final String CX_ID = "pn-delivery";
-    protected static final String VALID_PF_CF = "PPPPLT80A01H501V";
+    protected static final String VALID_PF_CF = "PLTPLT80A01H501C";
     protected static final String VALID_PG_PIVA = "75120855137";
 
     @MockitoBean
@@ -183,6 +183,18 @@ abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalS
                 .getResponseBody();
     }
 
+    protected void startLegacyInipecFromGateway(String correlationId, String taxId) {
+        String recipientType = taxId != null && taxId.length() == 11 ? "PG" : "PF";
+        if ("PF".equals(recipientType)) {
+            org.mockito.Mockito.when(inadClient.callEService(org.mockito.ArgumentMatchers.eq(taxId), org.mockito.ArgumentMatchers.eq(correlationId)))
+                    .thenReturn(reactor.core.publisher.Mono.error(inadNotFoundException()));
+        } else {
+            org.mockito.Mockito.when(ipaClient.callEServiceWS23(org.mockito.ArgumentMatchers.eq(taxId), org.mockito.ArgumentMatchers.any()))
+                    .thenReturn(reactor.core.publisher.Mono.just(ipaNotFoundResponse()));
+        }
+        enqueueGatewayRequest(recipientType, taxId, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, correlationId);
+        processNextGatewayInputMessage();
+    }
     protected GetDigitalAddressIniPECOKDto enqueueIniPecRequest(String correlationId, String taxId) {
         return webTestClient.post()
                 .uri("/national-registries-private/inipec/digital-address")
