@@ -18,6 +18,7 @@ public class NationalRegistriesConfig {
     private Dao dao;
     private Integer queryLimit;
     private Inipec inipec;
+    private Topic topic;
 
 
     private String addressCompositionMode;
@@ -36,6 +37,13 @@ public class NationalRegistriesConfig {
         private Double firstAttemptDelaySecondsPerCf;
         private Integer firstAttemptFixedDelaySeconds;
         private Integer ttl;
+    }
+
+    @Data
+    public static class Topic {
+        private String outputQueueName;
+        private String inputQueueName;
+        private String inputDlqQueueName;
     }
 
 }

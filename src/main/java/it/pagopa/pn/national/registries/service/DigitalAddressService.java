@@ -50,7 +50,7 @@ public class DigitalAddressService extends GatewayConverter {
                             PG,
                             DigitalAddressRecipientType.IMPRESA
                     );
-                    return sqsService.pushToOutputQueue(ipaToSqsDto(correlationId, response), pnNationalRegistriesCxId).then();
+                    return sqsService.pushToOutputQueue(ipaToSqsDto(correlationId, response), pnNationalRegistriesCxId);
                 })
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve digital address from IPA: {}"));
     }
@@ -69,8 +69,7 @@ public class DigitalAddressService extends GatewayConverter {
                         );
                     }
                 })
-                .flatMap(codeSqsDto -> sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId))
-                .then();
+                .flatMap(codeSqsDto -> sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId));
     }
 
     public Mono<Void> retrieveDigitalAddressForPFFromInadWithIniPecFallback(String pnNationalRegistriesCxId, AddressRequestBodyDto request, String correlationId) {
@@ -95,7 +94,7 @@ public class DigitalAddressService extends GatewayConverter {
                             PF,
                             DigitalAddressRecipientType.fromValue(codeSqsDto.getDigitalAddress().getFirst().getRecipient())
                     );
-                    return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId).then();
+                    return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId);
                 });
     }
 

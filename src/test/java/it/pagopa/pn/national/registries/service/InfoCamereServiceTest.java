@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -49,6 +50,9 @@ class InfoCamereServiceTest {
     @MockitoBean
     ValidateTaxIdUtils validateTaxIdUtils;
 
+    @MockitoBean
+    NationalRegistriesConfig nationalRegistriesConfig;
+
     @Test
     void testGetDigitalAddress() {
         GetDigitalAddressIniPECRequestBodyDto requestBodyDto = new GetDigitalAddressIniPECRequestBodyDto();
@@ -67,6 +71,10 @@ class InfoCamereServiceTest {
         getDigitalAddressIniPECOKDto.setCorrelationId("correlationId");
         when(infoCamereConverter.convertToGetAddressIniPecOKDto(any()))
                 .thenReturn(getDigitalAddressIniPECOKDto);
+        NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
+        inipec.setBatchRequestPkSeparator("~");
+        when(nationalRegistriesConfig.getInipec())
+                .thenReturn(inipec);
 
         StepVerifier.create(infoCamereService.getIniPecDigitalAddress("clientId", requestBodyDto, new Date(), RecipientType.PG))
                 .expectNext(getDigitalAddressIniPECOKDto)

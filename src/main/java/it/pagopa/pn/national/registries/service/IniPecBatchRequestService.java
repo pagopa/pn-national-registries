@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -188,6 +189,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     r.setRetry(nextRetry);
                     if (nextRetry >= nationalRegistriesConfig.getInipec().getBatchRequestMaxRetry() || (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
                         r.setStatus(BatchStatus.ERROR.getValue());
+                        r.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
                         r.setLastReserved(now);
                         log.debug("IniPEC - batchId {} - request {} status in {} (retry: {})", batchId, r.getCorrelationId(), r.getStatus(), r.getRetry());
                     }

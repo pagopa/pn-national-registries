@@ -1,83 +1,140 @@
 package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import it.pagopa.pn.national.registries.middleware.queue.model.GatewayInputEvent;
+import it.pagopa.pn.national.registries.middleware.queue.model.GatewayOutputEvent;
+import it.pagopa.pn.national.registries.middleware.queue.producer.InternalDlqQueueMomProducer;
+import it.pagopa.pn.national.registries.middleware.queue.producer.InternalQueueMomProducer;
+import it.pagopa.pn.national.registries.middleware.queue.producer.OutputQueueMomProducer;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import reactor.test.StepVerifier;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-import java.util.concurrent.CompletableFuture;
-
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.Mockito.*;
 
 class SqsServiceTest {
 
+    private OutputQueueMomProducer outputQueueMomProducer;
+    private InternalQueueMomProducer internalQueueMomProducer;
+    private InternalDlqQueueMomProducer internalDlqQueueMomProducer;
+
+    private SqsService sqsService;
+    private ObjectMapper objectMapper;
+
+    @BeforeEach
+    void setup() {
+        outputQueueMomProducer = mock(OutputQueueMomProducer.class);
+        internalQueueMomProducer = mock(InternalQueueMomProducer.class);
+        internalDlqQueueMomProducer = mock(InternalDlqQueueMomProducer.class);
+        objectMapper = mock(ObjectMapper.class);
+
+        sqsService = new SqsService(
+                outputQueueMomProducer,
+                internalQueueMomProducer,
+                internalDlqQueueMomProducer,
+                objectMapper
+        );
+    }
+
     @Test
     void testPushToOutputQueue() {
-        SqsAsyncClient amazonSQS = mock(SqsAsyncClient.class);
-        CompletableFuture<GetQueueUrlResponse> getQueueUrlResponse = CompletableFuture.completedFuture(GetQueueUrlResponse.builder().queueUrl("queueUrl").build());
-        SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
-        CompletableFuture<SendMessageResponse> sendMessageResponseCompletableFuture = CompletableFuture.completedFuture(sendMessageResponse);
-
-        when(amazonSQS.getQueueUrl(any(GetQueueUrlRequest.class))).thenReturn(getQueueUrlResponse);
-        when(amazonSQS.sendMessage(any(SendMessageRequest.class))).thenReturn(sendMessageResponseCompletableFuture);
-
-        ObjectMapper objectMapper = mock(ObjectMapper.class);
-
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
-
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId("correlationId");
-        StepVerifier.create(sqsService.pushToOutputQueue(codeSqsDto,"clientId"))
-                .expectNext(sendMessageResponse)
+
+        String clientId = "clientId";
+
+        StepVerifier.create(
+                        sqsService.pushToOutputQueue(codeSqsDto, clientId)
+                )
                 .verifyComplete();
+
+        ArgumentCaptor<GatewayOutputEvent> captor =
+                ArgumentCaptor.forClass(GatewayOutputEvent.class);
+
+        verify(outputQueueMomProducer, times(1))
+                .push(captor.capture());
+
+        GatewayOutputEvent event = captor.getValue();
+
+        assertNotNull(event);
+        assertNotNull(event.getHeader());
+        assertEquals("NR_GATEWAY_RESPONSE", event.getHeader().getEventType());
+        assertEquals(clientId, event.getHeader().getClientId());
+        assertNotNull(event.getHeader().getCreatedAt());
+
+        assertSame(codeSqsDto, event.getPayload());
+
+        verifyNoInteractions(internalQueueMomProducer);
+        verifyNoInteractions(internalDlqQueueMomProducer);
     }
+
     @Test
     void testPushToInputQueue() {
-        SqsAsyncClient amazonSQS = mock(SqsAsyncClient.class);
-        CompletableFuture<GetQueueUrlResponse> getQueueUrlResponse = CompletableFuture.completedFuture(GetQueueUrlResponse.builder().queueUrl("queueUrl").build());
-        SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
-        CompletableFuture<SendMessageResponse> sendMessageResponseCompletableFuture = CompletableFuture.completedFuture(sendMessageResponse);
+        InternalCodeSqsDto codeSqsDto = InternalCodeSqsDto.builder()
+                .correlationId("correlationId")
+                .build();
 
-        when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
-        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponseCompletableFuture);
+        String clientId = "clientId";
 
-        ObjectMapper objectMapper = mock(ObjectMapper.class);
-
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
-
-        InternalCodeSqsDto codeSqsDto =InternalCodeSqsDto.builder().build();
-        codeSqsDto.setCorrelationId("correlationId");
-        StepVerifier.create(sqsService.pushToInputQueue(codeSqsDto,"clientId"))
-                .expectNext(sendMessageResponse)
+        StepVerifier.create(
+                        sqsService.pushToInputQueue(codeSqsDto, clientId)
+                )
                 .verifyComplete();
+
+        ArgumentCaptor<GatewayInputEvent> captor =
+                ArgumentCaptor.forClass(GatewayInputEvent.class);
+
+        verify(internalQueueMomProducer, times(1))
+                .push(captor.capture());
+
+        GatewayInputEvent event = captor.getValue();
+
+        assertNotNull(event);
+        assertNotNull(event.getHeader());
+        assertEquals("NR_GATEWAY_INPUT", event.getHeader().getEventType());
+        assertEquals(clientId, event.getHeader().getClientId());
+        assertNotNull(event.getHeader().getCreatedAt());
+
+        assertSame(codeSqsDto, event.getPayload());
+
+        verifyNoInteractions(outputQueueMomProducer);
+        verifyNoInteractions(internalDlqQueueMomProducer);
     }
 
     @Test
     void testPushToInputDlqQueue() {
-        SqsAsyncClient amazonSQS = mock(SqsAsyncClient.class);
-        CompletableFuture<GetQueueUrlResponse> getQueueUrlResponse = CompletableFuture.completedFuture(GetQueueUrlResponse.builder().queueUrl("queueUrl").build());
-        SendMessageResponse sendMessageResponse = SendMessageResponse.builder().build();
-        CompletableFuture<SendMessageResponse> sendMessageResponseCompletableFuture = CompletableFuture.completedFuture(sendMessageResponse);
+        InternalCodeSqsDto codeSqsDto = InternalCodeSqsDto.builder()
+                .correlationId("correlationId")
+                .build();
 
-        when(amazonSQS.getQueueUrl((GetQueueUrlRequest) any())).thenReturn(getQueueUrlResponse);
-        when(amazonSQS.sendMessage((SendMessageRequest) any())).thenReturn(sendMessageResponseCompletableFuture);
+        String clientId = "clientId";
 
-        ObjectMapper objectMapper = mock(ObjectMapper.class);
-
-        SqsService sqsService = new SqsService("queueNameTest", "inputQueue", "inputDqlQueue", amazonSQS, objectMapper);
-
-        InternalCodeSqsDto codeSqsDto = InternalCodeSqsDto.builder().build();
-        codeSqsDto.setCorrelationId("correlationId");
-        StepVerifier.create(sqsService.pushToInputDlqQueue(codeSqsDto,"clientId"))
-                .expectNext(sendMessageResponse)
+        StepVerifier.create(
+                        sqsService.pushToInputDlqQueue(codeSqsDto, clientId)
+                )
                 .verifyComplete();
+
+        ArgumentCaptor<GatewayInputEvent> captor =
+                ArgumentCaptor.forClass(GatewayInputEvent.class);
+
+        verify(internalDlqQueueMomProducer, times(1))
+                .push(captor.capture());
+
+        GatewayInputEvent event = captor.getValue();
+
+        assertNotNull(event);
+        assertNotNull(event.getHeader());
+        assertEquals("NR_GATEWAY_INPUT", event.getHeader().getEventType());
+        assertEquals(clientId, event.getHeader().getClientId());
+        assertNotNull(event.getHeader().getCreatedAt());
+
+        assertSame(codeSqsDto, event.getPayload());
+
+        verifyNoInteractions(outputQueueMomProducer);
+        verifyNoInteractions(internalQueueMomProducer);
     }
 }

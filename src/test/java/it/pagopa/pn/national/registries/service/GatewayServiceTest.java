@@ -19,7 +19,6 @@ import org.springframework.http.HttpStatus;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import reactor.util.context.Context;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
 import java.nio.charset.Charset;
 import java.util.Date;
@@ -54,7 +53,6 @@ class GatewayServiceTest {
     @InjectMocks
     private GatewayService gatewayService;
 
-
     @Test
     void retrieveDigitalOrPhysicalAddressAsync_shouldPushMessageToInputQueue() {
         AddressRequestBodyDto request =
@@ -68,9 +66,7 @@ class GatewayServiceTest {
         when(sqsService.pushToInputQueue(
                 any(InternalCodeSqsDto.class),
                 eq(CX_ID)
-        )).thenReturn(
-                Mono.just(SendMessageResponse.builder().build())
-        );
+        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         gatewayService.retrieveDigitalOrPhysicalAddressAsync(
@@ -100,7 +96,6 @@ class GatewayServiceTest {
         );
     }
 
-
     @Test
     void retrieveDigitalOrPhysicalAddressAsync_shouldThrowWhenCxIdIsRequiredAndNull() {
         AddressRequestBodyDto request =
@@ -129,7 +124,6 @@ class GatewayServiceTest {
         verifyNoInteractions(sqsService);
     }
 
-
     @Test
     void retrieveDigitalOrPhysicalAddressAsync_shouldAcceptNullCxIdWhenValidationDisabled() {
         AddressRequestBodyDto request =
@@ -143,9 +137,7 @@ class GatewayServiceTest {
         when(sqsService.pushToInputQueue(
                 any(InternalCodeSqsDto.class),
                 isNull()
-        )).thenReturn(
-                Mono.just(SendMessageResponse.builder().build())
-        );
+        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         gatewayService.retrieveDigitalOrPhysicalAddressAsync(
@@ -159,7 +151,6 @@ class GatewayServiceTest {
                 )
                 .verifyComplete();
     }
-
 
     @Test
     void retrieveDigitalOrPhysicalAddress_shouldThrowForInvalidRecipientType() {
@@ -177,7 +168,6 @@ class GatewayServiceTest {
                 )
         );
     }
-
 
     @Test
     void retrieveDigitalOrPhysicalAddress_shouldRetrievePhysicalAddressForPf() {
@@ -213,7 +203,6 @@ class GatewayServiceTest {
 
         verifyNoInteractions(digitalAddressService);
     }
-
 
     @Test
     void retrieveDigitalOrPhysicalAddress_shouldRetrievePhysicalAddressForPg() {
@@ -251,7 +240,6 @@ class GatewayServiceTest {
 
         verifyNoInteractions(digitalAddressService);
     }
-
 
     @Test
     void retrieveDigitalOrPhysicalAddress_shouldRetrieveDigitalAddressFromInadForPfWhenFallbackDisabled() {
@@ -298,7 +286,6 @@ class GatewayServiceTest {
         verifyNoInteractions(physicalAddressService);
     }
 
-
     @Test
     void retrieveDigitalOrPhysicalAddress_shouldUseIniPecFallbackForPfWhenEnabled() {
         AddressRequestBodyDto request =
@@ -342,7 +329,6 @@ class GatewayServiceTest {
                 );
     }
 
-
     @Test
     void retrieveDigitalOrPhysicalAddress_shouldRetrieveDigitalAddressForPg() {
         AddressRequestBodyDto request =
@@ -378,7 +364,6 @@ class GatewayServiceTest {
         verifyNoInteractions(physicalAddressService);
     }
 
-
     @Test
     void retrievePhysicalAddressForPf_shouldPushNotFoundMessageToOutputQueue() {
         AddressRequestBodyDto request =
@@ -410,9 +395,7 @@ class GatewayServiceTest {
         when(sqsService.pushToOutputQueue(
                 any(CodeSqsDto.class),
                 eq(CX_ID)
-        )).thenReturn(
-                Mono.just(SendMessageResponse.builder().build())
-        );
+        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         gatewayService.retrieveDigitalOrPhysicalAddress(
@@ -437,7 +420,6 @@ class GatewayServiceTest {
         verify(sqsService, never())
                 .pushToInputDlqQueue(any(), any());
     }
-
 
     @Test
     void retrieveDigitalAddressForPf_shouldPushNotFoundMessageToOutputQueueWhenFallbackDisabled() {
@@ -469,9 +451,7 @@ class GatewayServiceTest {
         when(sqsService.pushToOutputQueue(
                 any(CodeSqsDto.class),
                 eq(CX_ID)
-        )).thenReturn(
-                Mono.just(SendMessageResponse.builder().build())
-        );
+        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         gatewayService.retrieveDigitalOrPhysicalAddress(
@@ -490,7 +470,6 @@ class GatewayServiceTest {
                 eq(CX_ID)
         );
     }
-
 
     @ParameterizedTest
     @ValueSource(ints = {
@@ -523,9 +502,7 @@ class GatewayServiceTest {
         when(sqsService.pushToInputDlqQueue(
                 any(InternalCodeSqsDto.class),
                 eq(CX_ID)
-        )).thenReturn(
-                Mono.just(SendMessageResponse.builder().build())
-        );
+        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         gatewayService.retrieveDigitalOrPhysicalAddress(
@@ -551,7 +528,6 @@ class GatewayServiceTest {
                 eq(CX_ID)
         );
     }
-
 
     @ParameterizedTest
     @ValueSource(ints = {
@@ -586,9 +562,7 @@ class GatewayServiceTest {
         when(sqsService.pushToInputDlqQueue(
                 any(InternalCodeSqsDto.class),
                 eq(CX_ID)
-        )).thenReturn(
-                Mono.just(SendMessageResponse.builder().build())
-        );
+        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         gatewayService.retrieveDigitalOrPhysicalAddress(
@@ -607,7 +581,6 @@ class GatewayServiceTest {
                 eq(CX_ID)
         );
     }
-
 
     @Test
     void retrieveAddressForPf_shouldPropagateNonEligibleError() {
@@ -650,7 +623,6 @@ class GatewayServiceTest {
                 .pushToOutputQueue(any(), any());
     }
 
-
     @Test
     void retrieveAddressForPg_shouldPropagateNonEligibleError() {
         AddressRequestBodyDto request =
@@ -691,7 +663,6 @@ class GatewayServiceTest {
                 .pushToInputDlqQueue(any(), any());
     }
 
-
     @Test
     void handleExceptionAndSendToDlq_shouldSendBadRequestToDlq() {
         PnNationalRegistriesException exception =
@@ -713,9 +684,7 @@ class GatewayServiceTest {
                         .build();
 
         when(sqsService.pushToInputDlqQueue(message, CX_ID))
-                .thenReturn(
-                        Mono.just(SendMessageResponse.builder().build())
-                );
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(
                         gatewayService.handleExceptionAndSendToDlq(
@@ -728,7 +697,6 @@ class GatewayServiceTest {
         verify(sqsService)
                 .pushToInputDlqQueue(message, CX_ID);
     }
-
 
     @Test
     void handleExceptionAndSendToDlq_shouldPropagateNotEligibleException() {
@@ -752,7 +720,6 @@ class GatewayServiceTest {
 
         verifyNoInteractions(sqsService);
     }
-
 
     @Test
     void retrieveSyncPhysicalAddresses_shouldDelegateToPhysicalAddressService() {
@@ -778,7 +745,6 @@ class GatewayServiceTest {
         verify(physicalAddressService)
                 .retrieveSyncPhysicalAddresses(request);
     }
-
 
     @Test
     void handleMessage_shouldConvertPayloadAndProcessRequest() {
@@ -839,7 +805,6 @@ class GatewayServiceTest {
                         eq(C_ID)
                 );
     }
-
 
     private AddressRequestBodyDto newAddressRequestBodyDto(
             AddressRequestBodyFilterDto.DomicileTypeEnum domicileType

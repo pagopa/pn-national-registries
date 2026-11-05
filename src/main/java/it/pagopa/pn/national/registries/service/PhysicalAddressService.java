@@ -114,13 +114,14 @@ public class PhysicalAddressService extends GatewayConverter {
                                 null
                         );
                     }
-                    return sqsService.pushToOutputQueue(addressSQSMessageDto, pnNationalRegistriesCxId);
+                    return sqsService.pushToOutputQueue(addressSQSMessageDto, pnNationalRegistriesCxId)
+                            .doOnSuccess(unused -> log.info("retrieved physycal address from ANPR for correlationId: {}",
+                                    addressRequestBodyDto.getFilter().getCorrelationId()));
                 })
                 .doOnError(isAnprAddressNotFound, e -> {
                     log.info("correlationId: {} - ANPR - indirizzo non presente", correlationId);
                     logCfRequestedMetric(correlationId, GatewayDownstreamService.ANPR, 1);
                 })
-                .doOnNext(sendMessageResponse -> log.info("retrieved physycal address from ANPR for correlationId: {}", addressRequestBodyDto.getFilter().getCorrelationId()))
                 .then()
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve physical address from ANPR: {}"));
     }
@@ -140,7 +141,6 @@ public class PhysicalAddressService extends GatewayConverter {
                     }
                     return sqsService.pushToOutputQueue(addressSQSMessageDto, pnNationalRegistriesCxId);
                 })
-                .then()
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve physical address from Registro Imprese: {}"));
     }
 
