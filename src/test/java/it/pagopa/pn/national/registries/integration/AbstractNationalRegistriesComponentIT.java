@@ -98,7 +98,7 @@ public abstract class AbstractNationalRegistriesComponentIT extends BaseTest.Wit
 
     protected static final String INPUT_QUEUE = "pn-national_registry_gateway_inputs";
     protected static final String OUTPUT_QUEUE = "pn-national_registry_gateway_outputs";
-    protected static final String INPUT_DLQ_QUEUE = "pn-national_registry_gateway_inputs_DLQ";
+    protected static final String INPUT_DLQ_QUEUE = "pn-national_registry_gateway_inputs-DLQ";
     protected static final String BATCH_REQUESTS_TABLE = "pn-batchRequests";
     protected static final String BATCH_POLLING_TABLE = "pn-batchPolling";
     protected static final String NATIONAL_REGISTRIES_BATCHES_TABLE = "pn-NationalRegistriesBatches";
