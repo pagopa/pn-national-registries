@@ -1,8 +1,6 @@
-package it.pagopa.pn.national.registries.integration.digital.PG;
+package it.pagopa.pn.national.registries.integration.digital.PF;
 
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
@@ -45,9 +43,9 @@ import static org.mockito.Mockito.when;
 
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
+        "pn.national-registries.enable-pf-pec-fallback-flow=true",
         "pn.national-registries.enable-inad-massive-api=false",
         "pn.national-registries.enable-old-inipec-flow=true",
-        "pn.national-registries.enable-pf-pec-fallback-flow=true",
         "pn.national-registries.inipec.polling-first-attempt-delay-seconds-per-cf=0",
         "pn.national-registries.inipec.polling-first-attempt-fixed-delay-seconds=0",
         "pn.national-registries.inipec.batch-request-max-retry=1",
@@ -59,7 +57,7 @@ import static org.mockito.Mockito.when;
         "spring.task.scheduling.enabled=false",
         "pn.national-registries.inipec.batch-request-recovery-after=0"
 })
-class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponentIT {
+class DigitalAddressPFFallbackOldInipecSQSTestIT extends AbstractNationalRegistriesComponentIT {
 
     @MockitoSpyBean
     private SqsService sqsService;
@@ -69,9 +67,9 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
 
     @Test
     void batchRequest_dlqOk_shouldSetErrorAndSentToDlq() {
-        String correlationId = "pg-batch-request-dlq-ok-" + UUID.randomUUID();
+        String correlationId = "batch-request-dlq-ok-" + UUID.randomUUID();
 
-        startOldInipecFromIpaNotFound(correlationId, VALID_PG_PIVA);
+        startLegacyInipecFromGateway(correlationId, VALID_PF_CF);
 
         PnNationalRegistriesException badRequest = badRequestException();
 
@@ -79,12 +77,12 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
 
         iniPecBatchRequestService.batchPecRequest();
 
-        Map<String, AttributeValue> request = oldInipecRequest(correlationId);
+        Map<String, AttributeValue> request = findBatchRequest(correlationId);
 
         assertEquals("ERROR", request.get("status").s());
         assertEquals("SENT_TO_DLQ", request.get("sendStatus").s());
         assertEquals("1", request.get("retry").n());
-        assertNotNull(request.get("ttl").n());
+        assertNotNull(request.get("ttl"));
         assertTrue(findPollingByBatchId(request.get("batchId").s()).isEmpty());
 
         Message dlqMessage = receiveSingleMessage(INPUT_DLQ_QUEUE);
@@ -98,9 +96,9 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
 
     @Test
     void batchRequest_dlqKo_shouldRecoverAndSetSentToDlq() {
-        String correlationId = "pg-batch-request-dlq-ko-" + UUID.randomUUID();
+        String correlationId = "batch-request-dlq-ko-" + UUID.randomUUID();
 
-        startOldInipecFromIpaNotFound(correlationId, VALID_PG_PIVA);
+        startLegacyInipecFromGateway(correlationId, VALID_PF_CF);
 
         PnNationalRegistriesException badRequest = badRequestException();
 
@@ -112,13 +110,12 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
 
         iniPecBatchRequestService.batchPecRequest();
 
-        Map<String, AttributeValue> request = oldInipecRequest(correlationId);
+        Map<String, AttributeValue> request = findBatchRequest(correlationId);
 
         assertEquals("ERROR", request.get("status").s());
         assertEquals("NOT_SENT", request.get("sendStatus").s());
         assertEquals("1", request.get("retry").n());
         assertNull(request.get("ttl"));
-
         assertTrue(findPollingByBatchId(request.get("batchId").s()).isEmpty());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
@@ -137,8 +134,7 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
         assertEquals("ERROR", recoveredRequest.get("status").s());
         assertEquals("SENT_TO_DLQ", recoveredRequest.get("sendStatus").s());
         assertEquals("1", recoveredRequest.get("retry").n());
-        assertNotNull(recoveredRequest.get("ttl").n());
-
+        assertNotNull(recoveredRequest.get("ttl"));
         assertTrue(findPollingByBatchId(recoveredRequest.get("batchId").s()).isEmpty());
 
         Message recoveredDlqMessage = receiveSingleMessage(INPUT_DLQ_QUEUE);
@@ -152,10 +148,10 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
 
     @Test
     void polling_dlqOk_shouldSetPollingErrorAndRequestSentToDlq() {
-        String correlationId = "pg-polling-dlq-ok-" + UUID.randomUUID();
-        String pollingId = "pg-polling-dlq-ok-" + UUID.randomUUID();
+        String correlationId = "polling-dlq-ok-" + UUID.randomUUID();
+        String pollingId = "polling-dlq-ok-" + UUID.randomUUID();
 
-        String batchId = submitOldInipecBatchFromGateway(correlationId, pollingId);
+        String batchId = submitLegacyBatchFromGateway(correlationId, pollingId);
 
         PnNationalRegistriesException badRequest = badRequestException();
 
@@ -164,13 +160,12 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
         digitalAddressBatchPollingService.batchPecPolling();
 
         Map<String, AttributeValue> polling = findLegacyPolling(batchId);
-        Map<String, AttributeValue> request = oldInipecRequest(correlationId);
+        Map<String, AttributeValue> request = findBatchRequest(correlationId);
 
         assertEquals("ERROR", polling.get("status").s());
         assertEquals("ERROR", request.get("status").s());
         assertEquals("SENT_TO_DLQ", request.get("sendStatus").s());
-        assertNotNull(request.get("ttl").n());
-
+        assertNotNull(request.get("ttl"));
 
         Message dlqMessage = receiveSingleMessage(INPUT_DLQ_QUEUE);
 
@@ -183,10 +178,10 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
 
     @Test
     void polling_dlqKo_shouldRecoverAndSetSentToDlq() {
-        String correlationId = "pg-polling-dlq-ko-" + UUID.randomUUID();
-        String pollingId = "pg-polling-dlq-ko-" + UUID.randomUUID();
+        String correlationId = "polling-dlq-ko-" + UUID.randomUUID();
+        String pollingId = "polling-dlq-ko-" + UUID.randomUUID();
 
-        String batchId = submitOldInipecBatchFromGateway(correlationId, pollingId);
+        String batchId = submitLegacyBatchFromGateway(correlationId, pollingId);
 
         PnNationalRegistriesException badRequest = badRequestException();
 
@@ -199,13 +194,12 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
         digitalAddressBatchPollingService.batchPecPolling();
 
         Map<String, AttributeValue> polling = findLegacyPolling(batchId);
-        Map<String, AttributeValue> request = oldInipecRequest(correlationId);
+        Map<String, AttributeValue> request = findBatchRequest(correlationId);
 
         assertEquals("ERROR", polling.get("status").s());
         assertEquals("ERROR", request.get("status").s());
         assertEquals("NOT_SENT", request.get("sendStatus").s());
         assertNull(request.get("ttl"));
-
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
@@ -224,8 +218,7 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
         assertEquals("ERROR", recoveredPolling.get("status").s());
         assertEquals("ERROR", recoveredRequest.get("status").s());
         assertEquals("SENT_TO_DLQ", recoveredRequest.get("sendStatus").s());
-        assertNotNull(recoveredRequest.get("ttl").n());
-
+        assertNotNull(recoveredRequest.get("ttl"));
 
         Message recoveredDlqMessage = receiveSingleMessage(INPUT_DLQ_QUEUE);
 
@@ -237,15 +230,15 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
     }
 
     @Test
-    void directIpaOutput_ok_shouldSendMessageAndCreateNoBatchRequest() {
-        String correlationId = "pg-ipa-output-ok-" + UUID.randomUUID();
+    void directOutput_ok_shouldSendMessageAndCreateNoBatchRequest() {
+        String correlationId = "direct-output-ok-" + UUID.randomUUID();
 
-        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA), any()))
-                .thenReturn(Mono.just(ipaFoundResponse(VALID_PG_PIVA, "pg-output-ok@pec.it")));
+        when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId)))
+                .thenReturn(Mono.just(inadResponse(VALID_PF_CF, "personal@pec.it", null)));
 
         AddressOKDto response = enqueueGatewayRequest(
-                "PG",
-                VALID_PG_PIVA,
+                "PF",
+                VALID_PF_CF,
                 AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL,
                 correlationId
         );
@@ -261,9 +254,7 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
         CodeSqsDto payload = readOutputMessage(outputMessage.body());
 
         assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("IPA", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("pg-output-ok@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        assertEquals("INAD", payload.getRegistry());
 
         assertTrue(findBatchRequestsByCorrelationPrefix(correlationId).isEmpty());
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
@@ -275,19 +266,19 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
     }
 
     @Test
-    void directIpaOutput_ko_shouldPropagateErrorAndCreateNoBatchRequest() {
-        String correlationId = "pg-ipa-output-ko-" + UUID.randomUUID();
+    void directOutput_ko_shouldPropagateErrorAndCreateNoBatchRequest() {
+        String correlationId = "direct-output-ko-" + UUID.randomUUID();
 
-        when(ipaClient.callEServiceWS23(eq(VALID_PG_PIVA), any()))
-                .thenReturn(Mono.just(ipaFoundResponse(VALID_PG_PIVA, "pg-output-ko@pec.it")));
+        when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId)))
+                .thenReturn(Mono.just(inadResponse(VALID_PF_CF, "personal@pec.it", null)));
 
         doReturn(Mono.error(new RuntimeException("Output queue unavailable")))
                 .when(sqsService)
                 .pushToOutputQueue(any(CodeSqsDto.class), any());
 
         AddressOKDto response = enqueueGatewayRequest(
-                "PG",
-                VALID_PG_PIVA,
+                "PF",
+                VALID_PF_CF,
                 AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL,
                 correlationId
         );
@@ -309,28 +300,27 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
 
     @Test
     void polling_outputOk_shouldSetPollingWorkedAndRequestSent() {
-        String correlationId = "pg-polling-output-ok-" + UUID.randomUUID();
-        String pollingId = "pg-polling-output-ok-" + UUID.randomUUID();
+        String correlationId = "polling-output-ok-" + UUID.randomUUID();
+        String pollingId = "polling-output-ok-" + UUID.randomUUID();
 
-        String batchId = submitOldInipecBatchFromGateway(correlationId, pollingId);
+        String batchId = submitLegacyBatchFromGateway(correlationId, pollingId);
 
         when(infoCamereClient.callEServiceRequestPec(pollingId))
                 .thenReturn(Mono.just(
-                        inipecPollingResponse(
-                                pecResponse(VALID_PG_PIVA, "pg-inipec-output-ok@pec.it")
+                        iniPecPollingResponse(
+                                pecResponse(VALID_PF_CF, "legacy-output-ok@pec.it")
                         )
                 ));
 
         digitalAddressBatchPollingService.batchPecPolling();
 
         Map<String, AttributeValue> polling = findLegacyPolling(batchId);
-        Map<String, AttributeValue> request = oldInipecRequest(correlationId);
+        Map<String, AttributeValue> request = findBatchRequest(correlationId);
 
         assertEquals("WORKED", polling.get("status").s());
         assertEquals("WORKED", request.get("status").s());
         assertEquals("SENT", request.get("sendStatus").s());
-        assertNotNull(request.get("ttl").n());
-
+        assertNotNull(request.get("ttl"));
         assertNotNull(request.get("message"));
 
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
@@ -341,8 +331,7 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
 
         assertEquals(correlationId, payload.getCorrelationId());
         assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("pg-inipec-output-ok@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        assertEquals("legacy-output-ok@pec.it", payload.getDigitalAddress().getFirst().getAddress());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
@@ -352,15 +341,15 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
 
     @Test
     void polling_outputKo_shouldRecoverAndSetSent() {
-        String correlationId = "pg-polling-output-ko-" + UUID.randomUUID();
-        String pollingId = "pg-polling-output-ko-" + UUID.randomUUID();
+        String correlationId = "polling-output-ko-" + UUID.randomUUID();
+        String pollingId = "polling-output-ko-" + UUID.randomUUID();
 
-        String batchId = submitOldInipecBatchFromGateway(correlationId, pollingId);
+        String batchId = submitLegacyBatchFromGateway(correlationId, pollingId);
 
         when(infoCamereClient.callEServiceRequestPec(pollingId))
                 .thenReturn(Mono.just(
-                        inipecPollingResponse(
-                                pecResponse(VALID_PG_PIVA, "pg-inipec-output-ko@pec.it")
+                        iniPecPollingResponse(
+                                pecResponse(VALID_PF_CF, "legacy-output-ko@pec.it")
                         )
                 ));
 
@@ -371,21 +360,19 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
         digitalAddressBatchPollingService.batchPecPolling();
 
         Map<String, AttributeValue> polling = findLegacyPolling(batchId);
-        Map<String, AttributeValue> request = oldInipecRequest(correlationId);
+        Map<String, AttributeValue> request = findBatchRequest(correlationId);
 
         assertEquals("WORKED", polling.get("status").s());
         assertEquals("WORKED", request.get("status").s());
         assertEquals("NOT_SENT", request.get("sendStatus").s());
         assertNull(request.get("ttl"));
-
         assertNotNull(request.get("message"));
 
         CodeSqsDto storedPayload = readOutputMessage(request.get("message").s());
 
         assertEquals(correlationId, storedPayload.getCorrelationId());
         assertEquals("INIPEC", storedPayload.getRegistry());
-        assertEquals(1, storedPayload.getDigitalAddress().size());
-        assertEquals("pg-inipec-output-ko@pec.it", storedPayload.getDigitalAddress().getFirst().getAddress());
+        assertEquals("legacy-output-ko@pec.it", storedPayload.getDigitalAddress().getFirst().getAddress());
 
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
@@ -404,8 +391,7 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
         assertEquals("WORKED", recoveredPolling.get("status").s());
         assertEquals("WORKED", recoveredRequest.get("status").s());
         assertEquals("SENT", recoveredRequest.get("sendStatus").s());
-        assertNotNull(recoveredRequest.get("ttl").n());
-
+        assertNotNull(recoveredRequest.get("ttl"));
         assertNotNull(recoveredRequest.get("message"));
 
         Message recoveredOutputMessage = receiveSingleMessage(OUTPUT_QUEUE);
@@ -416,8 +402,7 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
 
         assertEquals(correlationId, recoveredPayload.getCorrelationId());
         assertEquals("INIPEC", recoveredPayload.getRegistry());
-        assertEquals(1, recoveredPayload.getDigitalAddress().size());
-        assertEquals("pg-inipec-output-ko@pec.it", recoveredPayload.getDigitalAddress().getFirst().getAddress());
+        assertEquals("legacy-output-ko@pec.it", recoveredPayload.getDigitalAddress().getFirst().getAddress());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
@@ -437,60 +422,32 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
         );
     }
 
-    private void startOldInipecFromIpaNotFound(String correlationId, String taxId) {
-        when(ipaClient.callEServiceWS23(eq(taxId), any())).thenReturn(Mono.just(ipaNotFoundResponse()));
+    private Map<String, AttributeValue> findBatchRequest(String correlationId) {
+        List<Map<String, AttributeValue>> requests = findBatchRequestsByCorrelationPrefix(correlationId);
 
-        AddressOKDto response = enqueueGatewayRequest(
-                "PG",
-                taxId,
-                AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL,
-                correlationId
-        );
+        assertEquals(1, requests.size());
 
-        processNextGatewayInputMessage();
-
-        assertEquals(correlationId, response.getCorrelationId());
-        assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
-
-        Map<String, AttributeValue> request = oldInipecRequest(correlationId);
-
-        assertEquals(taxId, request.get("cf").s());
-        assertEquals("PG", request.get("recipientType").s());
-        assertEquals("NOT_WORKED", request.get("status").s());
-
-        assertNull(receiveSingleMessage(OUTPUT_QUEUE));
+        return requests.getFirst();
     }
 
-    private String submitOldInipecBatchFromGateway(String correlationId, String pollingId) {
-        startOldInipecFromIpaNotFound(correlationId, VALID_PG_PIVA);
+    private String submitLegacyBatchFromGateway(String correlationId, String pollingId) {
+        startLegacyInipecFromGateway(correlationId, VALID_PF_CF);
 
         when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class)))
                 .thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
 
         iniPecBatchRequestService.batchPecRequest();
 
-        Map<String, AttributeValue> request = oldInipecRequest(correlationId);
+        Map<String, AttributeValue> request = findBatchRequest(correlationId);
 
         assertEquals("WORKING", request.get("status").s());
+        assertNull(request.get("ttl"));
 
         String batchId = request.get("batchId").s();
 
         assertFalse(findPollingByBatchId(batchId).isEmpty());
 
-        Map<String, AttributeValue> polling = findLegacyPolling(batchId);
-
-        assertEquals("NOT_WORKED", polling.get("status").s());
-        assertEquals(pollingId, polling.get("pollingId").s());
-
         return batchId;
-    }
-
-    private Map<String, AttributeValue> oldInipecRequest(String correlationId) {
-        List<Map<String, AttributeValue>> requests = findBatchRequestsByCorrelationPrefix(correlationId);
-
-        assertEquals(1, requests.size());
-
-        return requests.getFirst();
     }
 
     private Map<String, AttributeValue> findLegacyPolling(String batchId) {
@@ -518,19 +475,11 @@ class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesComponen
                 .items();
     }
 
-    private IniPecPollingResponse inipecPollingResponse(Pec... pecs) {
-        IniPecPollingResponse response = new IniPecPollingResponse();
-
-        response.setElencoPec(List.of(pecs));
-
-        return response;
-    }
-
     private Map<String, AttributeValue> awaitSendStatus(String correlationId, String expectedSendStatus) {
         Map<String, AttributeValue> request = null;
 
         for (int i = 0; i < 100; i++) {
-            request = oldInipecRequest(correlationId);
+            request = findBatchRequest(correlationId);
 
             if (request.get("sendStatus") != null
                     && expectedSendStatus.equals(request.get("sendStatus").s())) {

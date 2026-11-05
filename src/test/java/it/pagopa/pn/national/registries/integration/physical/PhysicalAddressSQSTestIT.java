@@ -25,7 +25,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
-class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT {
+class PhysicalAddressSQSTestIT extends AbstractNationalRegistriesComponentIT {
 
     @MockitoSpyBean
     private SqsService sqsService;
