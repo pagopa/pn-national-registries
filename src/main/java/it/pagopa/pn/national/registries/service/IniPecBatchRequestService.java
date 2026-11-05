@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -127,14 +128,12 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     log.info("IniPEC - batchId {} - calling with {} cf", batchId, iniPecBatchRequest.getElencoCf().size());
                     return callEService(iniPecBatchRequest, batchId)
                             .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest, false))
-                            .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest, true))
-                            .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId).then(Mono.error(t)))
                             .flatMap(response -> createPolling(response, batchId, requests, iniPecBatchRequest.getElencoCf().size()))
-                            .thenReturn(requests);
+                            .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest, true))
+                            .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId));
                 })
                 .doOnError(e -> log.error("IniPEC - batchId {} - failed to execute batch", batchId, e))
-                .onErrorResume(e -> Mono.empty())
-                .then();
+                .onErrorResume(e -> Mono.empty());
     }
 
     private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
@@ -188,6 +187,7 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     r.setRetry(nextRetry);
                     if (nextRetry >= nationalRegistriesConfig.getInipec().getBatchRequestMaxRetry() || (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
                         r.setStatus(BatchStatus.ERROR.getValue());
+                        r.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
                         r.setLastReserved(now);
                         log.debug("IniPEC - batchId {} - request {} status in {} (retry: {})", batchId, r.getCorrelationId(), r.getStatus(), r.getRetry());
                     }
