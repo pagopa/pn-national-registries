@@ -114,7 +114,8 @@ public class IniPecBatchSqsService {
                                 .onErrorResume(e -> Mono.empty());
                     } else {
                         RecipientType recipientType = retrieveRecipientType(item.getCf(), item.getRecipientType());
-                        return pushMessageToDLQ(item, recipientType);
+                        return pushMessageToDLQ(item, recipientType)
+                                .onErrorResume(e -> Mono.empty());
                     }
                 })
                 .flatMap(batchRequestRepository::update)
@@ -162,23 +163,8 @@ public class IniPecBatchSqsService {
     }
 
     public Mono<BatchRequest> sendToDlqQueue(BatchRequest batchRequest) {
-        InternalCodeSqsDto internalCodeSqsDto = toInternalCodeSqsDto(batchRequest);
-        if(batchRequest.getReferenceRequestDate() != null){
-            internalCodeSqsDto.setReferenceRequestDate(java.util.Date.from(batchRequest.getReferenceRequestDate().atZone(ZoneId.systemDefault()).toInstant()));
-        }
         RecipientType recipientType = retrieveRecipientType(batchRequest.getCf(), batchRequest.getRecipientType());
         return pushMessageToDLQ(batchRequest, recipientType)
                 .flatMap(batchRequestRepository::update);
-    }
-
-    private InternalCodeSqsDto toInternalCodeSqsDto(BatchRequest batchRequest) {
-        RecipientType recipientType = retrieveRecipientType(batchRequest.getCf(), batchRequest.getRecipientType());
-        return InternalCodeSqsDto.builder()
-                .taxId(batchRequest.getCf())
-                .recipientType(recipientType.name())
-                .domicileType(DOMICILE_TYPE)
-                .pnNationalRegistriesCxId(batchRequest.getClientId())
-                .correlationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0])
-                .build();
     }
 }

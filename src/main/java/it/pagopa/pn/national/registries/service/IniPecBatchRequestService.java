@@ -128,12 +128,14 @@ public class IniPecBatchRequestService extends GatewayConverter {
                     log.info("IniPEC - batchId {} - calling with {} cf", batchId, iniPecBatchRequest.getElencoCf().size());
                     return callEService(iniPecBatchRequest, batchId)
                             .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest, false))
-                            .flatMap(response -> createPolling(response, batchId, requests, iniPecBatchRequest.getElencoCf().size()))
                             .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest, true))
-                            .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId));
+                            .onErrorResume(t -> incrementAndCheckRetry(requests, t, batchId).then(Mono.error(t)))
+                            .flatMap(response -> createPolling(response, batchId, requests, iniPecBatchRequest.getElencoCf().size()))
+                            .thenReturn(requests);
                 })
                 .doOnError(e -> log.error("IniPEC - batchId {} - failed to execute batch", batchId, e))
-                .onErrorResume(e -> Mono.empty());
+                .onErrorResume(e -> Mono.empty())
+                .then();
     }
 
     private Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {

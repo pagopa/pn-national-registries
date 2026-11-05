@@ -181,7 +181,7 @@ class IniPecBatchSqsServiceTest {
         when(batchRequestRepository.setNewReservationIdToBatchRequest(same(batchRequest))).thenReturn(Mono.just(batchRequest));
         when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.error(SqsException.builder().message("DLQ error").build()));
 
-        StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(batchRequest))).expectError(SqsException.class).verify();
+        StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(batchRequest))).verifyComplete();
 
         assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
         assertNotEquals(BatchSendStatus.SENT_TO_DLQ.getValue(), batchRequest.getSendStatus());

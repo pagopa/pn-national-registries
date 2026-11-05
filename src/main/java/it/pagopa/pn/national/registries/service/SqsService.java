@@ -38,19 +38,28 @@ public class SqsService {
     public Mono<Void> pushToOutputQueue(CodeSqsDto codeSqsDto, String clientId) {
         GatewayEventHeader header = buildHeader(NR_GATEWAY_RESPONSE, clientId);
         var outputEvent = new GatewayOutputEvent(header, codeSqsDto);
-        return Mono.fromRunnable(() -> outputQueueMomProducer.push(outputEvent));
+        return Mono.fromRunnable(() -> outputQueueMomProducer.push(outputEvent))
+                .doOnSuccess(unused -> log.info("Message pushed to output queue for correlationId: {}", codeSqsDto.getCorrelationId()))
+                .doOnError(error -> log.error("Failed to push message to output queue for correlationId: {}", codeSqsDto.getCorrelationId(), error))
+                .then();
     }
 
     public Mono<Void> pushToInputQueue(InternalCodeSqsDto internalCodeSqsDto, String clientId) {
         GatewayEventHeader header = buildHeader(NR_GATEWAY_INPUT, clientId);
         var inputEvent = new GatewayInputEvent(header, internalCodeSqsDto);
-        return Mono.fromRunnable(() -> internalQueueMomProducer.push(inputEvent));
+        return Mono.fromRunnable(() -> internalQueueMomProducer.push(inputEvent))
+                .doOnSuccess(unused -> log.info("Message pushed to input queue for correlationId: {}", internalCodeSqsDto.getCorrelationId()))
+                .doOnError(error -> log.error("Failed to push message to input queue for correlationId: {}", internalCodeSqsDto.getCorrelationId(), error))
+                .then();
     }
 
     public Mono<Void> pushToInputDlqQueue(InternalCodeSqsDto internalCodeSqsDto, String clientId) {
         GatewayEventHeader header = buildHeader(NR_GATEWAY_INPUT, clientId);
         var inputDlqEvent = new GatewayInputEvent(header, internalCodeSqsDto);
-        return Mono.fromRunnable(() -> internalDlqQueueMomProducer.push(inputDlqEvent));
+        return Mono.fromRunnable(() -> internalDlqQueueMomProducer.push(inputDlqEvent))
+                .doOnSuccess(unused -> log.info("Message pushed to input DLQ queue for correlationId: {}", internalCodeSqsDto.getCorrelationId()))
+                .doOnError(error -> log.error("Failed to push message to input DLQ for correlationId: {}", internalCodeSqsDto.getCorrelationId(), error))
+                .then();
     }
 
     private static GatewayEventHeader buildHeader(String nrGatewayResponse, String clientId) {

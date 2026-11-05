@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
@@ -10,8 +11,8 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
 
@@ -23,28 +24,14 @@ import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
 
 @Service
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class InfoCamereService {
 
     private final InfoCamereClient infoCamereClient;
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
-    private final long iniPecTtl;
     private final ValidateTaxIdUtils validateTaxIdUtils;
-    private final String batchRequestPkSeparator;
-
-    public InfoCamereService(InfoCamereClient infoCamereClient,
-                             InfoCamereConverter infoCamereConverter,
-                             IniPecBatchRequestRepository iniPecBatchRequestRepository,
-                             @Value("${pn.national-registries.inipec.ttl}") long iniPecTtl,
-                             @Value("${pn.national-registries.inipec.batchrequest-pk-separator}") String batchRequestPkSeparator,
-                             ValidateTaxIdUtils validateTaxIdUtils) {
-        this.infoCamereClient = infoCamereClient;
-        this.infoCamereConverter = infoCamereConverter;
-        this.iniPecBatchRequestRepository = iniPecBatchRequestRepository;
-        this.iniPecTtl = iniPecTtl;
-        this.validateTaxIdUtils = validateTaxIdUtils;
-        this.batchRequestPkSeparator = batchRequestPkSeparator;
-    }
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto, Date referenceRequestDate, RecipientType recipientType) {
         String cf = dto.getFilter().getTaxId();
@@ -86,7 +73,7 @@ public class InfoCamereService {
 
     public Mono<BatchRequest> createBatchRequestByCf(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto, String messageId, Date referenceRequestDate, RecipientType recipientType) {
         BatchRequest batchRequest = createNewStartBatchRequest();
-        batchRequest.setCorrelationId(dto.getFilter().getCorrelationId() + batchRequestPkSeparator + batchRequest.getCreatedAt());
+        batchRequest.setCorrelationId(dto.getFilter().getCorrelationId() + nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator() + batchRequest.getCreatedAt());
         batchRequest.setCf(dto.getFilter().getTaxId());
         batchRequest.setClientId(pnNationalRegistriesCxId);
         batchRequest.setAwsMessageId(messageId);
