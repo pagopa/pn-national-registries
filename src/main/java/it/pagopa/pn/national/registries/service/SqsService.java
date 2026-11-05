@@ -27,53 +27,40 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @RequiredArgsConstructor
 public class SqsService {
 
-    public static final String NR_GATEWAY_RESPONSE = "NR_GATEWAY_RESPONSE";
-    public static final String NR_GATEWAY_INPUT = "NR_GATEWAY_INPUT";
-    public static final String PN_NATIONAL_REGISTRIES = "pn-national-registries";
+    private static final String NR_GATEWAY_RESPONSE = "NR_GATEWAY_RESPONSE";
+    private static final String NR_GATEWAY_INPUT = "NR_GATEWAY_INPUT";
+    private static final String PN_NATIONAL_REGISTRIES = "pn-national-registries";
     private final OutputQueueMomProducer outputQueueMomProducer;
     private final InternalQueueMomProducer internalQueueMomProducer;
     private final InternalDlqQueueMomProducer internalDlqQueueMomProducer;
     private final ObjectMapper mapper;
 
     public Mono<Void> pushToOutputQueue(CodeSqsDto codeSqsDto, String clientId) {
-        GatewayEventHeader header = GatewayEventHeader.builder()
-                .publisher(PN_NATIONAL_REGISTRIES)
-                .createdAt(Instant.now())
-                .eventId(UUID.randomUUID().toString())
-                .eventType(NR_GATEWAY_RESPONSE)
-                .clientId(clientId)
-                .build();
-
+        GatewayEventHeader header = buildHeader(NR_GATEWAY_RESPONSE, clientId);
         var outputEvent = new GatewayOutputEvent(header, codeSqsDto);
         return Mono.fromRunnable(() -> outputQueueMomProducer.push(outputEvent));
     }
 
     public Mono<Void> pushToInputQueue(InternalCodeSqsDto internalCodeSqsDto, String clientId) {
-        GatewayEventHeader header = GatewayEventHeader.builder()
-                .publisher(PN_NATIONAL_REGISTRIES)
-                .createdAt(Instant.now())
-                .eventId(UUID.randomUUID().toString())
-                .eventType(NR_GATEWAY_INPUT)
-                .clientId(clientId)
-                .build();
-
+        GatewayEventHeader header = buildHeader(NR_GATEWAY_INPUT, clientId);
         var inputEvent = new GatewayInputEvent(header, internalCodeSqsDto);
         return Mono.fromRunnable(() -> internalQueueMomProducer.push(inputEvent));
-
     }
 
     public Mono<Void> pushToInputDlqQueue(InternalCodeSqsDto internalCodeSqsDto, String clientId) {
-        GatewayEventHeader header = GatewayEventHeader.builder()
+        GatewayEventHeader header = buildHeader(NR_GATEWAY_INPUT, clientId);
+        var inputDlqEvent = new GatewayInputEvent(header, internalCodeSqsDto);
+        return Mono.fromRunnable(() -> internalDlqQueueMomProducer.push(inputDlqEvent));
+    }
+
+    private static GatewayEventHeader buildHeader(String nrGatewayResponse, String clientId) {
+        return GatewayEventHeader.builder()
                 .publisher(PN_NATIONAL_REGISTRIES)
                 .createdAt(Instant.now())
                 .eventId(UUID.randomUUID().toString())
-                .eventType(NR_GATEWAY_INPUT)
+                .eventType(nrGatewayResponse)
                 .clientId(clientId)
                 .build();
-
-        var inputDlqEvent = new GatewayInputEvent(header, internalCodeSqsDto);
-        return Mono.fromRunnable(() -> internalDlqQueueMomProducer.push(inputDlqEvent));
-
     }
 
     protected <T>T toObject(String msg, Class<T> targetClass) {
