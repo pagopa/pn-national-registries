@@ -151,7 +151,7 @@ public class GatewayService{
     }
 
     private Mono<Void> handleError(Throwable error, CodeSqsDto outputMessage, String cxId, InternalCodeSqsDto dlqMessage) {
-        return outputMessage != null ? sqsService.pushToOutputQueue(outputMessage, cxId).then() : handleExceptionAndSendToDlq(error, dlqMessage);
+        return outputMessage != null ? sqsService.pushToOutputQueue(outputMessage, cxId) : handleExceptionAndSendToDlq(error, dlqMessage);
     }
 
     private boolean isPhysical(AddressRequestBodyDto request) {
@@ -171,11 +171,7 @@ public class GatewayService{
 
     public Mono<Void> handleExceptionAndSendToDlq(Throwable throwable, InternalCodeSqsDto internalCodeSqsDto) {
         if (isDlqEligible(throwable)){
-            return sqsService.pushToInputDlqQueue(internalCodeSqsDto, internalCodeSqsDto.getPnNationalRegistriesCxId())
-                    .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
-                            internalCodeSqsDto.getCorrelationId(),
-                            sendMessageResponse))
-                    .then();
+            return sqsService.pushToInputDlqQueue(internalCodeSqsDto, internalCodeSqsDto.getPnNationalRegistriesCxId());
         }
         return Mono.error(throwable);
     }

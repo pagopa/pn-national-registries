@@ -21,13 +21,11 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
@@ -83,10 +81,10 @@ public class IniPecBatchSqsService {
     }
 
     private Mono<Void> execBatchSendToSqs(List<BatchRequest> batchRequest, String reservationId) {
-        LocalDateTime now = LocalDateTime.now(ZoneOffset.UTC);
+        Instant now = Instant.now();
         return Flux.fromStream(batchRequest.stream())
                 .doOnNext(item -> {
-                    item.setLastReserved(now);
+                    item.setLastReserved(LocalDateTime.ofInstant(now, ZoneOffset.UTC));
                     item.setReservationId(reservationId);
                 })
                 .flatMap(item -> batchRequestRepository.setNewReservationIdToBatchRequest(item)
@@ -101,32 +99,43 @@ public class IniPecBatchSqsService {
                                 .doOnNext(r -> {
                                     log.info("PG - DigitalAddress - pushed message for correlationId: {}", item.getCorrelationId());
                                     item.setSendStatus(BatchSendStatus.SENT.getValue());
+                                    item.setTtl(now.plusSeconds(config.getTtl()).getEpochSecond());
                                 })
                                 .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {}", item.getCorrelationId(), e))
                                 .onErrorResume(e -> Mono.empty());
                     } else {
                         RecipientType recipientType = retrieveRecipientType(item.getCf(), item.getRecipientType());
-                        String batchRequestPkSeparator = config.getInipec().getBatchRequestPkSeparator();
-                        return sqsService.pushToInputDlqQueue(InternalCodeSqsDto.builder()
-                                        .taxId(item.getCf())
-                                        .correlationId(item.getCorrelationId().split(batchRequestPkSeparator)[0])
-                                        .referenceRequestDate(java.util.Date.from(item.getReferenceRequestDate().atZone(ZoneId.systemDefault()).toInstant()))
-                                        .pnNationalRegistriesCxId(item.getClientId())
-                                        .domicileType(DOMICILE_TYPE)
-                                        .recipientType(recipientType.name())
-                                        .build(), item.getClientId())
-                                .doOnNext(sendMessageResponse -> log.info("Sent to DQL Input message for correlationId {} -> response: {}",
-                                        item.getCorrelationId().split(batchRequestPkSeparator)[0],
-                                        sendMessageResponse))
-                                .thenReturn(item)
-                                .doOnNext(r -> {
-                                    log.info("PG - DigitalAddress - send to dlq queue message for correlationId: {}", item.getCorrelationId());
-                                    item.setSendStatus(BatchSendStatus.SENT_TO_DLQ.getValue());
-                                });
+                        return pushMessageToDLQ(item, recipientType)
+                                .onErrorResume(e -> Mono.empty());
                     }
                 })
                 .flatMap(batchRequestRepository::update)
                 .then();
+    }
+
+    private Mono<BatchRequest> pushMessageToDLQ(BatchRequest item, RecipientType recipientType) {
+        Instant now = Instant.now();
+        InternalCodeSqsDto internalCodeSqsDto = InternalCodeSqsDto.builder()
+                .taxId(item.getCf())
+                .correlationId(item.getCorrelationId().split(config.getInipec().getBatchRequestPkSeparator())[0])
+                .pnNationalRegistriesCxId(item.getClientId())
+                .domicileType(DOMICILE_TYPE)
+                .build();
+
+        if(Objects.nonNull(item.getReferenceRequestDate())){
+            internalCodeSqsDto.setReferenceRequestDate(java.util.Date.from(item.getReferenceRequestDate().atZone(ZoneId.systemDefault()).toInstant()));
+        }
+
+        if(Objects.nonNull(recipientType)){
+            internalCodeSqsDto.setRecipientType(recipientType.name());
+        }
+
+        return sqsService.pushToInputDlqQueue(internalCodeSqsDto, item.getClientId())
+                .thenReturn(item)
+                .doOnNext(batchRequest -> {
+                    batchRequest.setSendStatus(BatchSendStatus.SENT_TO_DLQ.getValue());
+                    batchRequest.setTtl(now.plusSeconds(config.getTtl()).getEpochSecond());
+                });
     }
 
     private Page<BatchRequest> getBatchRequest(Map<String, AttributeValue> lastEvaluatedKey) {
@@ -144,24 +153,9 @@ public class IniPecBatchSqsService {
                 .then();
     }
 
-    public Mono<Void> sendToDlqQueue(BatchRequest batchRequest) {
-        InternalCodeSqsDto internalCodeSqsDto = toInternalCodeSqsDto(batchRequest);
-        if(batchRequest.getReferenceRequestDate() != null){
-            internalCodeSqsDto.setReferenceRequestDate(java.util.Date.from(batchRequest.getReferenceRequestDate().atZone(ZoneId.systemDefault()).toInstant()));
-        }
-        return sqsService.pushToInputDlqQueue(internalCodeSqsDto, batchRequest.getClientId())
-                .then();
-    }
-
-    private InternalCodeSqsDto toInternalCodeSqsDto(BatchRequest batchRequest) {
+    public Mono<BatchRequest> sendToDlqQueue(BatchRequest batchRequest) {
         RecipientType recipientType = retrieveRecipientType(batchRequest.getCf(), batchRequest.getRecipientType());
-        String batchRequestPkSeparator = config.getInipec().getBatchRequestPkSeparator();
-        return InternalCodeSqsDto.builder()
-                .taxId(batchRequest.getCf())
-                .recipientType(recipientType.name())
-                .domicileType(DOMICILE_TYPE)
-                .pnNationalRegistriesCxId(batchRequest.getClientId())
-                .correlationId(batchRequest.getCorrelationId().split(batchRequestPkSeparator)[0])
-                .build();
+        return pushMessageToDLQ(batchRequest, recipientType)
+                .flatMap(batchRequestRepository::update);
     }
 }

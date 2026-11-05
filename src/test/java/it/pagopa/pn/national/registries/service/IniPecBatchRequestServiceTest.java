@@ -5,8 +5,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.handler.timeout.ReadTimeoutException;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
+import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
@@ -239,8 +241,33 @@ class IniPecBatchRequestServiceTest {
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
 
         verifyNoInteractions(batchPollingRepository);
-        verifyNoInteractions(iniPecBatchSqsService);
         assertEquals(1, batchRequest.getRetry());
+        assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), batchRequest.getStatus());
+        assertNull(batchRequest.getSendStatus());
+    }
+
+    @Test
+    void testBatchPecRequestEServiceFailureSQSError() {
+        BatchRequest batchRequest = new BatchRequest();
+        batchRequest.setRetry(2);
+
+        when(batchRequestRepository.getBatchRequestByNotBatchId(anyMap(), anyInt()))
+                .thenReturn(Mono.just(Page.create(List.of(batchRequest))));
+        when(batchRequestRepository.setNewBatchIdToBatchRequest(same(batchRequest)))
+                .thenReturn(Mono.just(batchRequest));
+        when(batchRequestRepository.update(same(batchRequest)))
+                .thenReturn(Mono.just(batchRequest));
+
+        when(infoCamereService.callEService(any(), any()))
+                .thenReturn(Mono.error(ReadTimeoutException::new));
+
+        when(iniPecBatchSqsService.sendListToDlqQueue(anyList()))
+                .thenReturn(Mono.error(new RuntimeException("SQS error")));
+
+        assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
+
+        verifyNoInteractions(batchPollingRepository);
+        assertEquals(2, batchRequest.getRetry());
         assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), batchRequest.getStatus());
         assertNull(batchRequest.getSendStatus());
     }

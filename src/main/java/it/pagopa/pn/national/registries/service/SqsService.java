@@ -3,22 +3,21 @@ package it.pagopa.pn.national.registries.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
+import it.pagopa.pn.national.registries.middleware.queue.model.GatewayEventHeader;
+import it.pagopa.pn.national.registries.middleware.queue.model.GatewayInputEvent;
+import it.pagopa.pn.national.registries.middleware.queue.model.GatewayOutputEvent;
+import it.pagopa.pn.national.registries.middleware.queue.producer.InternalDlqQueueMomProducer;
+import it.pagopa.pn.national.registries.middleware.queue.producer.InternalQueueMomProducer;
+import it.pagopa.pn.national.registries.middleware.queue.producer.OutputQueueMomProducer;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.util.StringUtils;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
-import software.amazon.awssdk.services.sqs.model.MessageAttributeValue;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.Instant;
+import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_INIPEC;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC;
@@ -28,59 +27,49 @@ import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesEx
 @RequiredArgsConstructor
 public class SqsService {
 
-    private static final String PUSHING_OUTPUT_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}, from source: {}";
-    private static final String PUSHING_INPUT_MESSAGE = "pushing message for clientId: [{}] with correlationId: {}";
-    private static final String INSERTING_MSG_WITHOUT_DATA = "Inserting data in SQS queue: {}";
-
-    private final SqsAsyncClient sqsClient;
+    private static final String NR_GATEWAY_RESPONSE = "NR_GATEWAY_RESPONSE";
+    private static final String NR_GATEWAY_INPUT = "NR_GATEWAY_INPUT";
+    private static final String PN_NATIONAL_REGISTRIES = "pn-national-registries";
+    private final OutputQueueMomProducer outputQueueMomProducer;
+    private final InternalQueueMomProducer internalQueueMomProducer;
+    private final InternalDlqQueueMomProducer internalDlqQueueMomProducer;
     private final ObjectMapper mapper;
-    private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    public Mono<SendMessageResponse> pushToOutputQueue(CodeSqsDto msg, String pnNationalRegistriesCxId) {
-        log.info(PUSHING_OUTPUT_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId(), msg.getRegistry());
-        log.info(INSERTING_MSG_WITHOUT_DATA, nationalRegistriesConfig.getSqs().getOutputQueueName());
-        return push(toJson(msg), pnNationalRegistriesCxId, nationalRegistriesConfig.getSqs().getOutputQueueName(), "NR_GATEWAY_RESPONSE");
+    public Mono<Void> pushToOutputQueue(CodeSqsDto codeSqsDto, String clientId) {
+        GatewayEventHeader header = buildHeader(NR_GATEWAY_RESPONSE, clientId);
+        var outputEvent = new GatewayOutputEvent(header, codeSqsDto);
+        return Mono.fromRunnable(() -> outputQueueMomProducer.push(outputEvent))
+                .doOnSuccess(unused -> log.info("Message pushed to output queue for correlationId: {}", codeSqsDto.getCorrelationId()))
+                .doOnError(error -> log.error("Failed to push message to output queue for correlationId: {}", codeSqsDto.getCorrelationId(), error))
+                .then();
     }
 
-    public Mono<SendMessageResponse> pushToInputQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
-        log.info(PUSHING_INPUT_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
-        log.info(INSERTING_MSG_WITHOUT_DATA, nationalRegistriesConfig.getSqs().getInputQueueName());
-        return push(toJson(msg), pnNationalRegistriesCxId, nationalRegistriesConfig.getSqs().getInputQueueName(), "NR_GATEWAY_INPUT");
+    public Mono<Void> pushToInputQueue(InternalCodeSqsDto internalCodeSqsDto, String clientId) {
+        GatewayEventHeader header = buildHeader(NR_GATEWAY_INPUT, clientId);
+        var inputEvent = new GatewayInputEvent(header, internalCodeSqsDto);
+        return Mono.fromRunnable(() -> internalQueueMomProducer.push(inputEvent))
+                .doOnSuccess(unused -> log.info("Message pushed to input queue for correlationId: {}", internalCodeSqsDto.getCorrelationId()))
+                .doOnError(error -> log.error("Failed to push message to input queue for correlationId: {}", internalCodeSqsDto.getCorrelationId(), error))
+                .then();
     }
 
-    public Mono<SendMessageResponse> pushToInputDlqQueue(InternalCodeSqsDto msg, String pnNationalRegistriesCxId) {
-        log.info(PUSHING_INPUT_MESSAGE, pnNationalRegistriesCxId, msg.getCorrelationId());
-        log.info(INSERTING_MSG_WITHOUT_DATA, nationalRegistriesConfig.getSqs().getInputDlqQueueName());
-        return push(toJson(msg), pnNationalRegistriesCxId, nationalRegistriesConfig.getSqs().getInputDlqQueueName(), "NR_GATEWAY_INPUT");
+    public Mono<Void> pushToInputDlqQueue(InternalCodeSqsDto internalCodeSqsDto, String clientId) {
+        GatewayEventHeader header = buildHeader(NR_GATEWAY_INPUT, clientId);
+        var inputDlqEvent = new GatewayInputEvent(header, internalCodeSqsDto);
+        return Mono.fromRunnable(() -> internalDlqQueueMomProducer.push(inputDlqEvent))
+                .doOnSuccess(unused -> log.info("Message pushed to input DLQ queue for correlationId: {}", internalCodeSqsDto.getCorrelationId()))
+                .doOnError(error -> log.error("Failed to push message to input DLQ for correlationId: {}", internalCodeSqsDto.getCorrelationId(), error))
+                .then();
     }
 
-    public Mono<SendMessageResponse> push(String msg, String pnNationalRegistriesCxId, String queueName, String eventType) {
-        return Mono.fromFuture(() -> sqsClient.getQueueUrl(GetQueueUrlRequest.builder().queueName(queueName).build()))
-                .flatMap(getQueueUrlResponse -> {
-                    SendMessageRequest sendMsgRequest = SendMessageRequest.builder()
-                            .queueUrl(getQueueUrlResponse.queueUrl())
-                            .messageAttributes(buildMessageAttributeMap(pnNationalRegistriesCxId, eventType))
-                            .messageBody(msg)
-                            .build();
-                    return Mono.fromFuture(() -> sqsClient.sendMessage(sendMsgRequest));
-                });
-    }
-
-    private Map<String, MessageAttributeValue> buildMessageAttributeMap(String pnNationalRegistriesCxId, String eventType) {
-        Map<String, MessageAttributeValue> attributes = new HashMap<>();
-        if (StringUtils.hasText(pnNationalRegistriesCxId)) {
-            attributes.put("clientId", MessageAttributeValue.builder().stringValue(pnNationalRegistriesCxId).dataType("String").build());
-        }
-        attributes.put("eventType", MessageAttributeValue.builder().stringValue(eventType).dataType("String").build());
-        return attributes;
-    }
-
-    protected String toJson(Object codeSqsDto) {
-        try {
-            return mapper.writeValueAsString(codeSqsDto);
-        } catch (JsonProcessingException e) {
-            throw new PnInternalException(ERROR_MESSAGE_INIPEC, ERROR_CODE_INIPEC, e);
-        }
+    private static GatewayEventHeader buildHeader(String nrGatewayResponse, String clientId) {
+        return GatewayEventHeader.builder()
+                .publisher(PN_NATIONAL_REGISTRIES)
+                .createdAt(Instant.now())
+                .eventId(UUID.randomUUID().toString())
+                .eventType(nrGatewayResponse)
+                .clientId(clientId)
+                .build();
     }
 
     protected <T>T toObject(String msg, Class<T> targetClass) {

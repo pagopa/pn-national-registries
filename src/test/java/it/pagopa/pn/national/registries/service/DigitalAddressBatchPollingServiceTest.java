@@ -203,14 +203,17 @@ class DigitalAddressBatchPollingServiceTest {
         Tutti e tre i polling vengono eseguiti con successo.
          */
         BatchPolling batchPolling1 = new BatchPolling();
+        batchPolling1.setCreatedAt(LocalDateTime.now());
         batchPolling1.setBatchId("batchId1");
         batchPolling1.setPollingId("pollingId1");
 
         BatchPolling batchPolling2 = new BatchPolling();
+        batchPolling2.setCreatedAt(LocalDateTime.now());
         batchPolling2.setBatchId("batchId2");
         batchPolling2.setPollingId("pollingId2");
 
         BatchPolling batchPolling3 = new BatchPolling();
+        batchPolling3.setCreatedAt(LocalDateTime.now());
         batchPolling3.setBatchId("batchId3");
         batchPolling3.setPollingId("pollingId3");
 
@@ -587,7 +590,9 @@ class DigitalAddressBatchPollingServiceTest {
     @Test
     void testRecoveryBatchPolling() {
         BatchPolling batchPollingToRecover1 = new BatchPolling();
+        batchPollingToRecover1.setCreatedAt(LocalDateTime.now());
         BatchPolling batchPollingToRecover2 = new BatchPolling();
+        batchPollingToRecover2.setCreatedAt(LocalDateTime.now());
 
         when(batchPollingRepository.getBatchPollingToRecover())
                 .thenReturn(Mono.just(List.of(batchPollingToRecover1, batchPollingToRecover2)));

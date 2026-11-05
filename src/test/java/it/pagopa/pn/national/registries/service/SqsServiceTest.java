@@ -1,325 +1,140 @@
 package it.pagopa.pn.national.registries.service;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import it.pagopa.pn.commons.exceptions.PnInternalException;
-import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
+import it.pagopa.pn.national.registries.middleware.queue.model.GatewayInputEvent;
+import it.pagopa.pn.national.registries.middleware.queue.model.GatewayOutputEvent;
+import it.pagopa.pn.national.registries.middleware.queue.producer.InternalDlqQueueMomProducer;
+import it.pagopa.pn.national.registries.middleware.queue.producer.InternalQueueMomProducer;
+import it.pagopa.pn.national.registries.middleware.queue.producer.OutputQueueMomProducer;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import reactor.test.StepVerifier;
-import software.amazon.awssdk.services.sqs.SqsAsyncClient;
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlRequest;
-import software.amazon.awssdk.services.sqs.model.GetQueueUrlResponse;
-import software.amazon.awssdk.services.sqs.model.SendMessageRequest;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
-
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class SqsServiceTest {
 
-    private static final String CLIENT_ID = "clientId";
-    private static final String CORRELATION_ID = "correlationId";
-    private static final String QUEUE_URL = "queueUrl";
+    private OutputQueueMomProducer outputQueueMomProducer;
+    private InternalQueueMomProducer internalQueueMomProducer;
+    private InternalDlqQueueMomProducer internalDlqQueueMomProducer;
 
-    private SqsAsyncClient amazonSQS;
+    private SqsService sqsService;
     private ObjectMapper objectMapper;
-    private NationalRegistriesConfig nationalRegistriesConfig;
-    private NationalRegistriesConfig.Sqs sqs;
-
-    private SendMessageResponse sendMessageResponse;
 
     @BeforeEach
-    void setUp() throws Exception {
-        amazonSQS = mock(SqsAsyncClient.class);
+    void setup() {
+        outputQueueMomProducer = mock(OutputQueueMomProducer.class);
+        internalQueueMomProducer = mock(InternalQueueMomProducer.class);
+        internalDlqQueueMomProducer = mock(InternalDlqQueueMomProducer.class);
         objectMapper = mock(ObjectMapper.class);
 
-        nationalRegistriesConfig = new NationalRegistriesConfig();
-        sqs = new NationalRegistriesConfig.Sqs();
-        nationalRegistriesConfig.setSqs(sqs);
-
-        sendMessageResponse = SendMessageResponse.builder().build();
-
-        when(objectMapper.writeValueAsString(any()))
-                .thenReturn("{\"correlationId\":\"correlationId\"}");
-
-        when(amazonSQS.getQueueUrl(any(GetQueueUrlRequest.class)))
-                .thenReturn(
-                        CompletableFuture.completedFuture(
-                                GetQueueUrlResponse.builder()
-                                        .queueUrl(QUEUE_URL)
-                                        .build()
-                        )
-                );
-
-        when(amazonSQS.sendMessage(any(SendMessageRequest.class)))
-                .thenReturn(
-                        CompletableFuture.completedFuture(sendMessageResponse)
-                );
+        sqsService = new SqsService(
+                outputQueueMomProducer,
+                internalQueueMomProducer,
+                internalDlqQueueMomProducer,
+                objectMapper
+        );
     }
 
     @Test
     void testPushToOutputQueue() {
-        sqs.setOutputQueueName("outputQueueName");
-
-        SqsService sqsService = new SqsService(
-                amazonSQS,
-                objectMapper,
-                nationalRegistriesConfig
-        );
-
         CodeSqsDto codeSqsDto = new CodeSqsDto();
-        codeSqsDto.setCorrelationId(CORRELATION_ID);
+        codeSqsDto.setCorrelationId("correlationId");
+
+        String clientId = "clientId";
 
         StepVerifier.create(
-                        sqsService.pushToOutputQueue(codeSqsDto, CLIENT_ID)
+                        sqsService.pushToOutputQueue(codeSqsDto, clientId)
                 )
-                .expectNext(sendMessageResponse)
                 .verifyComplete();
 
-        ArgumentCaptor<GetQueueUrlRequest> getQueueUrlCaptor =
-                ArgumentCaptor.forClass(GetQueueUrlRequest.class);
+        ArgumentCaptor<GatewayOutputEvent> captor =
+                ArgumentCaptor.forClass(GatewayOutputEvent.class);
 
-        ArgumentCaptor<SendMessageRequest> sendMessageCaptor =
-                ArgumentCaptor.forClass(SendMessageRequest.class);
+        verify(outputQueueMomProducer, times(1))
+                .push(captor.capture());
 
-        verify(amazonSQS).getQueueUrl(getQueueUrlCaptor.capture());
-        verify(amazonSQS).sendMessage(sendMessageCaptor.capture());
+        GatewayOutputEvent event = captor.getValue();
 
-        assertEquals(
-                "outputQueueName",
-                getQueueUrlCaptor.getValue().queueName()
-        );
+        assertNotNull(event);
+        assertNotNull(event.getHeader());
+        assertEquals("NR_GATEWAY_RESPONSE", event.getHeader().getEventType());
+        assertEquals(clientId, event.getHeader().getClientId());
+        assertNotNull(event.getHeader().getCreatedAt());
 
-        SendMessageRequest request = sendMessageCaptor.getValue();
+        assertSame(codeSqsDto, event.getPayload());
 
-        assertEquals(QUEUE_URL, request.queueUrl());
-        assertEquals("{\"correlationId\":\"correlationId\"}", request.messageBody());
-
-        assertEquals(
-                CLIENT_ID,
-                request.messageAttributes()
-                        .get("clientId")
-                        .stringValue()
-        );
-
-        assertEquals(
-                "NR_GATEWAY_RESPONSE",
-                request.messageAttributes()
-                        .get("eventType")
-                        .stringValue()
-        );
+        verifyNoInteractions(internalQueueMomProducer);
+        verifyNoInteractions(internalDlqQueueMomProducer);
     }
 
     @Test
     void testPushToInputQueue() {
-        sqs.setInputQueueName("inputQueueName");
+        InternalCodeSqsDto codeSqsDto = InternalCodeSqsDto.builder()
+                .correlationId("correlationId")
+                .build();
 
-        SqsService sqsService = new SqsService(
-                amazonSQS,
-                objectMapper,
-                nationalRegistriesConfig
-        );
-
-        InternalCodeSqsDto codeSqsDto =
-                InternalCodeSqsDto.builder().build();
-
-        codeSqsDto.setCorrelationId(CORRELATION_ID);
+        String clientId = "clientId";
 
         StepVerifier.create(
-                        sqsService.pushToInputQueue(codeSqsDto, CLIENT_ID)
+                        sqsService.pushToInputQueue(codeSqsDto, clientId)
                 )
-                .expectNext(sendMessageResponse)
                 .verifyComplete();
 
-        ArgumentCaptor<GetQueueUrlRequest> getQueueUrlCaptor =
-                ArgumentCaptor.forClass(GetQueueUrlRequest.class);
+        ArgumentCaptor<GatewayInputEvent> captor =
+                ArgumentCaptor.forClass(GatewayInputEvent.class);
 
-        ArgumentCaptor<SendMessageRequest> sendMessageCaptor =
-                ArgumentCaptor.forClass(SendMessageRequest.class);
+        verify(internalQueueMomProducer, times(1))
+                .push(captor.capture());
 
-        verify(amazonSQS).getQueueUrl(getQueueUrlCaptor.capture());
-        verify(amazonSQS).sendMessage(sendMessageCaptor.capture());
+        GatewayInputEvent event = captor.getValue();
 
-        assertEquals(
-                "inputQueueName",
-                getQueueUrlCaptor.getValue().queueName()
-        );
+        assertNotNull(event);
+        assertNotNull(event.getHeader());
+        assertEquals("NR_GATEWAY_INPUT", event.getHeader().getEventType());
+        assertEquals(clientId, event.getHeader().getClientId());
+        assertNotNull(event.getHeader().getCreatedAt());
 
-        SendMessageRequest request = sendMessageCaptor.getValue();
+        assertSame(codeSqsDto, event.getPayload());
 
-        assertEquals(QUEUE_URL, request.queueUrl());
-        assertNotNull(request.messageBody());
-
-        assertEquals(
-                CLIENT_ID,
-                request.messageAttributes()
-                        .get("clientId")
-                        .stringValue()
-        );
-
-        assertEquals(
-                "NR_GATEWAY_INPUT",
-                request.messageAttributes()
-                        .get("eventType")
-                        .stringValue()
-        );
+        verifyNoInteractions(outputQueueMomProducer);
+        verifyNoInteractions(internalDlqQueueMomProducer);
     }
 
     @Test
     void testPushToInputDlqQueue() {
-        sqs.setInputDlqQueueName("inputDlqQueueName");
+        InternalCodeSqsDto codeSqsDto = InternalCodeSqsDto.builder()
+                .correlationId("correlationId")
+                .build();
 
-        SqsService sqsService = new SqsService(
-                amazonSQS,
-                objectMapper,
-                nationalRegistriesConfig
-        );
-
-        InternalCodeSqsDto codeSqsDto =
-                InternalCodeSqsDto.builder().build();
-
-        codeSqsDto.setCorrelationId(CORRELATION_ID);
+        String clientId = "clientId";
 
         StepVerifier.create(
-                        sqsService.pushToInputDlqQueue(codeSqsDto, CLIENT_ID)
+                        sqsService.pushToInputDlqQueue(codeSqsDto, clientId)
                 )
-                .expectNext(sendMessageResponse)
                 .verifyComplete();
 
-        ArgumentCaptor<GetQueueUrlRequest> getQueueUrlCaptor =
-                ArgumentCaptor.forClass(GetQueueUrlRequest.class);
+        ArgumentCaptor<GatewayInputEvent> captor =
+                ArgumentCaptor.forClass(GatewayInputEvent.class);
 
-        ArgumentCaptor<SendMessageRequest> sendMessageCaptor =
-                ArgumentCaptor.forClass(SendMessageRequest.class);
+        verify(internalDlqQueueMomProducer, times(1))
+                .push(captor.capture());
 
-        verify(amazonSQS).getQueueUrl(getQueueUrlCaptor.capture());
-        verify(amazonSQS).sendMessage(sendMessageCaptor.capture());
+        GatewayInputEvent event = captor.getValue();
 
-        assertEquals(
-                "inputDlqQueueName",
-                getQueueUrlCaptor.getValue().queueName()
-        );
+        assertNotNull(event);
+        assertNotNull(event.getHeader());
+        assertEquals("NR_GATEWAY_INPUT", event.getHeader().getEventType());
+        assertEquals(clientId, event.getHeader().getClientId());
+        assertNotNull(event.getHeader().getCreatedAt());
 
-        SendMessageRequest request = sendMessageCaptor.getValue();
+        assertSame(codeSqsDto, event.getPayload());
 
-        assertEquals(QUEUE_URL, request.queueUrl());
-        assertNotNull(request.messageBody());
-
-        assertEquals(
-                CLIENT_ID,
-                request.messageAttributes()
-                        .get("clientId")
-                        .stringValue()
-        );
-
-        assertEquals(
-                "NR_GATEWAY_INPUT",
-                request.messageAttributes()
-                        .get("eventType")
-                        .stringValue()
-        );
-    }
-
-    @Test
-    void pushWithoutClientIdShouldOmitClientIdAttribute() {
-        SqsService sqsService = new SqsService(
-                amazonSQS,
-                objectMapper,
-                nationalRegistriesConfig
-        );
-
-        StepVerifier.create(sqsService.push("message", null, "queueName", "eventType"))
-                .expectNext(sendMessageResponse)
-                .verifyComplete();
-
-        ArgumentCaptor<SendMessageRequest> sendMessageCaptor = ArgumentCaptor.forClass(SendMessageRequest.class);
-        verify(amazonSQS).sendMessage(sendMessageCaptor.capture());
-        SendMessageRequest request = sendMessageCaptor.getValue();
-        assertFalse(request.messageAttributes().containsKey("clientId"));
-        assertEquals("eventType", request.messageAttributes().get("eventType").stringValue());
-        assertEquals("message", request.messageBody());
-    }
-
-    @Test
-    void pushShouldPropagateGetQueueUrlError() {
-        SqsService sqsService = new SqsService(
-                amazonSQS,
-                objectMapper,
-                nationalRegistriesConfig
-        );
-        RuntimeException error = new RuntimeException("get queue url failed");
-        when(amazonSQS.getQueueUrl(any(GetQueueUrlRequest.class)))
-                .thenReturn(CompletableFuture.failedFuture(error));
-
-        StepVerifier.create(sqsService.push("message", CLIENT_ID, "queueName", "eventType"))
-                .expectErrorMatches(throwable -> throwable == error)
-                .verify();
-
-        verify(amazonSQS, never()).sendMessage(any(SendMessageRequest.class));
-    }
-
-    @Test
-    void pushShouldPropagateSendMessageError() {
-        SqsService sqsService = new SqsService(
-                amazonSQS,
-                objectMapper,
-                nationalRegistriesConfig
-        );
-        RuntimeException error = new RuntimeException("send failed");
-        when(amazonSQS.sendMessage(any(SendMessageRequest.class)))
-                .thenReturn(CompletableFuture.failedFuture(error));
-
-        StepVerifier.create(sqsService.push("message", CLIENT_ID, "queueName", "eventType"))
-                .expectErrorMatches(throwable -> throwable == error)
-                .verify();
-    }
-
-    @Test
-    void toJsonShouldThrowPnInternalExceptionWhenSerializationFails() throws Exception {
-        SqsService sqsService = new SqsService(
-                amazonSQS,
-                objectMapper,
-                nationalRegistriesConfig
-        );
-        when(objectMapper.writeValueAsString(any()))
-                .thenThrow(new JsonProcessingException("serialization failed") { });
-
-        assertThrows(PnInternalException.class, () -> sqsService.toJson(new CodeSqsDto()));
-    }
-
-    @Test
-    void toObjectShouldDeserializeMessage() throws Exception {
-        SqsService sqsService = new SqsService(
-                amazonSQS,
-                objectMapper,
-                nationalRegistriesConfig
-        );
-        CodeSqsDto expected = new CodeSqsDto();
-        when(objectMapper.readValue("message", CodeSqsDto.class)).thenReturn(expected);
-
-        CodeSqsDto result = sqsService.toObject("message", CodeSqsDto.class);
-
-        assertSame(expected, result);
-        verify(objectMapper).readValue("message", CodeSqsDto.class);
-    }
-
-    @Test
-    void toObjectShouldThrowPnInternalExceptionWhenDeserializationFails() throws Exception {
-        SqsService sqsService = new SqsService(
-                amazonSQS,
-                objectMapper,
-                nationalRegistriesConfig
-        );
-        when(objectMapper.readValue("message", CodeSqsDto.class))
-                .thenThrow(new JsonProcessingException("deserialization failed") { });
-
-        assertThrows(PnInternalException.class, () -> sqsService.toObject("message", CodeSqsDto.class));
+        verifyNoInteractions(outputQueueMomProducer);
+        verifyNoInteractions(internalQueueMomProducer);
     }
 }

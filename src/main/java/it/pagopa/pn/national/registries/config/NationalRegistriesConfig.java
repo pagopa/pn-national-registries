@@ -25,6 +25,8 @@ public class NationalRegistriesConfig {
     private Inipec inipec;
     private Sqs sqs;
     private Inad inad;
+    private Topic topic;
+
 
     private String addressCompositionMode;
 
@@ -71,5 +73,12 @@ public class NationalRegistriesConfig {
         private Integer pollingFirstAttemptFixedDelaySeconds;
         private Integer pollingErrorRetryAfter;
         private Integer pollingInProgressRetryAfter;
+    }
+
+    @Data
+    public static class Topic {
+        private String outputQueueName;
+        private String inputQueueName;
+        private String inputDlqQueueName;
     }
 }
