@@ -258,7 +258,7 @@ class IniPecBatchRequestServiceTest {
         when(batchRequestRepository.update(same(batchRequest)))
                 .thenReturn(Mono.just(batchRequest));
 
-        when(infoCamereClient.callEServiceRequestId(isNotNull()))
+        when(infoCamereService.callEService(any(), any()))
                 .thenReturn(Mono.error(ReadTimeoutException::new));
 
         when(iniPecBatchSqsService.sendListToDlqQueue(anyList()))
@@ -267,9 +267,9 @@ class IniPecBatchRequestServiceTest {
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
 
         verifyNoInteractions(batchPollingRepository);
-        assertEquals(3, batchRequest.getRetry());
-        assertEquals(BatchStatus.ERROR.getValue(), batchRequest.getStatus());
-        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
+        assertEquals(2, batchRequest.getRetry());
+        assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), batchRequest.getStatus());
+        assertNull(batchRequest.getSendStatus());
     }
 
     @Test

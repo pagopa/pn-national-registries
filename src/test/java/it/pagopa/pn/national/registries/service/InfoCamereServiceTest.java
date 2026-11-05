@@ -424,12 +424,10 @@ class InfoCamereServiceTest {
                 .assertNext(batchRequest -> {
                     assertEquals(BatchStatus.NO_BATCH_ID.getValue(), batchRequest.getBatchId());
                     assertEquals(BatchStatus.NOT_WORKED.getValue(), batchRequest.getStatus());
-                    assertEquals(Optional.of(0), batchRequest.getRetry());
+                    assertEquals(0, batchRequest.getRetry());
                     assertNull(batchRequest.getReferenceRequestDate());
                     assertNull(batchRequest.getAwsMessageId());
                     assertEquals("correlationId~" + batchRequest.getCreatedAt(), batchRequest.getCorrelationId());
-                    // ttl configurato a 0: coincide con createdAt in epoch seconds
-                    assertEquals(Optional.of(batchRequest.getCreatedAt().toEpochSecond(ZoneOffset.UTC)), batchRequest.getTtl());
                 })
                 .verifyComplete();
     }

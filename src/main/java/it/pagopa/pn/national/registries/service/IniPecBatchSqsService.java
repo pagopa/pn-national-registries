@@ -99,7 +99,7 @@ public class IniPecBatchSqsService {
                                 .doOnNext(r -> {
                                     log.info("PG - DigitalAddress - pushed message for correlationId: {}", item.getCorrelationId());
                                     item.setSendStatus(BatchSendStatus.SENT.getValue());
-                                    item.setTtl(now.plusSeconds(config.getInipec().getTtl()).getEpochSecond());
+                                    item.setTtl(now.plusSeconds(config.getTtl()).getEpochSecond());
                                 })
                                 .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {}", item.getCorrelationId(), e))
                                 .onErrorResume(e -> Mono.empty());

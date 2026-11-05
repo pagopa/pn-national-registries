@@ -70,7 +70,7 @@ class GatewayServiceTest {
 
         when(nationalRegistriesConfig.isValCxIdEnabled()).thenReturn(true);
         when(sqsService.pushToInputQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -108,7 +108,7 @@ class GatewayServiceTest {
 
         when(nationalRegistriesConfig.isValCxIdEnabled()).thenReturn(false);
         when(sqsService.pushToInputQueue(any(InternalCodeSqsDto.class), isNull()))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PG", null, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -133,7 +133,7 @@ class GatewayServiceTest {
         when(physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(request, C_ID))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.ANPR, true)));
         when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -151,7 +151,7 @@ class GatewayServiceTest {
         when(physicalAddressService.retrieveAsyncPhysicalAddressFromRegistroImprese(request, C_ID))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.REGISTRO_IMPRESE, true)));
         when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -169,7 +169,7 @@ class GatewayServiceTest {
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.INAD, false)));
         when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -189,7 +189,7 @@ class GatewayServiceTest {
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.just(notFoundResult()));
         when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -326,7 +326,7 @@ class GatewayServiceTest {
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.error(exception));
         when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -376,7 +376,7 @@ class GatewayServiceTest {
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.error(exception));
         when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -414,7 +414,7 @@ class GatewayServiceTest {
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.error(exception));
         when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -433,7 +433,7 @@ class GatewayServiceTest {
         when(digitalAddressService.retrieveDigitalAddressFromIpa(request, C_ID))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.IPA, false)));
         when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -520,7 +520,7 @@ class GatewayServiceTest {
         when(physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(request, C_ID))
                 .thenReturn(Mono.error(exception));
         when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -555,7 +555,7 @@ class GatewayServiceTest {
                 .pnNationalRegistriesCxId(CX_ID)
                 .build();
 
-        when(sqsService.pushToInputDlqQueue(message, CX_ID)).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(sqsService.pushToInputDlqQueue(message, CX_ID)).thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.handleExceptionAndSendToDlq(exception, message))
                 .verifyComplete();
@@ -596,7 +596,7 @@ class GatewayServiceTest {
         when(physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(any(AddressRequestBodyDto.class), eq(C_ID)))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.ANPR, true)));
         when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
         when(gatewayUtils.enrichFluxContext(any(Context.class), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         StepVerifier.create(gatewayService.handleMessage(payload))
@@ -632,7 +632,7 @@ class GatewayServiceTest {
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.INAD, false)));
         when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -691,7 +691,7 @@ class GatewayServiceTest {
 
         when(digitalAddressService.retrieveDigitalAddressFromIpa(request, C_ID)).thenReturn(Mono.error(exception));
         when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -710,7 +710,7 @@ class GatewayServiceTest {
 
         when(physicalAddressService.retrieveAsyncPhysicalAddressFromRegistroImprese(request, C_ID)).thenReturn(Mono.error(exception));
         when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
@@ -752,7 +752,7 @@ class GatewayServiceTest {
                 "too many requests", HttpStatus.TOO_MANY_REQUESTS.value(), HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
                 null, null, Charset.defaultCharset(), null);
         InternalCodeSqsDto message = InternalCodeSqsDto.builder().taxId(CF).correlationId(C_ID).pnNationalRegistriesCxId(CX_ID).build();
-        when(sqsService.pushToInputDlqQueue(message, CX_ID)).thenReturn(Mono.just(SendMessageResponse.builder().build()));
+        when(sqsService.pushToInputDlqQueue(message, CX_ID)).thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.handleExceptionAndSendToDlq(exception, message))
                 .verifyComplete();
@@ -766,7 +766,7 @@ class GatewayServiceTest {
 
         when(nationalRegistriesConfig.isValCxIdEnabled()).thenReturn(false);
         when(sqsService.pushToInputQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
-                .thenReturn(Mono.just(SendMessageResponse.builder().build()));
+                .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PG", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
