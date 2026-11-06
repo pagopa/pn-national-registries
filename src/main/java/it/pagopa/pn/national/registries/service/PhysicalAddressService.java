@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.model.AddressInternalResult;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -20,6 +21,7 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.Charset;
 import java.util.Objects;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_ANPR_ADDRESS;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetric;
 
@@ -34,6 +36,7 @@ public class PhysicalAddressService{
     private final InfoCamereService infoCamereService;
     private final AnprService anprService;
     private final GatewayUtils gatewayUtils;
+    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     public Mono<PhysicalAddressesResponseDto> retrieveSyncPhysicalAddresses(PhysicalAddressesRequestBodyDto request) {
         log.info("Starting retrievePhysicalAddresses - request: {}", request);
@@ -49,6 +52,8 @@ public class PhysicalAddressService{
     }
 
     private Mono<PhysicalAddressResponseDto> retrieveSyncPhysicalAddress(AddressQueryRequest addressQueryRequest) {
+        validateTaxIdUtils.validateTaxId(addressQueryRequest.getTaxId(), PROCESS_NAME_ANPR_ADDRESS, false);
+
         return switch (addressQueryRequest.getRecipientType()) {
             case PF -> retrieveSyncPhysicalAddressForPF(addressQueryRequest);
             case PG -> retrieveSyncPhysicalAddressForPG(addressQueryRequest);
