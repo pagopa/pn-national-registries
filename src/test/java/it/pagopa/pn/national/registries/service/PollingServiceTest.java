@@ -71,6 +71,31 @@ class PollingServiceTest {
     }
 
     @Test
+    void failedRequestUpdateMustLeaveBatchOpenForReplay() {
+        NationalRegistriesRequest request = buildRequest();
+        when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING))
+                .thenReturn(SdkPublisher.adapt(Flux.just(Page.create(List.of(request)))));
+        RuntimeException failure = new RuntimeException("request update failed");
+        when(nationalRegistriesRequestsRepository.updateStatusToError(anyString(), anyString(), any()))
+                .thenReturn(Mono.error(failure), Mono.just(request));
+
+        Mono<Void> firstAttempt = pollingService.incrementAndCheckRetry(
+                BATCH_ID, 0, 0, false, 1, 1, GatewayDownstreamService.INIPEC, failure);
+        verifyNoInteractions(nationalRegistriesBatchesRepository);
+        StepVerifier.create(firstAttempt).expectErrorMatches(error -> error == failure).verify();
+        verifyNoInteractions(nationalRegistriesBatchesRepository);
+
+        when(nationalRegistriesBatchesRepository.updateToFinalStatus(BATCH_ID, SK, BatchesStatusEnum.ERROR))
+                .thenReturn(Mono.empty());
+        StepVerifier.create(pollingService.incrementAndCheckRetry(
+                BATCH_ID, 0, 0, false, 1, 1, GatewayDownstreamService.INIPEC, failure)).verifyComplete();
+        var order = inOrder(nationalRegistriesRequestsRepository, nationalRegistriesBatchesRepository);
+        order.verify(nationalRegistriesRequestsRepository, times(2))
+                .updateStatusToError(anyString(), anyString(), any());
+        order.verify(nationalRegistriesBatchesRepository).updateToFinalStatus(BATCH_ID, SK, BatchesStatusEnum.ERROR);
+    }
+
+    @Test
     void incrementAndCheckRetry_shouldIncrementErrorRetry_whenErrorIsRetryable() {
         when(nationalRegistriesBatchesRepository.resetStatusForRetry(
                 BATCH_ID,
@@ -571,11 +596,7 @@ class PollingServiceTest {
                 GatewayDownstreamService.INIPEC
         )).thenReturn(Mono.error(failure));
 
-        when(nationalRegistriesBatchesRepository.updateToFinalStatus(
-                BATCH_ID,
-                SK,
-                BatchesStatusEnum.ERROR
-        )).thenReturn(Mono.empty());
+
 
         StepVerifier.create(
                         pollingService.incrementAndCheckRetry(
@@ -591,6 +612,7 @@ class PollingServiceTest {
                 )
                 .expectErrorMatches(error -> error == failure)
                 .verify();
+        verifyNoInteractions(nationalRegistriesBatchesRepository);
     }
 
     @Test

@@ -59,7 +59,7 @@ public class PollingService {
         return Flux.from(nationalRegistriesRequestsRepository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
                 .flatMapIterable(Page::items)
                 .concatMap(this::moveRequestToError)
-                .then(nationalRegistriesBatchesRepository.updateToFinalStatus(batchId, SK, BatchesStatusEnum.ERROR))
+                .then(Mono.defer(() -> nationalRegistriesBatchesRepository.updateToFinalStatus(batchId, SK, BatchesStatusEnum.ERROR)))
                 .then();
     }
 

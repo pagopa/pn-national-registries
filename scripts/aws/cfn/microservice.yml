@@ -1039,7 +1039,7 @@ Resources:
     Properties:
       Name: pn-national-registries-completed-request-pipe
       RoleArn: !GetAtt PnNationalRegistriesCompletedRequestPipeRole.Arn
-      Source: !Ref PnNationalRegistriesRequestsStreamArn
+      Source: !Ref PnNationalRegistriesRequestsTableStreamArn
 
       SourceParameters:
         DynamoDBStreamParameters:
@@ -1124,7 +1124,7 @@ Resources:
                   - dynamodb:GetShardIterator
                   - dynamodb:ListStreams
                 Resource:
-                  - !GetAtt PnNationalRegistriesRequestsTableStreamArn
+                  - !Ref PnNationalRegistriesRequestsTableStreamArn
 
               - Effect: Allow
                 Action:

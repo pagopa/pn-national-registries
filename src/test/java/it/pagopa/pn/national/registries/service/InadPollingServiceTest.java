@@ -896,15 +896,11 @@ class InadPollingServiceTest {
         when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.just(Page.create(List.of(request)))));
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
         when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC)).thenReturn(Mono.error(new IllegalStateException("request update failed")));
-        AtomicBoolean batchCloseSubscribed = new AtomicBoolean(false);
-        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INAD)).thenReturn(Mono.defer(() -> {
-            batchCloseSubscribed.set(true);
-            return Mono.empty();
-        }));
+
 
         StepVerifier.create(inadPollingService.handleMessage(buildPayload())).expectError(IllegalStateException.class).verify();
 
-        assertFalse(batchCloseSubscribed.get());
+        verify(pollingService, never()).markBatchAsWorked(anyString(), any());
         verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
     }
 

@@ -420,7 +420,7 @@ class InipecPollingServiceTest {
     void errorResettingRequestForRetryIsPropagated() {
         NationalRegistriesRequest request = request("PG", TAX_ID_PG, 0);
         Pec pec = new Pec();
-        Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request));
+        Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request), false);
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(pec);
         when(infoCamereService.evaluateInipecStatoImpresa(anyString(), anyString(), anyString(), any()))
                 .thenReturn(new InipecEvaluationResult.Retry());
@@ -430,6 +430,7 @@ class InipecPollingServiceTest {
         StepVerifier.create(service.handleMessage(payload(0, 0)))
                 .expectError(IllegalStateException.class)
                 .verify();
+        verify(pollingService, never()).markBatchAsWorked(anyString(), any());
     }
 
     /**
@@ -472,15 +473,11 @@ class InipecPollingServiceTest {
         when(page.items()).thenReturn(List.of(request));
         when(requestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD)).thenReturn(Mono.error(new IllegalStateException("request update failed")));
-        AtomicBoolean batchCloseSubscribed = new AtomicBoolean(false);
-        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC)).thenReturn(Mono.defer(() -> {
-            batchCloseSubscribed.set(true);
-            return Mono.empty();
-        }));
+
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).expectError(IllegalStateException.class).verify();
 
-        assertFalse(batchCloseSubscribed.get());
+        verify(pollingService, never()).markBatchAsWorked(anyString(), any());
         verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD);
     }
 
@@ -535,6 +532,10 @@ class InipecPollingServiceTest {
     // ---- helper ----
 
     private Map<String, Pec> mockPollingSuccess(List<NationalRegistriesRequest> requests) {
+        return mockPollingSuccess(requests, true);
+    }
+
+    private Map<String, Pec> mockPollingSuccess(List<NationalRegistriesRequest> requests, boolean closeBatch) {
         IniPecPollingResponse response = new IniPecPollingResponse();
         Map<String, Pec> pecByTaxId = Map.of();
         when(infoCamereService.callIniPecEService(BATCH_ID, POLLING_ID)).thenReturn(Mono.just(response));
@@ -542,7 +543,9 @@ class InipecPollingServiceTest {
         when(page.items()).thenReturn(requests);
         when(requestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING))
                 .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC)).thenReturn(Mono.empty());
+        if (closeBatch) {
+            when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC)).thenReturn(Mono.empty());
+        }
         return pecByTaxId;
     }
 

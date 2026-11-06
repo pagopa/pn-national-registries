@@ -66,7 +66,7 @@ public class InipecPollingService {
         return Flux.from(nationalRegistriesRequestsRepository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
                 .flatMapIterable(Page::items)
                 .flatMap(request -> processSuccessfulRequest(request, pecByTaxId))
-                .then(pollingService.markBatchAsWorked(batchId, GatewayDownstreamService.INIPEC));
+                .then(Mono.defer(() -> pollingService.markBatchAsWorked(batchId, GatewayDownstreamService.INIPEC)));
     }
 
     private Mono<Void> processSuccessfulRequest(NationalRegistriesRequest request, Map<String, Pec> pecByTaxId) {
