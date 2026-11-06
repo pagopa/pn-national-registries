@@ -72,15 +72,15 @@ import static org.mockito.Mockito.*;
 })
 public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNationalRegistriesComponentIT {
 
-    private static final String PF_FOUND = "RSSMRA80A01H501A";
-    private static final String PF_NOT_FOUND = "RSSMRA80A01H501B";
-    private static final String PF_PROFESSIONAL_ONLY = "RSSMRA80A01H501C";
-    private static final String PF_PERSONAL_AND_PROFESSIONAL = "RSSMRA80A01H501D";
-    private static final String PF_INVALID_PERSONAL = "RSSMRA80A01H501E";
-    private static final String PF_MULTIPLE_PROFESSIONALS = "RSSMRA80A01H501F";
-    private static final String PF_EMPTY = "RSSMRA80A01H501G";
-    private static final String PF_EXPIRED_PERSONAL_AND_PROFESSIONAL = "RSSMRA80A01H501H";
-    private static final String PF_EXPIRED_PERSONAL = "RSSMRA80A01H501I";
+    private static final String PF_FOUND = "RSSMRA80A01H501U";
+    private static final String PF_NOT_FOUND = "RSSMRA80A02H501Z";
+    private static final String PF_PROFESSIONAL_ONLY = "RSSMRA80A03H501B";
+    private static final String PF_PERSONAL_AND_PROFESSIONAL = "RSSMRA80A04H501D";
+    private static final String PF_INVALID_PERSONAL = "RSSMRA80A05H501H";
+    private static final String PF_MULTIPLE_PROFESSIONALS = "RSSMRA80A06H501J";
+    private static final String PF_EMPTY = "RSSMRA80A07H501L";
+    private static final String PF_EXPIRED_PERSONAL_AND_PROFESSIONAL = "RSSMRA80A08H501N";
+    private static final String PF_EXPIRED_PERSONAL = "RSSMRA80A09H501P";
     private static final String PF_PROFESSIONAL = "WDSTKB60E09L538U";
     private static final String PF_BUSINESS_PROFESSIONAL = "PRPMGG80A41H501W";
     private static final String PF_INVALID = "FLPCPT69A65Z336P";
@@ -88,6 +88,18 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
     private static final String PF_NF = "PRMRGG74T16H501R";
     private static final String PF_MISSING = "VDADGI80A01F839E";
     private static final String PF_ER = "RSSSRG80A01F839I";
+
+    private static final List<String> VALID_FILLER_CFS = List.of(
+            "KRSJSM88S03H501A",
+            "JSMKRV95P54H501D",
+            "KPRSMP91H12F205O",
+            "VRDMRA77E66I700E",
+            "NRELCU80E53H501M",
+            "NREMRA09A27F205P",
+            "BSMGPR92R62F205X",
+            "DCNMRM85M49H501S",
+            "XLPJSM93B21H501O"
+    );
 
     @Autowired
     private InadBatchRequestJob inadBatchRequestJob;
@@ -740,17 +752,17 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
      */
     @Test
     void InadMassive_PaginationAndCorrelationRemainStableWithOutOfOrderAndMissingResults() {
-        String sharedTaxId = "RSSMRA80A01H501A";
+        String sharedTaxId = "RSSMRA80A01H501U";
         Map<String, String> cases = new LinkedHashMap<>();
         cases.put("corr~separator-" + UUID.randomUUID(), sharedTaxId);
         cases.put("corr-same-cf-" + UUID.randomUUID(), sharedTaxId);
-        cases.put("corr-b-" + UUID.randomUUID(), "RSSMRA80A01H501B");
-        cases.put("corr-c-" + UUID.randomUUID(), "RSSMRA80A01H501C");
-        cases.put("corr-missing-" + UUID.randomUUID(), "RSSMRA80A01H501D");
-        cases.put("corr-filler-e-" + UUID.randomUUID(), "RSSMRA80A01H501E");
-        cases.put("corr-filler-f-" + UUID.randomUUID(), "RSSMRA80A01H501F");
-        cases.put("corr-filler-g-" + UUID.randomUUID(), "RSSMRA80A01H501G");
-        cases.put("corr-filler-h-" + UUID.randomUUID(), "RSSMRA80A01H501H");
+        cases.put("corr-b-" + UUID.randomUUID(), "RSSMRA80A02H501Z");
+        cases.put("corr-c-" + UUID.randomUUID(), "RSSMRA80A03H501B");
+        cases.put("corr-missing-" + UUID.randomUUID(), "RSSMRA80A04H501D");
+        cases.put("corr-filler-e-" + UUID.randomUUID(), "RSSMRA80A05H501H");
+        cases.put("corr-filler-f-" + UUID.randomUUID(), "RSSMRA80A06H501J");
+        cases.put("corr-filler-g-" + UUID.randomUUID(), "RSSMRA80A07H501L");
+        cases.put("corr-filler-h-" + UUID.randomUUID(), "RSSMRA80A08H501N");
         for (Map.Entry<String, String> entry : cases.entrySet()) {
             enqueueGatewayRequest("PF", entry.getValue(), AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, entry.getKey());
             processNextGatewayInputMessage();
@@ -766,20 +778,20 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         when(inadClient.checkMassiveRequestStatus(pollingId)).thenReturn(Mono.just(status(StatusProcessingRequest.DISPONIBILE)));
         ResponseListDigitalAddress result = new ResponseListDigitalAddress();
         result.setList(List.of(
-                inadResponse("RSSMRA80A01H501C", "c@pec.it", null),
+                inadResponse("RSSMRA80A03H501B", "c@pec.it", null),
                 inadResponse(sharedTaxId, "shared@pec.it", null),
-                inadResponse("RSSMRA80A01H501B", "b@pec.it", null),
-                inadResponse("RSSMRA80A01H501E", "filler-e@pec.it", null),
-                inadResponse("RSSMRA80A01H501F", "filler-f@pec.it", null),
-                inadResponse("RSSMRA80A01H501G", "filler-g@pec.it", null),
-                inadResponse("RSSMRA80A01H501H", "filler-h@pec.it", null)
+                inadResponse("RSSMRA80A02H501Z", "b@pec.it", null),
+                inadResponse("RSSMRA80A05H501H", "filler-e@pec.it", null),
+                inadResponse("RSSMRA80A06H501J", "filler-f@pec.it", null),
+                inadResponse("RSSMRA80A07H501L", "filler-g@pec.it", null),
+                inadResponse("RSSMRA80A08H501N", "filler-h@pec.it", null)
         ));
         when(inadClient.getMassiveRequestResult(pollingId)).thenReturn(Mono.just(result));
         inadPollingService.handleMessage(pollingPayload(GatewayDownstreamService.INAD, batchId, pollingId, 9, 0, 0)).block();
         for (Map.Entry<String, String> entry : cases.entrySet()) {
             Map<String, AttributeValue> inadRequest = requestByRegistry(entry.getKey(), "INAD");
             assertEquals("WORKED", inadRequest.get("status").s());
-            if ("RSSMRA80A01H501D".equals(entry.getValue())) {
+            if ("RSSMRA80A04H501D".equals(entry.getValue())) {
                 assertNull(inadRequest.get("resultPayload"));
                 assertInipecPendingRequest(entry.getKey(), entry.getValue());
                 continue;
@@ -789,10 +801,10 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
             if (sharedTaxId.equals(entry.getValue())) {
                 assertEquals("shared@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
             }
-            if ("RSSMRA80A01H501B".equals(entry.getValue())) {
+            if ("RSSMRA80A02H501Z".equals(entry.getValue())) {
                 assertEquals("b@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
             }
-            if ("RSSMRA80A01H501C".equals(entry.getValue())) {
+            if ("RSSMRA80A03H501B".equals(entry.getValue())) {
                 assertEquals("c@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
             }
         }
@@ -900,7 +912,10 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         List<TestRequest> requests = new ArrayList<>();
         requests.add(new TestRequest(taxId, correlationId));
         for (int i = 0; i < 8; i++) {
-            requests.add(new TestRequest("RSSMRA80A01H50" + i + "U", "functional-filler-" + i + "-" + UUID.randomUUID()));
+            requests.add(new TestRequest(
+                    VALID_FILLER_CFS.get(i),
+                    "functional-filler-" + i + "-" + UUID.randomUUID()
+            ));
         }
         enqueueMassiveRequests(requests);
         String pollingId = "inad-functional-" + UUID.randomUUID();
@@ -1042,7 +1057,10 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         List<TestRequest> requests = new ArrayList<>();
         requests.add(new TestRequest(taxId, correlationId));
         for (int i = 0; i < 8; i++) {
-            requests.add(new TestRequest("RSSMRA80A01H50" + i + "U", "inad-flow-filler-" + i + "-" + UUID.randomUUID()));
+            requests.add(new TestRequest(
+                    VALID_FILLER_CFS.get(i),
+                    "inad-flow-filler-" + i + "-" + UUID.randomUUID()
+            ));
         }
         enqueueMassiveRequests(requests);
         String pollingId = "inad-polling-" + UUID.randomUUID();
@@ -1073,7 +1091,10 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
     private List<TestRequest> createNineRequests(String prefix) {
         List<TestRequest> requests = new ArrayList<>();
         for (int i = 0; i < 9; i++) {
-            requests.add(new TestRequest("RSSMRA80A01H50" + i + "U", prefix + "-" + i + "-" + UUID.randomUUID()));
+            requests.add(new TestRequest(
+                    VALID_FILLER_CFS.get(i),
+                    prefix + "-" + i + "-" + UUID.randomUUID()
+            ));
         }
         return requests;
     }

@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddre
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.service.AnprService;
 import it.pagopa.pn.national.registries.service.GatewayService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ class AnprControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        anprController = new AnprController(anprService, new GatewayService(null, null, null, null, null, null, null));
+        anprController = new AnprController(anprService, mock(ValidateTaxIdUtils.class));
     }
 
     @AfterEach

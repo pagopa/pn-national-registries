@@ -95,6 +95,18 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
     private static final String PF_MISSING = "VDADGI80A01F839E";
     private static final String PF_ER = "RSSSRG80A01F839I";
 
+    private static final List<String> VALID_FILLER_CFS = List.of(
+            "BNCMRC55H10G273Y",
+            "SHRSWP58T71D544X",
+            "RSSMRA80A01H501U",
+            "RSSMRA80A02H501Z",
+            "RSSMRA80A03H501B",
+            "RSSMRA80A04H501D",
+            "RSSMRA80A05H501H",
+            "RSSMRA80A06H501J",
+            "RSSMRA80A07H501L"
+    );
+
     @Autowired
     private InadBatchRequestJob inadBatchRequestJob;
 
@@ -725,7 +737,7 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         cases.put("corr~separator-" + UUID.randomUUID(), sharedTaxId);
         cases.put("corr-same-cf-" + UUID.randomUUID(), sharedTaxId);
         cases.put("corr-b-" + UUID.randomUUID(), "PRMRGG74T16H501R");
-        cases.put("corr-c-" + UUID.randomUUID(), "RSSMRA80A01H501C");
+        cases.put("corr-c-" + UUID.randomUUID(), "SHRSWP58T71D544X");
         cases.put("corr-missing-" + UUID.randomUUID(), "VRDMRA77E66I700E");
         cases.put("corr-filler-e-" + UUID.randomUUID(), "NRELCU80E53H501M");
         cases.put("corr-filler-f-" + UUID.randomUUID(), "NREMRA09A27F205P");
@@ -746,7 +758,7 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         when(inadClient.checkMassiveRequestStatus(pollingId)).thenReturn(Mono.just(status(StatusProcessingRequest.DISPONIBILE)));
         ResponseListDigitalAddress result = new ResponseListDigitalAddress();
         result.setList(List.of(
-                inadResponse("RSSMRA80A01H501C", "c@pec.it", null),
+                inadResponse("SHRSWP58T71D544X", "c@pec.it", null),
                 inadResponse(sharedTaxId, "shared@pec.it", null),
                 inadResponse("PRMRGG74T16H501R", "b@pec.it", null),
                 inadResponse("NRELCU80E53H501M", "filler-e@pec.it", null),
@@ -772,7 +784,7 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
             if ("PRMRGG74T16H501R".equals(entry.getValue())) {
                 assertEquals("b@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
             }
-            if ("RSSMRA80A01H501C".equals(entry.getValue())) {
+            if ("SHRSWP58T71D544X".equals(entry.getValue())) {
                 assertEquals("c@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
             }
         }
@@ -1044,7 +1056,10 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         List<TestRequest> requests = new ArrayList<>();
         requests.add(new TestRequest(taxId, correlationId));
         for (int i = 0; i < 8; i++) {
-            requests.add(new TestRequest("RSSMRA80A01H50" + i + "U", "functional-filler-" + i + "-" + UUID.randomUUID()));
+            requests.add(new TestRequest(
+                    VALID_FILLER_CFS.get(i),
+                    "functional-filler-" + i + "-" + UUID.randomUUID()
+            ));
         }
         enqueueMassiveRequests(requests);
         String pollingId = "inad-functional-" + UUID.randomUUID();
@@ -1198,7 +1213,10 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         List<TestRequest> requests = new ArrayList<>();
         requests.add(new TestRequest(taxId, correlationId));
         for (int i = 0; i < 8; i++) {
-            requests.add(new TestRequest("RSSMRA80A01H50" + i + "U", "inad-flow-filler-" + i + "-" + UUID.randomUUID()));
+            requests.add(new TestRequest(
+                    VALID_FILLER_CFS.get(i),
+                    "inad-flow-filler-" + i + "-" + UUID.randomUUID()
+            ));
         }
         enqueueMassiveRequests(requests);
         String pollingId = "inad-polling-" + UUID.randomUUID();
@@ -1229,7 +1247,10 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
     private List<TestRequest> createNineRequests(String prefix) {
         List<TestRequest> requests = new ArrayList<>();
         for (int i = 0; i < 9; i++) {
-            requests.add(new TestRequest("RSSMRA80A01H50" + i + "U", prefix + "-" + i + "-" + UUID.randomUUID()));
+            requests.add(new TestRequest(
+                    VALID_FILLER_CFS.get(i),
+                    prefix + "-" + i + "-" + UUID.randomUUID()
+            ));
         }
         return requests;
     }

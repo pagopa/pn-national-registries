@@ -70,14 +70,14 @@ public class PollingService {
                     Instant.parse(request.getReferenceRequestDate())
             );
             return infoCamereService.getIniPecDigitalAddress(request.getClientId(), convertToGetDigitalAddressIniPecRequest(request.getCorrelationId(), request.getTaxId()), referenceRequestDate, RecipientType.fromString(request.getRecipientType()))
-                    .then(markRequestAsWorked(request, sourceRegistry, null,false))
+                    .then(Mono.defer(() -> markRequestAsWorked(request, sourceRegistry, null, false)))
                     .then();
         }
-        NationalRegistriesRequest fallbackRequest = new NationalRegistriesRequest(request, RequestStatusEnum.NOT_WORKED, targetRegistry, null);
+        NationalRegistriesRequest fallbackRequest = new NationalRegistriesRequest(request, RequestStatusEnum.NOT_WORKED, targetRegistry, null, nationalRegistriesConfig.getTtl());
         return nationalRegistriesRequestsRepository
-                .putRequest(fallbackRequest)
+                .completeWithFallback(request, fallbackRequest)
                 .doOnNext(r -> log.info("Created request for correlationId: {} for registry {}", r.getCorrelationId(), targetRegistry))
-                .then(markRequestAsWorked(request, sourceRegistry, null,false));
+                .then();
     }
 
     public Mono<Void> markRequestAsWorked(NationalRegistriesRequest request, GatewayDownstreamService registry, String resultPayload, boolean publishResult) {

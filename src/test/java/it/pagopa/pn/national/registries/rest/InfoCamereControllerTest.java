@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.rest;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ class InfoCamereControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        infoCamereController = new InfoCamereController(infoCamereService);
+        infoCamereController = new InfoCamereController(infoCamereService, mock(ValidateTaxIdUtils.class));
     }
 
     @AfterEach

@@ -7,22 +7,22 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigit
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.service.InadService;
 import it.pagopa.pn.national.registries.utils.RequestIdUtils;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_INAD_ADDRESS;
+
 @RestController
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class InadController implements DigitalAddressInadApi {
 
     private final InadService inadService;
-
-
-
-    public InadController(InadService inadService) {
-        this.inadService = inadService;
-    }
+    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     /**
      * POST /national-registries-private/{recipient-type}/inad/digital-address : Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata.
@@ -42,6 +42,7 @@ public class InadController implements DigitalAddressInadApi {
         RecipientType recipientTypeEnum = RecipientType.fromString(recipientType);
         return extractDigitalAddressINADRequestBodyDto
                 .flatMap(requestBody -> {
+                    validateTaxIdUtils.validateTaxId(requestBody.getFilter().getTaxId(), PROCESS_NAME_INAD_ADDRESS, false);
                     RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
                     return MDCUtils.addMDCToContextAndExecute(inadService.callEService(requestBody, recipientTypeEnum, requestBody.getFilter().getCorrelationId()))
                             .map(ResponseEntity::ok);

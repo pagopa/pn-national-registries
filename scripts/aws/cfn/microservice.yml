@@ -780,7 +780,7 @@ Resources:
         ContainerEnvEntry76: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGINPROGRESSRETRYAFTER=${PnNationalRegistriesInadPollingInProgressRetryAfter}'
         ContainerEnvEntry77: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGINPROGRESSMAXRETRY=${PnNationalRegistriesInadBatchPollingInProgressMaxRetry}'
         ContainerEnvEntry78: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInadBatchPollingMaxRetry}'
-        ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_SQS_POLLINGQUEUENAME=${NationalRegistriesPollingQueueName}'
+        ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_TOPIC_POLLINGQUEUENAME=${NationalRegistriesPollingQueueName}'
         ContainerEnvEntry80: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${PnNationalRegistriesRequestsTableName}'
         ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${PnNationalRegistriesBatchesTableName}'
         ContainerEnvEntry82: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADMASSIVEAPI=${EnableInadMassiveApi}'

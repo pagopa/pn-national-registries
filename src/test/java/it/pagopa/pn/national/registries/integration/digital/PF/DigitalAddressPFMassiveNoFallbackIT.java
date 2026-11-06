@@ -16,7 +16,6 @@ import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;
 import it.pagopa.pn.national.registries.service.InadPollingService;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.messaging.support.MessageBuilder;
@@ -56,15 +55,27 @@ import static org.mockito.Mockito.*;
 })
 public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistriesComponentIT {
 
-    private static final String PF_FOUND = "RSSMRA80A01H501A";
-    private static final String PF_NOT_FOUND = "RSSMRA80A01H501B";
-    private static final String PF_PROFESSIONAL_ONLY = "RSSMRA80A01H501C";
-    private static final String PF_PERSONAL_AND_PROFESSIONAL = "RSSMRA80A01H501D";
-    private static final String PF_INVALID_PERSONAL = "RSSMRA80A01H501E";
-    private static final String PF_MULTIPLE_PROFESSIONALS = "RSSMRA80A01H501F";
-    private static final String PF_EMPTY = "RSSMRA80A01H501G";
-    private static final String PF_EXPIRED_PERSONAL_AND_PROFESSIONAL = "RSSMRA80A01H501H";
-    private static final String PF_EXPIRED_PERSONAL = "RSSMRA80A01H501I";
+    private static final String PF_FOUND = "JSMKRV95P54H501D";
+    private static final String PF_NOT_FOUND = "XLPJSM93B21H501O";
+    private static final String PF_PROFESSIONAL_ONLY = "BSMGPR92R62F205X";
+    private static final String PF_PERSONAL_AND_PROFESSIONAL = "KRSJSM88S03H501A";
+    private static final String PF_INVALID_PERSONAL = "KPRSMP91H12F205O";
+    private static final String PF_MULTIPLE_PROFESSIONALS = "RSSMSM85E15H501L";
+    private static final String PF_EMPTY = "VRDLSM78B02F839R";
+    private static final String PF_EXPIRED_PERSONAL_AND_PROFESSIONAL = "TSDSND90R10A952M";
+    private static final String PF_EXPIRED_PERSONAL = "ZFPFYC82R41L723C";
+
+    private static final List<String> VALID_FILLER_CFS = List.of(
+            "KRSJSM88S03H501A",
+            "JSMKRV95P54H501D",
+            "KPRSMP91H12F205O",
+            "VRDMRA77E66I700E",
+            "NRELCU80E53H501M",
+            "NREMRA09A27F205P",
+            "BSMGPR92R62F205X",
+            "DCNMRM85M49H501S",
+            "XLPJSM93B21H501O"
+    );
 
     @Autowired
     private InadBatchRequestJob inadBatchRequestJob;
@@ -748,19 +759,19 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
      */
     @Test
     void InadMassive_PaginationAndCorrelationRemainStableWithOutOfOrderAndMissingResults() {
-        String sharedTaxId = "RSSMRA80A01H501A";
+        String sharedTaxId = "JSMKRV95P54H501D";
 
         Map<String, String> cases = new LinkedHashMap<>();
 
         cases.put("corr~separator-" + UUID.randomUUID(), sharedTaxId);
         cases.put("corr-same-cf-" + UUID.randomUUID(), sharedTaxId);
-        cases.put("corr-b-" + UUID.randomUUID(), "RSSMRA80A01H501B");
-        cases.put("corr-c-" + UUID.randomUUID(), "RSSMRA80A01H501C");
-        cases.put("corr-missing-" + UUID.randomUUID(), "RSSMRA80A01H501D");
-        cases.put("corr-filler-e-" + UUID.randomUUID(), "RSSMRA80A01H501E");
-        cases.put("corr-filler-f-" + UUID.randomUUID(), "RSSMRA80A01H501F");
-        cases.put("corr-filler-g-" + UUID.randomUUID(), "RSSMRA80A01H501G");
-        cases.put("corr-filler-h-" + UUID.randomUUID(), "RSSMRA80A01H501H");
+        cases.put("corr-b-" + UUID.randomUUID(), "XLPJSM93B21H501O");
+        cases.put("corr-c-" + UUID.randomUUID(), "BSMGPR92R62F205X");
+        cases.put("corr-missing-" + UUID.randomUUID(), "KRSJSM88S03H501A");
+        cases.put("corr-filler-e-" + UUID.randomUUID(), "KPRSMP91H12F205O");
+        cases.put("corr-filler-f-" + UUID.randomUUID(), "RSSMSM85E15H501L");
+        cases.put("corr-filler-g-" + UUID.randomUUID(), "VRDLSM78B02F839R");
+        cases.put("corr-filler-h-" + UUID.randomUUID(), "TSDSND90R10A952M");
 
         for (Map.Entry<String, String> entry : cases.entrySet()) {
             enqueueGatewayRequest("PF", entry.getValue(), AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, entry.getKey());
@@ -787,13 +798,13 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
         ResponseListDigitalAddress result = new ResponseListDigitalAddress();
 
         result.setList(List.of(
-                inadResponse("RSSMRA80A01H501C", "c@pec.it", null),
+                inadResponse("BSMGPR92R62F205X", "c@pec.it", null),
                 inadResponse(sharedTaxId, "shared@pec.it", null),
-                inadResponse("RSSMRA80A01H501B", "b@pec.it", null),
-                inadResponse("RSSMRA80A01H501E", "filler-e@pec.it", null),
-                inadResponse("RSSMRA80A01H501F", "filler-f@pec.it", null),
-                inadResponse("RSSMRA80A01H501G", "filler-g@pec.it", null),
-                inadResponse("RSSMRA80A01H501H", "filler-h@pec.it", null)
+                inadResponse("XLPJSM93B21H501O", "b@pec.it", null),
+                inadResponse("KPRSMP91H12F205O", "filler-e@pec.it", null),
+                inadResponse("RSSMSM85E15H501L", "filler-f@pec.it", null),
+                inadResponse("VRDLSM78B02F839R", "filler-g@pec.it", null),
+                inadResponse("TSDSND90R10A952M", "filler-h@pec.it", null)
         ));
 
         when(inadClient.getMassiveRequestResult(pollingId))
@@ -825,17 +836,17 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
                 assertEquals("shared@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
             }
 
-            if ("RSSMRA80A01H501B".equals(entry.getValue())) {
+            if ("XLPJSM93B21H501O".equals(entry.getValue())) {
                 assertEquals(1, resultPayload.getDigitalAddress().size());
                 assertEquals("b@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
             }
 
-            if ("RSSMRA80A01H501C".equals(entry.getValue())) {
+            if ("BSMGPR92R62F205X".equals(entry.getValue())) {
                 assertEquals(1, resultPayload.getDigitalAddress().size());
                 assertEquals("c@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
             }
 
-            if ("RSSMRA80A01H501D".equals(entry.getValue())) {
+            if ("KRSJSM88S03H501A".equals(entry.getValue())) {
                 assertNotNull(resultPayload.getDigitalAddress());
                 assertTrue(resultPayload.getDigitalAddress().isEmpty());
             }
@@ -848,7 +859,10 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
         List<TestRequest> requests = new ArrayList<>();
         requests.add(new TestRequest(taxId, correlationId));
         for (int i = 0; i < 8; i++) {
-            requests.add(new TestRequest("RSSMRA80A01H50" + i + "U", "functional-filler-" + i + "-" + UUID.randomUUID()));
+            requests.add(new TestRequest(
+                    VALID_FILLER_CFS.get(i),
+                    "functional-filler-" + i + "-" + UUID.randomUUID()
+            ));
         }
         enqueueMassiveRequests(requests);
         String pollingId = "polling-functional-" + UUID.randomUUID();
@@ -895,7 +909,7 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
 
         for (int i = 0; i < 8; i++) {
             String fillerCorrelationId = "inad-flow-filler-" + i + "-" + UUID.randomUUID();
-            String fillerTaxId = "RSSMRA80A01H50" + i + "U";
+            String fillerTaxId = VALID_FILLER_CFS.get(i);
             enqueueGatewayRequest("PF", fillerTaxId, AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL, fillerCorrelationId);
             processNextGatewayInputMessage();
         }
@@ -945,12 +959,10 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
                 new ArrayList<>();
 
         for (int i = 0; i < 9; i++) {
-            requests.add(
-                    new TestRequest(
-                            "RSSMRA80A01H50" + i + "U",
-                            prefix + "-" + i + "-" + UUID.randomUUID()
-                    )
-            );
+            requests.add(new TestRequest(
+                    VALID_FILLER_CFS.get(i),
+                    prefix + i + "-" + UUID.randomUUID()
+            ));
         }
 
         return requests;

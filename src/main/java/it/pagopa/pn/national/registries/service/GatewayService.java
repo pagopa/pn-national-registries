@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.commons.utils.ValidateUtils;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
@@ -13,6 +14,7 @@ import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -21,6 +23,7 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.Charset;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_CHECKING_CX_ID_FLAG;
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static it.pagopa.pn.national.registries.converter.GatewayConverter.*;
@@ -28,7 +31,7 @@ import static it.pagopa.pn.national.registries.converter.GatewayConverter.*;
 @Service
 @lombok.CustomLog
 @RequiredArgsConstructor
-public class GatewayService{
+public class GatewayService {
 
     private final SqsService sqsService;
     private final NationalRegistriesConfig nationalRegistriesConfig;
@@ -37,24 +40,26 @@ public class GatewayService{
     private final GatewayUtils gatewayUtils;
     private final NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
     private final InfoCamereService infoCamereService;
+    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     public Mono<AddressOKDto> retrieveDigitalOrPhysicalAddressAsync(String recipientType, String pnNationalRegistriesCxId, AddressRequestBodyDto request) {
         checkFlagPnNationalRegistriesCxId(pnNationalRegistriesCxId);
         String correlationId = request.getFilter().getCorrelationId();
 
         return sqsService.pushToInputQueue(InternalCodeSqsDto.builder()
-                    .taxId(request.getFilter().getTaxId())
-                    .correlationId(request.getFilter().getCorrelationId())
-                    .recipientType(recipientType)
-                    .domicileType(request.getFilter().getDomicileType().getValue())
-                    .referenceRequestDate(request.getFilter().getReferenceRequestDate())
-                    .pnNationalRegistriesCxId(pnNationalRegistriesCxId)
-                    .build(), pnNationalRegistriesCxId)
+                        .taxId(request.getFilter().getTaxId())
+                        .correlationId(request.getFilter().getCorrelationId())
+                        .recipientType(recipientType)
+                        .domicileType(request.getFilter().getDomicileType().getValue())
+                        .referenceRequestDate(request.getFilter().getReferenceRequestDate())
+                        .pnNationalRegistriesCxId(pnNationalRegistriesCxId)
+                        .build(), pnNationalRegistriesCxId)
                 .thenReturn(mapToAddressesOKDto(correlationId));
     }
 
     public Mono<AddressOKDto> handleMessage(PnAddressGatewayEvent.Payload payload) {
         AddressRequestBodyDto addressRequestBodyDto = toAddressRequestBodyDto(payload);
+        validateTaxIdUtils.validateTaxId(payload.getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID, true);
         return retrieveDigitalOrPhysicalAddress(payload.getRecipientType(), payload.getPnNationalRegistriesCxId(), addressRequestBodyDto)
                 .contextWrite(ctx -> gatewayUtils.enrichFluxContext(ctx, MDCUtils.retrieveMDCContextMap()));
     }
@@ -170,7 +175,7 @@ public class GatewayService{
     }
 
     public Mono<Void> handleExceptionAndSendToDlq(Throwable throwable, InternalCodeSqsDto internalCodeSqsDto) {
-        if (isDlqEligible(throwable)){
+        if (isDlqEligible(throwable)) {
             return sqsService.pushToInputDlqQueue(internalCodeSqsDto, internalCodeSqsDto.getPnNationalRegistriesCxId());
         }
         return Mono.error(throwable);

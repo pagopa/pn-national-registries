@@ -15,7 +15,6 @@ import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.InipecEvaluationResult;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
 import org.springframework.http.HttpStatus;
@@ -42,7 +41,6 @@ public class InfoCamereService {
     private final InfoCamereClient infoCamereClient;
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
-    private final ValidateTaxIdUtils validateTaxIdUtils;
     private final NationalRegistriesConfig nationalRegistriesConfig;
 
     public InipecEvaluationResult evaluateInipecStatoImpresa(String correlationId, String taxId, String recipientType, Pec pec) {
@@ -91,7 +89,6 @@ public class InfoCamereService {
     public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto, Date referenceRequestDate, RecipientType recipientType) {
         String cf = dto.getFilter().getTaxId();
         String correlationId = dto.getFilter().getCorrelationId();
-        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_INIPEC_PEC, false);
         return createBatchRequestByCf(pnNationalRegistriesCxId, dto, MDC.get("AWS_messageId"), referenceRequestDate, recipientType)
                 .doOnNext(batchRequest -> log.info("Created Batch Request for correlationId: {}", correlationId))
                 .doOnError(throwable -> log.info("Failed to create Batch Request for correlationId: {}", correlationId))
@@ -100,7 +97,6 @@ public class InfoCamereService {
 
     public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseLegalAddress(GetAddressRegistroImpreseRequestBodyDto request) {
         String cf = request.getFilter().getTaxId();
-        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS, false);
         return infoCamereClient.getLegalAddress(cf)
                 .doOnError(throwable -> log.info("Failed to get Legal Address"))
                 .flatMap(response -> processResponseLegalAddressOk(request, response));
@@ -108,7 +104,6 @@ public class InfoCamereService {
 
     public Mono<InfoCamereLegalInstitutionsOKDto> getLegalInstitutions(InfoCamereLegalInstitutionsRequestBodyDto infoCamereLegalInstitutionsRequestBodyDto) {
         log.logChecking(PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS);
-        validateTaxIdUtils.validateTaxId(infoCamereLegalInstitutionsRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_INFO_CAMERE_LEGAL_INSTITUTIONS, false);
 
         return infoCamereClient.getLegalInstitutions(infoCamereLegalInstitutionsRequestBodyDto.getFilter())
                 .doOnNext(infoCamereLegalInstitutions -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS,true))
@@ -153,9 +148,6 @@ public class InfoCamereService {
 
     public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
         log.logChecking(PROCESS_CHEKING_INFO_CAMERE_LEGAL);
-
-        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INFO_CAMERE_LEGAL, false);
-
         return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
                 .doOnNext(infoCamereVerification -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL,true))
                 .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL,false,throwable.getMessage()))

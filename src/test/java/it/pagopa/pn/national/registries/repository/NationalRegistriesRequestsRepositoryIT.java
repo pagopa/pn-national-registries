@@ -23,6 +23,16 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Flux;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
+import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
+import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
+import software.amazon.awssdk.services.dynamodb.model.DeleteItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.GetItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.TransactionCanceledException;
+import java.util.Set;
+import java.util.Map;
+import java.util.HashSet;
+import reactor.test.StepVerifier;
+import org.junit.jupiter.api.AfterEach;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -65,6 +75,95 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
 
     @Autowired
     NationalRegistriesConfig nationalRegistriesConfig;
+
+    private final Set<Map<String, AttributeValue>> fallbackTestKeys = new HashSet<>();
+
+    @AfterEach
+    void cleanFallbackTestRequests() {
+        fallbackTestKeys.forEach(key -> dynamoDbClient.deleteItem(DeleteItemRequest.builder()
+                .tableName(nationalRegistriesConfig.getDao().getRequestsTableName()).key(key).build()));
+    }
+
+    private Map<String, AttributeValue> fallbackTestKey(NationalRegistriesRequest request) {
+        var key = Map.of("correlationId", AttributeValue.builder().s(request.getCorrelationId()).build(),
+                "createdAt", AttributeValue.builder().s(request.getCreatedAt().toString()).build());
+        fallbackTestKeys.add(key);
+        return key;
+    }
+
+    @Autowired
+    DynamoDbClient dynamoDbClient;
+
+    @Test
+    void fallbackAndSourceCompletionAreAtomicAndDeferred() {
+        for (RequestStatusEnum destinationStatus : List.of(RequestStatusEnum.NOT_WORKED, RequestStatusEnum.WORKED, RequestStatusEnum.ERROR)) {
+            NationalRegistriesRequest source = buildRequest("atomic-" + UUID.randomUUID(), Instant.now(),
+                    "source-batch", GatewayDownstreamService.INIPEC, RequestStatusEnum.WORKING);
+            fallbackTestKey(source);
+            repository.putRequest(source).block();
+            NationalRegistriesRequest destination = new NationalRegistriesRequest(source, destinationStatus, GatewayDownstreamService.INAD,
+                    destinationStatus == RequestStatusEnum.WORKED ? "payload" : null, 10);
+            fallbackTestKey(destination);
+            var handoff = repository.completeWithFallback(source, destination);
+            Assertions.assertEquals(RequestStatusEnum.WORKING, readStoredRequest(source).getStatus());
+            Assertions.assertNull(readStoredRequest(destination));
+
+            handoff.block();
+            Assertions.assertEquals(RequestStatusEnum.WORKED, readStoredRequest(source).getStatus());
+            Assertions.assertEquals("INIPEC#WORKED", readStoredRequest(source).getRegistryStatus());
+            Assertions.assertEquals(destinationStatus, readStoredRequest(destination).getStatus());
+
+            // A stale replay cannot create a second destination after the transaction committed.
+            NationalRegistriesRequest duplicate = new NationalRegistriesRequest(source, destinationStatus, GatewayDownstreamService.INAD, null, 10);
+            StepVerifier.create(repository.completeWithFallback(source, duplicate))
+                    .expectError(TransactionCanceledException.class).verify();
+            Assertions.assertNull(readStoredRequest(duplicate));
+            Assertions.assertEquals(destinationStatus, readStoredRequest(destination).getStatus());
+        }
+    }
+
+    @Test
+    void failedFallbackWriteLeavesSourceWorkingAndCanBeRetried() {
+        NationalRegistriesRequest source = buildRequest("rollback-" + UUID.randomUUID(), Instant.now(),
+                "source-batch", GatewayDownstreamService.INAD, RequestStatusEnum.WORKING);
+        fallbackTestKey(source);
+        repository.putRequest(source).block();
+        NationalRegistriesRequest occupied = new NationalRegistriesRequest(source, RequestStatusEnum.WORKED, GatewayDownstreamService.INIPEC, "existing", 10);
+        fallbackTestKey(occupied);
+        repository.putRequest(occupied).block();
+        NationalRegistriesRequest destination = new NationalRegistriesRequest(source, RequestStatusEnum.NOT_WORKED, GatewayDownstreamService.INIPEC, null, 10);
+        destination.setCreatedAt(occupied.getCreatedAt());
+
+        StepVerifier.create(repository.completeWithFallback(source, destination))
+                .expectError(TransactionCanceledException.class).verify();
+        Assertions.assertEquals(RequestStatusEnum.WORKING, readStoredRequest(source).getStatus());
+        Assertions.assertEquals("existing", readStoredRequest(occupied).getResultPayload());
+
+        destination.setCreatedAt(occupied.getCreatedAt().plusNanos(1));
+        fallbackTestKey(destination);
+        repository.completeWithFallback(source, destination).block();
+        Assertions.assertEquals(RequestStatusEnum.WORKED, readStoredRequest(source).getStatus());
+        Assertions.assertEquals(RequestStatusEnum.NOT_WORKED, readStoredRequest(destination).getStatus());
+    }
+
+    @Test
+    void requestCompletionIsDeferredUntilSubscription() {
+        NationalRegistriesRequest source = buildRequest("lazy-" + UUID.randomUUID(), Instant.now(),
+                "source-batch", GatewayDownstreamService.INAD, RequestStatusEnum.WORKING);
+        fallbackTestKey(source);
+        repository.putRequest(source).block();
+        var completion = repository.updateStatusToWorked(source.getCorrelationId(), source.getCreatedAt().toString(), null, source.getRegistry(), false);
+        Assertions.assertEquals(RequestStatusEnum.WORKING, readStoredRequest(source).getStatus());
+        completion.block();
+        Assertions.assertEquals(RequestStatusEnum.WORKED, readStoredRequest(source).getStatus());
+    }
+
+    private NationalRegistriesRequest readStoredRequest(NationalRegistriesRequest request) {
+        var response = dynamoDbClient.getItem(GetItemRequest.builder()
+                .tableName(nationalRegistriesConfig.getDao().getRequestsTableName()).consistentRead(true)
+                .key(fallbackTestKey(request)).build());
+        return NationalRegistriesRequest.attributeValueMapToNationalRegistriesRequest(response.item());
+    }
 
     @Test
     void putAndGetRequestsByBatchIdTest() {

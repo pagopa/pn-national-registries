@@ -14,6 +14,7 @@ import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -63,6 +64,9 @@ class GatewayServiceTest {
 
     @InjectMocks
     private GatewayService gatewayService;
+
+    @Mock
+    private ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
     void retrieveDigitalOrPhysicalAddressAsync_shouldPushMessageToInputQueue() {

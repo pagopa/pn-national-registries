@@ -101,28 +101,25 @@ public class InipecPollingService {
         CodeSqsDto codeSqsDto = inadToSqsDto(correlationId, response);
         logCfWithAddressMetricFromBatchRequest(codeSqsDto, request.getCorrelationId(), request.getTaxId(), request.getRecipientType(), GatewayDownstreamService.INAD);
         String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
-        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.WORKED, GatewayDownstreamService.INAD, resultPayload);
-        return nationalRegistriesRequestsRepository.putRequest(inadRequest)
-                .then(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false));
+        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.WORKED, GatewayDownstreamService.INAD, resultPayload, nationalRegistriesConfig.getTtl());
+        return nationalRegistriesRequestsRepository.completeWithFallback(request, inadRequest).then();
     }
 
     private Mono<Void> handleInadError(NationalRegistriesRequest request, String correlationId, Throwable throwable) {
         gatewayUtils.logEServiceError(throwable, "can not retrieve digital address from INAD: {}");
         CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, throwable);
         if (Objects.isNull(codeSqsDto)) {
-            return createInadErrorRequest(request)
-                    .then(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false));
+            return createInadErrorRequest(request);
         }
         logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
         String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
-        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.WORKED, GatewayDownstreamService.INAD, resultPayload);
-        return nationalRegistriesRequestsRepository.putRequest(inadRequest)
-                .then(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false));
+        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.WORKED, GatewayDownstreamService.INAD, resultPayload, nationalRegistriesConfig.getTtl());
+        return nationalRegistriesRequestsRepository.completeWithFallback(request, inadRequest).then();
     }
 
     private Mono<Void> createInadErrorRequest(NationalRegistriesRequest request) {
-        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.ERROR, GatewayDownstreamService.INAD, null);
-        return nationalRegistriesRequestsRepository.putRequest(inadRequest).then();
+        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.ERROR, GatewayDownstreamService.INAD, null, nationalRegistriesConfig.getTtl());
+        return nationalRegistriesRequestsRepository.completeWithFallback(request, inadRequest).then();
     }
 
     private Mono<Void> evaluateStatoImpresa(NationalRegistriesRequest request, Pec pec) {
