@@ -7,13 +7,16 @@ import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.DigitalAddressType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Component;
 import reactor.core.publisher.Mono;
@@ -25,8 +28,10 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
-
-import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.removeInvalidEmails;
+import java.util.function.Function;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Component
 @RequiredArgsConstructor
@@ -34,6 +39,9 @@ public class InfoCamereConverter{
 
     private final NationalRegistriesConfig nationalRegistriesConfig;
     private final GatewayUtils gatewayUtils;
+
+    static final Pattern PEC_REQUEST_IN_PROGRESS_PATTERN = Pattern.compile(".*(List PEC in progress).*");
+
 
     public Mono<BatchRequest> buildErrorBatchRequest(BatchStatus status, String error, BatchRequest batchRequest, LocalDateTime now) {
         CodeSqsDto sqsDto = convertIniPecRequestToSqsDto(batchRequest, error);
@@ -75,15 +83,15 @@ public class InfoCamereConverter{
         batchPolling.setRetry(0);
         batchPolling.setInProgressRetry(0);
         batchPolling.setCreatedAt(now);
-        batchPolling.setTtl(now.plusSeconds(nationalRegistriesConfig.getInipec().getTtl()).toEpochSecond(ZoneOffset.UTC));
+        batchPolling.setTtl(now.plusSeconds(nationalRegistriesConfig.getTtl()).toEpochSecond(ZoneOffset.UTC));
         batchPolling.setBatchSize(iniPecBatchRequestSize);
         batchPolling.setFirstAttemptAfter(calculateFirstAttemptAfter(iniPecBatchRequestSize));
         return batchPolling;
     }
 
-    private Instant calculateFirstAttemptAfter(Integer iniPecBatchRequestSize) {
-        double delaySecondsPerCf = nationalRegistriesConfig.getInipec().getFirstAttemptDelaySecondsPerCf();
-        int fixedDelaySeconds = nationalRegistriesConfig.getInipec().getFirstAttemptFixedDelaySeconds();
+    public Instant calculateFirstAttemptAfter(Integer iniPecBatchRequestSize) {
+        double delaySecondsPerCf = nationalRegistriesConfig.getInipec().getPollingFirstAttemptDelaySecondsPerCf();
+        int fixedDelaySeconds = nationalRegistriesConfig.getInipec().getPollingFirstAttemptFixedDelaySeconds();
         int batchSize = Optional.ofNullable(iniPecBatchRequestSize).orElse(0);
 
         long delaySeconds = Math.round((delaySecondsPerCf * batchSize) + fixedDelaySeconds);
@@ -91,10 +99,10 @@ public class InfoCamereConverter{
         return Instant.now().plusSeconds(delaySeconds).truncatedTo(ChronoUnit.SECONDS);
     }
 
-  public CodeSqsDto convertResponsePecToCodeSqsDto(BatchRequest batchRequest, Pec pec) {
+    public CodeSqsDto convertResponsePecToCodeSqsDto(String correlationId, Pec pec) {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setRegistry(GatewayDownstreamService.INIPEC.name());
-        codeSqsDto.setCorrelationId(batchRequest.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
+        codeSqsDto.setCorrelationId(correlationId.split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0]);
         codeSqsDto.setDigitalAddress(convertToDigitalAddress(pec));
         codeSqsDto.setAddressType(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue());
         return codeSqsDto;
@@ -244,5 +252,68 @@ public class InfoCamereConverter{
         infoCamereLegalOKDto.setVerificationResult(false);
 
         return infoCamereLegalOKDto;
+    }
+
+    public boolean isPollingResponseNotReady(Throwable throwable) {
+        return throwable instanceof PnNationalRegistriesException exception
+                && exception.getStatusCode() == HttpStatus.NOT_FOUND
+                && checkPecRequestInProgressPattern(exception.getMessage());
+    }
+
+    private boolean checkPecRequestInProgressPattern(String message) {
+        if (message == null) {
+            return false;
+        }
+        Matcher matcher = PEC_REQUEST_IN_PROGRESS_PATTERN.matcher(message);
+        return matcher.find();
+    }
+
+    public IniPecBatchRequest createIniPecRequest(List<String> cfList) {
+        IniPecBatchRequest iniPecBatchRequest = new IniPecBatchRequest();
+        iniPecBatchRequest.setElencoCf(cfList.stream()
+                .map(cf -> {
+                    IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
+                    iniPecCf.setCf(cf);
+                    return iniPecCf;
+                })
+                .toList());
+        iniPecBatchRequest.setDataOraRichiesta(LocalDateTime.now().toString());
+        return iniPecBatchRequest;
+    }
+
+
+    /**
+     * @deprecated Questo metodo appartiene al flusso legacy di INI-PEC
+     *             e sarà rimosso quando tale flusso verrà eliminato a favore del metodo retrievePec
+     */
+    @Deprecated(forRemoval = true)
+    public Pec retrieveBatchRequestPec(String requestCf, IniPecPollingResponse iniPecPollingResponse) {
+        return iniPecPollingResponse.getElencoPec().stream()
+                .filter(pec -> org.springframework.util.StringUtils.hasText(pec.getCf())
+                        && org.springframework.util.StringUtils.hasText(requestCf)
+                        && pec.getCf().equalsIgnoreCase(requestCf))
+                .findFirst()
+                .orElse(null);
+    }
+
+    public Pec retrievePec(String requestCf, Map<String, Pec> pecByTaxId) {
+        if (StringUtils.isBlank(requestCf)) {
+            return null;
+        }
+        return pecByTaxId.get(requestCf.toUpperCase(Locale.ROOT));
+    }
+
+    public Map<String, Pec> mapPecByTaxId(IniPecPollingResponse response) {
+        if (Objects.isNull(response) || CollectionUtils.isNullOrEmpty(response.getElencoPec())) {
+            return Collections.emptyMap();
+        }
+
+        return response.getElencoPec().stream()
+                .filter(pec -> org.springframework.util.StringUtils.hasText(pec.getCf()))
+                .collect(Collectors.toMap(
+                        pec -> pec.getCf().toUpperCase(Locale.ROOT),
+                        Function.identity(),
+                        (first, second) -> first
+                ));
     }
 }

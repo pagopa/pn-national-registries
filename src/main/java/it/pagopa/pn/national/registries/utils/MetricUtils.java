@@ -7,7 +7,6 @@ import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
-import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
@@ -169,11 +168,11 @@ public class MetricUtils {
         }
     }
 
-    public static void logCfWithAddressMetricFromBatchRequest(CodeSqsDto codeSqsDto, BatchRequest batchRequest, GatewayDownstreamService registry) {
-        if(Objects.nonNull(batchRequest) && Objects.nonNull(codeSqsDto) && !CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())){
-            RecipientType recipientType = retrieveRecipientType(batchRequest.getCf(), batchRequest.getRecipientType());
+    public static void logCfWithAddressMetricFromBatchRequest(CodeSqsDto codeSqsDto, String correlationId, String taxId, String recipientType, GatewayDownstreamService registry) {
+        if(Objects.nonNull(codeSqsDto) && !CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())){
+            RecipientType recipientTypeEnum = retrieveRecipientType(taxId, recipientType);
             DigitalAddressRecipientType digitalAddressRecipientType = DigitalAddressRecipientType.fromValue(codeSqsDto.getDigitalAddress().getFirst().getRecipient());
-            logCfWithAddressMetric(batchRequest.getCorrelationId(), registry, recipientType, digitalAddressRecipientType);
+            logCfWithAddressMetric(correlationId, registry, recipientTypeEnum, digitalAddressRecipientType);
         }
     }
 }

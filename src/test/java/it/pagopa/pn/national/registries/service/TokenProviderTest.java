@@ -16,9 +16,10 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ContextConfiguration(classes = {TokenProvider.class, String.class})
 @ExtendWith(MockitoExtension.class)
@@ -82,6 +83,9 @@ class TokenProviderTest {
                         clientCredentialsResponseDto1 ->
                                 clientCredentialsResponseDto1.getAccessToken().equals(token))
                 .verifyComplete();
+
+        verify(assertionGenerator).generateClientAssertion(pdndSecretValue);
+        verify(pdndClient).createToken("assertion", "clientAssertionType", "grantType", clientId);
     }
 
     @Test
@@ -114,5 +118,47 @@ class TokenProviderTest {
                 "test", "client_credentials");
         when(infoCamereTokenClient.getToken(anyString())).thenReturn(Mono.just("scope"));
         StepVerifier.create(tokenProvider.getTokenInfoCamere("scope")).expectNext("scope").verifyComplete();
+    }
+
+    @Test
+    void getTokenPdndShouldPropagateAssertionGenerationError() {
+        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
+                "clientAssertionType", "grantType");
+        PdndSecretValue pdndSecretValue = new PdndSecretValue();
+        RuntimeException error = new RuntimeException("assertion error");
+        when(assertionGenerator.generateClientAssertion(pdndSecretValue)).thenThrow(error);
+
+        RuntimeException thrown = assertThrows(RuntimeException.class, () -> tokenProvider.getTokenPdnd(pdndSecretValue));
+
+        assertSame(error, thrown);
+        verifyNoInteractions(pdndClient);
+    }
+
+    @Test
+    void getTokenPdndShouldPropagatePdndClientError() {
+        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
+                "clientAssertionType", "grantType");
+        PdndSecretValue pdndSecretValue = new PdndSecretValue();
+        pdndSecretValue.setClientId("clientId");
+        RuntimeException error = new RuntimeException("PDND unavailable");
+        when(assertionGenerator.generateClientAssertion(pdndSecretValue)).thenReturn("assertion");
+        when(pdndClient.createToken("assertion", "clientAssertionType", "grantType", "clientId"))
+                .thenReturn(Mono.error(error));
+
+        StepVerifier.create(tokenProvider.getTokenPdnd(pdndSecretValue))
+                .expectErrorMatches(throwable -> throwable == error)
+                .verify();
+    }
+
+    @Test
+    void getTokenInfoCamereShouldPropagateClientError(){
+        TokenProvider tokenProvider = new TokenProvider(assertionGenerator, pdndClient, infoCamereTokenClient,
+                "test", "client_credentials");
+        RuntimeException error = new RuntimeException("InfoCamere unavailable");
+        when(infoCamereTokenClient.getToken("scope")).thenReturn(Mono.error(error));
+
+        StepVerifier.create(tokenProvider.getTokenInfoCamere("scope"))
+                .expectErrorMatches(throwable -> throwable == error)
+                .verify();
     }
 }

@@ -13,20 +13,40 @@ import org.springframework.context.annotation.Import;
 public class NationalRegistriesConfig {
 
     private boolean enablePfPecFallbackFlow;
+    private boolean enableInadMassiveApi;
     private boolean valCxIdEnabled;
+    private boolean enableOldInipecFlow;
+
+    private String pdndBaseURL;
+    private String inadBaseURL;
 
     private Dao dao;
     private Integer queryLimit;
     private Inipec inipec;
+    private Sqs sqs;
+    private Inad inad;
     private Topic topic;
 
 
     private String addressCompositionMode;
 
+    private Integer ttl;
+
     @Data
     public static class Dao {
         private String shedlockTableName;
+        private String batchesTableName;
+        private String requestsTableName;
     }
+
+    @Data
+    public static class Sqs {
+        private String outputQueueName;
+        private String inputDlqQueueName;
+        private String inputQueueName;
+        private String pollingQueueName;
+    }
+
 
     @Data
     public static class Inipec {
@@ -34,9 +54,25 @@ public class NationalRegistriesConfig {
         private Integer batchRequestMaxRetry;
         private String batchRequestPkSeparator;
         private Integer batchRequestRecoveryAfter;
-        private Double firstAttemptDelaySecondsPerCf;
-        private Integer firstAttemptFixedDelaySeconds;
-        private Integer ttl;
+        private Double pollingFirstAttemptDelaySecondsPerCf;
+        private Integer pollingFirstAttemptFixedDelaySeconds;
+        private Integer batchPollingInProgressMaxRetry;
+        private Integer batchPollingMaxRetry;
+        private Integer pollingErrorRetryAfter;
+        private Integer pollingInProgressRetryAfter;
+        private Integer requestRetryAfter;
+    }
+
+    @Data
+    public static class Inad {
+        private Integer maxBatchRequestSize;
+        private Integer oldestRequestMaxWaitingSeconds;
+        private Integer batchPollingInProgressMaxRetry;
+        private Integer batchPollingMaxRetry;
+        private Double pollingFirstAttemptDelaySecondsPerCf;
+        private Integer pollingFirstAttemptFixedDelaySeconds;
+        private Integer pollingErrorRetryAfter;
+        private Integer pollingInProgressRetryAfter;
     }
 
     @Data
@@ -45,5 +81,4 @@ public class NationalRegistriesConfig {
         private String inputQueueName;
         private String inputDlqQueueName;
     }
-
 }

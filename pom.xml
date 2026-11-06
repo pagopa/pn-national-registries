@@ -188,6 +188,11 @@
             <artifactId>shedlock-provider-dynamodb2</artifactId>
             <version>4.42.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.testcontainers</groupId>
+            <artifactId>localstack</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

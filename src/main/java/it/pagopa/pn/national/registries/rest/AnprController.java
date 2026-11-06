@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import static it.pagopa.pn.national.registries.converter.GatewayConverter.isAnprAddressNotFound;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetric;
 
@@ -42,9 +43,10 @@ public class AnprController implements AddressAnprApi {
         return getAddressANPRRequestBodyDto
                 .flatMap(requestBody -> {
                     RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
-                    var response = anprService.getAddressANPR(requestBody).doOnNext(getAddressANPROKDto -> {
+                    var response = anprService.getAddressANPR(requestBody)
+                            .doOnNext(getAddressANPROKDto -> {
                                 logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1);
-                                if (!CollectionUtils.isEmpty(getAddressANPROKDto.getResidentialAddresses())) {
+                                if(!CollectionUtils.isEmpty(getAddressANPROKDto.getResidentialAddresses())){
                                     logCfWithAddressMetric(
                                             null,
                                             GatewayDownstreamService.ANPR,
@@ -53,7 +55,7 @@ public class AnprController implements AddressAnprApi {
                                     );
                                 }
                             })
-                            .doOnError(gatewayService.isAnprAddressNotFound, e -> logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1))
+                            .doOnError(isAnprAddressNotFound, e -> logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1))
                             .map(ResponseEntity::ok);
                     return MDCUtils.addMDCToContextAndExecute(response);
                 });

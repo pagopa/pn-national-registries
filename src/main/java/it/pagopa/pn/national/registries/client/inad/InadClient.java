@@ -6,14 +6,20 @@ import it.pagopa.pn.national.registries.cache.AccessTokenCacheEntry;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.config.inad.InadSecretConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniMultipleApi;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.api.ApiEstrazioniPuntualiApi;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseListDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.RequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseStatusListDigitalAddress;
 import it.pagopa.pn.national.registries.model.PdndSecretValue;
 import it.pagopa.pn.national.registries.model.inad.InadResponseKO;
 import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretService;
 import it.pagopa.pn.national.registries.utils.MaskTaxIdInPathUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
@@ -33,6 +39,7 @@ public class InadClient {
 
     private final AccessTokenExpiringMap accessTokenExpiringMap;
     private final ApiEstrazioniPuntualiApi apiEstrazioniPuntualiApi;
+    private final ApiEstrazioniMultipleApi apiEstrazioniMultipleApi;
     private final InadSecretConfig inadSecretConfig;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
 
@@ -44,6 +51,16 @@ public class InadClient {
                         .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 // don't pass retrySignal.failure() to PnInternalException as cause
                                 // the common handler prints the stack trace that includes the called URL and for INAD in the URL is the taxId
+                                new PnInternalException(ERROR_MESSAGE_INAD_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED))
+                );
+    }
+
+    public Mono<ResponseRequestListDigitalAddress> callMassiveEService(RequestListDigitalAddress request) {
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(inadSecretConfig.getPdndSecret());
+        return accessTokenExpiringMap.getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, false)
+                .flatMap(tokenEntry -> callMassiveExtract(request, tokenEntry))
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) ->
                                 new PnInternalException(ERROR_MESSAGE_INAD_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED))
                 );
     }
@@ -62,6 +79,73 @@ public class InadClient {
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InadResponseKO.class);
                     }
+                });
+    }
+
+    public Mono<ResponseStatusListDigitalAddress> checkMassiveRequestStatus(String pollingId) {
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(inadSecretConfig.getPdndSecret());
+        return accessTokenExpiringMap
+                .getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, false)
+                .flatMap(tokenEntry -> callMassiveStatus(pollingId, tokenEntry))
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((spec, signal) ->
+                                new PnInternalException(ERROR_MESSAGE_INAD_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED)));
+    }
+
+    public Mono<ResponseListDigitalAddress> getMassiveRequestResult(String pollingId) {
+        PdndSecretValue pdndSecretValue = pnNationalRegistriesSecretService.getPdndSecretValue(inadSecretConfig.getPdndSecret());
+        return accessTokenExpiringMap
+                .getPDNDToken(pdndSecretValue.getJwtConfig().getPurposeId(), pdndSecretValue, false)
+                .flatMap(tokenEntry -> callMassiveResult(pollingId, tokenEntry))
+                .retryWhen(Retry.max(1).filter(this::shouldRetry)
+                        .onRetryExhaustedThrow((spec, signal) ->
+                                new PnInternalException(ERROR_MESSAGE_INAD_UNAUTHORIZED, ERROR_CODE_UNAUTHORIZED)));
+    }
+
+    private Mono<ResponseStatusListDigitalAddress> callMassiveStatus(String pollingId, AccessTokenCacheEntry tokenEntry) {
+        apiEstrazioniMultipleApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
+        return apiEstrazioniMultipleApi.verificaStatoRichiestaElencoDomiciliDigitali(pollingId)
+                .onErrorResume(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage(), throwable);
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
+                        return Mono.error(new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), InadResponseKO.class));
+                    }
+                    return Mono.error(throwable);
+                });
+    }
+
+    private Mono<ResponseListDigitalAddress> callMassiveResult(String pollingId, AccessTokenCacheEntry tokenEntry) {
+        apiEstrazioniMultipleApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
+        return apiEstrazioniMultipleApi.recuperoElencoDomiciliDigitali(pollingId)
+                .onErrorResume(throwable -> {
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage(), throwable);
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
+                        return Mono.error(new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), InadResponseKO.class));
+                    }
+                    return Mono.error(throwable);
+                });
+    }
+
+    private Mono<ResponseRequestListDigitalAddress> callMassiveExtract(RequestListDigitalAddress request,
+                                                                        AccessTokenCacheEntry tokenEntry) {
+        log.logInvokingExternalDownstreamService(PnLogger.EXTERNAL_SERVICES.INAD, PROCESS_SERVICE_INAD_ADDRESS);
+        apiEstrazioniMultipleApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
+        return apiEstrazioniMultipleApi.richiestaElencoDomiciliDigitaliWithHttpInfo(request)
+                .doOnNext(response -> log.info("INAD massive request accepted: id={}, location={}",
+                        response.getBody() == null ? null : response.getBody().getId(),
+                        response.getHeaders().getLocation()))
+                .map(ResponseEntity::getBody)
+                .onErrorResume(throwable -> {
+                    if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
+                        return Mono.error(new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
+                                ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
+                                Charset.defaultCharset(), InadResponseKO.class));
+                    }
+                    return Mono.error(throwable);
                 });
     }
 

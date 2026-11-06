@@ -9,9 +9,9 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -32,25 +32,16 @@ import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipi
 
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class IniPecBatchSqsService {
 
     private final IniPecBatchRequestRepository batchRequestRepository;
     private final SqsService sqsService;
-    private final NationalRegistriesConfig nationalRegistriesConfig;
+    private final NationalRegistriesConfig config;
 
     private static final int MAX_BATCH_REQUEST_SIZE = 100;
     private static final String DOMICILE_TYPE = "DIGITAL";
-    private final String batchRequestPkSeparator;
 
-
-    public IniPecBatchSqsService(IniPecBatchRequestRepository batchRequestRepository,
-                                 SqsService sqsService, NationalRegistriesConfig nationalRegistriesConfig,
-                                 @Value("${pn.national-registries.inipec.batchrequest-pk-separator}") String batchRequestPkSeparator) {
-        this.batchRequestRepository = batchRequestRepository;
-        this.sqsService = sqsService;
-        this.nationalRegistriesConfig = nationalRegistriesConfig;
-        this.batchRequestPkSeparator = batchRequestPkSeparator;
-    }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.sqs.recovery.delay}")
     @SchedulerLock(name = "recoveryBatchSendToSqs", lockAtMostFor = "${pn.national-registries.inipec.batch.sqs.recovery.lock-at-most}",
@@ -108,7 +99,7 @@ public class IniPecBatchSqsService {
                                 .doOnNext(r -> {
                                     log.info("PG - DigitalAddress - pushed message for correlationId: {}", item.getCorrelationId());
                                     item.setSendStatus(BatchSendStatus.SENT.getValue());
-                                    item.setTtl(now.plusSeconds(nationalRegistriesConfig.getInipec().getTtl()).getEpochSecond());
+                                    item.setTtl(now.plusSeconds(config.getTtl()).getEpochSecond());
                                 })
                                 .doOnError(e -> log.warn("PG - DigitalAddress - failed to push message for correlationId: {}", item.getCorrelationId(), e))
                                 .onErrorResume(e -> Mono.empty());
@@ -126,7 +117,7 @@ public class IniPecBatchSqsService {
         Instant now = Instant.now();
         InternalCodeSqsDto internalCodeSqsDto = InternalCodeSqsDto.builder()
                 .taxId(item.getCf())
-                .correlationId(item.getCorrelationId().split(batchRequestPkSeparator)[0])
+                .correlationId(item.getCorrelationId().split(config.getInipec().getBatchRequestPkSeparator())[0])
                 .pnNationalRegistriesCxId(item.getClientId())
                 .domicileType(DOMICILE_TYPE)
                 .build();
@@ -143,7 +134,7 @@ public class IniPecBatchSqsService {
                 .thenReturn(item)
                 .doOnNext(batchRequest -> {
                     batchRequest.setSendStatus(BatchSendStatus.SENT_TO_DLQ.getValue());
-                    batchRequest.setTtl(now.plusSeconds(nationalRegistriesConfig.getInipec().getTtl()).getEpochSecond());
+                    batchRequest.setTtl(now.plusSeconds(config.getTtl()).getEpochSecond());
                 });
     }
 

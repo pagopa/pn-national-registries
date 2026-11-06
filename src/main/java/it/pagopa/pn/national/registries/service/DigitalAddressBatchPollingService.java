@@ -1,29 +1,31 @@
 package it.pagopa.pn.national.registries.service;
 
-import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchSendStatus;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.RecipientType;
+import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
+import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
-import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
+import it.pagopa.pn.national.registries.model.inipec.InipecEvaluationResult;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
+import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
-import it.pagopa.pn.national.registries.utils.MetricUtils;
 import lombok.CustomLog;
+import lombok.RequiredArgsConstructor;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -35,64 +37,40 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
 
-import java.nio.charset.Charset;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static it.pagopa.pn.commons.utils.MDCUtils.MDC_TRACE_ID_KEY;
 import static it.pagopa.pn.national.registries.constant.BatchStatus.TAKEN_CHARGE;
+import static it.pagopa.pn.national.registries.constant.DomicileType.DIGITAL;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_MESSAGE_INIPEC_RETRY_EXHAUSTED_TO_SQS;
-import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.removeInvalidEmails;
+import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.*;
 
 @CustomLog
 @Service
-public class DigitalAddressBatchPollingService extends GatewayConverter {
+@RequiredArgsConstructor
+public class DigitalAddressBatchPollingService{
 
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository batchRequestRepository;
     private final IniPecBatchPollingRepository batchPollingRepository;
-    private final InfoCamereClient infoCamereClient;
+    private final NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
+    private final InfoCamereService infoCamereService;
     private final IniPecBatchSqsService iniPecBatchSqsService;
     private final InadService inadService;
 
-    private final int maxRetry;
-    private final int inProgressMaxRetry;
-    private final String batchRequestPkSeparator;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     private final IniPecBatchRequestService iniPecBatchRequestService;
     private final GatewayUtils gatewayUtils;
 
     private static final int MAX_BATCH_POLLING_SIZE = 1;
-    private static final Pattern PEC_REQUEST_IN_PROGRESS_PATTERN = Pattern.compile(".*(List PEC in progress).*");
 
-    public DigitalAddressBatchPollingService(InfoCamereConverter infoCamereConverter,
-                                             IniPecBatchRequestRepository batchRequestRepository,
-                                             IniPecBatchPollingRepository batchPollingRepository,
-                                             InfoCamereClient infoCamereClient,
-                                             IniPecBatchSqsService iniPecBatchSqsService,
-                                             InadService inadService,
-                                             @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
-                                             @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry,
-                                             @Value("${pn.national-registries.inipec.batchrequest-pk-separator}") String batchRequestPkSeparator,
-                                             IniPecBatchRequestService iniPecBatchRequestService, GatewayUtils gatewayUtils) {
-        this.infoCamereConverter = infoCamereConverter;
-        this.batchRequestRepository = batchRequestRepository;
-        this.batchPollingRepository = batchPollingRepository;
-        this.infoCamereClient = infoCamereClient;
-        this.iniPecBatchSqsService = iniPecBatchSqsService;
-        this.inadService = inadService;
-        this.maxRetry = maxRetry;
-        this.inProgressMaxRetry = inProgressMaxRetry;
-        this.batchRequestPkSeparator = batchRequestPkSeparator;
-        this.iniPecBatchRequestService = iniPecBatchRequestService;
-        this.gatewayUtils = gatewayUtils;
-    }
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inipec.batch.polling.delay}")
     @SchedulerLock(name = "batchPecPolling", lockAtMostFor = "${pn.national-registries.inipec.batch.polling.lock-at-most}",
@@ -166,40 +144,10 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<Void> handlePolling(BatchPolling polling) {
-        return callIniPecEService(polling.getBatchId(), polling.getPollingId())
+        return infoCamereService.callIniPecEService(polling.getBatchId(), polling.getPollingId())
                 .onErrorResume(t -> incrementAndCheckRetry(polling, t).then(Mono.error(t)))
                 .flatMap(response -> handleSuccessfulPolling(polling, response))
                 .onErrorResume(e -> Mono.empty());
-    }
-
-    private Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
-        return infoCamereClient.callEServiceRequestPec(pollingId)
-                .doOnNext(response -> {
-                    if(infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
-                        throw new PnNationalRegistriesException(response.getDescription(), HttpStatus.NOT_FOUND.value(),
-                                HttpStatus.NOT_FOUND.getReasonPhrase() , null, null,
-                                Charset.defaultCharset(), InfocamereResponseKO.class);
-                    }
-                    else {
-                        log.info("IniPEC - batchId {} - pollingId {} - response pec size: {}", batchId, pollingId, response.getElencoPec().size());
-                    }
-                })
-                .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e));
-    }
-
-    private boolean isPollingResponseNotReady(Throwable throwable) {
-        return throwable instanceof PnNationalRegistriesException exception
-                && exception.getStatusCode() == HttpStatus.NOT_FOUND
-                && checkPecRequestInProgressPattern(exception.getMessage());
-    }
-
-    private boolean checkPecRequestInProgressPattern(String message) {
-        if(message == null) {
-            return false;
-        }
-
-        Matcher matcher = PEC_REQUEST_IN_PROGRESS_PATTERN.matcher(message);
-        return matcher.find();
     }
 
     private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
@@ -214,12 +162,12 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     private Mono<Void> incrementAndCheckRetry(BatchPolling polling, Throwable throwable) {
-        if(isPollingResponseNotReady(throwable)){
+        if(infoCamereConverter.isPollingResponseNotReady(throwable)){
             polling.setInProgressRetry(polling.getInProgressRetry() != null ? polling.getInProgressRetry() + 1 : 1);
         }else{
             polling.setRetry(polling.getRetry() != null ? polling.getRetry() + 1 : 1);
         }
-        if (maxRetry <= Optional.ofNullable(polling.getRetry()).orElse(0) || inProgressMaxRetry <= Optional.ofNullable(polling.getInProgressRetry()).orElse(0) ||
+        if ( nationalRegistriesConfig.getInipec().getBatchPollingMaxRetry() <= Optional.ofNullable(polling.getRetry()).orElse(0) || nationalRegistriesConfig.getInipec().getBatchPollingInProgressMaxRetry() <= Optional.ofNullable(polling.getInProgressRetry()).orElse(0) ||
                 (throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST)) {
             polling.setStatus(BatchStatus.ERROR.getValue());
             log.debug("IniPEC - batchId {} - polling {} status in {} (retry: {})", polling.getBatchId(), polling.getPollingId(), polling.getStatus(), polling.getRetry());
@@ -267,6 +215,7 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .flatMap(batchRequestRepository::update)
                 .doOnNext(r -> log.debug("IniPEC - correlationId {} - set status in {}", r.getCorrelationId(), r.getStatus()))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to set request in status {}", batchId, status, e))
+                .filter(request -> !BatchSendStatus.NOT_TO_SEND.getValue().equals(request.getSendStatus()))
                 .collectList()
                 .filter(requests -> !requests.isEmpty())
                 .flatMap(iniPecBatchSqsService::batchSendToSqs)
@@ -289,40 +238,41 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     private Mono<BatchRequest> evaluateInipecResponse(BatchRequest batchRequest, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, LocalDateTime now) {
         batchRequest.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
         batchRequest.setLastReserved(now);
-        Pec pec = retrieveBatchRequestPec(batchRequest, iniPecPollingResponse);
+        Pec pec = infoCamereConverter.retrieveBatchRequestPec(batchRequest.getCf(), iniPecPollingResponse);
         if (Objects.isNull(pec)) {
             return handlePecNotFoundResponse(batchRequest, status, now);
         }
         return evaluateStatoImpresa(batchRequest, pec, status, now);
     }
 
-    private Pec retrieveBatchRequestPec(BatchRequest batchRequest, IniPecPollingResponse iniPecPollingResponse) {
-        String requestCf = batchRequest.getCf();
-        return iniPecPollingResponse.getElencoPec().stream()
-                .filter(pec -> StringUtils.hasText(pec.getCf())
-                        && StringUtils.hasText(requestCf)
-                        && pec.getCf().equalsIgnoreCase(requestCf))
-                .findFirst()
-                .orElse(null);
-    }
 
     private Mono<Void> callInadEservice(BatchRequest request) {
         RecipientType recipientType = retrieveRecipientType(request.getCf(), request.getRecipientType());
-        String correlationId = request.getCorrelationId().split(batchRequestPkSeparator)[0];
+        String correlationId = request.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0];
         request.setEservice(GatewayDownstreamService.INAD.name());
-        return inadService.callEService(convertToGetDigitalAddressInadRequest(request), recipientType, correlationId)
+        if(nationalRegistriesConfig.isEnableInadMassiveApi()){
+            NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(request, recipientType, GatewayDownstreamService.INAD, correlationId);
+            return nationalRegistriesRequestsRepository.putRequest(nationalRegistriesRequest)
+                    .doOnNext(unused -> {
+                        log.info("CreatedRequest for correlationId: {} for registry INAD", nationalRegistriesRequest.getCorrelationId());
+                        request.setStatus(BatchStatus.WORKED.getValue());
+                        request.setSendStatus(BatchSendStatus.NOT_TO_SEND.getValue());
+                    })
+                    .doOnNext(batchRequest -> log.info("Closing batchRequest for correlationId: {} to start INAD massive", request.getCorrelationId()))
+                    .then();
+        }
+        return inadService.callEService(GatewayConverter.convertToGetDigitalAddressInadRequest(request.getCorrelationId(), request.getCf()), recipientType, correlationId)
                 .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
-                .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(inadResponse -> {
-                    CodeSqsDto codeSqsDto = inadToSqsDto(correlationId, inadResponse);
-                    logCfWithAddressMetricFromBatchRequest(codeSqsDto, request, GatewayDownstreamService.INAD);
+                    CodeSqsDto codeSqsDto = GatewayConverter.inadToSqsDto(correlationId, inadResponse);
+                    logCfWithAddressMetricFromBatchRequest(codeSqsDto, request.getCorrelationId(), request.getCf(), request.getRecipientType(), GatewayDownstreamService.INAD);
                     request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
                     request.setStatus(BatchStatus.WORKED.getValue());
                 })
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
                 .onErrorResume(e -> {
                     logEServiceError(e, "can not retrieve digital address from INAD: {}");
-                    CodeSqsDto codeSqsDto = errorInadToSqsDto(correlationId, e);
+                    CodeSqsDto codeSqsDto = GatewayConverter.errorInadToSqsDto(correlationId, e);
                     if(codeSqsDto != null) {
                         logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
                         request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
@@ -335,6 +285,30 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
                 .then();
     }
 
+    private NationalRegistriesRequest constructNationalRegistriesRequest(BatchRequest request, RecipientType recipientType, GatewayDownstreamService registry, String correlationId){
+        NationalRegistriesRequest nationalRegistriesRequest = new NationalRegistriesRequest();
+
+        Instant now = Instant.now();
+        nationalRegistriesRequest.setCreatedAt(now);
+        nationalRegistriesRequest.setAttemptAfter(formatInstant(now));
+        nationalRegistriesRequest.setCorrelationId(correlationId);
+        // LocalDateTime -> UTC Instant -> ISO-8601
+        nationalRegistriesRequest.setReferenceRequestDate(
+                request.getReferenceRequestDate()
+                        .toInstant(ZoneOffset.UTC)
+                        .toString()
+        );
+        nationalRegistriesRequest.setDomicileType(DIGITAL.name());
+        nationalRegistriesRequest.setTaxId(request.getCf());
+        nationalRegistriesRequest.setRecipientType(recipientType.name());
+        nationalRegistriesRequest.setClientId(request.getClientId());
+        nationalRegistriesRequest.setRegistry(registry);
+        nationalRegistriesRequest.setStatus(RequestStatusEnum.NOT_WORKED);
+        nationalRegistriesRequest.setRegistryStatus(String.join("#", registry.name(), RequestStatusEnum.NOT_WORKED.name()));
+
+        return nationalRegistriesRequest;
+    }
+
     private void logEServiceError(Throwable throwable, String message) {
         if (CheckExceptionUtils.isForLogLevelWarn(throwable)) {
             log.warn(message, throwable.getMessage());
@@ -344,37 +318,17 @@ public class DigitalAddressBatchPollingService extends GatewayConverter {
     }
 
     public Mono<BatchRequest> evaluateStatoImpresa(BatchRequest batchRequest, Pec pec, BatchStatus status, LocalDateTime now) {
-        log.info("evaluateStatoImpresa for correlationId: {} with statoImpresa: {}",
-                batchRequest.getCorrelationId(), pec.getStatoImpresa());
-
-        if (Objects.isNull(pec.getStatoImpresa())) {
-            log.debug("IniPEC - correlationId {} - statoImpresa is null", batchRequest.getCorrelationId());
-            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(batchRequest, pec);
-            int foundPecCount = CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()) ? 0 : codeSqsDto.getDigitalAddress().size();
-            removeInvalidEmails(codeSqsDto);
-            int validPecCount = codeSqsDto.getDigitalAddress().size();
-            log.info("IniPEC - correlationId {} - statoImpresa is null - pec found: {}, valid pec: {}",
-                    batchRequest.getCorrelationId(), foundPecCount, validPecCount);
-            if (validPecCount == 0) {
-                log.info("IniPEC - correlationId {} - no valid digital address found in IniPEC response, starting fallback", batchRequest.getCorrelationId());
-                return handlePecNotFoundResponse(batchRequest, status, now);
-            }
-            logCfWithAddressMetricFromBatchRequest(codeSqsDto, batchRequest, GatewayDownstreamService.INIPEC);
-            return infoCamereConverter.updateBatchRequestFields(batchRequest, status, now, codeSqsDto);
-        }
-
-        return Mono.fromCallable(pec::getStatoImpresa)
-                .doOnNext(statoImpresa -> log.debug("IniPEC - correlationId {} - statoImpresa is {}",
-                        batchRequest.getCorrelationId(), statoImpresa))
-                .flatMap(statoImpresa -> switch (statoImpresa) {
-                    case ER -> handleERState(batchRequest).then(Mono.empty());
-                    case ND, NF -> handlePecNotFoundResponse(batchRequest, status, now);
-                });
+        InipecEvaluationResult result = infoCamereService.evaluateInipecStatoImpresa(batchRequest.getCorrelationId(), batchRequest.getCf(), batchRequest.getRecipientType(), pec);
+        return switch (result) {
+            case InipecEvaluationResult.Found found -> infoCamereConverter.updateBatchRequestFields(batchRequest, status, now, found.codeSqsDto());
+            case InipecEvaluationResult.NotFound ignored -> handlePecNotFoundResponse(batchRequest, status, now);
+            case InipecEvaluationResult.Retry ignored -> handleERState(batchRequest).then(Mono.empty());
+        };
     }
 
     public Mono<BatchRequest> handlePecNotFoundResponse(BatchRequest request, BatchStatus status, LocalDateTime now) {
         if(PF.name().equalsIgnoreCase(request.getRecipientType())) {
-            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(request, null);
+            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(request.getCorrelationId(), null);
             return infoCamereConverter.updateBatchRequestFields(request, status, now, codeSqsDto);
         }
         return callInadEservice(request)
