@@ -52,7 +52,6 @@ public class DigitalAddressService{
     public Mono<AddressInternalResult> retrieveDigitalAddressFromInadSync(AddressRequestBodyDto addressRequestBodyDto, String correlationId, RecipientType recipientType) {
         return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto.getFilter().getCorrelationId(), addressRequestBodyDto.getFilter().getTaxId()), recipientType, correlationId)
                 .doOnNext(response -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
-                .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(response -> log.info("retrieved digital address from INAD for correlationId: {}", correlationId))
                 .map(response -> GatewayConverter.inadToSqsDto(correlationId, response))
                 .<AddressInternalResult>map(codeSqsDto -> {

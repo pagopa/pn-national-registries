@@ -263,7 +263,6 @@ public class DigitalAddressBatchPollingService{
         }
         return inadService.callEService(GatewayConverter.convertToGetDigitalAddressInadRequest(request.getCorrelationId(), request.getCf()), recipientType, correlationId)
                 .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
-                .flatMap(DigitalAddressUtils::emailValidation)
                 .doOnNext(inadResponse -> {
                     CodeSqsDto codeSqsDto = GatewayConverter.inadToSqsDto(correlationId, inadResponse);
                     logCfWithAddressMetricFromBatchRequest(codeSqsDto, request.getCorrelationId(), request.getCf(), request.getRecipientType(), GatewayDownstreamService.INAD);

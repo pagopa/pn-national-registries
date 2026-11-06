@@ -38,11 +38,27 @@ public class InadConverter {
         if (elementDigitalAddress != null) {
             response.setSince(elementDigitalAddress.getSince());
             response.setTaxId(elementDigitalAddress.getCodiceFiscale());
-            if (elementDigitalAddress.getDigitalAddress() != null) {
-                List<DigitalAddressDto> digitalAddressDtoList = elementDigitalAddress.getDigitalAddress().stream()
-                        .filter(InadConverter::isValid)
+            if (!CollectionUtils.isEmpty(elementDigitalAddress.getDigitalAddress())) {
+                List<ElementDigitalAddress> notExpiredPecList = elementDigitalAddress.getDigitalAddress().stream()
+                        .filter(Objects::nonNull)
+                        .filter(InadConverter::isNotExpired)
+                        .toList();
+                List<ElementDigitalAddress> validPecList = notExpiredPecList.stream()
+                        .filter(address -> isValidEmail(address.getDigitalAddress()))
+                        .toList();
+
+                log.info("INAD - correlationId {} - statoImpresa is null - pec found: {}, not expired pec: {}, valid pec: {}",
+                        correlationId, elementDigitalAddress.getDigitalAddress().size(), notExpiredPecList.size(), validPecList.size());
+
+                if (validPecList.isEmpty()) {
+                    throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
+                            HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class);
+                }
+
+                List<DigitalAddressDto> digitalAddressDtoList = validPecList.stream()
                         .map(InadConverter::convertToGetDigitalAddressINADOKDigitalAddressInnerDto)
                         .toList();
+
                 log.info("Found [{}] pec from INAD for correlationId [{}]", digitalAddressDtoList.size(), correlationId);
                 switch (recipientType) {
                     case PF -> mapToPfAddress(digitalAddressDtoList, response, isEnablePfPecFallbackFlow);
@@ -57,17 +73,17 @@ public class InadConverter {
         return response;
     }
 
-    private static void mapToPgAddress (List<DigitalAddressDto> digitalAddressDtoList, String taxId, GetDigitalAddressINADOKDto response){
-        if (taxId.length() == PIVA_LENGTH &&
-                digitalAddressDtoList.size() == 1 && !StringUtils.hasText(digitalAddressDtoList.get(0).getPracticedProfession())) {
-            response.setDigitalAddress(digitalAddressDtoList.get(0));
+    private static void mapToPgAddress(List<DigitalAddressDto> digitalAddressDtoList, String taxId, GetDigitalAddressINADOKDto response) {
+        if (Objects.nonNull(taxId) && taxId.length() == PIVA_LENGTH &&
+                digitalAddressDtoList.size() == 1 && !StringUtils.hasText(digitalAddressDtoList.getFirst().getPracticedProfession())) {
+            response.setDigitalAddress(digitalAddressDtoList.getFirst());
         }
     }
 
     private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response, boolean isEnablePfPecFallbackFlow) {
 
         Optional<DigitalAddressDto> digitalAddress = retrievePersonalAddress(digitalAddressDtoList, response);
-        if (isEnablePfPecFallbackFlow && (digitalAddress.isEmpty() || !isValidEmail(digitalAddress.get().getDigitalAddress()))) {
+        if (isEnablePfPecFallbackFlow && (digitalAddress.isEmpty() || !StringUtils.hasText(digitalAddress.get().getDigitalAddress()))) {
             digitalAddress = retrieveProfessionalAddress(digitalAddressDtoList);
         }
 
@@ -81,7 +97,9 @@ public class InadConverter {
 
     private static Optional<DigitalAddressDto> retrievePersonalAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response) {
         return digitalAddressDtoList.stream()
-                .filter(item -> !StringUtils.hasText(item.getPracticedProfession()) && response.getTaxId().length() == CF_LENGTH)
+                .filter(item -> !StringUtils.hasText(item.getPracticedProfession())
+                        && StringUtils.hasText(response.getTaxId())
+                        && response.getTaxId().length() == CF_LENGTH)
                 .findFirst();
     }
 
@@ -121,7 +139,7 @@ public class InadConverter {
         };
     }
 
-    private static boolean isValid(ElementDigitalAddress dto) {
+    private static boolean isNotExpired(ElementDigitalAddress dto) {
         Date parsedEndValidity = Optional.ofNullable(dto.getUsageInfo())
                 .map(UsageInfo::getDateEndValidity)
                 .orElse(null);
