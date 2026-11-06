@@ -43,9 +43,10 @@ public class AnprController implements AddressAnprApi {
         return getAddressANPRRequestBodyDto
                 .flatMap(requestBody -> {
                     RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
-                    var response = anprService.getAddressANPR(requestBody).doOnNext(getAddressANPROKDto -> {
+                    var response = anprService.getAddressANPR(requestBody)
+                            .doOnNext(getAddressANPROKDto -> {
                                 logCfRequestedMetric(null, GatewayDownstreamService.ANPR, 1);
-                                if (!CollectionUtils.isEmpty(getAddressANPROKDto.getResidentialAddresses())) {
+                                if(!CollectionUtils.isEmpty(getAddressANPROKDto.getResidentialAddresses())){
                                     logCfWithAddressMetric(
                                             null,
                                             GatewayDownstreamService.ANPR,
