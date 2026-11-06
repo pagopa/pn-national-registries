@@ -59,7 +59,7 @@ public class GatewayService {
 
     public Mono<AddressOKDto> handleMessage(PnAddressGatewayEvent.Payload payload) {
         AddressRequestBodyDto addressRequestBodyDto = toAddressRequestBodyDto(payload);
-        validateTaxIdUtils.validateTaxId(payload.getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID, true);
+        validateTaxIdUtils.validateTaxId(payload.getTaxId(), PROCESS_NAME_AGENZIA_ENTRATE_CHECK_TAX_ID, false);
         return retrieveDigitalOrPhysicalAddress(payload.getRecipientType(), payload.getPnNationalRegistriesCxId(), addressRequestBodyDto)
                 .contextWrite(ctx -> gatewayUtils.enrichFluxContext(ctx, MDCUtils.retrieveMDCContextMap()));
     }
