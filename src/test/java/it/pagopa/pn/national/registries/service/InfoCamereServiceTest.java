@@ -14,7 +14,6 @@ import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.inipec.InipecEvaluationResult;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,11 +35,9 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
-import java.util.Optional;
+import java.util.concurrent.TimeoutException;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @Slf4j
@@ -63,9 +60,6 @@ class InfoCamereServiceTest {
     IniPecBatchRequestRepository batchRequestRepository;
     @MockitoBean
     NationalRegistriesConfig nationalRegistriesConfig;
-
-    @MockitoBean
-    ValidateTaxIdUtils validateTaxIdUtils;
 
     @BeforeEach
     void setup(){
@@ -447,7 +441,6 @@ class InfoCamereServiceTest {
                 .verify();
 
         verify(infoCamereConverter, never()).convertToGetAddressIniPecOKDto(any());
-        verify(validateTaxIdUtils).validateTaxId(eq("12345678901"), anyString(), eq(false));
     }
 
     @Test
@@ -462,8 +455,6 @@ class InfoCamereServiceTest {
         StepVerifier.create(infoCamereService.getRegistroImpreseLegalAddress(request))
                 .expectErrorMatches(e -> e == error)
                 .verify();
-
-        verify(validateTaxIdUtils).validateTaxId(eq("cf"), anyString(), eq(false));
     }
 
     @Test
@@ -478,8 +469,6 @@ class InfoCamereServiceTest {
         StepVerifier.create(infoCamereService.getLegalInstitutions(request))
                 .expectErrorMatches(e -> e == error)
                 .verify();
-
-        verify(validateTaxIdUtils).validateTaxId(eq("cf"), anyString(), eq(false));
     }
 
     @Test
@@ -495,8 +484,25 @@ class InfoCamereServiceTest {
         StepVerifier.create(infoCamereService.checkTaxIdAndVatNumber(body))
                 .expectErrorMatches(e -> e == error)
                 .verify();
+    }
 
-        verify(validateTaxIdUtils).validateTaxId(eq("taxId"), anyString(), eq(false));
+    /**
+     * N17 - un timeout del registro deve essere propagato come guasto tecnico, non trasformato in lista vuota.
+     */
+    @Test
+    void getLegalInstitutions_timeout_shouldBePropagatedAndNotConvertedToEmptyResult() {
+        InfoCamereLegalInstitutionsRequestBodyDto request = new InfoCamereLegalInstitutionsRequestBodyDto();
+        TaxIdFilterDto filter = new TaxIdFilterDto();
+        filter.setTaxId("cf");
+        request.setFilter(filter);
+        TimeoutException timeout = new TimeoutException("infocamere timeout");
+        when(infoCamereClient.getLegalInstitutions(any())).thenReturn(Mono.error(timeout));
+
+        StepVerifier.create(infoCamereService.getLegalInstitutions(request))
+                .expectErrorMatches(error -> error == timeout)
+                .verify();
+
+        verify(infoCamereConverter, never()).mapToResponseOkByResponse((InfoCamereLegalInstituionsResponse) any());
     }
 
     private static CodeSqsDto codeSqsDtoWithAddresses(String... addresses) {

@@ -34,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
@@ -80,6 +81,7 @@ class InipecPollingServiceTest {
 
         config = new NationalRegistriesConfig();
         config.setInipec(inipec);
+        config.setTtl(10);
 
         service = new InipecPollingService(infoCamereService, requestsRepository, infoCamereConverter, config,
                 inadService, gatewayUtils, pollingService);
@@ -244,21 +246,39 @@ class InipecPollingServiceTest {
         when(inadService.callEService(any(), eq(it.pagopa.pn.national.registries.constant.RecipientType.PG), eq(CORRELATION_ID)))
                 .thenReturn(Mono.just(inadResponse));
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("inad-payload");
-        when(requestsRepository.putRequest(any(NationalRegistriesRequest.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false)).thenReturn(Mono.empty());
+        when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(1)));
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
         ArgumentCaptor<NationalRegistriesRequest> captor = ArgumentCaptor.forClass(NationalRegistriesRequest.class);
-        verify(requestsRepository).putRequest(captor.capture());
+        verify(requestsRepository).completeWithFallback(eq(request), captor.capture());
         NationalRegistriesRequest saved = captor.getValue();
         assertEquals(GatewayDownstreamService.INAD, saved.getRegistry());
         assertEquals(RequestStatusEnum.WORKED, saved.getStatus());
         assertEquals("inad-payload", saved.getResultPayload());
         assertEquals(REQUEST_CORRELATION_ID, saved.getCorrelationId());
-        verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false);
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+    }
+
+    @Test
+    void inadSyncPersistenceFailureDoesNotCloseSourceOrBatch() {
+        config.setEnableInadMassiveApi(false);
+        NationalRegistriesRequest request = request("PG", TAX_ID_PG, null);
+        Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request), false);
+        when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
+        when(inadService.callEService(any(), any(), eq(CORRELATION_ID)))
+                .thenReturn(Mono.just(inadResponse(TAX_ID_PG, "pec@pec.it")));
+        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("inad-payload");
+        IllegalStateException failure = new IllegalStateException("transaction failed");
+        when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
+                .thenReturn(Mono.error(failure));
+
+        StepVerifier.create(service.handleMessage(payload(0, 0))).expectErrorMatches(error -> error == failure).verify();
+
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+        verify(pollingService, never()).markBatchAsWorked(anyString(), any());
     }
 
     @Test
@@ -270,9 +290,8 @@ class InipecPollingServiceTest {
         inadResponse.setTaxId(TAX_ID_PG);
         when(inadService.callEService(any(), any(), eq(CORRELATION_ID))).thenReturn(Mono.just(inadResponse));
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("inad-payload");
-        when(requestsRepository.putRequest(any(NationalRegistriesRequest.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false)).thenReturn(Mono.empty());
+        when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(1)));
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
@@ -290,14 +309,13 @@ class InipecPollingServiceTest {
         when(inadService.callEService(any(), any(), eq(CORRELATION_ID)))
                 .thenReturn(Mono.just(inadResponse(TAX_ID_PG, "not-an-email")));
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("inad-payload");
-        when(requestsRepository.putRequest(any(NationalRegistriesRequest.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false)).thenReturn(Mono.empty());
+        when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(1)));
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
         ArgumentCaptor<NationalRegistriesRequest> captor = ArgumentCaptor.forClass(NationalRegistriesRequest.class);
-        verify(requestsRepository).putRequest(captor.capture());
+        verify(requestsRepository).completeWithFallback(eq(request), captor.capture());
         assertEquals(RequestStatusEnum.WORKED, captor.getValue().getStatus());
         assertEquals(GatewayDownstreamService.INAD, captor.getValue().getRegistry());
         assertEquals("inad-payload", captor.getValue().getResultPayload());
@@ -310,14 +328,13 @@ class InipecPollingServiceTest {
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
         when(inadService.callEService(any(), any(), eq(CORRELATION_ID))).thenReturn(Mono.error(inadException(404, "CF non trovato")));
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("inad-payload");
-        when(requestsRepository.putRequest(any(NationalRegistriesRequest.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false)).thenReturn(Mono.empty());
+        when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(1)));
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
         ArgumentCaptor<NationalRegistriesRequest> captor = ArgumentCaptor.forClass(NationalRegistriesRequest.class);
-        verify(requestsRepository).putRequest(captor.capture());
+        verify(requestsRepository).completeWithFallback(eq(request), captor.capture());
         assertEquals(RequestStatusEnum.WORKED, captor.getValue().getStatus());
         assertEquals("inad-payload", captor.getValue().getResultPayload());
         verify(gatewayUtils).logEServiceError(any(Throwable.class), anyString());
@@ -329,14 +346,13 @@ class InipecPollingServiceTest {
         Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request));
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
         when(inadService.callEService(any(), any(), eq(CORRELATION_ID))).thenReturn(Mono.error(inadException(500, "boom")));
-        when(requestsRepository.putRequest(any(NationalRegistriesRequest.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false)).thenReturn(Mono.empty());
+        when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(1)));
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
         ArgumentCaptor<NationalRegistriesRequest> captor = ArgumentCaptor.forClass(NationalRegistriesRequest.class);
-        verify(requestsRepository).putRequest(captor.capture());
+        verify(requestsRepository).completeWithFallback(eq(request), captor.capture());
         assertEquals(RequestStatusEnum.ERROR, captor.getValue().getStatus());
         assertEquals(GatewayDownstreamService.INAD, captor.getValue().getRegistry());
         assertNull(captor.getValue().getResultPayload());
@@ -350,9 +366,8 @@ class InipecPollingServiceTest {
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
         when(inadService.callEService(any(), eq(it.pagopa.pn.national.registries.constant.RecipientType.PG), eq(CORRELATION_ID)))
                 .thenReturn(Mono.error(inadException(500, "boom")));
-        when(requestsRepository.putRequest(any(NationalRegistriesRequest.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, false)).thenReturn(Mono.empty());
+        when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
+                .thenAnswer(invocation -> Mono.just(invocation.getArgument(1)));
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
@@ -419,7 +434,7 @@ class InipecPollingServiceTest {
     void errorResettingRequestForRetryIsPropagated() {
         NationalRegistriesRequest request = request("PG", TAX_ID_PG, 0);
         Pec pec = new Pec();
-        Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request));
+        Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request), false);
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(pec);
         when(infoCamereService.evaluateInipecStatoImpresa(anyString(), anyString(), anyString(), any()))
                 .thenReturn(new InipecEvaluationResult.Retry());
@@ -429,6 +444,79 @@ class InipecPollingServiceTest {
         StepVerifier.create(service.handleMessage(payload(0, 0)))
                 .expectError(IllegalStateException.class)
                 .verify();
+        verify(pollingService, never()).markBatchAsWorked(anyString(), any());
+    }
+
+    /**
+     * Regression: al replay di un batch con tutte le request già WORKED il repository non restituisce elementi
+     * WORKING. Non deve essere ricreato alcun fallback INAD e deve essere completata solo la chiusura del batch.
+     */
+    @Test
+    void successfulPollingReplayWithoutWorkingRequestsOnlyClosesBatch() {
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        when(infoCamereService.callIniPecEService(BATCH_ID, POLLING_ID)).thenReturn(Mono.just(response));
+        when(infoCamereConverter.mapPecByTaxId(response)).thenReturn(Map.of());
+        when(requestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.empty()));
+        AtomicBoolean batchCloseSubscribed = new AtomicBoolean(false);
+        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC)).thenReturn(Mono.defer(() -> {
+            batchCloseSubscribed.set(true);
+            return Mono.empty();
+        }));
+
+        StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
+
+        assertTrue(batchCloseSubscribed.get());
+        verify(requestsRepository).getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING);
+        verify(pollingService, never()).createFallbackRequest(any(), any(), any());
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+    }
+
+    /**
+     * Regression: se la creazione del fallback INAD fallisce durante il processing della request INIPEC,
+     * il Mono di chiusura batch non deve essere sottoscritto e il batch deve restare recuperabile in WORKING.
+     */
+    @Test
+    void successfulPollingDoesNotCloseBatchWhenFallbackCreationFails() {
+        config.setEnableInadMassiveApi(true);
+        NationalRegistriesRequest request = request("PG", TAX_ID_PG, null);
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        Map<String, Pec> pecByTaxId = Map.of();
+        when(infoCamereService.callIniPecEService(BATCH_ID, POLLING_ID)).thenReturn(Mono.just(response));
+        when(infoCamereConverter.mapPecByTaxId(response)).thenReturn(pecByTaxId);
+        when(infoCamereConverter.retrievePec(TAX_ID_PG, pecByTaxId)).thenReturn(null);
+        when(page.items()).thenReturn(List.of(request));
+        when(requestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.just(page)));
+        when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD)).thenReturn(Mono.error(new IllegalStateException("request update failed")));
+
+
+        StepVerifier.create(service.handleMessage(payload(0, 0))).expectError(IllegalStateException.class).verify();
+
+        verify(pollingService, never()).markBatchAsWorked(anyString(), any());
+        verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD);
+    }
+
+    /**
+     * Regression: se il fallback è stato creato ma fallisce solo la chiusura finale del batch, l'errore deve
+     * essere propagato dopo il processing della request, lasciando al replay il solo compito di chiudere il batch.
+     */
+    @Test
+    void successfulPollingPropagatesBatchCloseFailureAfterFallbackCreation() {
+        config.setEnableInadMassiveApi(true);
+        NationalRegistriesRequest request = request("PG", TAX_ID_PG, null);
+        IniPecPollingResponse response = new IniPecPollingResponse();
+        Map<String, Pec> pecByTaxId = Map.of();
+        when(infoCamereService.callIniPecEService(BATCH_ID, POLLING_ID)).thenReturn(Mono.just(response));
+        when(infoCamereConverter.mapPecByTaxId(response)).thenReturn(pecByTaxId);
+        when(infoCamereConverter.retrievePec(TAX_ID_PG, pecByTaxId)).thenReturn(null);
+        when(page.items()).thenReturn(List.of(request));
+        when(requestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING)).thenReturn(SdkPublisher.adapt(Flux.just(page)));
+        when(pollingService.createFallbackRequest(request, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD)).thenReturn(Mono.empty());
+        IllegalStateException batchError = new IllegalStateException("batch update failed");
+        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC)).thenReturn(Mono.error(batchError));
+
+        StepVerifier.create(service.handleMessage(payload(0, 0))).expectErrorMatches(error -> error == batchError).verify();
+
+        verify(pollingService).createFallbackRequest(request, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD);
     }
 
     // ---- richieste multiple ----
@@ -458,6 +546,10 @@ class InipecPollingServiceTest {
     // ---- helper ----
 
     private Map<String, Pec> mockPollingSuccess(List<NationalRegistriesRequest> requests) {
+        return mockPollingSuccess(requests, true);
+    }
+
+    private Map<String, Pec> mockPollingSuccess(List<NationalRegistriesRequest> requests, boolean closeBatch) {
         IniPecPollingResponse response = new IniPecPollingResponse();
         Map<String, Pec> pecByTaxId = Map.of();
         when(infoCamereService.callIniPecEService(BATCH_ID, POLLING_ID)).thenReturn(Mono.just(response));
@@ -465,7 +557,9 @@ class InipecPollingServiceTest {
         when(page.items()).thenReturn(requests);
         when(requestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING))
                 .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC)).thenReturn(Mono.empty());
+        if (closeBatch) {
+            when(pollingService.markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC)).thenReturn(Mono.empty());
+        }
         return pecByTaxId;
     }
 

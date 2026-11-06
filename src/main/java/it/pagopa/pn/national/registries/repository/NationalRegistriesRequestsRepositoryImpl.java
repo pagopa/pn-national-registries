@@ -18,10 +18,7 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryConditional;
 import software.amazon.awssdk.enhanced.dynamodb.model.QueryEnhancedRequest;
 import software.amazon.awssdk.services.dynamodb.DynamoDbClient;
-import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
-import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
-import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
-import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
+import software.amazon.awssdk.services.dynamodb.model.*;
 
 import java.time.Instant;
 import java.util.*;
@@ -48,6 +45,54 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
     public Mono<NationalRegistriesRequest> putRequest(NationalRegistriesRequest nationalRegistriesRequest) {
         return Mono.fromFuture(() -> table.putItem(nationalRegistriesRequest))
                 .thenReturn(nationalRegistriesRequest);
+    }
+
+    @Override
+    public Mono<NationalRegistriesRequest> completeWithFallback(NationalRegistriesRequest source, NationalRegistriesRequest destination) {
+
+        return Mono.fromCallable(() -> {
+            String tableName = nationalRegistriesConfig.getDao().getRequestsTableName();
+
+            Map<String, String> names = new HashMap<>();
+            Map<String, AttributeValue> values = new HashMap<>();
+            List<String> updates = new ArrayList<>();
+
+            addTtl(names, values, updates);
+
+            String conditionExpression = prepareStatusUpdate(WORKED, source.getRegistry(), names, values, updates);
+
+            Update completeSource = Update.builder()
+                    .tableName(tableName)
+                    .key(Map.of(
+                            NationalRegistriesRequest.COL_CORRELATION_ID,
+                            AttributeValue.builder().s(source.getCorrelationId()).build(),
+                            NationalRegistriesRequest.COL_CREATED_AT,
+                            AttributeValue.builder().s(source.getCreatedAt().toString()).build()
+                    ))
+                    .conditionExpression(conditionExpression)
+                    .updateExpression("SET " + String.join(", ", updates))
+                    .expressionAttributeNames(names)
+                    .expressionAttributeValues(values)
+                    .build();
+
+            Put putDestination = Put.builder()
+                    .tableName(tableName)
+                    .item(NationalRegistriesRequest.nationalRegistriesRequestToAttributeValueMap(destination))
+                    .conditionExpression("attribute_not_exists(#pk)")
+                    .expressionAttributeNames(Map.of(
+                            "#pk", NationalRegistriesRequest.COL_CORRELATION_ID
+                    ))
+                    .build();
+
+            dynamoDbClient.transactWriteItems(
+                    TransactWriteItemsRequest.builder().transactItems(
+                                    TransactWriteItem.builder().put(putDestination).build(),
+                                    TransactWriteItem.builder().update(completeSource).build())
+                            .build()
+            );
+
+            return destination;
+        });
     }
 
     /**
@@ -212,6 +257,32 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      */
     public Mono<NationalRegistriesRequest> updateStatus(String pk, String sk, RequestStatusEnum newStatus, GatewayDownstreamService registry, Map<String, String> names, Map<String, AttributeValue> values, List<String> updates) {
 
+        String conditionExpression = prepareStatusUpdate(newStatus, registry, names, values, updates);
+
+        UpdateItemRequest request = UpdateItemRequest.builder().tableName(nationalRegistriesConfig.getDao().getRequestsTableName())
+                .key(Map.of(NationalRegistriesRequest.COL_CORRELATION_ID, AttributeValue.builder().s(pk).build(),
+                        NationalRegistriesRequest.COL_CREATED_AT, AttributeValue.builder().s(sk).build()))
+                .updateExpression("SET " + String.join(", ", updates))
+                .conditionExpression(conditionExpression)
+                .expressionAttributeNames(names)
+                .expressionAttributeValues(values)
+                .returnValues(ReturnValue.ALL_NEW)
+                .build();
+
+        return Mono.fromCallable(() -> dynamoDbClient.updateItem(request))
+                .onErrorMap(
+                        ConditionalCheckFailedException.class,
+                        e -> new PnInternalException(
+                                String.format("Unable to transition to %s", newStatus),
+                                400,
+                                ERROR_CODE_NATIONAL_REGISTRIES_CONDITIONALCHECKFAILED
+                        )
+                )
+                .map(updateItemResponse -> NationalRegistriesRequest.attributeValueMapToNationalRegistriesRequest(updateItemResponse.attributes()));
+    }
+
+    private String prepareStatusUpdate(RequestStatusEnum newStatus, GatewayDownstreamService registry, Map<String, String> names, Map<String, AttributeValue> values, List<String> updates) {
+
         String conditionExpression = retrieveConditionExpressionOnStatus(newStatus, values);
         Instant now = Instant.now();
         names.put("#status", NationalRegistriesRequest.COL_STATUS);
@@ -234,23 +305,7 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
         values.put(":updatedAt", AttributeValue.builder().s(now.toString()).build());
         updates.add("#updatedAt = :updatedAt");
 
-        UpdateItemRequest request = UpdateItemRequest.builder().tableName(nationalRegistriesConfig.getDao().getRequestsTableName())
-                .key(Map.of(NationalRegistriesRequest.COL_CORRELATION_ID, AttributeValue.builder().s(pk).build(),
-                                NationalRegistriesRequest.COL_CREATED_AT, AttributeValue.builder().s(sk).build()))
-                .updateExpression("SET " + String.join(", ", updates))
-                .conditionExpression(conditionExpression)
-                .expressionAttributeNames(names)
-                .expressionAttributeValues(values)
-                .returnValues(ReturnValue.ALL_NEW)
-                .build();
-
-        try {
-            return Mono.just(dynamoDbClient.updateItem(request))
-                    .map(updateItemResponse -> NationalRegistriesRequest.attributeValueMapToNationalRegistriesRequest(updateItemResponse.attributes()));
-        } catch (ConditionalCheckFailedException e) {
-            log.error("Unable to transition to {}", newStatus);
-            throw new PnInternalException(String.format("Unable to transition to %s", newStatus), 400, ERROR_CODE_NATIONAL_REGISTRIES_CONDITIONALCHECKFAILED);
-        }
+        return conditionExpression;
     }
 
     /**

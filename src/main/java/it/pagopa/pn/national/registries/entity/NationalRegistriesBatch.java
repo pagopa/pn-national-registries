@@ -38,7 +38,7 @@ public class NationalRegistriesBatch {
     public static final String COL_UPDATEDAT = "updatedAt";
     public static final String COL_TTL = "ttl";
 
-    public static final String STATUS_ATTEMPTAFTER_INDEX = "status-attemptAfter-Index";
+    public static final String STATUS_ATTEMPTAFTER_INDEX = "status-attemptAfter-index";
 
     @Getter(onMethod = @__({@DynamoDbPartitionKey, @DynamoDbAttribute(COL_BATCHID)}))
     private String batchId;

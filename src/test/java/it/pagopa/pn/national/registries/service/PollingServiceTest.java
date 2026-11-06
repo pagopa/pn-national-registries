@@ -71,6 +71,31 @@ class PollingServiceTest {
     }
 
     @Test
+    void failedRequestUpdateMustLeaveBatchOpenForReplay() {
+        NationalRegistriesRequest request = buildRequest();
+        when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING))
+                .thenReturn(SdkPublisher.adapt(Flux.just(Page.create(List.of(request)))));
+        RuntimeException failure = new RuntimeException("request update failed");
+        when(nationalRegistriesRequestsRepository.updateStatusToError(anyString(), anyString(), any()))
+                .thenReturn(Mono.error(failure), Mono.just(request));
+
+        Mono<Void> firstAttempt = pollingService.incrementAndCheckRetry(
+                BATCH_ID, 0, 0, false, 1, 1, GatewayDownstreamService.INIPEC, failure);
+        verifyNoInteractions(nationalRegistriesBatchesRepository);
+        StepVerifier.create(firstAttempt).expectErrorMatches(error -> error == failure).verify();
+        verifyNoInteractions(nationalRegistriesBatchesRepository);
+
+        when(nationalRegistriesBatchesRepository.updateToFinalStatus(BATCH_ID, SK, BatchesStatusEnum.ERROR))
+                .thenReturn(Mono.empty());
+        StepVerifier.create(pollingService.incrementAndCheckRetry(
+                BATCH_ID, 0, 0, false, 1, 1, GatewayDownstreamService.INIPEC, failure)).verifyComplete();
+        var order = inOrder(nationalRegistriesRequestsRepository, nationalRegistriesBatchesRepository);
+        order.verify(nationalRegistriesRequestsRepository, times(2))
+                .updateStatusToError(anyString(), anyString(), any());
+        order.verify(nationalRegistriesBatchesRepository).updateToFinalStatus(BATCH_ID, SK, BatchesStatusEnum.ERROR);
+    }
+
+    @Test
     void incrementAndCheckRetry_shouldIncrementErrorRetry_whenErrorIsRetryable() {
         when(nationalRegistriesBatchesRepository.resetStatusForRetry(
                 BATCH_ID,
@@ -571,11 +596,7 @@ class PollingServiceTest {
                 GatewayDownstreamService.INIPEC
         )).thenReturn(Mono.error(failure));
 
-        when(nationalRegistriesBatchesRepository.updateToFinalStatus(
-                BATCH_ID,
-                SK,
-                BatchesStatusEnum.ERROR
-        )).thenReturn(Mono.empty());
+
 
         StepVerifier.create(
                         pollingService.incrementAndCheckRetry(
@@ -591,6 +612,7 @@ class PollingServiceTest {
                 )
                 .expectErrorMatches(error -> error == failure)
                 .verify();
+        verifyNoInteractions(nationalRegistriesBatchesRepository);
     }
 
     @Test
@@ -632,19 +654,12 @@ class PollingServiceTest {
         when(nationalRegistriesConfig.isEnableOldInipecFlow())
                 .thenReturn(false);
 
-        when(nationalRegistriesRequestsRepository.putRequest(
+        when(nationalRegistriesRequestsRepository.completeWithFallback(eq(sourceRequest),
                 any(NationalRegistriesRequest.class)
         )).thenAnswer(invocation ->
-                Mono.just(invocation.getArgument(0))
+                Mono.just(invocation.getArgument(1))
         );
 
-        when(nationalRegistriesRequestsRepository.updateStatusToWorked(
-                CORRELATION_ID,
-                CREATED_AT.toString(),
-                null,
-                GatewayDownstreamService.INIPEC,
-                false
-        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         pollingService.createFallbackRequest(
@@ -656,19 +671,11 @@ class PollingServiceTest {
                 .verifyComplete();
 
         verify(nationalRegistriesRequestsRepository)
-                .putRequest(argThat(request ->
+                .completeWithFallback(eq(sourceRequest), argThat(request ->
                         request.getRegistry() == GatewayDownstreamService.INAD
                                 && request.getStatus() == RequestStatusEnum.NOT_WORKED
                 ));
 
-        verify(nationalRegistriesRequestsRepository)
-                .updateStatusToWorked(
-                        CORRELATION_ID,
-                        CREATED_AT.toString(),
-                        null,
-                        GatewayDownstreamService.INIPEC,
-                        false
-                );
 
         verifyNoInteractions(infoCamereService);
     }
@@ -680,19 +687,12 @@ class PollingServiceTest {
         when(nationalRegistriesConfig.isEnableOldInipecFlow())
                 .thenReturn(false);
 
-        when(nationalRegistriesRequestsRepository.putRequest(
+        when(nationalRegistriesRequestsRepository.completeWithFallback(eq(sourceRequest),
                 any(NationalRegistriesRequest.class)
         )).thenAnswer(invocation ->
-                Mono.just(invocation.getArgument(0))
+                Mono.just(invocation.getArgument(1))
         );
 
-        when(nationalRegistriesRequestsRepository.updateStatusToWorked(
-                CORRELATION_ID,
-                CREATED_AT.toString(),
-                null,
-                GatewayDownstreamService.INAD,
-                false
-        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         pollingService.createFallbackRequest(
@@ -704,21 +704,13 @@ class PollingServiceTest {
                 .verifyComplete();
 
         verify(nationalRegistriesRequestsRepository)
-                .putRequest(argThat(request ->
+                .completeWithFallback(eq(sourceRequest), argThat(request ->
                         CORRELATION_ID.equals(request.getCorrelationId())
                                 && TAX_ID.equals(request.getTaxId())
                                 && request.getRegistry() == GatewayDownstreamService.INIPEC
                                 && request.getStatus() == RequestStatusEnum.NOT_WORKED
                 ));
 
-        verify(nationalRegistriesRequestsRepository)
-                .updateStatusToWorked(
-                        CORRELATION_ID,
-                        CREATED_AT.toString(),
-                        null,
-                        GatewayDownstreamService.INAD,
-                        false
-                );
 
         verifyNoInteractions(infoCamereService);
     }
@@ -730,12 +722,13 @@ class PollingServiceTest {
         when(nationalRegistriesConfig.isEnableOldInipecFlow())
                 .thenReturn(true);
 
+        reactor.core.publisher.Sinks.Empty<Void> persisted = reactor.core.publisher.Sinks.empty();
         when(infoCamereService.getIniPecDigitalAddress(
                 eq(CLIENT_ID),
                 any(),
                 any(Date.class),
                 eq(RecipientType.PF)
-        )).thenReturn(Mono.empty());
+        )).thenReturn(persisted.asMono().then(Mono.empty()));
 
         when(nationalRegistriesRequestsRepository.updateStatusToWorked(
                 CORRELATION_ID,
@@ -752,6 +745,10 @@ class PollingServiceTest {
                                 GatewayDownstreamService.INIPEC
                         )
                 )
+                .then(() -> {
+                    verify(nationalRegistriesRequestsRepository, never()).updateStatusToWorked(anyString(), anyString(), any(), any(), anyBoolean());
+                    persisted.tryEmitEmpty();
+                })
                 .verifyComplete();
 
         ArgumentCaptor<Date> dateCaptor =
@@ -796,19 +793,12 @@ class PollingServiceTest {
         when(nationalRegistriesConfig.isEnableOldInipecFlow())
                 .thenReturn(true);
 
-        when(nationalRegistriesRequestsRepository.putRequest(
+        when(nationalRegistriesRequestsRepository.completeWithFallback(eq(sourceRequest),
                 any(NationalRegistriesRequest.class)
         )).thenAnswer(invocation ->
-                Mono.just(invocation.getArgument(0))
+                Mono.just(invocation.getArgument(1))
         );
 
-        when(nationalRegistriesRequestsRepository.updateStatusToWorked(
-                CORRELATION_ID,
-                CREATED_AT.toString(),
-                null,
-                GatewayDownstreamService.INIPEC,
-                false
-        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         pollingService.createFallbackRequest(
@@ -820,7 +810,7 @@ class PollingServiceTest {
                 .verifyComplete();
 
         verify(nationalRegistriesRequestsRepository)
-                .putRequest(argThat(request ->
+                .completeWithFallback(eq(sourceRequest), argThat(request ->
                         request.getRegistry() == GatewayDownstreamService.INAD
                                 && request.getStatus() == RequestStatusEnum.NOT_WORKED
                 ));
@@ -845,13 +835,6 @@ class PollingServiceTest {
                 eq(RecipientType.PF)
         )).thenReturn(Mono.error(failure));
 
-        when(nationalRegistriesRequestsRepository.updateStatusToWorked(
-                CORRELATION_ID,
-                CREATED_AT.toString(),
-                null,
-                GatewayDownstreamService.INAD,
-                false
-        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         pollingService.createFallbackRequest(
@@ -863,8 +846,7 @@ class PollingServiceTest {
                 .expectErrorMatches(error -> error == failure)
                 .verify();
 
-        verify(nationalRegistriesRequestsRepository, never())
-                .putRequest(any(NationalRegistriesRequest.class));
+        verifyNoInteractions(nationalRegistriesRequestsRepository);
     }
 
     @Test
@@ -877,17 +859,10 @@ class PollingServiceTest {
         when(nationalRegistriesConfig.isEnableOldInipecFlow())
                 .thenReturn(false);
 
-        when(nationalRegistriesRequestsRepository.putRequest(
+        when(nationalRegistriesRequestsRepository.completeWithFallback(eq(sourceRequest),
                 any(NationalRegistriesRequest.class)
         )).thenReturn(Mono.error(failure));
 
-        when(nationalRegistriesRequestsRepository.updateStatusToWorked(
-                CORRELATION_ID,
-                CREATED_AT.toString(),
-                null,
-                GatewayDownstreamService.INAD,
-                false
-        )).thenReturn(Mono.empty());
 
         StepVerifier.create(
                         pollingService.createFallbackRequest(
@@ -912,19 +887,10 @@ class PollingServiceTest {
         when(nationalRegistriesConfig.isEnableOldInipecFlow())
                 .thenReturn(false);
 
-        when(nationalRegistriesRequestsRepository.putRequest(
+        when(nationalRegistriesRequestsRepository.completeWithFallback(eq(sourceRequest),
                 any(NationalRegistriesRequest.class)
-        )).thenAnswer(invocation ->
-                Mono.just(invocation.getArgument(0))
-        );
-
-        when(nationalRegistriesRequestsRepository.updateStatusToWorked(
-                CORRELATION_ID,
-                CREATED_AT.toString(),
-                null,
-                GatewayDownstreamService.INAD,
-                false
         )).thenReturn(Mono.error(failure));
+
 
         StepVerifier.create(
                         pollingService.createFallbackRequest(
@@ -937,7 +903,7 @@ class PollingServiceTest {
                 .verify();
 
         verify(nationalRegistriesRequestsRepository)
-                .putRequest(any(NationalRegistriesRequest.class));
+                .completeWithFallback(eq(sourceRequest), any(NationalRegistriesRequest.class));
 
         verifyNoInteractions(infoCamereService);
     }

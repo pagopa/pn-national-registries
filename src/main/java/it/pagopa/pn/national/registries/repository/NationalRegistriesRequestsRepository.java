@@ -13,6 +13,8 @@ public interface NationalRegistriesRequestsRepository {
 
     Mono<NationalRegistriesRequest> putRequest(NationalRegistriesRequest nationalRegistriesRequest);
 
+    Mono<NationalRegistriesRequest> completeWithFallback(NationalRegistriesRequest source, NationalRegistriesRequest destination);
+
     SdkPublisher<Page<NationalRegistriesRequest>> getRequestsBatchId(String batchId, RequestStatusEnum status);
 
     SdkPublisher<Page<NationalRegistriesRequest>> getRequestsByRegistryStatus(GatewayDownstreamService registry, RequestStatusEnum status, int limit);

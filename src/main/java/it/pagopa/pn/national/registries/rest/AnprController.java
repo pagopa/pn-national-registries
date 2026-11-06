@@ -7,8 +7,8 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddre
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.AnprService;
-import it.pagopa.pn.national.registries.service.GatewayService;
 import it.pagopa.pn.national.registries.utils.RequestIdUtils;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_ANPR_ADDRESS;
 import static it.pagopa.pn.national.registries.converter.GatewayConverter.isAnprAddressNotFound;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetric;
@@ -26,7 +27,7 @@ import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddres
 public class AnprController implements AddressAnprApi {
 
     private final AnprService anprService;
-    private final GatewayService gatewayService;
+    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     /**
      * POST /national-registries-private/anpr/address : Il servizio viene invocato per ottenere la residenza presente in ANPR per un cittadino, alla data di riferimento della richiesta
@@ -42,6 +43,7 @@ public class AnprController implements AddressAnprApi {
     public Mono<ResponseEntity<GetAddressANPROKDto>> addressANPR(Mono<GetAddressANPRRequestBodyDto> getAddressANPRRequestBodyDto, final ServerWebExchange exchange) {
         return getAddressANPRRequestBodyDto
                 .flatMap(requestBody -> {
+                    validateTaxIdUtils.validateTaxId(requestBody.getFilter().getTaxId(), PROCESS_NAME_ANPR_ADDRESS, false);
                     RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
                     var response = anprService.getAddressANPR(requestBody)
                             .doOnNext(getAddressANPROKDto -> {

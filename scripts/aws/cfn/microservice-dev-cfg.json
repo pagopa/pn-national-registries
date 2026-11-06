@@ -78,8 +78,8 @@
     "AddressCompositionMode": "MINIMAL",
     "IniPecReadTimeoutMillis": "15000",
     "EnablePfPecFallbackFlow": "false",
-    "EnableInadMassiveApi": "true",
+    "EnableInadMassiveApi": "false",
     "CpuArchitecture": "ARM",
-    "EnableOldInipecFlow": "false"
+    "EnableOldInipecFlow": "true"
   }
 }

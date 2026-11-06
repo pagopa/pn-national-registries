@@ -102,7 +102,7 @@ public class InadPollingService {
         return Flux.from(nationalRegistriesRequestsRepository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
                 .flatMapIterable(Page::items)
                 .flatMap(request -> processSuccessfulRequest(request, resultByTaxId))
-                .then(pollingService.markBatchAsWorked(batchId, GatewayDownstreamService.INAD))
+                .then(Mono.defer(() -> pollingService.markBatchAsWorked(batchId, GatewayDownstreamService.INAD)))
                 .then();
     }
 

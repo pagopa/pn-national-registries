@@ -13,6 +13,8 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import java.time.Instant;
 import java.util.Map;
 
+import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.ERROR;
+import static it.pagopa.pn.national.registries.constant.RequestStatusEnum.WORKED;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 
 @DynamoDbBean
@@ -107,7 +109,7 @@ public class NationalRegistriesRequest {
         return SCHEMA.mapToItem(item);
     }
 
-    public NationalRegistriesRequest(NationalRegistriesRequest nationalRegistriesRequest, RequestStatusEnum status, GatewayDownstreamService registry, String resultPayload) {
+    public NationalRegistriesRequest(NationalRegistriesRequest nationalRegistriesRequest, RequestStatusEnum status, GatewayDownstreamService registry, String resultPayload, Integer ttl) {
         Instant now = Instant.now();
         correlationId = nationalRegistriesRequest.getCorrelationId();
         taxId = nationalRegistriesRequest.getTaxId();
@@ -123,6 +125,10 @@ public class NationalRegistriesRequest {
         this.status = status;
         if(StringUtils.hasText(resultPayload)){
             this.resultPayload = resultPayload;
+        }
+
+        if(WORKED.equals(status) || ERROR.equals(status)){
+            this.ttl = now.plusSeconds(ttl).getEpochSecond();
         }
     }
 

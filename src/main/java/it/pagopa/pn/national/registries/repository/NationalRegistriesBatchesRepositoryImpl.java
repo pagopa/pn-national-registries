@@ -171,7 +171,7 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
                 .returnValues(ReturnValue.ALL_NEW)
                 .build();
 
-            return Mono.just(dynamoDbClient.updateItem(request))
+            return Mono.fromCallable(() -> dynamoDbClient.updateItem(request))
                     .map(updateItemResponse -> NationalRegistriesBatch.attributeValueMapToNationalRegistriesRequest(updateItemResponse.attributes()))
                     .doOnSuccess(updated -> log.info("Updated batch {} from status {} to status {}", pk, expectedStatus, newStatus))
                     .doOnError(error -> log.warn("Unable to update batch {} from status {} to status {}", pk, expectedStatus, newStatus, error));

@@ -8,7 +8,6 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.M
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.UsageInfo;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,7 +23,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_INAD_ADDRESS;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,9 +36,6 @@ class InadServiceTest {
 
     @Mock
     InadClient inadClient;
-
-    @Mock
-    ValidateTaxIdUtils validateTaxIdUtils;
 
     @Mock
     NationalRegistriesConfig nationalRegistriesConfig;
@@ -259,40 +254,7 @@ class InadServiceTest {
                 .expectErrorMatches(throwable -> throwable == error)
                 .verify();
 
-        verify(validateTaxIdUtils).validateTaxId(TAX_ID, PROCESS_NAME_INAD_ADDRESS, false);
         verify(inadClient).callEService(TAX_ID, practicalReference);
         verifyNoInteractions(nationalRegistriesConfig);
-    }
-
-    @Test
-    void callEServiceShouldStopWhenTaxIdValidationFails() {
-        String practicalReference = "00001";
-
-        PnNationalRegistriesException validationError = new PnNationalRegistriesException(
-                "invalid tax id",
-                org.springframework.http.HttpStatus.BAD_REQUEST.value(),
-                org.springframework.http.HttpStatus.BAD_REQUEST.getReasonPhrase(),
-                null,
-                null,
-                Charset.defaultCharset(),
-                Object.class
-        );
-
-        GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
-        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
-        filterDto.setTaxId(TAX_ID);
-        filterDto.setPracticalReference(practicalReference);
-        req.setFilter(filterDto);
-
-        doThrow(validationError).when(validateTaxIdUtils)
-                .validateTaxId(TAX_ID, PROCESS_NAME_INAD_ADDRESS, false);
-
-        PnNationalRegistriesException thrown = assertThrows(
-                PnNationalRegistriesException.class,
-                () -> inadService.callEService(req, PF, "correlationId")
-        );
-
-        assertSame(validationError, thrown);
-        verifyNoInteractions(inadClient, nationalRegistriesConfig);
     }
 }
