@@ -56,8 +56,6 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inipec.polling-first-attempt-delay-seconds-per-cf=0",
         "pn.national-registries.inipec.polling-first-attempt-fixed-delay-seconds=0",
         "pn.national-registries.inipec.batch-request-max-retry=1",
-        "pn.national-registries.inipec.batch.polling.max-retry=2",
-        "pn.national-registries.inipec.batch.polling.inprogress.max-retry=2",
         "pn.national-registries.inipec.batch.polling.recovery.after=0",
         "pn.national-registries.inipec.batch-polling-max-retry=2",
         "pn.national-registries.inipec.batch-polling-in-progress-max-retry=2",
