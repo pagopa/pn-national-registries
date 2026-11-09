@@ -47,7 +47,7 @@ public class InadConverter {
                         .filter(address -> isValidEmail(address.getDigitalAddress()))
                         .toList();
 
-                log.info("INAD - correlationId {} - statoImpresa is null - pec found: {}, not expired pec: {}, valid pec: {}",
+                log.info("INAD - correlationId {} - pec found: {}, not expired pec: {}, valid pec: {}",
                         correlationId, elementDigitalAddress.getDigitalAddress().size(), notExpiredPecList.size(), validPecList.size());
 
                 if (validPecList.isEmpty()) {
@@ -149,7 +149,7 @@ public class InadConverter {
         if (Objects.isNull(parsedEndValidity) || parsedEndValidity.equals(now) || parsedEndValidity.after(now)) {
             return true;
         } else {
-            log.info("inad digital address is not valid");
+            log.info("inad digital address is expired");
             return false;
         }
     }
