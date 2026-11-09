@@ -4,12 +4,13 @@ import it.pagopa.pn.commons.log.dto.metrics.Dimension;
 import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.commons.log.dto.metrics.Metric;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
+import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
-import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.metrics.DimensionName;
 import it.pagopa.pn.national.registries.model.metrics.MetricName;
 import it.pagopa.pn.national.registries.model.metrics.MetricUnit;
@@ -76,6 +77,21 @@ public class MetricUtils {
         log.logMetric(requestMetrics, logMessage);
     }
 
+    public static void logBatchCfRequestedMetric(String batchId, GatewayDownstreamService registry, Integer count) {
+        String logMessage = "Logging CF_REQUESTED metrics for batchId: " + batchId + " - called EService:  " + registry;
+        if (Objects.nonNull(count)) {
+            List<GeneralMetric> requestMetrics = new ArrayList<>();
+            requestMetrics.add(
+                    generateGeneralMetric(
+                            MetricName.CF_REQUESTED,
+                            count,
+                            List.of(generateDimension(DimensionName.REGISTRY, registry.name()))
+                    )
+            );
+            log.logMetric(requestMetrics, logMessage);
+        }
+    }
+
     public static void logCfWithAddressMetric(String correlationId, GatewayDownstreamService registry, RecipientType recipientType, DigitalAddressRecipientType digitalAddressRecipientType) {
         String logMessage = "Logging CF_WITH_ADDRESS metrics for correlationId: " + correlationId + " - called EService:  " + registry + " for recipientType: " + recipientType;
         List<GeneralMetric> requestMetrics = List.of(
@@ -112,60 +128,59 @@ public class MetricUtils {
         return dimensions;
     }
 
-    public static void logBatchRequestMetrics(String batchId, IniPecBatchRequest iniPecBatchRequest, boolean isError) {
+    public static void logBatchRequestMetrics(String batchId, Integer size, boolean isError, GatewayDownstreamService gatewayDownstreamService) {
         StatusDimension status = isError ? StatusDimension.FAILURE : StatusDimension.OK;
-        String logMessage = "IniPEC - Logging batch request metrics for batchId: " + batchId + " - called EService and batch size is: " + iniPecBatchRequest.getElencoCf().size() + " with status: " + status;
+        String logMessage = "IniPEC - Logging batch request metrics for batchId: " + batchId + " - called EService and batch size is: " + size + " with status: " + status;
         List<GeneralMetric> requestMetrics = List.of(
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH_REQUEST_CREATION,
                         1,
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()),
+                                MetricUtils.generateDimension(DimensionName.REGISTRY, gatewayDownstreamService.name()))
                 ),
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH_SIZE,
-                        iniPecBatchRequest.getElencoCf().size(),
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
+                        size,
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()),
+                                MetricUtils.generateDimension(DimensionName.REGISTRY, gatewayDownstreamService.name()))
                 )
         );
 
         log.logMetric(requestMetrics, logMessage);
     }
 
-    public static void logBatchEndingMetrics(BatchPolling polling, BatchStatus batchStatus) {
+    public static void logBatchEndingMetricsLegacy(BatchPolling polling, BatchStatus batchStatus, GatewayDownstreamService registry) {
         StatusDimension status = batchStatus == BatchStatus.ERROR ? StatusDimension.FAILURE : StatusDimension.OK;
-        long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
+        Instant createdAtInstant = polling.getCreatedAt().toInstant(ZoneOffset.UTC);
+        logBatchEndingMetricsLegacy(polling.getBatchId(), createdAtInstant, batchStatus.name(), status, registry);
+    }
+
+    public static void logBatchEndingMetricsNew(NationalRegistriesBatch batch, GatewayDownstreamService registry) {
+        StatusDimension status = batch.getStatus() == BatchesStatusEnum.ERROR ? StatusDimension.FAILURE : StatusDimension.OK;
+        logBatchEndingMetricsLegacy(batch.getBatchId(), batch.getCreatedAt(), batch.getStatus().name(), status, registry);
+    }
+
+    public static void logBatchEndingMetricsLegacy(String batchId, Instant createdAt, String batchStatus, StatusDimension statusDimension, GatewayDownstreamService registry) {
+        long batchClosureDurationMillis = Instant.now().toEpochMilli() - createdAt.toEpochMilli();
         int batchClosureDurationSeconds = (int) (batchClosureDurationMillis / 1000);
 
         List<GeneralMetric> batchEndingMetrics = List.of(
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH,
                         1,
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, statusDimension.name()),
+                                MetricUtils.generateDimension(DimensionName.REGISTRY, registry.name()))
                 ),
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH_CLOSURE_DURATION,
                         batchClosureDurationSeconds,
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name())),
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, statusDimension.name()),
+                                MetricUtils.generateDimension(DimensionName.REGISTRY, registry.name())),
                         MetricUnit.SECONDS
                 )
         );
 
-        log.logMetric(batchEndingMetrics, "IniPEC - Logging batch ending metrics for batchId: " + polling.getBatchId() + " with status: " + status);
-    }
-
-    public static void logInipecCfRequestedMetric(String batchId, GatewayDownstreamService registry, Integer count) {
-        String logMessage = "Logging CF_REQUESTED metrics for batchId: " + batchId + " - called EService:  " + registry;
-        if (Objects.nonNull(count)) {
-            List<GeneralMetric> requestMetrics = new ArrayList<>();
-            requestMetrics.add(
-                    generateGeneralMetric(
-                            MetricName.CF_REQUESTED,
-                            count,
-                            List.of(generateDimension(DimensionName.REGISTRY, registry.name()))
-                    )
-            );
-            log.logMetric(requestMetrics, logMessage);
-        }
+        log.logMetric(batchEndingMetrics, String.format("%s - Logging batch ending metrics for batchId: %s with status: %s", registry, batchId, batchStatus));
     }
 
     public static void logCfWithAddressMetricFromBatchRequest(CodeSqsDto codeSqsDto, String correlationId, String taxId, String recipientType, GatewayDownstreamService registry) {

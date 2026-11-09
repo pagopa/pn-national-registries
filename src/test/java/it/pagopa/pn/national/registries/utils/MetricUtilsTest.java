@@ -114,15 +114,8 @@ class MetricUtilsTest {
         cf.setCf("12345678901");
         request.setElencoCf(List.of(cf));
 
-        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", request, false));
-        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", request, true));
-    }
-
-    @Test
-    void logBatchRequestMetricsFailsWhenCfListIsMissing() {
-        IniPecBatchRequest request = new IniPecBatchRequest();
-
-        assertThrows(NullPointerException.class, () -> MetricUtils.logBatchRequestMetrics("batchId", request, false));
+        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", 1, false, GatewayDownstreamService.INIPEC));
+        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", 1, true, GatewayDownstreamService.INIPEC));
     }
 
     @Test
@@ -131,14 +124,14 @@ class MetricUtilsTest {
         polling.setBatchId("batchId");
         polling.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5));
 
-        assertDoesNotThrow(() -> MetricUtils.logBatchEndingMetrics(polling, BatchStatus.ERROR));
-        assertDoesNotThrow(() -> MetricUtils.logBatchEndingMetrics(polling, BatchStatus.WORKED));
+        assertDoesNotThrow(() -> MetricUtils.logBatchEndingMetricsLegacy(polling, BatchStatus.ERROR, GatewayDownstreamService.INIPEC));
+        assertDoesNotThrow(() -> MetricUtils.logBatchEndingMetricsLegacy(polling, BatchStatus.WORKED, GatewayDownstreamService.INIPEC));
     }
 
     @Test
     void logInipecCfRequestedMetricIgnoresNullCount() {
-        assertDoesNotThrow(() -> MetricUtils.logInipecCfRequestedMetric("batchId", GatewayDownstreamService.INIPEC, null));
-        assertDoesNotThrow(() -> MetricUtils.logInipecCfRequestedMetric("batchId", GatewayDownstreamService.INIPEC, 5));
+        assertDoesNotThrow(() -> MetricUtils.logBatchCfRequestedMetric("batchId", GatewayDownstreamService.INIPEC, null));
+        assertDoesNotThrow(() -> MetricUtils.logBatchCfRequestedMetric("batchId", GatewayDownstreamService.INIPEC, 5));
     }
 
     @Test

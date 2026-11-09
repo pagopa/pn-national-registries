@@ -1,6 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
+import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
@@ -14,11 +15,11 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.InipecEvaluationResult;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
-import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
@@ -29,6 +30,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
+import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static it.pagopa.pn.national.registries.converter.GatewayConverter.errorInadToSqsDto;
 import static it.pagopa.pn.national.registries.converter.GatewayConverter.inadToSqsDto;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
@@ -61,7 +63,7 @@ public class InipecPollingService {
     }
 
     private Mono<Void> handleSuccessfulPolling(String batchId, Integer batchSize, IniPecPollingResponse response) {
-        logInipecCfRequestedMetric(batchId, GatewayDownstreamService.INIPEC, batchSize);
+        logBatchCfRequestedMetric(batchId, GatewayDownstreamService.INIPEC, batchSize);
         Map<String, Pec> pecByTaxId = infoCamereConverter.mapPecByTaxId(response);
         return Flux.from(nationalRegistriesRequestsRepository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
                 .flatMapIterable(Page::items)
@@ -112,6 +114,9 @@ public class InipecPollingService {
             return createInadErrorRequest(request);
         }
         logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
+        if(!CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())){
+            logCfWithAddressMetric(correlationId, GatewayDownstreamService.INAD, PG, DigitalAddressRecipientType.IMPRESA);
+        }
         String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
         NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.WORKED, GatewayDownstreamService.INAD, resultPayload, nationalRegistriesConfig.getTtl());
         return nationalRegistriesRequestsRepository.completeWithFallback(request, inadRequest).then();

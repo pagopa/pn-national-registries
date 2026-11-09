@@ -67,8 +67,8 @@ public class InfoCamereService {
 
     public Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
         return infoCamereClient.callEServiceRequestId(iniPecBatchRequest)
-                .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest, false))
-                .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest, true))
+                .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest.getElencoCf().size(), false, GatewayDownstreamService.INIPEC))
+                .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest.getElencoCf().size(), true, GatewayDownstreamService.INIPEC))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to call EService", batchId, e));
     }
 

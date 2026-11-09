@@ -24,6 +24,7 @@ import java.util.Optional;
 import static it.pagopa.pn.national.registries.converter.GatewayConverter.convertToGetDigitalAddressIniPecRequest;
 import static it.pagopa.pn.national.registries.entity.NationalRegistriesBatch.SK;
 import static it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService.INIPEC;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchEndingMetricsNew;
 
 @Component
 @Slf4j
@@ -60,6 +61,7 @@ public class PollingService {
                 .flatMapIterable(Page::items)
                 .concatMap(this::moveRequestToError)
                 .then(Mono.defer(() -> nationalRegistriesBatchesRepository.updateToFinalStatus(batchId, SK, BatchesStatusEnum.ERROR)))
+                .doOnNext(nationalRegistriesBatch -> logBatchEndingMetricsNew(nationalRegistriesBatch, registry))
                 .then();
     }
 
@@ -89,6 +91,7 @@ public class PollingService {
     public Mono<Void> markBatchAsWorked(String batchId, GatewayDownstreamService registry) {
         return nationalRegistriesBatchesRepository
                 .updateToFinalStatus(batchId, SK, BatchesStatusEnum.WORKED)
+                .doOnNext(nationalRegistriesBatch -> logBatchEndingMetricsNew(nationalRegistriesBatch, registry))
                 .doOnSuccess(batch -> log.debug("{} - batchId {} - updated status to WORKED", registry, batchId))
                 .doOnError(error -> log.warn("{} - batchId {} - failed to update status to WORKED", registry, batchId, error))
                 .then();

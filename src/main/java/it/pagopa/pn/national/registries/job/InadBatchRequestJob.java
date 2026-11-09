@@ -37,6 +37,7 @@ import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchRequestMetrics;
 
 @Component
 @Slf4j
@@ -106,6 +107,8 @@ public class InadBatchRequestJob {
         request.setPraticalReference(batchId);
 
         return inadClient.callMassiveEService(request)
+                .doOnNext(res -> logBatchRequestMetrics(batchId, requests.size(), false, GatewayDownstreamService.INAD))
+                .doOnError(t -> logBatchRequestMetrics(batchId, requests.size(), true, GatewayDownstreamService.INAD))
                 .onErrorResume(PnNationalRegistriesException.class,throwable -> checkIfIsBadRequestAndMarkRequestAsError(throwable, requests))
                 .flatMap(response -> persistBatch(response, batchId, requests, now))
                 .doOnError(error -> log.error("INAD batch {} failed", batchId, error));
