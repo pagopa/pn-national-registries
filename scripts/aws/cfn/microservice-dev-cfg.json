@@ -77,9 +77,9 @@
     "MetricFormatType": "EMF",
     "AddressCompositionMode": "MINIMAL",
     "IniPecReadTimeoutMillis": "15000",
-    "EnablePfPecFallbackFlow": "false",
+    "EnablePfPecFallbackFlow": "true",
     "EnableInadMassiveApi": "false",
     "CpuArchitecture": "ARM",
-    "EnableOldInipecFlow": "true"
+    "EnableOldInipecFlow": "false"
   }
 }
