@@ -442,10 +442,9 @@ Resources:
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/sqs-queue.yaml"
       Parameters:
-        QueueName: !Sub '${ProjectName}-national_registries_polling.fifo'
+        QueueName: !Sub '${ProjectName}-national_registries_polling'
         SqsManagedSseEnabled: true
         FifoQueue: 'true'
-        HasDLQ: 'true'
         MaxReceiveCount: 10
         QueueHasAlarm: 'false'
         AlarmSNSTopicName: !Ref AlarmSNSTopicName

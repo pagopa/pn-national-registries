@@ -9,7 +9,6 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDt
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.TaxIdFilterDto;
 import it.pagopa.pn.national.registries.model.ipa.IpaSecret;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -20,7 +19,6 @@ import reactor.test.StepVerifier;
 
 import java.util.List;
 
-import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_IPA_ADDRESS;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -36,9 +34,6 @@ class IpaServiceTest {
 
     @Mock
     private IpaConverter ipaConverter;
-
-    @Mock
-    ValidateTaxIdUtils validateTaxIdUtils;
 
     @Mock
     IpaSecretConfig ipaSecretConfig;
@@ -218,24 +213,12 @@ class IpaServiceTest {
         verify(ipaConverter, never()).convertToIPAPecDtoFromWS05(any());
     }
 
-    @Test
-    void getIpaPec_shouldStopWhenTaxIdValidationFails() {
-        IpaService ipaService = new IpaService(ipaConverter, ipaClient, validateTaxIdUtils, pnNationalRegistriesSecretService, ipaSecretConfig);
-        RuntimeException validationError = new RuntimeException("invalid tax id");
-        doThrow(validationError).when(validateTaxIdUtils).validateTaxId(TAX_ID, PROCESS_NAME_IPA_ADDRESS, false);
-
-        RuntimeException thrown = assertThrows(RuntimeException.class, () -> ipaService.getIpaPec(request(TAX_ID)));
-
-        assertSame(validationError, thrown);
-        verifyNoInteractions(pnNationalRegistriesSecretService, ipaClient, ipaConverter);
-    }
-
     private IpaService buildService() {
         IpaSecret ipaSecret = new IpaSecret();
         ipaSecret.setAuthId(AUTH_ID);
         when(ipaSecretConfig.getIpaSecret()).thenReturn("ipaSecret");
         when(pnNationalRegistriesSecretService.getIpaSecret("ipaSecret")).thenReturn(ipaSecret);
-        return new IpaService(ipaConverter, ipaClient, validateTaxIdUtils, pnNationalRegistriesSecretService, ipaSecretConfig);
+        return new IpaService(ipaConverter, ipaClient, pnNationalRegistriesSecretService, ipaSecretConfig);
     }
 
     private IPARequestBodyDto request(String taxId) {

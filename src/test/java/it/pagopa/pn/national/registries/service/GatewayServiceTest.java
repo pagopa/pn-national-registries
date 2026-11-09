@@ -14,6 +14,7 @@ import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -63,6 +64,9 @@ class GatewayServiceTest {
 
     @InjectMocks
     private GatewayService gatewayService;
+
+    @Mock
+    private ValidateTaxIdUtils validateTaxIdUtils;
 
     @Test
     void retrieveDigitalOrPhysicalAddressAsync_shouldPushMessageToInputQueue() {
@@ -771,6 +775,21 @@ class GatewayServiceTest {
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PG", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
                 .verifyComplete();
+    }
+
+    /**
+     * N01 - client obbligatorio: anche un clientId assente deve fallire prima di qualsiasi side effect.
+     */
+    @Test
+    void retrieveDigitalOrPhysicalAddressAsync_missingClientId_shouldNotQueueOrPersistAnything() {
+        AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
+        when(nationalRegistriesConfig.isValCxIdEnabled()).thenReturn(true);
+
+        StepVerifier.create(Mono.defer(() -> gatewayService.retrieveDigitalOrPhysicalAddressAsync("PF", null, request)))
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
+
+        verifyNoInteractions(sqsService, nationalRegistriesRequestsRepository, digitalAddressService, physicalAddressService, infoCamereService);
     }
 
     private AddressInternalResult.Found foundResult(GatewayDownstreamService registry, boolean physical) {

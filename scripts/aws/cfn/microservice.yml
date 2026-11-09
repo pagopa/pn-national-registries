@@ -728,7 +728,7 @@ Resources:
         ContainerEnvEntry24: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_DELAY=${PnNationalRegistriesInipecBatchPollingDelay}'
         ContainerEnvEntry25: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchPollingRecoveryDelay}'
         ContainerEnvEntry26: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchPollingRecoveryAfter}'
-        ContainerEnvEntry27: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
+        ContainerEnvEntry27: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
         ContainerEnvEntry28: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
         ContainerEnvEntry29: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_TRUST_SECRET=${AdECheckCfTrustSecret}'
         ContainerEnvEntry30: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_TRUST_SECRET=${AdELegalTrustSecret}'
@@ -738,7 +738,7 @@ Resources:
         ContainerEnvEntry34: !Sub 'PN_NATIONALREGISTRIES_TOPIC_INPUTQUEUENAME=${NationalRegistryGatewayInputsQueueName}'
         ContainerEnvEntry35: !Sub 'PN_NATIONALREGISTRIES_TOPIC_INPUTDLQQUEUENAME=${NationalRegistryGatewayInputsDLQName}'
         ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_HEALTH_CHECK_PATH=${HealthCheckPath}'
-        ContainerEnvEntry37: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_INPROGRESS_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
+        ContainerEnvEntry37: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHPOLLINGINPROGRESSMAXRETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
         ContainerEnvEntry38: !Sub 'PN_NATIONALREGISTRIES_INIPEC_MAXBATCHREQUESTSIZE=${PnNationalRegistriesInipecMaxBatchRequestSize}'
         ContainerEnvEntry39: !Sub 'PN_NATIONAL_REGISTRY_CUSTOM_RETRY_MAX_ATTEMPTS=${CustomRetryMaxAttempts}'
         ContainerEnvEntry40: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
@@ -780,7 +780,7 @@ Resources:
         ContainerEnvEntry76: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGINPROGRESSRETRYAFTER=${PnNationalRegistriesInadPollingInProgressRetryAfter}'
         ContainerEnvEntry77: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGINPROGRESSMAXRETRY=${PnNationalRegistriesInadBatchPollingInProgressMaxRetry}'
         ContainerEnvEntry78: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInadBatchPollingMaxRetry}'
-        ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_SQS_POLLINGQUEUENAME=${NationalRegistriesPollingQueueName}'
+        ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_TOPIC_POLLINGQUEUENAME=${NationalRegistriesPollingQueueName}'
         ContainerEnvEntry80: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${PnNationalRegistriesRequestsTableName}'
         ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${PnNationalRegistriesBatchesTableName}'
         ContainerEnvEntry82: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADMASSIVEAPI=${EnableInadMassiveApi}'
@@ -1039,7 +1039,7 @@ Resources:
     Properties:
       Name: pn-national-registries-completed-request-pipe
       RoleArn: !GetAtt PnNationalRegistriesCompletedRequestPipeRole.Arn
-      Source: !Ref PnNationalRegistriesRequestsStreamArn
+      Source: !Ref PnNationalRegistriesRequestsTableStreamArn
 
       SourceParameters:
         DynamoDBStreamParameters:
@@ -1124,7 +1124,7 @@ Resources:
                   - dynamodb:GetShardIterator
                   - dynamodb:ListStreams
                 Resource:
-                  - !GetAtt PnNationalRegistriesRequestsTableStreamArn
+                  - !Ref PnNationalRegistriesRequestsTableStreamArn
 
               - Effect: Allow
                 Action:

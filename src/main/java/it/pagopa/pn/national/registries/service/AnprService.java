@@ -11,6 +11,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddre
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import it.pagopa.pn.national.registries.repository.CounterRepositoryImpl;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -23,26 +24,15 @@ import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NA
 
 @Service
 @Slf4j
+@RequiredArgsConstructor
 public class AnprService {
 
     private final AnprConverter anprConverter;
     private final AnprClient anprClient;
     private final CounterRepositoryImpl counterRepository;
-    private final ValidateTaxIdUtils validateTaxIdUtils;
-
-    public AnprService(AnprConverter anprConverter,
-                       AnprClient anprClient,
-                       CounterRepositoryImpl counterRepository,
-                       ValidateTaxIdUtils validateTaxIdUtils) {
-        this.anprConverter = anprConverter;
-        this.anprClient = anprClient;
-        this.counterRepository = counterRepository;
-        this.validateTaxIdUtils = validateTaxIdUtils;
-    }
 
     public Mono<GetAddressANPROKDto> getAddressANPR(GetAddressANPRRequestBodyDto request) {
         String cf = request.getFilter().getTaxId();
-        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_ANPR_ADDRESS, false);
 
         if (StringUtils.isEmpty(request.getFilter().getReferenceRequestDate())) {
             throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),

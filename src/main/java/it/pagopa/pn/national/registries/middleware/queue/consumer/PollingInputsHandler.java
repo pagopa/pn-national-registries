@@ -26,7 +26,7 @@ public class PollingInputsHandler {
 
     private static final String HANDLER_PROCESS = "pnNationalRegistriesPollingInputsConsumer";
 
-    @SqsListener(value = "${pn.national-registries.sqs.pollingqueuename}")
+    @SqsListener(value = "${pn.national-registries.topic.polling-queue-name}")
     public void pnNationalRegistriesPollingInputsConsumer(Message<PnPollingEvent.Payload> message) {
         log.logStartingProcess(HANDLER_PROCESS);
         if(log.isDebugEnabled()) {

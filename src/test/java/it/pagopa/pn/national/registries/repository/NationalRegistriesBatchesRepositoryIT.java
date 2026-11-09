@@ -212,6 +212,24 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
     }
 
     @Test
+    void finalStatusIsPersistedOnlyAfterSubscriptionAndNotWhenPreviousStepFails() {
+        NationalRegistriesBatch batch = batch("deferred-final-status", WORKING, Instant.now());
+        nationalRegistriesBatchesRepository.putBatch(batch).block();
+        Mono<NationalRegistriesBatch> finalizeBatch = nationalRegistriesBatchesRepository
+                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), WORKED);
+
+        Assertions.assertEquals(WORKING, nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block().getStatus());
+        RuntimeException failure = new RuntimeException("request update failed");
+        reactor.test.StepVerifier.create(Mono.error(failure).then(finalizeBatch))
+                .expectErrorMatches(error -> error == failure)
+                .verify();
+        Assertions.assertEquals(WORKING, nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block().getStatus());
+
+        finalizeBatch.block();
+        Assertions.assertEquals(WORKED, nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block().getStatus());
+    }
+
+    @Test
     void resetStatusForStandardRetryTest() {
         NationalRegistriesBatch batch = batch("retry-standard", WORKING, Instant.parse("2026-10-09T10:00:00Z"));
         batch.setErrorRetryCount(0);

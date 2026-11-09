@@ -412,6 +412,35 @@ class InadBatchRequestJobTest {
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
     }
 
+    /**
+     * N21 - rende esplicito il comportamento di un batch misto: se il provider rifiuta l'intero batch per un CF problematico,
+     * anche le richieste formalmente valide dello stesso invio vengono riportate nello stato di errore e nessun batch viene persistito.
+     */
+    @Test
+    void mixedValidAndInvalidTaxIds_providerBadRequest_shouldMarkEveryRequestAsError() {
+        NationalRegistriesRequest validPf = request("valid-pf", "RSSMRA80A01H501U", Instant.parse("2026-10-16T09:00:00Z"));
+        NationalRegistriesRequest invalidLowercase = request("invalid-lowercase", "rssmra80a01h501u", Instant.parse("2026-10-16T09:01:00Z"));
+        NationalRegistriesRequest validSecond = request("valid-second", "VRDLGI80A01H501K", Instant.parse("2026-10-16T09:02:00Z"));
+
+        when(page.items()).thenReturn(List.of(validPf, invalidLowercase, validSecond));
+        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
+                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.error(providerException(400)));
+        when(requestsRepository.updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INAD))).thenReturn(Mono.just(validPf));
+
+        job.batchRequest();
+
+        ArgumentCaptor<RequestListDigitalAddress> requestCaptor = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
+        verify(inadClient).callMassiveEService(requestCaptor.capture());
+        assertEquals(List.of("RSSMRA80A01H501U", "rssmra80a01h501u", "VRDLGI80A01H501K"), requestCaptor.getValue().getCodiciFiscali());
+        verify(requestsRepository).updateStatusToError("valid-pf", validPf.getCreatedAt().toString(), GatewayDownstreamService.INAD);
+        verify(requestsRepository).updateStatusToError("invalid-lowercase", invalidLowercase.getCreatedAt().toString(), GatewayDownstreamService.INAD);
+        verify(requestsRepository).updateStatusToError("valid-second", validSecond.getCreatedAt().toString(), GatewayDownstreamService.INAD);
+        verifyNoInteractions(batchesRepository);
+        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
+    }
+
+
     @Test
     void propagatesErrorWhenMarkingBadRequestAsErrorFails() {
         NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.parse("2026-10-16T09:00:00Z"));

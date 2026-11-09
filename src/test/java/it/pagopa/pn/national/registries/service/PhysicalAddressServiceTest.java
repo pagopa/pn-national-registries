@@ -8,6 +8,7 @@ import it.pagopa.pn.national.registries.model.AddressInternalResult;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -51,6 +52,9 @@ class PhysicalAddressServiceTest {
 
     @InjectMocks
     private PhysicalAddressService physicalAddressService;
+
+    @Mock
+    private ValidateTaxIdUtils validateTaxIdUtils;
 
 
     @Test

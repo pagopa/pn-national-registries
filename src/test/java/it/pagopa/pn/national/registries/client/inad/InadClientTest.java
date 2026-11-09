@@ -20,6 +20,7 @@ import it.pagopa.pn.national.registries.service.PnNationalRegistriesSecretServic
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -400,6 +401,56 @@ class InadClientTest {
         WebClientResponseException exception = webClientException(HttpStatus.BAD_REQUEST);
 
         assertFalse(inadClient.shouldRetry(exception));
+    }
+
+    /**
+     * N14 - il 429 è distinto dal 401 e non deve attivare il retry di autenticazione.
+     */
+    @Test
+    void callMassiveEServiceTooManyRequests_shouldFailWithoutAuthenticationRetry() {
+        InadClient inadClient = buildClient();
+        mockToken();
+        ApiClient apiClient = mock(ApiClient.class);
+        RequestListDigitalAddress request = new RequestListDigitalAddress();
+
+        when(apiEstrazioniMultipleApi.getApiClient()).thenReturn(apiClient);
+        when(apiEstrazioniMultipleApi.richiestaElencoDomiciliDigitaliWithHttpInfo(same(request)))
+                .thenReturn(Mono.error(webClientException(HttpStatus.TOO_MANY_REQUESTS)));
+
+        StepVerifier.create(inadClient.callMassiveEService(request))
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
+
+        verify(apiEstrazioniMultipleApi).richiestaElencoDomiciliDigitaliWithHttpInfo(request);
+        verify(accessTokenExpiringMap).getPDNDToken(any(), any(), eq(false));
+    }
+
+    /**
+     * N14 - un guasto definitivo del provider non deve essere confuso con un dato assente e non deve essere ritentato come 401.
+     */
+    @Test
+    void callMassiveEServiceServerError_shouldPropagateTechnicalFailureWithoutRetry() {
+        InadClient inadClient = buildClient();
+        mockToken();
+        ApiClient apiClient = mock(ApiClient.class);
+        RequestListDigitalAddress request = new RequestListDigitalAddress();
+
+        when(apiEstrazioniMultipleApi.getApiClient()).thenReturn(apiClient);
+        when(apiEstrazioniMultipleApi.richiestaElencoDomiciliDigitaliWithHttpInfo(same(request)))
+                .thenReturn(Mono.error(webClientException(HttpStatus.INTERNAL_SERVER_ERROR)));
+
+        StepVerifier.create(inadClient.callMassiveEService(request))
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
+
+        verify(apiEstrazioniMultipleApi).richiestaElencoDomiciliDigitaliWithHttpInfo(request);
+    }
+
+    private AccessTokenCacheEntry token(String value) {
+        AccessTokenCacheEntry token = new AccessTokenCacheEntry(PURPOSE_ID);
+        token.setTokenValue(value);
+        token.setTokenType(TokenType.BEARER);
+        return token;
     }
 
     private InadClient buildClient() {
