@@ -32,7 +32,6 @@ public class GatewayConverter {
             Pattern.CASE_INSENSITIVE);
     private static final Pattern INAD_CF_NOT_FOUND = Pattern.compile("(\"detail\")\\s*:\\s*\"(CF non trovato)\"",
             Pattern.CASE_INSENSITIVE);
-    private static final String DATE_PATTERN = "yyyy-MM-dd";
     private static final String CF_NOT_FOUND = "CF non trovato";
 
     protected AddressOKDto mapToAddressesOKDto(String correlationId) {
@@ -202,9 +201,7 @@ public class GatewayConverter {
         GetAddressANPRRequestBodyFilterDto filterDto = new GetAddressANPRRequestBodyFilterDto();
         filterDto.setRequestReason(addressRequestBodyDto.getFilter().getCorrelationId());
         filterDto.setTaxId(addressRequestBodyDto.getFilter().getTaxId());
-        filterDto.setReferenceRequestDate(DateTimeFormatter.ofPattern(DATE_PATTERN)
-                .withZone(ZoneId.systemDefault())
-                .format(addressRequestBodyDto.getFilter().getReferenceRequestDate().toInstant()));
+        filterDto.setReferenceRequestDate(addressRequestBodyDto.getFilter().getReferenceRequestDate());
 
 
         dto.setFilter(filterDto);
@@ -281,9 +278,7 @@ public class GatewayConverter {
         GetAddressANPRRequestBodyFilterDto filterDto = new GetAddressANPRRequestBodyFilterDto();
         filterDto.setRequestReason(addressQueryRequest.getCorrelationId());
         filterDto.setTaxId(addressQueryRequest.getTaxId());
-        filterDto.setReferenceRequestDate(DateTimeFormatter.ofPattern(DATE_PATTERN)
-                .withZone(ZoneId.systemDefault())
-                .format(addressQueryRequest.getReferenceRequestDate().toInstant()));
+        filterDto.setReferenceRequestDate(addressQueryRequest.getReferenceRequestDate());
 
         dto.setFilter(filterDto);
         return dto;

@@ -15,9 +15,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
-import software.amazon.awssdk.utils.StringUtils;
 
 import java.nio.charset.Charset;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_ANPR_ADDRESS;
 
@@ -29,6 +31,7 @@ public class AnprService {
     private final AnprClient anprClient;
     private final CounterRepositoryImpl counterRepository;
     private final ValidateTaxIdUtils validateTaxIdUtils;
+    private static final String DATE_PATTERN = "yyyy-MM-dd";
 
     public AnprService(AnprConverter anprConverter,
                        AnprClient anprClient,
@@ -44,7 +47,7 @@ public class AnprService {
         String cf = request.getFilter().getTaxId();
         validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_ANPR_ADDRESS, false);
 
-        if (StringUtils.isEmpty(request.getFilter().getReferenceRequestDate())) {
+        if (Objects.isNull(request.getFilter().getReferenceRequestDate())) {
             throw new PnNationalRegistriesException("ReferenceRequestDate cannot be empty", HttpStatus.BAD_REQUEST.value(),
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null,
                     Charset.defaultCharset(), AnprResponseKO.class);
@@ -68,7 +71,9 @@ public class AnprService {
         richiesta.setCriteriRicerca(criteriRicercaE002);
 
         TipoDatiRichiestaE002 datiRichiestaE002 = new TipoDatiRichiestaE002();
-        datiRichiestaE002.setDataRiferimentoRichiesta(request.getFilter().getReferenceRequestDate());
+        datiRichiestaE002.setDataRiferimentoRichiesta(DateTimeFormatter.ofPattern(DATE_PATTERN)
+                .withZone(ZoneId.systemDefault())
+                .format(request.getFilter().getReferenceRequestDate().toInstant()));
         datiRichiestaE002.setMotivoRichiesta(request.getFilter().getRequestReason());
         datiRichiestaE002.setCasoUso("C001");
 

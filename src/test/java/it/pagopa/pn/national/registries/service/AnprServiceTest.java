@@ -22,7 +22,9 @@ import org.mockito.Mock;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -55,7 +57,7 @@ class AnprServiceTest {
         GetAddressANPRRequestBodyDto request = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto cf = new GetAddressANPRRequestBodyFilterDto();
         cf.setTaxId("DDDFFF80A01H501F");
-        cf.setReferenceRequestDate("2022-10-28");
+        cf.setReferenceRequestDate(Date.from(Instant.now()));
         request.setFilter(cf);
 
         RispostaE002OK response = new RispostaE002OK();
