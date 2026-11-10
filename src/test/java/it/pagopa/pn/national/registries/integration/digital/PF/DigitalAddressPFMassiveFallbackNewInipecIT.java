@@ -15,7 +15,7 @@ import it.pagopa.pn.national.registries.job.IniPecBatchRequestJob;
 import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.PollingInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;
@@ -128,12 +128,12 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
     @Test
     void PF_Digital_INAD_Massive_PersonalFound_NoInipecFallback() {
         String correlationId = "pf-massive-found-fallback-" + UUID.randomUUID();
-        CodeSqsDto payload = runMassiveInadResolvedScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, "pf@pec.it", null));
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("pf@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveInadResolvedScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, "pf@pec.it", null));
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("pf@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -143,9 +143,9 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
     void PF_Digital_INAD_Massive_NotFound_InipecFallback() {
         String correlationId = "pf-massive-not-found-fallback-" + UUID.randomUUID();
         startInipecFallbackFromMassive(correlationId, PF_NOT_FOUND, null);
-        CodeSqsDto payload = completeInipecFinal(correlationId, PF_NOT_FOUND, "inipec-not-found-fallback@pec.it");
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals("inipec-not-found-fallback@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = completeInipecFinal(correlationId, PF_NOT_FOUND, "inipec-not-found-fallback@pec.it");
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals("inipec-not-found-fallback@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
     }
 
     /**
@@ -155,9 +155,9 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
     void PF_Digital_INAD_Massive_EmptyList_InipecFallback() {
         String correlationId = "pf-massive-empty-list-fallback-" + UUID.randomUUID();
         startInipecFallbackFromMassive(correlationId, PF_EMPTY, inadResponse(PF_EMPTY, List.of()));
-        CodeSqsDto payload = completeInipecFinal(correlationId, PF_EMPTY, "inipec-after-empty-list@pec.it");
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals("inipec-after-empty-list@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = completeInipecFinal(correlationId, PF_EMPTY, "inipec-after-empty-list@pec.it");
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals("inipec-after-empty-list@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
     }
 
     /**
@@ -169,9 +169,9 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         ElementDigitalAddress expiredPersonal = inadAddress("expired-personal@pec.it", null);
         expiredPersonal.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
         startInipecFallbackFromMassive(correlationId, PF_EXPIRED_PERSONAL, inadResponse(PF_EXPIRED_PERSONAL, List.of(expiredPersonal)));
-        CodeSqsDto payload = completeInipecFinal(correlationId, PF_EXPIRED_PERSONAL, "inipec-after-expired-personal@pec.it");
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals("inipec-after-expired-personal@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = completeInipecFinal(correlationId, PF_EXPIRED_PERSONAL, "inipec-after-expired-personal@pec.it");
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals("inipec-after-expired-personal@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
     }
 
     /**
@@ -183,11 +183,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         ElementDigitalAddress personal = new ElementDigitalAddress();
         personal.setDigitalAddress("personal-no-usage@pec.it");
         personal.setPracticedProfession(null);
-        CodeSqsDto payload = runMassiveInadResolvedScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, List.of(personal)));
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("personal-no-usage@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveInadResolvedScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, List.of(personal)));
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("personal-no-usage@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -198,11 +198,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         String correlationId = "pf-massive-personal-no-end-validity-fallback-" + UUID.randomUUID();
         ElementDigitalAddress personal = inadAddress("personal-no-end@pec.it", null);
         personal.getUsageInfo().setDateEndValidity(null);
-        CodeSqsDto payload = runMassiveInadResolvedScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, List.of(personal)));
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("personal-no-end@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveInadResolvedScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, List.of(personal)));
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("personal-no-end@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -214,11 +214,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         ElementDigitalAddress expiredPersonal = inadAddress("first-expired@pec.it", null);
         expiredPersonal.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
         ResponseRequestDigitalAddress result = inadResponse(PF_FOUND, List.of(expiredPersonal, inadAddress("second-valid@pec.it", null)));
-        CodeSqsDto payload = runMassiveInadResolvedScenario(correlationId, PF_FOUND, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("second-valid@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveInadResolvedScenario(correlationId, PF_FOUND, result);
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("second-valid@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -228,11 +228,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
     void PF_Digital_INAD_Massive_PersonalInsteadOfProfessional_FallbackEnabled() {
         String correlationId = "pf-massive-personal-preferred-fallback-" + UUID.randomUUID();
         ResponseRequestDigitalAddress result = inadResponse(PF_PERSONAL_AND_PROFESSIONAL, List.of(inadAddress("personal@pec.it", null), inadAddress("professional@pec.it", "INGEGNERE")));
-        CodeSqsDto payload = runMassiveInadResolvedScenario(correlationId, PF_PERSONAL_AND_PROFESSIONAL, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("personal@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveInadResolvedScenario(correlationId, PF_PERSONAL_AND_PROFESSIONAL, result);
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("personal@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -242,11 +242,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
     void PF_Digital_INAD_Massive_PersonalNotFound_ProfessionalFound_FallbackEnabled() {
         String correlationId = "pf-massive-professional-only-fallback-" + UUID.randomUUID();
         ResponseRequestDigitalAddress result = inadResponse(PF_PROFESSIONAL_ONLY, List.of(inadAddress("professional@pec.it", "INGEGNERE")));
-        CodeSqsDto payload = runMassiveInadResolvedScenario(correlationId, PF_PROFESSIONAL_ONLY, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveInadResolvedScenario(correlationId, PF_PROFESSIONAL_ONLY, result);
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -256,11 +256,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
     void PF_Digital_INAD_Massive_PersonalInvalid_ProfessionalValid_FallbackEnabled() {
         String correlationId = "pf-massive-invalid-personal-professional-fallback-" + UUID.randomUUID();
         ResponseRequestDigitalAddress result = inadResponse(PF_INVALID_PERSONAL, List.of(inadAddress("invalid-personal", null), inadAddress("professional@pec.it", "INGEGNERE")));
-        CodeSqsDto payload = runMassiveInadResolvedScenario(correlationId, PF_INVALID_PERSONAL, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveInadResolvedScenario(correlationId, PF_INVALID_PERSONAL, result);
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -270,11 +270,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
     void PF_Digital_INAD_Massive_MultipleProfessionals_FallbackEnabled() {
         String correlationId = "pf-massive-multiple-professionals-fallback-" + UUID.randomUUID();
         ResponseRequestDigitalAddress result = inadResponse(PF_MULTIPLE_PROFESSIONALS, List.of(inadAddress("prof1@pec.it", "INGEGNERE"), inadAddress("prof2@pec.it", "ARCHITETTO")));
-        CodeSqsDto payload = runMassiveInadResolvedScenario(correlationId, PF_MULTIPLE_PROFESSIONALS, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("prof1@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveInadResolvedScenario(correlationId, PF_MULTIPLE_PROFESSIONALS, result);
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("prof1@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -311,11 +311,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         ElementDigitalAddress expiredPersonal = inadAddress("expired-personal@pec.it", null);
         expiredPersonal.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
         ResponseRequestDigitalAddress result = inadResponse(PF_EXPIRED_PERSONAL_AND_PROFESSIONAL, List.of(expiredPersonal, inadAddress("professional@pec.it", "INGEGNERE")));
-        CodeSqsDto payload = runMassiveInadResolvedScenario(correlationId, PF_EXPIRED_PERSONAL_AND_PROFESSIONAL, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveInadResolvedScenario(correlationId, PF_EXPIRED_PERSONAL_AND_PROFESSIONAL, result);
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -327,9 +327,9 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         ElementDigitalAddress expiredProfessional = inadAddress("expired-professional@pec.it", "AVVOCATO");
         expiredProfessional.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
         startInipecFallbackFromMassive(correlationId, PF_PROFESSIONAL_ONLY, inadResponse(PF_PROFESSIONAL_ONLY, List.of(expiredProfessional)));
-        CodeSqsDto payload = completeInipecFinal(correlationId, PF_PROFESSIONAL_ONLY, "inipec-after-expired-professional@pec.it");
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals("inipec-after-expired-professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = completeInipecFinal(correlationId, PF_PROFESSIONAL_ONLY, "inipec-after-expired-professional@pec.it");
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals("inipec-after-expired-professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
     }
 
     /**
@@ -343,11 +343,12 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         String batchId = startInipecBatch(pollingId, correlationId);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(pecResponseWithProfessionals(PF_PROFESSIONAL, null, "professional@pec.it"))));
         pollInipec(batchId, pollingId, 1);
-        CodeSqsDto payload = finalInipecPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = finalInipecPayload(correlationId);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -361,12 +362,13 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         String batchId = startInipecBatch(pollingId, correlationId);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(pecResponseWithProfessionals(PF_BUSINESS_PROFESSIONAL, "business@pec.it", "professional-one@pec.it", "professional-two@pec.it"))));
         pollInipec(batchId, pollingId, 1);
-        CodeSqsDto payload = finalInipecPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(3, payload.getDigitalAddress().size());
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "business@pec.it".equals(address.getAddress()) && "IMPRESA".equals(address.getRecipient())));
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        GatewayResponse payload = finalInipecPayload(correlationId);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(3, payload.getPayload().getDigitalAddress().size());
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "business@pec.it".equals(address.getAddress()) && "IMPRESA".equals(address.getRecipient())));
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
     }
 
     /**
@@ -380,10 +382,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         String batchId = startInipecBatch(pollingId, correlationId);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(pecResponse(PF_INVALID, "not-an-email"))));
         pollInipec(batchId, pollingId, 1);
-        CodeSqsDto payload = finalInipecPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = finalInipecPayload(correlationId);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -399,10 +402,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         nd.setStatoImpresa(Pec.StatoImpresaEnum.ND);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(nd)));
         pollInipec(batchId, pollingId, 1);
-        CodeSqsDto payload = finalInipecPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = finalInipecPayload(correlationId);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -418,10 +422,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         nf.setStatoImpresa(Pec.StatoImpresaEnum.NF);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(nf)));
         pollInipec(batchId, pollingId, 1);
-        CodeSqsDto payload = finalInipecPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = finalInipecPayload(correlationId);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -435,10 +440,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         String batchId = startInipecBatch(pollingId, correlationId);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse()));
         pollInipec(batchId, pollingId, 1);
-        CodeSqsDto payload = finalInipecPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = finalInipecPayload(correlationId);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -520,12 +526,13 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         String batchId = startInipecBatch(pollingId, correlationId);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(pecResponseWithProfessionals(PF_PROFESSIONAL, null, "professional-one@pec.it", "professional-two@pec.it"))));
         pollInipec(batchId, pollingId, 1);
-        CodeSqsDto payload = finalInipecPayload(correlationId);
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(2, payload.getDigitalAddress().size());
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        GatewayResponse payload = finalInipecPayload(correlationId);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(2, payload.getPayload().getDigitalAddress().size());
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
     }
 
     /**
@@ -539,12 +546,13 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         String batchId = startInipecBatch(pollingId, correlationId);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(pecResponseWithProfessionals(PF_BUSINESS_PROFESSIONAL, "not-an-email", "professional@pec.it"))));
         pollInipec(batchId, pollingId, 1);
-        CodeSqsDto payload = finalInipecPayload(correlationId);
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = finalInipecPayload(correlationId);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -570,8 +578,8 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         when(inadClient.getMassiveRequestResult(pollingId)).thenReturn(Mono.just(result));
         pollInad(batchId, pollingId, 9);
         Map<String, AttributeValue> stored = requestByRegistry(requests.getFirst().correlationId(), "INAD");
-        CodeSqsDto payload = readOutputMessage(stored.get("resultPayload").s());
-        assertEquals("first@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = readNewOutputMessage(stored.get("resultPayload").s());
+        assertEquals("first@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
         assertFalse(stored.get("resultPayload").s().contains("second@pec.it"));
     }
 
@@ -715,8 +723,9 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
             if (!testRequest.correlationId().equals(requestToReplay.correlationId())) {
                 assertEquals(originalPayloads.get(testRequest.correlationId()), stored.get("resultPayload").s());
             }
-            CodeSqsDto finalPayload = readOutputMessage(stored.get("resultPayload").s());
-            assertEquals("partial-" + i + "@pec.it", finalPayload.getDigitalAddress().getFirst().getAddress());
+            GatewayResponse finalPayload = readNewOutputMessage(stored.get("resultPayload").s());
+            assertEquals(CX_ID, finalPayload.getClientId());
+            assertEquals("partial-" + i + "@pec.it", finalPayload.getPayload().getDigitalAddress().getFirst().getAddress());
         }
         assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
     }
@@ -796,16 +805,17 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
                 assertInipecPendingRequest(entry.getKey(), entry.getValue());
                 continue;
             }
-            CodeSqsDto resultPayload = readOutputMessage(inadRequest.get("resultPayload").s());
-            assertEquals(entry.getKey(), resultPayload.getCorrelationId());
+            GatewayResponse resultPayload = readNewOutputMessage(inadRequest.get("resultPayload").s());
+            assertEquals(CX_ID, resultPayload.getClientId());
+            assertEquals(entry.getKey(), resultPayload.getPayload().getCorrelationId());
             if (sharedTaxId.equals(entry.getValue())) {
-                assertEquals("shared@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
+                assertEquals("shared@pec.it", resultPayload.getPayload().getDigitalAddress().getFirst().getAddress());
             }
             if ("RSSMRA80A02H501Z".equals(entry.getValue())) {
-                assertEquals("b@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
+                assertEquals("b@pec.it", resultPayload.getPayload().getDigitalAddress().getFirst().getAddress());
             }
             if ("RSSMRA80A03H501B".equals(entry.getValue())) {
-                assertEquals("c@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
+                assertEquals("c@pec.it", resultPayload.getPayload().getDigitalAddress().getFirst().getAddress());
             }
         }
         assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
@@ -889,14 +899,14 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         assertEquals(source.get("recipientType").s(), fallback.get("recipientType").s());
     }
 
-    private CodeSqsDto runMassiveInadResolvedScenario(String correlationId, String taxId, ResponseRequestDigitalAddress targetResult) {
+    private GatewayResponse runMassiveInadResolvedScenario(String correlationId, String taxId, ResponseRequestDigitalAddress targetResult) {
         executeMassiveInadScenario(correlationId, taxId, targetResult);
         Map<String, AttributeValue> inadRequest = requestByRegistry(correlationId, "INAD");
         assertEquals("WORKED", inadRequest.get("status").s());
         assertNotNull(inadRequest.get("resultPayload"));
         assertTrue(requestsByRegistry(correlationId, "INIPEC").isEmpty());
         verify(inadClient, never()).callEService(any(), any());
-        return readOutputMessage(inadRequest.get("resultPayload").s());
+        return readNewOutputMessage(inadRequest.get("resultPayload").s());
     }
 
     private void startInipecFallbackFromMassive(String correlationId, String taxId, ResponseRequestDigitalAddress targetResult) {
@@ -937,13 +947,14 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
     }
 
-    private CodeSqsDto completeInipecFinal(String correlationId, String taxId, String address) {
+    private GatewayResponse completeInipecFinal(String correlationId, String taxId, String address) {
         String pollingId = "inipec-full-flow-" + UUID.randomUUID();
         String batchId = startInipecBatch(pollingId, correlationId);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(pecResponse(taxId, address))));
         pollInipec(batchId, pollingId, 1);
-        CodeSqsDto payload = finalInipecPayload(correlationId);
-        assertEquals(address, payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = finalInipecPayload(correlationId);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals(address, payload.getPayload().getDigitalAddress().getFirst().getAddress());
         return payload;
     }
 
@@ -981,11 +992,11 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         inipecPollingService.handleMessage(pollingPayload(GatewayDownstreamService.INIPEC, batchId, pollingId, batchSize, 0, 0)).block();
     }
 
-    private CodeSqsDto finalInipecPayload(String correlationId) {
+    private GatewayResponse finalInipecPayload(String correlationId) {
         Map<String, AttributeValue> request = requestByRegistry(correlationId, "INIPEC");
         assertEquals("WORKED", request.get("status").s());
         assertNotNull(request.get("resultPayload"));
-        return readOutputMessage(request.get("resultPayload").s());
+        return readNewOutputMessage(request.get("resultPayload").s());
     }
 
     private IniPecPollingResponse inipecPollingResponse(Pec... pecs) {

@@ -377,7 +377,7 @@ aws --profile default --region us-east-1 --endpoint-url=http://localstack:4566 \
     --global-secondary-indexes \
     '[
         {
-            "IndexName": "status-attemptAfter-Index",
+            "IndexName": "status-attemptAfter-index",
             "KeySchema": [
                 {"AttributeName": "status", "KeyType": "HASH"},
                 {"AttributeName": "attemptAfter", "KeyType": "RANGE"}

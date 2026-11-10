@@ -12,6 +12,7 @@ import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.PollingInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;
 import it.pagopa.pn.national.registries.service.InadPollingService;
@@ -98,12 +99,13 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
     @Test
     void PF_Digital_INAD_Massive_PersonalFound() {
         String correlationId = "pf-massive-found-" + UUID.randomUUID();
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, "pf@pec.it", null));
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("pf@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, "pf@pec.it", null));
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("pf@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -112,10 +114,11 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
     @Test
     void PF_Digital_INAD_Massive_NotFound_NoFallback() {
         String correlationId = "pf-massive-not-found-" + UUID.randomUUID();
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_NOT_FOUND, null);
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INAD", payload.getRegistry());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_NOT_FOUND, null);
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -124,10 +127,11 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
     @Test
     void PF_Digital_INAD_Massive_EmptyList_NoFallback() {
         String correlationId = "pf-massive-empty-list-" + UUID.randomUUID();
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_EMPTY, inadResponse(PF_EMPTY, List.of()));
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INAD", payload.getRegistry());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_EMPTY, inadResponse(PF_EMPTY, List.of()));
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -138,10 +142,11 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
         String correlationId = "pf-massive-expired-personal-" + UUID.randomUUID();
         ElementDigitalAddress expiredPersonal = inadAddress("expired-personal@pec.it", null);
         expiredPersonal.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_EXPIRED_PERSONAL, inadResponse(PF_EXPIRED_PERSONAL, List.of(expiredPersonal)));
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INAD", payload.getRegistry());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_EXPIRED_PERSONAL, inadResponse(PF_EXPIRED_PERSONAL, List.of(expiredPersonal)));
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -153,11 +158,12 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
         ElementDigitalAddress personal = new ElementDigitalAddress();
         personal.setDigitalAddress("personal-no-usage@pec.it");
         personal.setPracticedProfession(null);
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, List.of(personal)));
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("personal-no-usage@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, List.of(personal)));
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("personal-no-usage@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -168,11 +174,12 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
         String correlationId = "pf-massive-personal-no-end-validity-" + UUID.randomUUID();
         ElementDigitalAddress personal = inadAddress("personal-no-end@pec.it", null);
         personal.getUsageInfo().setDateEndValidity(null);
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, List.of(personal)));
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("personal-no-end@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_FOUND, inadResponse(PF_FOUND, List.of(personal)));
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("personal-no-end@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -184,11 +191,12 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
         ElementDigitalAddress expiredPersonal = inadAddress("first-expired@pec.it", null);
         expiredPersonal.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
         ResponseRequestDigitalAddress result = inadResponse(PF_FOUND, List.of(expiredPersonal, inadAddress("second-valid@pec.it", null)));
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_FOUND, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("second-valid@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_FOUND, result);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("second-valid@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -198,11 +206,12 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
     void PF_Digital_INAD_Massive_PersonalInsteadOfProfessional_NoFallback() {
         String correlationId = "pf-massive-personal-preferred-" + UUID.randomUUID();
         ResponseRequestDigitalAddress result = inadResponse(PF_PERSONAL_AND_PROFESSIONAL, List.of(inadAddress("personal@pec.it", null), inadAddress("professional@pec.it", "INGEGNERE")));
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_PERSONAL_AND_PROFESSIONAL, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("personal@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_PERSONAL_AND_PROFESSIONAL, result);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("personal@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -212,9 +221,10 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
     void PF_Digital_INAD_Massive_PersonalNotFound_ProfessionalFound_NoFallback() {
         String correlationId = "pf-massive-professional-only-" + UUID.randomUUID();
         ResponseRequestDigitalAddress result = inadResponse(PF_PROFESSIONAL_ONLY, List.of(inadAddress("professional@pec.it", "INGEGNERE")));
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_PROFESSIONAL_ONLY, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_PROFESSIONAL_ONLY, result);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -224,9 +234,10 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
     void PF_Digital_INAD_Massive_PersonalInvalid_ProfessionalValid_NoFallback() {
         String correlationId = "pf-massive-invalid-personal-professional-" + UUID.randomUUID();
         ResponseRequestDigitalAddress result = inadResponse(PF_INVALID_PERSONAL, List.of(inadAddress("2026-01-01", null), inadAddress("professional@pec.it", "INGEGNERE")));
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_INVALID_PERSONAL, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_INVALID_PERSONAL, result);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -236,9 +247,10 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
     void PF_Digital_INAD_Massive_MultipleProfessionals_NoFallback() {
         String correlationId = "pf-massive-multiple-professionals-" + UUID.randomUUID();
         ResponseRequestDigitalAddress result = inadResponse(PF_MULTIPLE_PROFESSIONALS, List.of(inadAddress("prof1@pec.it", "INGEGNERE"), inadAddress("prof2@pec.it", "ARCHITETTO")));
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_MULTIPLE_PROFESSIONALS, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_MULTIPLE_PROFESSIONALS, result);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -274,9 +286,10 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
         ElementDigitalAddress expiredPersonal = inadAddress("expired-personal@pec.it", null);
         expiredPersonal.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
         ResponseRequestDigitalAddress result = inadResponse(PF_EXPIRED_PERSONAL_AND_PROFESSIONAL, List.of(expiredPersonal, inadAddress("professional@pec.it", "INGEGNERE")));
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_EXPIRED_PERSONAL_AND_PROFESSIONAL, result);
-        assertEquals("INAD", payload.getRegistry());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_EXPIRED_PERSONAL_AND_PROFESSIONAL, result);
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -287,9 +300,10 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
         String correlationId = "pf-massive-only-professional-expired-" + UUID.randomUUID();
         ElementDigitalAddress expiredProfessional = inadAddress("expired-professional@pec.it", "AVVOCATO");
         expiredProfessional.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
-        CodeSqsDto payload = runMassiveFunctionalScenario(correlationId, PF_PROFESSIONAL_ONLY, inadResponse(PF_PROFESSIONAL_ONLY, List.of(expiredProfessional)));
-        assertEquals("INAD", payload.getRegistry());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = runMassiveFunctionalScenario(correlationId, PF_PROFESSIONAL_ONLY, inadResponse(PF_PROFESSIONAL_ONLY, List.of(expiredProfessional)));
+        assertEquals(CX_ID, payload.getClientId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -349,12 +363,12 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
         Map<String, AttributeValue> stored =
                 request(requests.getFirst().correlationId());
 
-        CodeSqsDto payload =
-                readOutputMessage(stored.get("resultPayload").s());
+        GatewayResponse payload =
+                readNewOutputMessage(stored.get("resultPayload").s());
 
         assertEquals(
                 "first@pec.it",
-                payload.getDigitalAddress().getFirst().getAddress()
+                payload.getPayload().getDigitalAddress().getFirst().getAddress()
         );
         assertFalse(
                 stored.get("resultPayload").s().contains("second@pec.it")
@@ -699,9 +713,9 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
                 assertEquals(originalPayloads.get(testRequest.correlationId()), stored.get("resultPayload").s());
             }
 
-            CodeSqsDto finalPayload = readOutputMessage(stored.get("resultPayload").s());
+            GatewayResponse finalPayload = readNewOutputMessage(stored.get("resultPayload").s());
 
-            assertEquals("partial-" + i + "@pec.it", finalPayload.getDigitalAddress().getFirst().getAddress());
+            assertEquals("partial-" + i + "@pec.it", finalPayload.getPayload().getDigitalAddress().getFirst().getAddress());
         }
 
         assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
@@ -827,35 +841,35 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
             assertEquals("WORKED", stored.get("status").s());
             assertNotNull(stored.get("resultPayload"));
 
-            CodeSqsDto resultPayload = readOutputMessage(stored.get("resultPayload").s());
+            GatewayResponse resultPayload = readNewOutputMessage(stored.get("resultPayload").s());
 
-            assertEquals(entry.getKey(), resultPayload.getCorrelationId());
+            assertEquals(entry.getKey(), resultPayload.getPayload().getCorrelationId());
 
             if (sharedTaxId.equals(entry.getValue())) {
-                assertEquals(1, resultPayload.getDigitalAddress().size());
-                assertEquals("shared@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
+                assertEquals(1, resultPayload.getPayload().getDigitalAddress().size());
+                assertEquals("shared@pec.it", resultPayload.getPayload().getDigitalAddress().getFirst().getAddress());
             }
 
             if ("XLPJSM93B21H501O".equals(entry.getValue())) {
-                assertEquals(1, resultPayload.getDigitalAddress().size());
-                assertEquals("b@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
+                assertEquals(1, resultPayload.getPayload().getDigitalAddress().size());
+                assertEquals("b@pec.it", resultPayload.getPayload().getDigitalAddress().getFirst().getAddress());
             }
 
             if ("BSMGPR92R62F205X".equals(entry.getValue())) {
-                assertEquals(1, resultPayload.getDigitalAddress().size());
-                assertEquals("c@pec.it", resultPayload.getDigitalAddress().getFirst().getAddress());
+                assertEquals(1, resultPayload.getPayload().getDigitalAddress().size());
+                assertEquals("c@pec.it", resultPayload.getPayload().getDigitalAddress().getFirst().getAddress());
             }
 
             if ("KRSJSM88S03H501A".equals(entry.getValue())) {
-                assertNotNull(resultPayload.getDigitalAddress());
-                assertTrue(resultPayload.getDigitalAddress().isEmpty());
+                assertNotNull(resultPayload.getPayload().getDigitalAddress());
+                assertTrue(resultPayload.getPayload().getDigitalAddress().isEmpty());
             }
         }
 
         assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
     }
 
-    private CodeSqsDto runMassiveFunctionalScenario(String correlationId, String taxId, ResponseRequestDigitalAddress targetResult) {
+    private GatewayResponse runMassiveFunctionalScenario(String correlationId, String taxId, ResponseRequestDigitalAddress targetResult) {
         List<TestRequest> requests = new ArrayList<>();
         requests.add(new TestRequest(taxId, correlationId));
         for (int i = 0; i < 8; i++) {
@@ -889,7 +903,7 @@ public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistr
         assertNotNull(stored.get("resultPayload"));
         verify(inadClient, never()).callEService(any(), any());
         verifyNoInteractions(ipaClient, anprClient);
-        return readOutputMessage(stored.get("resultPayload").s());
+        return readNewOutputMessage(stored.get("resultPayload").s());
     }
 
     private Map<String, AttributeValue> request(String correlationId, String registry) {

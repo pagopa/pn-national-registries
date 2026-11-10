@@ -14,6 +14,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.R
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.StatusProcessingRequest;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
@@ -131,7 +132,8 @@ public class InadPollingService {
                                 request.getRecipientType(),
                                 GatewayDownstreamService.INAD
                         );
-                        String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
+                        GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
+                        String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
                         return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, resultPayload, true);
                     }
                     return handlePecNotFoundResponse(request, codeSqsDto);
@@ -150,7 +152,8 @@ public class InadPollingService {
         if (nationalRegistriesConfig.isEnablePfPecFallbackFlow() && PF.name().equalsIgnoreCase(request.getRecipientType())) {
             return pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
         }
-        String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
+        GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
+        String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
         return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, resultPayload, true);
     }
 }

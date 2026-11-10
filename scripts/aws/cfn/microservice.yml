@@ -5,6 +5,16 @@ Transform:
   - UpdateDeploymentTransform
 
 Parameters:
+  NationalRegistriesPipeWindowSize:
+    Type: Number
+    Default: 30
+    Description: window size of national registries pipe (sqs to sqs)
+
+  NationalRegistriesPipeBatchSize:
+    Type: Number
+    Default: 2
+    Description: events batch size of national registries pipe (sqs to sqs)
+
   NationalRegistryGatewayOutputsQueueName:
     Type: String
     Description: 'The name of the queue'
@@ -907,6 +917,66 @@ Resources:
                   - kms:Decrypt
                 Resource: !Ref PnBatchRequestEncryptKeyARN
 
+  NationalRegistriesToEventBusPipe:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: !Sub ${ProjectName}-national-registries-to-event-bus-pipe
+      Description: 'Pipe from National Registries Queue to core event bus'
+      RoleArn: !GetAtt NationalRegistriesToEventBusPipeRole.Arn
+      Source: !Ref NationalRegistriesGatewayResponsesQueueARN
+      SourceParameters:
+        SqsQueueParameters:
+          BatchSize: !Ref NationalRegistriesPipeBatchSize
+          MaximumBatchingWindowInSeconds: !Ref NationalRegistriesPipeWindowSize
+      Target: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/${ProjectName}-CoreEventBus
+      TargetParameters:
+        EventBridgeEventBusParameters:
+          DetailType: "NationalRegistriesOutcomeEvent"
+        InputTemplate: |
+          {
+            "body": <$.body.payload>,
+            "source": <$.body.clientId>,
+          }
+
+  NationalRegistriesToEventBusPipeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pipes.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-to-event-bus-pipe'
+
+      Policies:
+        - PolicyName: !Sub ${ProjectName}--National-registries-to-core-event-bus-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sqs:ReceiveMessage'
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:GetQueueAttributes'
+                Resource: !Ref NationalRegistriesGatewayResponsesQueueARN
+        - PolicyName: !Sub ${ProjectName}-National-registries-target-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'events:PutEvents'
+                Resource:
+                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/${ProjectName}-CoreEventBus
+
   PnNationalRegistriesRequestErrorPipe:
     Type: AWS::Pipes::Pipe
     Properties:
@@ -1037,7 +1107,6 @@ Resources:
       TargetParameters:
         SqsQueueParameters:
           MessageGroupId: $.dynamodb.NewImage.batchId.S
-          MessageDeduplicationId: $.eventID
         InputTemplate: >-
           {
             "registry": "<$.dynamodb.NewImage.registry.S>",

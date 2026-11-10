@@ -12,6 +12,7 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressResponseDto;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import lombok.RequiredArgsConstructor;
@@ -44,6 +45,14 @@ public class GatewayUtils {
     public String convertCodeSqsDtoToString(CodeSqsDto codeSqsDto) {
         try {
             return mapper.writeValueAsString(codeSqsDto);
+        } catch (JsonProcessingException e) {
+            throw new DigitalAddressException("can not convert SQS DTO to String", e);
+        }
+    }
+
+    public String convertGatewayResponseToString(GatewayResponse gatewayResponse) {
+        try {
+            return mapper.writeValueAsString(gatewayResponse);
         } catch (JsonProcessingException e) {
             throw new DigitalAddressException("can not convert SQS DTO to String", e);
         }

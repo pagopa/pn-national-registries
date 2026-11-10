@@ -447,6 +447,7 @@ Resources:
         FifoQueue: 'true'
         MaxReceiveCount: 10
         QueueHasAlarm: 'false'
+        ContentBasedDeduplication: true
         AlarmSNSTopicName: !Ref AlarmSNSTopicName
         DelaySeconds: 1
         VisibilityTimeout: 300

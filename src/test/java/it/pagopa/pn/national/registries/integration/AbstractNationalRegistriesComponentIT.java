@@ -23,6 +23,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.WS
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.GatewayInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.service.DigitalAddressBatchPollingService;
 import it.pagopa.pn.national.registries.service.IniPecBatchRequestService;
 import org.junit.jupiter.api.BeforeEach;
@@ -267,6 +268,14 @@ public abstract class AbstractNationalRegistriesComponentIT extends BaseTest.Wit
     protected it.pagopa.pn.national.registries.model.CodeSqsDto readOutputMessage(String messageBody) {
         try {
             return objectMapper.readValue(messageBody, it.pagopa.pn.national.registries.model.CodeSqsDto.class);
+        } catch (JsonProcessingException e) {
+            throw new AssertionError("Unable to deserialize output queue message", e);
+        }
+    }
+
+    protected GatewayResponse readNewOutputMessage(String messageBody) {
+        try {
+            return objectMapper.readValue(messageBody,GatewayResponse.class);
         } catch (JsonProcessingException e) {
             throw new AssertionError("Unable to deserialize output queue message", e);
         }

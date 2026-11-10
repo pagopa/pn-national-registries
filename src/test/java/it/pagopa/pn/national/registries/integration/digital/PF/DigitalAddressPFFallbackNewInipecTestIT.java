@@ -11,6 +11,7 @@ import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollin
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.service.InipecPollingService;
@@ -482,11 +483,11 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         )));
         pollInipec(batchId, pollingId, 1);
 
-        CodeSqsDto payload = finalPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = finalPayload(correlationId);
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -511,12 +512,12 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         )));
         pollInipec(batchId, pollingId, 1);
 
-        CodeSqsDto payload = finalPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(3, payload.getDigitalAddress().size());
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "business@pec.it".equals(address.getAddress()) && "IMPRESA".equals(address.getRecipient())));
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        GatewayResponse payload = finalPayload(correlationId);
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(3, payload.getPayload().getDigitalAddress().size());
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "business@pec.it".equals(address.getAddress()) && "IMPRESA".equals(address.getRecipient())));
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
     }
 
     /**
@@ -541,10 +542,10 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         )));
         pollInipec(batchId, pollingId, 1);
 
-        CodeSqsDto payload = finalPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = finalPayload(correlationId);
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -569,10 +570,10 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(nd)));
         pollInipec(batchId, pollingId, 1);
 
-        CodeSqsDto payload = finalPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = finalPayload(correlationId);
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -597,10 +598,10 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse(nf)));
         pollInipec(batchId, pollingId, 1);
 
-        CodeSqsDto payload = finalPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = finalPayload(correlationId);
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -623,10 +624,10 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(inipecPollingResponse()));
         pollInipec(batchId, pollingId, 1);
 
-        CodeSqsDto payload = finalPayload(correlationId);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = finalPayload(correlationId);
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -765,15 +766,15 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
 
         pollInipec(batchId, pollingId, 1);
 
-        CodeSqsDto payload = finalPayload(correlationId);
+        GatewayResponse payload = finalPayload(correlationId);
 
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(2, payload.getDigitalAddress().size());
-        assertTrue(payload.getDigitalAddress().stream()
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(2, payload.getPayload().getDigitalAddress().size());
+        assertTrue(payload.getPayload().getDigitalAddress().stream()
                 .anyMatch(address -> "professional-one@pec.it".equals(address.getAddress())
                         && "PROFESSIONISTA".equals(address.getRecipient())));
-        assertTrue(payload.getDigitalAddress().stream()
+        assertTrue(payload.getPayload().getDigitalAddress().stream()
                 .anyMatch(address -> "professional-two@pec.it".equals(address.getAddress())
                         && "PROFESSIONISTA".equals(address.getRecipient())));
     }
@@ -815,13 +816,13 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
 
         pollInipec(batchId, pollingId, 1);
 
-        CodeSqsDto payload = finalPayload(correlationId);
+        GatewayResponse payload = finalPayload(correlationId);
 
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     private void completeInipecFinal(String correlationId, String address) {
@@ -849,9 +850,9 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
                 .orElseThrow();
         assertEquals("WORKED", request.get("status").s());
         assertNotNull(request.get("resultPayload"));
-        CodeSqsDto payload = readOutputMessage(request.get("resultPayload").s());
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(address, payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = readNewOutputMessage(request.get("resultPayload").s());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(address, payload.getPayload().getDigitalAddress().getFirst().getAddress());
     }
 
     private void assertInipecPendingRequest(String correlationId) {
@@ -901,11 +902,11 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
                 .build()).block();
     }
 
-    private CodeSqsDto finalPayload(String correlationId) {
+    private GatewayResponse finalPayload(String correlationId) {
         Map<String, AttributeValue> request = requestByRegistry(correlationId, "INIPEC");
         assertEquals("WORKED", request.get("status").s());
         assertNotNull(request.get("resultPayload"));
-        return readOutputMessage(request.get("resultPayload").s());
+        return readNewOutputMessage(request.get("resultPayload").s());
     }
 
     private Map<String, AttributeValue> requestByRegistry(String correlationId, String registry) {
