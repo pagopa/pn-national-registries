@@ -877,6 +877,11 @@ Resources:
                 - pipes.amazonaws.com
             Action:
               - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-request-error-pipe'
       Policies:
         - PolicyName: pn-national-registries-request-error-pipe-policy
           PolicyDocument:
@@ -897,6 +902,10 @@ Resources:
                   - sqs:SendMessage
                 Resource:
                   - !Ref NationalRegistryGatewayInputsDLQARN
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: !Ref PnBatchRequestEncryptKeyARN
 
   PnNationalRegistriesRequestErrorPipe:
     Type: AWS::Pipes::Pipe
@@ -906,7 +915,7 @@ Resources:
       Source: !Ref PnNationalRegistriesRequestsTableStreamArn
       SourceParameters:
         DynamoDBStreamParameters:
-          StartingPosition: LATEST
+          StartingPosition: TRIM_HORIZON
           BatchSize: 1
         FilterCriteria:
           Filters:
@@ -966,6 +975,11 @@ Resources:
                 - pipes.amazonaws.com
             Action:
               - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-polling-pipe'
       Policies:
         - PolicyName: pn-national-registries-polling-pipe-policy
           PolicyDocument:
@@ -995,7 +1009,7 @@ Resources:
       Source: !Ref PnNationalRegistriesBatchesTableStreamArn
       SourceParameters:
         DynamoDBStreamParameters:
-          StartingPosition: LATEST
+          StartingPosition: TRIM_HORIZON
           BatchSize: 1
         FilterCriteria:
           Filters:
@@ -1023,7 +1037,7 @@ Resources:
       TargetParameters:
         SqsQueueParameters:
           MessageGroupId: $.dynamodb.NewImage.batchId.S
-          MessageDeduplicationId: $.dynamodb.NewImage.batchId.S
+          MessageDeduplicationId: $.eventID
         InputTemplate: >-
           {
             "registry": "<$.dynamodb.NewImage.registry.S>",
@@ -1043,7 +1057,7 @@ Resources:
 
       SourceParameters:
         DynamoDBStreamParameters:
-          StartingPosition: LATEST
+          StartingPosition: TRIM_HORIZON
           BatchSize: 1
 
         FilterCriteria:
@@ -1111,6 +1125,11 @@ Resources:
                 - pipes.amazonaws.com
             Action:
               - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-completed-request-pipe'
 
       Policies:
         - PolicyName: pn-national-registries-completed-request-pipe-policy
@@ -1131,6 +1150,10 @@ Resources:
                   - sqs:SendMessage
                 Resource:
                   - !Ref NationalRegistriesGatewayResponsesQueueARN
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: !Ref PnBatchRequestEncryptKeyARN
 
   NationalRegistryApiGateway:
     Type: AWS::CloudFormation::Stack
