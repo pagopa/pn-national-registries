@@ -932,10 +932,10 @@ Resources:
       TargetParameters:
         EventBridgeEventBusParameters:
           DetailType: "NationalRegistriesOutcomeEvent"
-        InputTemplate: |
+        InputTemplate: >-
           {
             "body": <$.body.payload>,
-            "source": <$.body.clientId>,
+            "source": <$.body.clientId>
           }
 
   NationalRegistriesToEventBusPipeRole:
