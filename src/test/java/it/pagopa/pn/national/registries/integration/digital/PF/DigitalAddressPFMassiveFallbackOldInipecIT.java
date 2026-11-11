@@ -16,7 +16,7 @@ import it.pagopa.pn.national.registries.job.InadBatchRequestJob;
 import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.PollingInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
@@ -151,9 +151,9 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
     void PF_Digital_INAD_Massive_NotFound_InipecFallback() {
         String correlationId = "pf-massive-not-found-fallback-" + UUID.randomUUID();
         startLegacyFallbackFromMassive(correlationId, PF_NOT_FOUND, null);
-        CodeSqsDto payload = completeLegacyFinalFromMassive(correlationId, PF_NOT_FOUND, "inipec-not-found-fallback@pec.it");
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals("inipec-not-found-fallback@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = completeLegacyFinalFromMassive(correlationId, PF_NOT_FOUND, "inipec-not-found-fallback@pec.it");
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals("inipec-not-found-fallback@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
     }
 
     /**
@@ -163,9 +163,9 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
     void PF_Digital_INAD_Massive_EmptyList_InipecFallback() {
         String correlationId = "pf-massive-empty-list-fallback-" + UUID.randomUUID();
         startLegacyFallbackFromMassive(correlationId, PF_EMPTY, inadResponse(PF_EMPTY, List.of()));
-        CodeSqsDto payload = completeLegacyFinalFromMassive(correlationId, PF_EMPTY, "inipec-after-empty-list@pec.it");
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals("inipec-after-empty-list@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = completeLegacyFinalFromMassive(correlationId, PF_EMPTY, "inipec-after-empty-list@pec.it");
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals("inipec-after-empty-list@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
     }
 
     /**
@@ -177,9 +177,9 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         ElementDigitalAddress expiredPersonal = inadAddress("expired-personal@pec.it", null);
         expiredPersonal.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
         startLegacyFallbackFromMassive(correlationId, PF_EXPIRED_PERSONAL, inadResponse(PF_EXPIRED_PERSONAL, List.of(expiredPersonal)));
-        CodeSqsDto payload = completeLegacyFinalFromMassive(correlationId, PF_EXPIRED_PERSONAL, "inipec-after-expired-personal@pec.it");
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals("inipec-after-expired-personal@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = completeLegacyFinalFromMassive(correlationId, PF_EXPIRED_PERSONAL, "inipec-after-expired-personal@pec.it");
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals("inipec-after-expired-personal@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
     }
 
     /**
@@ -335,9 +335,9 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         ElementDigitalAddress expiredProfessional = inadAddress("expired-professional@pec.it", "AVVOCATO");
         expiredProfessional.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
         startLegacyFallbackFromMassive(correlationId, PF_PROFESSIONAL_ONLY, inadResponse(PF_PROFESSIONAL_ONLY, List.of(expiredProfessional)));
-        CodeSqsDto payload = completeLegacyFinalFromMassive(correlationId, PF_PROFESSIONAL_ONLY, "inipec-after-expired-professional@pec.it");
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals("inipec-after-expired-professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = completeLegacyFinalFromMassive(correlationId, PF_PROFESSIONAL_ONLY, "inipec-after-expired-professional@pec.it");
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals("inipec-after-expired-professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
     }
 
     /**
@@ -348,12 +348,12 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         String correlationId = "pf-old-inipec-professional-" + UUID.randomUUID();
         startLegacyFallbackFromMassive(correlationId, PF_PROFESSIONAL, null);
 
-        CodeSqsDto payload = completeLegacyFinal(correlationId, PF_PROFESSIONAL,
+        GatewayResponse payload = completeLegacyFinal(correlationId, PF_PROFESSIONAL,
                 pecResponseWithProfessionals(PF_PROFESSIONAL, null, "professional@pec.it"));
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -364,13 +364,13 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         String correlationId = "pf-old-inipec-business-professionals-" + UUID.randomUUID();
         startLegacyFallbackFromMassive(correlationId, PF_BUSINESS_PROFESSIONAL, null);
 
-        CodeSqsDto payload = completeLegacyFinal(correlationId, PF_BUSINESS_PROFESSIONAL,
+        GatewayResponse payload = completeLegacyFinal(correlationId, PF_BUSINESS_PROFESSIONAL,
                 pecResponseWithProfessionals(PF_BUSINESS_PROFESSIONAL, "business@pec.it", "professional-one@pec.it", "professional-two@pec.it"));
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(3, payload.getDigitalAddress().size());
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "business@pec.it".equals(address.getAddress()) && "IMPRESA".equals(address.getRecipient())));
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(3, payload.getPayload().getDigitalAddress().size());
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "business@pec.it".equals(address.getAddress()) && "IMPRESA".equals(address.getRecipient())));
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
     }
 
     /**
@@ -381,10 +381,10 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         String correlationId = "pf-old-inipec-invalid-" + UUID.randomUUID();
         startLegacyFallbackFromMassive(correlationId, PF_INVALID, null);
 
-        CodeSqsDto payload = completeLegacyFinal(correlationId, PF_INVALID, pecResponse(PF_INVALID, "not-an-email"));
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = completeLegacyFinal(correlationId, PF_INVALID, pecResponse(PF_INVALID, "not-an-email"));
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -397,10 +397,10 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
 
         Pec nd = pecResponse(PF_ND, "ignored-nd@pec.it");
         nd.setStatoImpresa(Pec.StatoImpresaEnum.ND);
-        CodeSqsDto payload = completeLegacyFinal(correlationId, PF_ND, nd);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = completeLegacyFinal(correlationId, PF_ND, nd);
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -413,10 +413,10 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
 
         Pec nf = pecResponse(PF_NF, "ignored-nf@pec.it");
         nf.setStatoImpresa(Pec.StatoImpresaEnum.NF);
-        CodeSqsDto payload = completeLegacyFinal(correlationId, PF_NF, nf);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = completeLegacyFinal(correlationId, PF_NF, nf);
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -427,10 +427,10 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         String correlationId = "pf-old-inipec-missing-" + UUID.randomUUID();
         startLegacyFallbackFromMassive(correlationId, PF_MISSING, null);
 
-        CodeSqsDto payload = completeLegacyFinal(correlationId, PF_MISSING);
-        assertEquals("INIPEC", payload.getRegistry());
-        assertNotNull(payload.getDigitalAddress());
-        assertTrue(payload.getDigitalAddress().isEmpty());
+        GatewayResponse payload = completeLegacyFinal(correlationId, PF_MISSING);
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertNotNull(payload.getPayload().getDigitalAddress());
+        assertTrue(payload.getPayload().getDigitalAddress().isEmpty());
     }
 
     /**
@@ -505,12 +505,12 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
     void PF_Digital_FullFlow_Inipec_AllProfessionalPecsArePreserved() {
         String correlationId = "pf-massive-old-inipec-professionals-" + UUID.randomUUID();
         startLegacyFallbackFromMassive(correlationId, PF_PROFESSIONAL, null);
-        CodeSqsDto payload = completeLegacyFinal(correlationId, PF_PROFESSIONAL, pecResponseWithProfessionals(PF_PROFESSIONAL, null, "professional-one@pec.it", "professional-two@pec.it"));
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(2, payload.getDigitalAddress().size());
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
-        assertTrue(payload.getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        GatewayResponse payload = completeLegacyFinal(correlationId, PF_PROFESSIONAL, pecResponseWithProfessionals(PF_PROFESSIONAL, null, "professional-one@pec.it", "professional-two@pec.it"));
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(2, payload.getPayload().getDigitalAddress().size());
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "professional-one@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
+        assertTrue(payload.getPayload().getDigitalAddress().stream().anyMatch(address -> "professional-two@pec.it".equals(address.getAddress()) && "PROFESSIONISTA".equals(address.getRecipient())));
     }
 
     /**
@@ -520,12 +520,12 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
     void PF_Digital_FullFlow_Inipec_InvalidBusinessPecKeepsValidProfessionalPec() {
         String correlationId = "pf-massive-old-inipec-invalid-business-" + UUID.randomUUID();
         startLegacyFallbackFromMassive(correlationId, PF_BUSINESS_PROFESSIONAL, null);
-        CodeSqsDto payload = completeLegacyFinal(correlationId, PF_BUSINESS_PROFESSIONAL, pecResponseWithProfessionals(PF_BUSINESS_PROFESSIONAL, "not-an-email", "professional@pec.it"));
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = completeLegacyFinal(correlationId, PF_BUSINESS_PROFESSIONAL, pecResponseWithProfessionals(PF_BUSINESS_PROFESSIONAL, "not-an-email", "professional@pec.it"));
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
     /**
@@ -977,10 +977,10 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
 
         Message output = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(output);
-        CodeSqsDto payload = readOutputMessage(output.body());
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals("legacy-output@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse payload = readNewOutputMessage(output.body());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals("legacy-output@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
 
         Map<String, AttributeValue> request = findBatchRequestsByCorrelationPrefix(correlationId).getFirst();
         assertEquals("WORKED", request.get("status").s());
@@ -1013,10 +1013,10 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
 
         Message firstOutput = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(firstOutput);
-        CodeSqsDto firstPayload = readOutputMessage(firstOutput.body());
-        assertEquals(correlationId, firstPayload.getCorrelationId());
-        assertEquals("INIPEC", firstPayload.getRegistry());
-        assertEquals("legacy-recovery@pec.it", firstPayload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse firstPayload = readNewOutputMessage(firstOutput.body());
+        assertEquals(correlationId, firstPayload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", firstPayload.getPayload().getRegistry());
+        assertEquals("legacy-recovery@pec.it", firstPayload.getPayload().getDigitalAddress().getFirst().getAddress());
 
         Map<String, AttributeValue> request = findBatchRequestsByCorrelationPrefix(correlationId).getFirst();
         assertEquals("WORKED", request.get("status").s());
@@ -1028,10 +1028,10 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
 
         Message recoveredOutput = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(recoveredOutput);
-        CodeSqsDto recoveredPayload = readOutputMessage(recoveredOutput.body());
-        assertEquals(correlationId, recoveredPayload.getCorrelationId());
-        assertEquals("INIPEC", recoveredPayload.getRegistry());
-        assertEquals("legacy-recovery@pec.it", recoveredPayload.getDigitalAddress().getFirst().getAddress());
+        GatewayResponse recoveredPayload = readNewOutputMessage(recoveredOutput.body());
+        assertEquals(correlationId, recoveredPayload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", recoveredPayload.getPayload().getRegistry());
+        assertEquals("legacy-recovery@pec.it", recoveredPayload.getPayload().getDigitalAddress().getFirst().getAddress());
     }
 
     private GatewayResponse runMassiveInadResolvedScenario(String correlationId, String taxId, ResponseRequestDigitalAddress targetResult) {
@@ -1082,7 +1082,7 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
     }
 
-    private CodeSqsDto completeLegacyFinalFromMassive(String correlationId, String taxId, String address) {
+    private GatewayResponse completeLegacyFinalFromMassive(String correlationId, String taxId, String address) {
         return completeLegacyFinal(correlationId, taxId, pecResponse(taxId, address));
     }
 
@@ -1096,7 +1096,7 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         assertEquals("NOT_WORKED", request.get("status").s());
     }
 
-    private CodeSqsDto completeLegacyFinal(String correlationId, String taxId, Pec... pecs) {
+    private GatewayResponse completeLegacyFinal(String correlationId, String taxId, Pec... pecs) {
         String pollingId = "legacy-full-flow-" + UUID.randomUUID();
         submitLegacyBatch(correlationId, pollingId);
         when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(iniPecPollingResponse(pecs)));
@@ -1105,7 +1105,7 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         assertEquals(taxId, request.get("cf").s());
         assertEquals("WORKED", request.get("status").s());
         assertNotNull(request.get("message"));
-        return readOutputMessage(request.get("message").s());
+        return readNewOutputMessage(request.get("message").s());
     }
 
     private String submitLegacyBatch(String correlationId, String pollingId) {

@@ -3,7 +3,7 @@ package it.pagopa.pn.national.registries.integration.physical;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
 import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
@@ -34,9 +34,9 @@ class PhysicalAddressInvalidModeIT extends AbstractNationalRegistriesComponentIT
         enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL, correlationId);
         processNextGatewayInputMessage();
 
-        CodeSqsDto payload = readOutputMessage(receiveSingleMessage(OUTPUT_QUEUE).body());
-        assertNotNull(payload.getPhysicalAddress());
-        assertEquals("VIA ROMA 10/B", payload.getPhysicalAddress().getAddress());
-        assertEquals("A", payload.getPhysicalAddress().getAddressDetails());
+        GatewayResponse payload = readNewOutputMessage(receiveSingleMessage(OUTPUT_QUEUE).body());
+        assertNotNull(payload.getPayload().getPhysicalAddress());
+        assertEquals("VIA ROMA 10/B", payload.getPayload().getPhysicalAddress().getAddress());
+        assertEquals("A", payload.getPayload().getPhysicalAddress().getAddressDetails());
     }
 }

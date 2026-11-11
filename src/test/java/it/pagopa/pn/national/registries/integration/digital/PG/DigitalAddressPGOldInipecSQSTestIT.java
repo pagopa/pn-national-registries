@@ -8,6 +8,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressR
 import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
 import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.service.IniPecBatchSqsService;
@@ -90,8 +91,8 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
         assertNotNull(dlqMessage);
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
 
-        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class));
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -106,7 +107,7 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
 
         doReturn(Mono.error(new RuntimeException("DLQ unavailable")))
                 .when(sqsService)
-                .pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
+                .pushToInputDlqQueue(any(InternalCodeSqsDto.class));
 
         iniPecBatchRequestService.batchPecRequest();
 
@@ -122,11 +123,11 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
 
-        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
+        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class));
 
         doCallRealMethod()
                 .when(sqsService)
-                .pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
+                .pushToInputDlqQueue(any(InternalCodeSqsDto.class));
 
         iniPecBatchSqsService.recoveryBatchSendToSqs();
 
@@ -144,8 +145,8 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
         assertNotNull(recoveredDlqMessage);
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
 
-        verify(sqsService, times(2)).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, times(2)).pushToInputDlqQueue(any(InternalCodeSqsDto.class));
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -175,8 +176,8 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
         assertNotNull(dlqMessage);
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
 
-        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class));
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -192,7 +193,7 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
 
         doReturn(Mono.error(new RuntimeException("DLQ unavailable")))
                 .when(sqsService)
-                .pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
+                .pushToInputDlqQueue(any(InternalCodeSqsDto.class));
 
         digitalAddressBatchPollingService.batchPecPolling();
 
@@ -208,11 +209,11 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
 
-        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
+        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class));
 
         doCallRealMethod()
                 .when(sqsService)
-                .pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
+                .pushToInputDlqQueue(any(InternalCodeSqsDto.class));
 
         iniPecBatchSqsService.recoveryBatchSendToSqs();
 
@@ -230,8 +231,8 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
         assertNotNull(recoveredDlqMessage);
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
 
-        verify(sqsService, times(2)).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, times(2)).pushToInputDlqQueue(any(InternalCodeSqsDto.class));
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -268,8 +269,8 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
-        verify(sqsService).pushToOutputQueue(any(CodeSqsDto.class), any());
-        verify(sqsService, never()).pushToInputDlqQueue(any(), any());
+        verify(sqsService).pushToOutputQueue(any(GatewayResponse.class));
+        verify(sqsService, never()).pushToInputDlqQueue(any());
     }
 
     @Test
@@ -281,7 +282,7 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
 
         doReturn(Mono.error(new RuntimeException("Output queue unavailable")))
                 .when(sqsService)
-                .pushToOutputQueue(any(CodeSqsDto.class), any());
+                .pushToOutputQueue(any(GatewayResponse.class));
 
         AddressOKDto response = enqueueGatewayRequest(
                 "PG",
@@ -301,8 +302,8 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
-        verify(sqsService).pushToOutputQueue(any(CodeSqsDto.class), any());
-        verify(sqsService, never()).pushToInputDlqQueue(any(), any());
+        verify(sqsService).pushToOutputQueue(any(GatewayResponse.class));
+        verify(sqsService, never()).pushToInputDlqQueue(any());
     }
 
     @Test
@@ -344,8 +345,8 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
-        verify(sqsService).pushToOutputQueue(any(CodeSqsDto.class), any());
-        verify(sqsService, never()).pushToInputDlqQueue(any(), any());
+        verify(sqsService).pushToOutputQueue(any(GatewayResponse.class));
+        verify(sqsService, never()).pushToInputDlqQueue(any());
     }
 
     @Test
@@ -364,7 +365,7 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
 
         doReturn(Mono.error(new RuntimeException("Output queue unavailable")))
                 .when(sqsService)
-                .pushToOutputQueue(any(CodeSqsDto.class), any());
+                .pushToOutputQueue(any(GatewayResponse.class));
 
         digitalAddressBatchPollingService.batchPecPolling();
 
@@ -388,11 +389,11 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
-        verify(sqsService).pushToOutputQueue(any(CodeSqsDto.class), any());
+        verify(sqsService).pushToOutputQueue(any(GatewayResponse.class));
 
         doCallRealMethod()
                 .when(sqsService)
-                .pushToOutputQueue(any(CodeSqsDto.class), any());
+                .pushToOutputQueue(any(GatewayResponse.class));
 
         iniPecBatchSqsService.recoveryBatchSendToSqs();
 
@@ -419,8 +420,8 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
-        verify(sqsService, times(2)).pushToOutputQueue(any(CodeSqsDto.class), any());
-        verify(sqsService, never()).pushToInputDlqQueue(any(), any());
+        verify(sqsService, times(2)).pushToOutputQueue(any(GatewayResponse.class));
+        verify(sqsService, never()).pushToInputDlqQueue(any());
     }
 
     private PnNationalRegistriesException badRequestException() {

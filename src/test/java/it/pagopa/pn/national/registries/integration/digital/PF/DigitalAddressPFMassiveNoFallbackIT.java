@@ -11,7 +11,6 @@ import it.pagopa.pn.national.registries.job.InadBatchRequestJob;
 import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.PollingInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;

@@ -10,7 +10,7 @@ import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
@@ -92,12 +92,12 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("personal@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("personal@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
@@ -195,11 +195,11 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         assertEquals(correlationId, response.getCorrelationId());
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("personal-no-usage@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("personal-no-usage@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         verifyNoInteractions(infoCamereClient, ipaClient, anprClient);
@@ -223,11 +223,11 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         assertEquals(correlationId, response.getCorrelationId());
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("personal-no-end@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("personal-no-end@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         verifyNoInteractions(infoCamereClient, ipaClient, anprClient);
@@ -256,11 +256,11 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("second-valid@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("second-valid@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
@@ -286,9 +286,9 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals("personal@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PERSONALE", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals("personal@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PERSONALE", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         verifyNoInteractions(infoCamereClient, ipaClient, anprClient);
@@ -312,12 +312,12 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
@@ -341,11 +341,11 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         assertEquals(correlationId, response.getCorrelationId());
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         verify(inadClient).callEService(VALID_PF_CF, correlationId);
@@ -371,11 +371,11 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("prof1@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("prof1@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
@@ -424,12 +424,12 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INAD", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("professional@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("PROFESSIONISTA", payload.getDigitalAddress().getFirst().getRecipient());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INAD", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
 
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));

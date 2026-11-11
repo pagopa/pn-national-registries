@@ -80,5 +80,6 @@ public class NationalRegistriesConfig {
         private String outputQueueName;
         private String inputQueueName;
         private String inputDlqQueueName;
+        private String gatewayResponseQueueName;
     }
 }

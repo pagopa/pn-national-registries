@@ -9,6 +9,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.model.AddressInternalResult;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.DigitalAddress;
@@ -73,7 +74,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL);
 
         when(nationalRegistriesConfig.isValCxIdEnabled()).thenReturn(true);
-        when(sqsService.pushToInputQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToInputQueue(any(InternalCodeSqsDto.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PF", CX_ID, request))
@@ -87,8 +88,7 @@ class GatewayServiceTest {
                                 && "PF".equals(message.getRecipientType())
                                 && AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue().equals(message.getDomicileType())
                                 && CX_ID.equals(message.getPnNationalRegistriesCxId())
-                ),
-                eq(CX_ID)
+                )
         );
     }
 
@@ -111,7 +111,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
         when(nationalRegistriesConfig.isValCxIdEnabled()).thenReturn(false);
-        when(sqsService.pushToInputQueue(any(InternalCodeSqsDto.class), isNull()))
+        when(sqsService.pushToInputQueue(any(InternalCodeSqsDto.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PG", null, request))
@@ -125,8 +125,7 @@ class GatewayServiceTest {
                                 && "PG".equals(message.getRecipientType())
                                 && AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue().equals(message.getDomicileType())
                                 && message.getPnNationalRegistriesCxId() == null
-                ),
-                isNull()
+                )
         );
     }
 
@@ -136,7 +135,7 @@ class GatewayServiceTest {
 
         when(physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(request, C_ID))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.ANPR, true)));
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
@@ -144,7 +143,7 @@ class GatewayServiceTest {
                 .verifyComplete();
 
         verify(physicalAddressService).retrieveAsyncPhysicalAddressFromAnpr(request, C_ID);
-        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.ANPR.name().equals(message.getRegistry())), eq(CX_ID));
+        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.ANPR.name().equals(message.getPayload().getRegistry())));
         verifyNoInteractions(digitalAddressService);
     }
 
@@ -154,7 +153,7 @@ class GatewayServiceTest {
 
         when(physicalAddressService.retrieveAsyncPhysicalAddressFromRegistroImprese(request, C_ID))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.REGISTRO_IMPRESE, true)));
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", CX_ID, request))
@@ -162,7 +161,7 @@ class GatewayServiceTest {
                 .verifyComplete();
 
         verify(physicalAddressService).retrieveAsyncPhysicalAddressFromRegistroImprese(request, C_ID);
-        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.REGISTRO_IMPRESE.name().equals(message.getRegistry())), eq(CX_ID));
+        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.REGISTRO_IMPRESE.name().equals(message.getPayload().getRegistry())));
     }
 
     @Test
@@ -172,7 +171,7 @@ class GatewayServiceTest {
         when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.INAD, false)));
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
@@ -180,7 +179,7 @@ class GatewayServiceTest {
                 .verifyComplete();
 
         verify(digitalAddressService).retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF);
-        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.INAD.name().equals(message.getRegistry())), eq(CX_ID));
+        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.INAD.name().equals(message.getPayload().getRegistry())));
         verifyNoInteractions(nationalRegistriesRequestsRepository);
     }
 
@@ -192,7 +191,7 @@ class GatewayServiceTest {
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(false);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.just(notFoundResult()));
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
@@ -200,8 +199,7 @@ class GatewayServiceTest {
                 .verifyComplete();
 
         verify(sqsService).pushToOutputQueue(
-                argThat(message -> GatewayDownstreamService.INAD.name().equals(message.getRegistry()) && message.getDigitalAddress().isEmpty()),
-                eq(CX_ID)
+                argThat(message -> GatewayDownstreamService.INAD.name().equals(message.getPayload().getRegistry()) && message.getPayload().getDigitalAddress().isEmpty())
         );
         verifyNoInteractions(nationalRegistriesRequestsRepository);
     }
@@ -266,7 +264,7 @@ class GatewayServiceTest {
                 .getIniPecDigitalAddress(any(), any(), any(), any());
 
         verify(sqsService, never())
-                .pushToOutputQueue(any(), any());
+                .pushToOutputQueue(any());
     }
 
     @Test
@@ -287,7 +285,7 @@ class GatewayServiceTest {
 
         verify(infoCamereService).getIniPecDigitalAddress(eq(CX_ID), any(), eq(request.getFilter().getReferenceRequestDate()), eq(it.pagopa.pn.national.registries.constant.RecipientType.PF));
         verify(nationalRegistriesRequestsRepository, never()).putRequest(any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -329,7 +327,7 @@ class GatewayServiceTest {
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(false);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.error(exception));
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
@@ -337,8 +335,7 @@ class GatewayServiceTest {
                 .verifyComplete();
 
         verify(sqsService).pushToOutputQueue(
-                argThat(message -> GatewayDownstreamService.INAD.name().equals(message.getRegistry()) && message.getDigitalAddress().isEmpty()),
-                eq(CX_ID)
+                argThat(message -> GatewayDownstreamService.INAD.name().equals(message.getPayload().getRegistry()) && message.getPayload().getDigitalAddress().isEmpty())
         );
     }
 
@@ -358,8 +355,8 @@ class GatewayServiceTest {
 
         verify(nationalRegistriesRequestsRepository, never()).putRequest(any());
         verify(infoCamereService, never()).getIniPecDigitalAddress(any(), any(), any(), any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
-        verify(sqsService, never()).pushToInputDlqQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
+        verify(sqsService, never()).pushToInputDlqQueue(any());
     }
 
     @Test
@@ -379,7 +376,7 @@ class GatewayServiceTest {
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.error(exception));
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
@@ -392,12 +389,11 @@ class GatewayServiceTest {
                                 && C_ID.equals(message.getCorrelationId())
                                 && "PF".equals(message.getRecipientType())
                                 && AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue().equals(message.getDomicileType())
-                ),
-                eq(CX_ID)
+                )
         );
         verify(nationalRegistriesRequestsRepository, never()).putRequest(any());
         verify(infoCamereService, never()).getIniPecDigitalAddress(any(), any(), any(), any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -417,17 +413,17 @@ class GatewayServiceTest {
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.error(exception));
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
                 .verifyComplete();
 
-        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID));
+        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class));
         verify(nationalRegistriesRequestsRepository, never()).putRequest(any());
         verify(infoCamereService, never()).getIniPecDigitalAddress(any(), any(), any(), any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -436,7 +432,7 @@ class GatewayServiceTest {
 
         when(digitalAddressService.retrieveDigitalAddressFromIpa(request, C_ID))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.IPA, false)));
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", CX_ID, request))
@@ -444,7 +440,7 @@ class GatewayServiceTest {
                 .verifyComplete();
 
         verify(digitalAddressService).retrieveDigitalAddressFromIpa(request, C_ID);
-        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.IPA.name().equals(message.getRegistry())), eq(CX_ID));
+        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.IPA.name().equals(message.getPayload().getRegistry())));
         verifyNoInteractions(infoCamereService);
     }
 
@@ -468,7 +464,7 @@ class GatewayServiceTest {
                         && AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue().equals(batchRequest.getDomicileType())
         ));
         verify(infoCamereService, never()).getIniPecDigitalAddress(any(), any(), any(), any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -487,7 +483,7 @@ class GatewayServiceTest {
 
         verify(infoCamereService).getIniPecDigitalAddress(eq(CX_ID), any(), eq(request.getFilter().getReferenceRequestDate()), eq(it.pagopa.pn.national.registries.constant.RecipientType.PG));
         verify(nationalRegistriesRequestsRepository, never()).putRequest(any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -504,8 +500,8 @@ class GatewayServiceTest {
 
         verify(nationalRegistriesRequestsRepository, never()).putRequest(any());
         verify(infoCamereService, never()).getIniPecDigitalAddress(any(), any(), any(), any());
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
-        verify(sqsService, never()).pushToInputDlqQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
+        verify(sqsService, never()).pushToInputDlqQueue(any());
     }
 
     @Test
@@ -523,7 +519,7 @@ class GatewayServiceTest {
 
         when(physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(request, C_ID))
                 .thenReturn(Mono.error(exception));
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
@@ -532,11 +528,10 @@ class GatewayServiceTest {
 
         verify(sqsService).pushToOutputQueue(
                 argThat(message ->
-                        GatewayDownstreamService.ANPR.name().equals(message.getRegistry())
-                                && AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue().equals(message.getAddressType())
-                                && message.getPhysicalAddress() == null
-                ),
-                eq(CX_ID)
+                        GatewayDownstreamService.ANPR.name().equals(message.getPayload().getRegistry())
+                                && AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue().equals(message.getPayload().getAddressType())
+                                && message.getPayload().getPhysicalAddress() == null
+                )
         );
         verifyNoInteractions(digitalAddressService);
     }
@@ -559,12 +554,12 @@ class GatewayServiceTest {
                 .pnNationalRegistriesCxId(CX_ID)
                 .build();
 
-        when(sqsService.pushToInputDlqQueue(message, CX_ID)).thenReturn(Mono.empty());
+        when(sqsService.pushToInputDlqQueue(message)).thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.handleExceptionAndSendToDlq(exception, message))
                 .verifyComplete();
 
-        verify(sqsService).pushToInputDlqQueue(message, CX_ID);
+        verify(sqsService).pushToInputDlqQueue(message);
     }
 
     @Test
@@ -599,7 +594,7 @@ class GatewayServiceTest {
 
         when(physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(any(AddressRequestBodyDto.class), eq(C_ID)))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.ANPR, true)));
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class)))
                 .thenReturn(Mono.empty());
         when(gatewayUtils.enrichFluxContext(any(Context.class), any())).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -635,14 +630,14 @@ class GatewayServiceTest {
         when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
         when(digitalAddressService.retrieveDigitalAddressFromInadSync(request, C_ID, it.pagopa.pn.national.registries.constant.RecipientType.PF))
                 .thenReturn(Mono.just(foundResult(GatewayDownstreamService.INAD, false)));
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PF", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
                 .verifyComplete();
 
-        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.INAD.name().equals(message.getRegistry())), eq(CX_ID));
+        verify(sqsService).pushToOutputQueue(argThat(message -> GatewayDownstreamService.INAD.name().equals(message.getPayload().getRegistry())));
         verifyNoInteractions(nationalRegistriesRequestsRepository);
         verifyNoInteractions(infoCamereService);
     }
@@ -663,8 +658,8 @@ class GatewayServiceTest {
                 .expectErrorMatches(error -> error == exception)
                 .verify();
 
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
-        verify(sqsService, never()).pushToInputDlqQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
+        verify(sqsService, never()).pushToInputDlqQueue(any());
         verifyNoInteractions(infoCamereService);
     }
 
@@ -683,7 +678,7 @@ class GatewayServiceTest {
         verify(nationalRegistriesRequestsRepository).putRequest(argThat(r -> GatewayDownstreamService.INAD == r.getRegistry()));
         verifyNoInteractions(digitalAddressService);
         verifyNoInteractions(infoCamereService);
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -694,15 +689,15 @@ class GatewayServiceTest {
                 null, null, Charset.defaultCharset(), null);
 
         when(digitalAddressService.retrieveDigitalAddressFromIpa(request, C_ID)).thenReturn(Mono.error(exception));
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
                 .verifyComplete();
 
-        verify(sqsService).pushToInputDlqQueue(argThat(message -> "PG".equals(message.getRecipientType())), eq(CX_ID));
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService).pushToInputDlqQueue(argThat(message -> "PG".equals(message.getRecipientType())));
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -713,15 +708,15 @@ class GatewayServiceTest {
                 null, null, Charset.defaultCharset(), null);
 
         when(physicalAddressService.retrieveAsyncPhysicalAddressFromRegistroImprese(request, C_ID)).thenReturn(Mono.error(exception));
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddress("PG", CX_ID, request))
                 .assertNext(result -> assertEquals(C_ID, result.getCorrelationId()))
                 .verifyComplete();
 
-        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CX_ID));
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class));
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -756,12 +751,12 @@ class GatewayServiceTest {
                 "too many requests", HttpStatus.TOO_MANY_REQUESTS.value(), HttpStatus.TOO_MANY_REQUESTS.getReasonPhrase(),
                 null, null, Charset.defaultCharset(), null);
         InternalCodeSqsDto message = InternalCodeSqsDto.builder().taxId(CF).correlationId(C_ID).pnNationalRegistriesCxId(CX_ID).build();
-        when(sqsService.pushToInputDlqQueue(message, CX_ID)).thenReturn(Mono.empty());
+        when(sqsService.pushToInputDlqQueue(message)).thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.handleExceptionAndSendToDlq(exception, message))
                 .verifyComplete();
 
-        verify(sqsService).pushToInputDlqQueue(message, CX_ID);
+        verify(sqsService).pushToInputDlqQueue(message);
     }
 
     @Test
@@ -769,7 +764,7 @@ class GatewayServiceTest {
         AddressRequestBodyDto request = newAddressRequestBodyDto(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL);
 
         when(nationalRegistriesConfig.isValCxIdEnabled()).thenReturn(false);
-        when(sqsService.pushToInputQueue(any(InternalCodeSqsDto.class), eq(CX_ID)))
+        when(sqsService.pushToInputQueue(any(InternalCodeSqsDto.class)))
                 .thenReturn(Mono.empty());
 
         StepVerifier.create(gatewayService.retrieveDigitalOrPhysicalAddressAsync("PG", CX_ID, request))

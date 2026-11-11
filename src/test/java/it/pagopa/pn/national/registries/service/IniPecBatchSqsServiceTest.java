@@ -6,7 +6,7 @@ import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
-import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,7 +25,6 @@ import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 import software.amazon.awssdk.services.dynamodb.model.ConditionalCheckFailedException;
-import software.amazon.awssdk.services.sqs.model.SendMessageResponse;
 import software.amazon.awssdk.services.sqs.model.SqsException;
 
 import java.time.LocalDateTime;
@@ -37,10 +36,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.*;
 
 @TestPropertySource(properties = {
@@ -94,23 +89,23 @@ class IniPecBatchSqsServiceTest {
 
         when(batchRequestRepository.setNewReservationIdToBatchRequest(same(batchRequest))).thenReturn(Mono.just(batchRequest));
         when(sqsService.toObject(MESSAGE, CodeSqsDto.class)).thenReturn(expectedPayload);
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.empty());
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class))).thenReturn(Mono.empty());
         when(batchRequestRepository.update(same(batchRequest))).thenReturn(Mono.just(batchRequest));
 
         StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(batchRequest))).verifyComplete();
 
-        ArgumentCaptor<CodeSqsDto> payloadCaptor = ArgumentCaptor.forClass(CodeSqsDto.class);
+        ArgumentCaptor<GatewayResponse> payloadCaptor = ArgumentCaptor.forClass(GatewayResponse.class);
 
-        verify(sqsService).pushToOutputQueue(payloadCaptor.capture(), eq(CLIENT_ID));
+        verify(sqsService).pushToOutputQueue(payloadCaptor.capture());
 
-        assertSame(expectedPayload, payloadCaptor.getValue());
+        assertSame(expectedPayload, payloadCaptor.getValue().getPayload());
         assertEquals(BatchSendStatus.SENT.getValue(), batchRequest.getSendStatus());
         assertNotNull(batchRequest.getReservationId());
         assertNotNull(batchRequest.getLastReserved());
 
-        verify(sqsService).toObject(MESSAGE, CodeSqsDto.class);
+        verify(sqsService).toObject(MESSAGE, GatewayResponse.class);
         verify(batchRequestRepository).update(same(batchRequest));
-        verify(sqsService, never()).pushToInputDlqQueue(any(), anyString());
+        verify(sqsService, never()).pushToInputDlqQueue(any());
     }
 
     @Test
@@ -124,8 +119,8 @@ class IniPecBatchSqsServiceTest {
 
         assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
 
-        verify(sqsService, never()).pushToOutputQueue(any(), anyString());
-        verify(sqsService, never()).pushToInputDlqQueue(any(), anyString());
+        verify(sqsService, never()).pushToOutputQueue(any());
+        verify(sqsService, never()).pushToInputDlqQueue(any());
         verify(batchRequestRepository, never()).update(any());
     }
 
@@ -137,19 +132,19 @@ class IniPecBatchSqsServiceTest {
 
         when(batchRequestRepository.setNewReservationIdToBatchRequest(same(batchRequest))).thenReturn(Mono.just(batchRequest));
         when(sqsService.toObject(MESSAGE, CodeSqsDto.class)).thenReturn(expectedPayload);
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.error(SqsException.builder().message("SQS error").build()));
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class))).thenReturn(Mono.error(SqsException.builder().message("SQS error").build()));
 
         StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(batchRequest))).verifyComplete();
 
-        ArgumentCaptor<CodeSqsDto> payloadCaptor = ArgumentCaptor.forClass(CodeSqsDto.class);
+        ArgumentCaptor<GatewayResponse> payloadCaptor = ArgumentCaptor.forClass(GatewayResponse.class);
 
-        verify(sqsService).pushToOutputQueue(payloadCaptor.capture(), eq(CLIENT_ID));
+        verify(sqsService).pushToOutputQueue(payloadCaptor.capture());
 
-        assertSame(expectedPayload, payloadCaptor.getValue());
+        assertSame(expectedPayload, payloadCaptor.getValue().getPayload());
         assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
 
         verify(batchRequestRepository, never()).update(any());
-        verify(sqsService, never()).pushToInputDlqQueue(any(), anyString());
+        verify(sqsService, never()).pushToInputDlqQueue(any());
     }
 
     @Test
@@ -168,20 +163,22 @@ class IniPecBatchSqsServiceTest {
 
         when(batchRequestRepository.setNewReservationIdToBatchRequest(any())).thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()), Mono.just(sqsKo), Mono.just(success));
         when(sqsService.toObject(MESSAGE, CodeSqsDto.class)).thenReturn(sqsKoPayload, successPayload);
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.error(SqsException.builder().message("KO").build()), Mono.empty());
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class))).thenReturn(Mono.error(SqsException.builder().message("KO").build()), Mono.empty());
         when(batchRequestRepository.update(same(success))).thenReturn(Mono.just(success));
 
         StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(reservationKo, sqsKo, success))).verifyComplete();
 
-        ArgumentCaptor<CodeSqsDto> payloadCaptor = ArgumentCaptor.forClass(CodeSqsDto.class);
+        ArgumentCaptor<GatewayResponse> payloadCaptor = ArgumentCaptor.forClass(GatewayResponse.class);
 
-        verify(sqsService, times(2)).pushToOutputQueue(payloadCaptor.capture(), eq(CLIENT_ID));
+        verify(sqsService, times(2)).pushToOutputQueue(payloadCaptor.capture());
 
-        List<CodeSqsDto> capturedPayloads = payloadCaptor.getAllValues();
+        List<GatewayResponse> capturedPayloads = payloadCaptor.getAllValues();
 
         assertEquals(2, capturedPayloads.size());
-        assertSame(sqsKoPayload, capturedPayloads.get(0));
-        assertSame(successPayload, capturedPayloads.get(1));
+        assertSame(sqsKoPayload, capturedPayloads.get(0).getPayload());
+        assertSame(successPayload, capturedPayloads.get(1).getPayload());
+        assertEquals(CLIENT_ID,capturedPayloads.get(0).getClientId());
+        assertEquals(CLIENT_ID,capturedPayloads.get(1).getClientId());
         assertEquals(BatchSendStatus.NOT_SENT.getValue(), reservationKo.getSendStatus());
         assertEquals(BatchSendStatus.NOT_SENT.getValue(), sqsKo.getSendStatus());
         assertEquals(BatchSendStatus.SENT.getValue(), success.getSendStatus());
@@ -199,14 +196,14 @@ class IniPecBatchSqsServiceTest {
         BatchRequest batchRequest = createDlqBatchRequest(cf, inputRecipientType, referenceRequestDate);
 
         when(batchRequestRepository.setNewReservationIdToBatchRequest(same(batchRequest))).thenReturn(Mono.just(batchRequest));
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.empty());
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class))).thenReturn(Mono.empty());
         when(batchRequestRepository.update(same(batchRequest))).thenReturn(Mono.just(batchRequest));
 
         StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(batchRequest))).verifyComplete();
 
         ArgumentCaptor<InternalCodeSqsDto> payloadCaptor = ArgumentCaptor.forClass(InternalCodeSqsDto.class);
 
-        verify(sqsService).pushToInputDlqQueue(payloadCaptor.capture(), eq(CLIENT_ID));
+        verify(sqsService).pushToInputDlqQueue(payloadCaptor.capture());
 
         InternalCodeSqsDto payload = payloadCaptor.getValue();
 
@@ -218,7 +215,7 @@ class IniPecBatchSqsServiceTest {
         assertEquals(Date.from(referenceRequestDate.atZone(ZoneId.systemDefault()).toInstant()), payload.getReferenceRequestDate());
         assertEquals(BatchSendStatus.SENT_TO_DLQ.getValue(), batchRequest.getSendStatus());
 
-        verify(sqsService, never()).pushToOutputQueue(any(), anyString());
+        verify(sqsService, never()).pushToOutputQueue(any());
         verify(batchRequestRepository).update(same(batchRequest));
     }
 
@@ -230,13 +227,13 @@ class IniPecBatchSqsServiceTest {
         BatchRequest batchRequest = createDlqBatchRequest(cf, inputRecipientType, referenceRequestDate);
 
         when(batchRequestRepository.setNewReservationIdToBatchRequest(same(batchRequest))).thenReturn(Mono.just(batchRequest));
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.error(SqsException.builder().message("DLQ error").build()));
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class))).thenReturn(Mono.error(SqsException.builder().message("DLQ error").build()));
         when(batchRequestRepository.update(any(BatchRequest.class))).thenReturn(Mono.just(batchRequest));
 
         StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(batchRequest))).verifyComplete();
         ArgumentCaptor<InternalCodeSqsDto> payloadCaptor = ArgumentCaptor.forClass(InternalCodeSqsDto.class);
 
-        verify(sqsService).pushToInputDlqQueue(payloadCaptor.capture(), eq(CLIENT_ID));
+        verify(sqsService).pushToInputDlqQueue(payloadCaptor.capture());
 
         InternalCodeSqsDto payload = payloadCaptor.getValue();
 
@@ -249,7 +246,7 @@ class IniPecBatchSqsServiceTest {
         assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
 
         verify(batchRequestRepository, never()).update(any());
-        verify(sqsService, never()).pushToOutputQueue(any(), anyString());
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -262,16 +259,16 @@ class IniPecBatchSqsServiceTest {
         outputKo.setCorrelationId("correlation-output-ko~001");
         outputOk.setCorrelationId("correlation-output-ok~001");
 
-        CodeSqsDto outputKoPayload = mock(CodeSqsDto.class);
-        CodeSqsDto outputOkPayload = mock(CodeSqsDto.class);
+        GatewayResponse outputKoPayload = mock(GatewayResponse.class);
+        GatewayResponse outputOkPayload = mock(GatewayResponse.class);
 
         when(nationalRegistriesConfig.getTtl()).thenReturn(123);
         when(batchRequestRepository.setNewReservationIdToBatchRequest(same(reservationKo))).thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
         when(batchRequestRepository.setNewReservationIdToBatchRequest(same(outputKo))).thenReturn(Mono.just(outputKo));
         when(batchRequestRepository.setNewReservationIdToBatchRequest(same(outputOk))).thenReturn(Mono.just(outputOk));
-        when(sqsService.toObject(MESSAGE, CodeSqsDto.class)).thenReturn(outputKoPayload, outputOkPayload);
-        when(sqsService.pushToOutputQueue(same(outputKoPayload), eq(CLIENT_ID))).thenReturn(Mono.error(SqsException.builder().message("Output KO").build()));
-        when(sqsService.pushToOutputQueue(same(outputOkPayload), eq(CLIENT_ID))).thenReturn(Mono.empty());
+        when(sqsService.toObject(MESSAGE, GatewayResponse.class)).thenReturn(outputKoPayload, outputOkPayload);
+        when(sqsService.pushToOutputQueue(any())).thenReturn(Mono.error(SqsException.builder().message("Output KO").build()));
+        when(sqsService.pushToOutputQueue(any())).thenReturn(Mono.empty());
         when(batchRequestRepository.update(same(outputOk))).thenReturn(Mono.just(outputOk));
 
         StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(reservationKo, outputKo, outputOk))).verifyComplete();
@@ -294,7 +291,7 @@ class IniPecBatchSqsServiceTest {
 
         batchRequest.setReferenceRequestDate(referenceRequestDate);
 
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.empty());
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class))).thenReturn(Mono.empty());
         when(batchRequestRepository.update(any(BatchRequest.class))).thenReturn(Mono.just(batchRequest));
 
         StepVerifier.create(iniPecBatchSqsService.sendToDlqQueue(batchRequest))
@@ -302,7 +299,7 @@ class IniPecBatchSqsServiceTest {
 
         ArgumentCaptor<InternalCodeSqsDto> payloadCaptor = ArgumentCaptor.forClass(InternalCodeSqsDto.class);
 
-        verify(sqsService).pushToInputDlqQueue(payloadCaptor.capture(), eq(CLIENT_ID));
+        verify(sqsService).pushToInputDlqQueue(payloadCaptor.capture());
 
         InternalCodeSqsDto payload = payloadCaptor.getValue();
 
@@ -318,7 +315,7 @@ class IniPecBatchSqsServiceTest {
     void sendToDlqQueue_whenSendFails_shouldRemainNotSent() {
         BatchRequest batchRequest = createBaseRequest(PF_CF, null);
 
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.error(SqsException.builder().message("DLQ error").build()));
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class))).thenReturn(Mono.error(SqsException.builder().message("DLQ error").build()));
 
         StepVerifier.create(iniPecBatchSqsService.sendToDlqQueue(batchRequest)).expectError(SqsException.class).verify();
 
@@ -336,14 +333,14 @@ class IniPecBatchSqsServiceTest {
 
         batchRequest.setReferenceRequestDate(null);
 
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.empty());
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class))).thenReturn(Mono.empty());
         when(batchRequestRepository.update(any(BatchRequest.class))).thenReturn(Mono.just(batchRequest));
 
         StepVerifier.create(iniPecBatchSqsService.sendToDlqQueue(batchRequest)).expectNext(batchRequest).verifyComplete();
 
         ArgumentCaptor<InternalCodeSqsDto> payloadCaptor = ArgumentCaptor.forClass(InternalCodeSqsDto.class);
 
-        verify(sqsService).pushToInputDlqQueue(payloadCaptor.capture(), eq(CLIENT_ID));
+        verify(sqsService).pushToInputDlqQueue(payloadCaptor.capture());
 
         InternalCodeSqsDto payload = payloadCaptor.getValue();
 
@@ -364,14 +361,14 @@ class IniPecBatchSqsServiceTest {
         pfRequest.setCorrelationId("correlation-pf~001");
         pgRequest.setCorrelationId("correlation-pg~001");
 
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.empty());
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class))).thenReturn(Mono.empty());
         when(batchRequestRepository.update(any(BatchRequest.class))).thenReturn(Mono.just(pfRequest));
 
         StepVerifier.create(iniPecBatchSqsService.sendListToDlqQueue(List.of(pfRequest, pgRequest))).verifyComplete();
 
         ArgumentCaptor<InternalCodeSqsDto> payloadCaptor = ArgumentCaptor.forClass(InternalCodeSqsDto.class);
 
-        verify(sqsService, times(2)).pushToInputDlqQueue(payloadCaptor.capture(), eq(CLIENT_ID));
+        verify(sqsService, times(2)).pushToInputDlqQueue(payloadCaptor.capture());
 
         List<InternalCodeSqsDto> payloads = payloadCaptor.getAllValues();
 
@@ -414,8 +411,8 @@ class IniPecBatchSqsServiceTest {
         iniPecBatchSqsService.recoveryBatchSendToSqs();
 
         verify(batchRequestRepository, timeout(1000)).update(same(batchRequest));
-        verify(sqsService, after(200).never()).pushToOutputQueue(any(), anyString());
-        verify(sqsService, after(200).never()).pushToInputDlqQueue(any(), anyString());
+        verify(sqsService, after(200).never()).pushToOutputQueue(any());
+        verify(sqsService, after(200).never()).pushToInputDlqQueue(any());
     }
 
     @Test
@@ -428,15 +425,15 @@ class IniPecBatchSqsServiceTest {
         when(batchRequestRepository.update(same(batchRequest))).thenReturn(Mono.just(batchRequest));
         when(batchRequestRepository.setNewReservationIdToBatchRequest(same(batchRequest))).thenReturn(Mono.just(batchRequest));
         when(sqsService.toObject(MESSAGE, CodeSqsDto.class)).thenReturn(expectedPayload);
-        when(sqsService.pushToOutputQueue(any(CodeSqsDto.class), eq(CLIENT_ID))).thenReturn(Mono.empty());
+        when(sqsService.pushToOutputQueue(any(GatewayResponse.class))).thenReturn(Mono.empty());
 
         iniPecBatchSqsService.recoveryBatchSendToSqs();
 
-        ArgumentCaptor<CodeSqsDto> payloadCaptor = ArgumentCaptor.forClass(CodeSqsDto.class);
+        ArgumentCaptor<GatewayResponse> payloadCaptor = ArgumentCaptor.forClass(GatewayResponse.class);
 
-        verify(sqsService, timeout(1000)).pushToOutputQueue(payloadCaptor.capture(), eq(CLIENT_ID));
+        verify(sqsService, timeout(1000)).pushToOutputQueue(payloadCaptor.capture());
 
-        assertSame(expectedPayload, payloadCaptor.getValue());
+        assertSame(expectedPayload, payloadCaptor.getValue().getPayload());
         assertEquals(BatchSendStatus.SENT.getValue(), batchRequest.getSendStatus());
         assertNotNull(batchRequest.getReservationId());
         assertNotNull(batchRequest.getLastReserved());
@@ -458,6 +455,7 @@ class IniPecBatchSqsServiceTest {
         batchRequest.setMessage(MESSAGE);
         batchRequest.setStatus("OK");
         batchRequest.setSendStatus(BatchSendStatus.NOT_SENT.getValue());
+        batchRequest.setClientId(CLIENT_ID);
 
         return batchRequest;
     }
@@ -494,7 +492,7 @@ class IniPecBatchSqsServiceTest {
         request.setRecipientType("PF");
         request.setReferenceRequestDate(LocalDateTime.of(2026, 10, 10, 12, 30));
 
-        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class), eq("clientId")))
+        when(sqsService.pushToInputDlqQueue(any(InternalCodeSqsDto.class)))
                 .thenReturn(Mono.empty());
         when(batchRequestRepository.update(any(BatchRequest.class))).thenReturn(Mono.just(request));
 
@@ -510,8 +508,7 @@ class IniPecBatchSqsServiceTest {
                                 && "PF".equals(message.getRecipientType())
                                 && "DIGITAL".equals(message.getDomicileType())
                                 && message.getReferenceRequestDate() != null
-                ),
-                eq("clientId")
+                )
         );
     }
 }

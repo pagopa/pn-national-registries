@@ -553,5 +553,7 @@ Outputs:
     Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueName
   NationalRegistriesPollingQueueARN:
     Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueARN
+  NationalRegistriesGatewayResponsesQueueName:
+    Value: !GetAtt PnNationalRegistriesGatewayResponsesQueue.Outputs.QueueName
   NationalRegistriesGatewayResponsesQueueARN:
     Value: !GetAtt PnNationalRegistriesGatewayResponsesQueue.Outputs.QueueARN
