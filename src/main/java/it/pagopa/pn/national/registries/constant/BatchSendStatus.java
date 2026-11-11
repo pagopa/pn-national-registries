@@ -8,6 +8,7 @@ public enum BatchSendStatus {
     SENT("SENT"),
     NOT_SENT("NOT_SENT"),
     SENT_TO_DLQ("SENT_TO_DLQ"),
+    NOT_TO_SEND("NOT_TO_SEND"),
     ERROR("ERROR");
     private final String value;
 

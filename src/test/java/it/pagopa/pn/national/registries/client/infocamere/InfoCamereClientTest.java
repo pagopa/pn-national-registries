@@ -381,6 +381,29 @@ class InfoCamereClientTest {
                 .verify();
     }
 
+    /**
+     * N14 - il 429 InfoCamere deve essere propagato come errore provider senza entrare nel retry riservato al 401.
+     */
+    @Test
+    void getLegalInstitutionsTooManyRequests_shouldNotRetryAsAuthenticationFailure() {
+        InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);
+        TaxIdFilterDto filter = new TaxIdFilterDto();
+        filter.setTaxId("taxId");
+        AccessTokenCacheEntry token = new AccessTokenCacheEntry("scope");
+        token.setClientCredentials("jws");
+        WebClientResponseException tooManyRequests = new WebClientResponseException("too many requests", 429, "Too Many Requests", HttpHeaders.EMPTY, new byte[0], Charset.defaultCharset());
+
+        when(accessTokenExpiringMap.getInfoCamereToken(any())).thenReturn(Mono.just(token));
+        when(legalRepresentativeApi.getLegalRepresentativeListByTaxIdWithHttpInfo(any(), any(), any())).thenReturn(Mono.error(tooManyRequests));
+
+        StepVerifier.create(infoCamereClient.getLegalInstitutions(filter))
+                .expectError(PnNationalRegistriesException.class)
+                .verify();
+
+        verify(legalRepresentativeApi).getLegalRepresentativeListByTaxIdWithHttpInfo(any(), any(), any());
+        verify(accessTokenExpiringMap).getInfoCamereToken(any());
+    }
+
     @Test
     void convertToJsonException() {
         InfoCamereClient infoCamereClient = new InfoCamereClient(clientId, accessTokenExpiringMap, mapper, legalRepresentationApi, legalRepresentativeApi, pecApi, sedeApi);

@@ -14,6 +14,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -136,5 +140,73 @@ class AccessTokenExpiringMapTest {
                 .expectNext(accessTokenCacheEntry)
                 .verifyComplete();
     }
+    /**
+     * N15 - prima della soglia lo stesso purpose deve riusare il token senza richiamare il provider.
+     */
+    @Test
+    void getPDNDToken_samePurposeBeforeThreshold_shouldReuseCachedToken() {
+        ClientCredentialsResponse response = new ClientCredentialsResponse();
+        response.setExpiresIn(3600);
+        PdndSecretValue secret = new PdndSecretValue();
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, 0, 0);
+        when(tokenProvider.getTokenPdnd(secret)).thenReturn(Mono.just(response));
+
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose-a", secret, false)).expectNextCount(1).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose-a", secret, false)).expectNextCount(1).verifyComplete();
+
+        verify(tokenProvider).getTokenPdnd(secret);
+    }
+
+    /**
+     * N15 - purpose differenti devono avere cache isolate e quindi token ottenuti separatamente.
+     */
+    @Test
+    void getPDNDToken_differentPurposes_shouldNotShareCredentials() {
+        ClientCredentialsResponse response = new ClientCredentialsResponse();
+        response.setExpiresIn(3600);
+        PdndSecretValue secret = new PdndSecretValue();
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, 0, 0);
+        when(tokenProvider.getTokenPdnd(secret)).thenReturn(Mono.just(response));
+
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose-a", secret, false)).expectNextCount(1).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose-b", secret, false)).expectNextCount(1).verifyComplete();
+
+        verify(tokenProvider, times(2)).getTokenPdnd(secret);
+    }
+
+    /**
+     * N15 - quando la durata residua è sotto la soglia il token non deve essere riutilizzato.
+     */
+    @Test
+    void getPDNDToken_atRenewalThreshold_shouldRequestFreshToken() {
+        ClientCredentialsResponse response = new ClientCredentialsResponse();
+        response.setExpiresIn(1);
+        PdndSecretValue secret = new PdndSecretValue();
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, 5000, 5000);
+        when(tokenProvider.getTokenPdnd(secret)).thenReturn(Mono.just(response));
+
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose-a", secret, false)).expectNextCount(1).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("purpose-a", secret, false)).expectNextCount(1).verifyComplete();
+
+        verify(tokenProvider, times(2)).getTokenPdnd(secret);
+    }
+
+    /**
+     * N15 - la modalità ANPR non deve riutilizzare il token PDND tra due invocazioni successive.
+     */
+    @Test
+    void getPDNDToken_anprMode_shouldAlwaysRequestFreshToken() {
+        ClientCredentialsResponse response = new ClientCredentialsResponse();
+        response.setExpiresIn(3600);
+        PdndSecretValue secret = new PdndSecretValue();
+        accessTokenExpiringMap = new AccessTokenExpiringMap(tokenProvider, 0, 0);
+        when(tokenProvider.getTokenPdnd(secret)).thenReturn(Mono.just(response));
+
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("anpr-purpose", secret, true)).expectNextCount(1).verifyComplete();
+        StepVerifier.create(accessTokenExpiringMap.getPDNDToken("anpr-purpose", secret, true)).expectNextCount(1).verifyComplete();
+
+        verify(tokenProvider, times(2)).getTokenPdnd(secret);
+    }
+
 
 }

@@ -5,9 +5,11 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.model.AddressInternalResult;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,13 +21,14 @@ import reactor.core.publisher.Mono;
 import java.nio.charset.Charset;
 import java.util.Objects;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_ANPR_ADDRESS;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetric;
 
 @RequiredArgsConstructor
 @Component
 @CustomLog
-public class PhysicalAddressService extends GatewayConverter {
+public class PhysicalAddressService{
 
     private static final String AUDIT_LOG_END_SUCCESS_MESSAGE = "The registry {} has responded successfully for the request with correlationId: {} and recIndex: {}";
     private static final String AUDIT_LOG_END_FAILURE_MESSAGE = "The registry {} has responded with an error for the request with correlationId: {} and recIndex: {}";
@@ -33,7 +36,7 @@ public class PhysicalAddressService extends GatewayConverter {
     private final InfoCamereService infoCamereService;
     private final AnprService anprService;
     private final GatewayUtils gatewayUtils;
-    private final SqsService sqsService;
+    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     public Mono<PhysicalAddressesResponseDto> retrieveSyncPhysicalAddresses(PhysicalAddressesRequestBodyDto request) {
         log.info("Starting retrievePhysicalAddresses - request: {}", request);
@@ -42,13 +45,15 @@ public class PhysicalAddressService extends GatewayConverter {
                     HttpStatus.BAD_REQUEST.getReasonPhrase(), null, null, Charset.defaultCharset(), AddressErrorDto.class));
         }
 
-        return Flux.fromIterable(toAddressQueryRequests(request))
+        return Flux.fromIterable(GatewayConverter.toAddressQueryRequests(request))
                 .flatMap(this::retrieveSyncPhysicalAddress)
                 .collectList()
-                .map(addresses -> convertToPhysicalAddressesResponseDto(addresses, request.getCorrelationId()));
+                .map(addresses -> GatewayConverter.convertToPhysicalAddressesResponseDto(addresses, request.getCorrelationId()));
     }
 
     private Mono<PhysicalAddressResponseDto> retrieveSyncPhysicalAddress(AddressQueryRequest addressQueryRequest) {
+        validateTaxIdUtils.validateTaxId(addressQueryRequest.getTaxId(), PROCESS_NAME_ANPR_ADDRESS, false);
+
         return switch (addressQueryRequest.getRecipientType()) {
             case PF -> retrieveSyncPhysicalAddressForPF(addressQueryRequest);
             case PG -> retrieveSyncPhysicalAddressForPG(addressQueryRequest);
@@ -58,9 +63,9 @@ public class PhysicalAddressService extends GatewayConverter {
     private Mono<PhysicalAddressResponseDto> retrieveSyncPhysicalAddressForPF(AddressQueryRequest addressQueryRequest) {
         PnAuditLogEvent auditLogEvent = gatewayUtils.buildAndPrintRequestAuditLog(addressQueryRequest, GatewayDownstreamService.ANPR);
 
-        return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressQueryRequest))
+        return anprService.getAddressANPR(GatewayConverter.convertToGetAddressAnprRequest(addressQueryRequest))
                 .doOnNext(getAddressANPROKDto -> logCfRequestedMetric(addressQueryRequest.getCorrelationId(), GatewayDownstreamService.ANPR, 1))
-                .map(res -> convertAnprResponseToInternalRecipientAddress(res, addressQueryRequest))
+                .map(res -> GatewayConverter.convertAnprResponseToInternalRecipientAddress(res, addressQueryRequest))
                 .doOnNext(physicalAddressResponseDto -> {
                     if(Objects.nonNull(physicalAddressResponseDto.getPhysicalAddress())){
                         logCfWithAddressMetric(
@@ -71,10 +76,10 @@ public class PhysicalAddressService extends GatewayConverter {
                         );
                     }
                 })
-                .onErrorResume(isAnprAddressNotFound, e -> {
+                .onErrorResume(GatewayConverter.isAnprAddressNotFound, e -> {
                     log.info("correlationId: {} recIndex {} - ANPR - indirizzo non presente", addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex());
                     logCfRequestedMetric(addressQueryRequest.getCorrelationId(), GatewayDownstreamService.ANPR, 1);
-                    return Mono.just(anprNotFoundErrorToPhysicalAddressSQSMessage(addressQueryRequest));
+                    return Mono.just(GatewayConverter.anprNotFoundErrorToPhysicalAddressSQSMessage(addressQueryRequest));
                 })
                 .doOnNext(res -> auditLogEvent.generateSuccess(AUDIT_LOG_END_SUCCESS_MESSAGE, GatewayDownstreamService.ANPR, addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex()).log())
                 .doOnError(e -> auditLogEvent.generateFailure(AUDIT_LOG_END_FAILURE_MESSAGE, GatewayDownstreamService.ANPR, addressQueryRequest.getCorrelationId(), addressQueryRequest.getRecIndex(), e).log())
@@ -83,9 +88,9 @@ public class PhysicalAddressService extends GatewayConverter {
 
     private Mono<PhysicalAddressResponseDto> retrieveSyncPhysicalAddressForPG(AddressQueryRequest addressQueryRequest) {
         PnAuditLogEvent auditLogEvent = gatewayUtils.buildAndPrintRequestAuditLog(addressQueryRequest, GatewayDownstreamService.REGISTRO_IMPRESE);
-        return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressQueryRequest))
+        return infoCamereService.getRegistroImpreseLegalAddress(GatewayConverter.convertToGetAddressRegistroImpreseRequest(addressQueryRequest))
                 .doOnNext(getAddressRegistroImpreseOKDto -> logCfRequestedMetric(addressQueryRequest.getCorrelationId(), GatewayDownstreamService.REGISTRO_IMPRESE, 1))
-                .map(res -> convertRegImprResponseToInternalRecipientAddress(res, addressQueryRequest))
+                .map(res -> GatewayConverter.convertRegImprResponseToInternalRecipientAddress(res, addressQueryRequest))
                 .doOnNext(physicalAddressResponseDto -> {
                     if(Objects.nonNull(physicalAddressResponseDto.getPhysicalAddress())){
                         logCfWithAddressMetric(
@@ -101,46 +106,37 @@ public class PhysicalAddressService extends GatewayConverter {
                 .onErrorResume(t -> Mono.just(gatewayUtils.handleException(t, addressQueryRequest, GatewayDownstreamService.REGISTRO_IMPRESE)));
     }
 
-    public Mono<Void> retrieveAsyncPhysicalAddressFromAnpr(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
-        return anprService.getAddressANPR(convertToGetAddressAnprRequest(addressRequestBodyDto))
+    public Mono<AddressInternalResult> retrieveAsyncPhysicalAddressFromAnpr(AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
+        return anprService.getAddressANPR(GatewayConverter.convertToGetAddressAnprRequest(addressRequestBodyDto))
                 .doOnNext(getAddressANPROKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.ANPR, 1))
-                .map(getAddressANPROKDto -> anprToSqsDto(correlationId, getAddressANPROKDto))
-                .flatMap(addressSQSMessageDto -> {
+                .map(getAddressANPROKDto -> GatewayConverter.anprToSqsDto(correlationId, getAddressANPROKDto))
+                .<AddressInternalResult>map(addressSQSMessageDto -> {
                     if(Objects.nonNull(addressSQSMessageDto.getPhysicalAddress())){
-                        logCfWithAddressMetric(
-                                correlationId,
-                                GatewayDownstreamService.ANPR,
-                                RecipientType.PF,
-                                null
-                        );
+                        logCfWithAddressMetric(correlationId, GatewayDownstreamService.ANPR, RecipientType.PF, null);
+                        return new AddressInternalResult.Found(addressSQSMessageDto);
                     }
-                    return sqsService.pushToOutputQueue(addressSQSMessageDto, pnNationalRegistriesCxId)
-                            .doOnSuccess(unused -> log.info("retrieved physycal address from ANPR for correlationId: {}",
-                                    addressRequestBodyDto.getFilter().getCorrelationId()));
+                    return new AddressInternalResult.NotFound(addressSQSMessageDto);
                 })
-                .doOnError(isAnprAddressNotFound, e -> {
+                .doOnError(GatewayConverter.isAnprAddressNotFound, e -> {
                     log.info("correlationId: {} - ANPR - indirizzo non presente", correlationId);
                     logCfRequestedMetric(correlationId, GatewayDownstreamService.ANPR, 1);
                 })
-                .then()
+                .doOnNext(result -> log.info("retrieved physical address from ANPR for correlationId: {}", correlationId))
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve physical address from ANPR: {}"));
     }
 
-    public Mono<Void> retrieveAsyncPhysicalAddressFromRegistroImprese(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
-        return infoCamereService.getRegistroImpreseLegalAddress(convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
+    public Mono<AddressInternalResult> retrieveAsyncPhysicalAddressFromRegistroImprese(AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
+        return infoCamereService.getRegistroImpreseLegalAddress(GatewayConverter.convertToGetAddressRegistroImpreseRequest(addressRequestBodyDto))
                 .doOnNext(getAddressRegistroImpreseOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.REGISTRO_IMPRESE, 1))
-                .map(registroImpreseResponse -> regImpToSqsDto(correlationId, registroImpreseResponse))
-                .flatMap(addressSQSMessageDto -> {
+                .map(registroImpreseResponse -> GatewayConverter.regImpToSqsDto(correlationId, registroImpreseResponse))
+                .<AddressInternalResult>map(addressSQSMessageDto -> {
                     if(Objects.nonNull(addressSQSMessageDto.getPhysicalAddress())){
-                        logCfWithAddressMetric(
-                                correlationId,
-                                GatewayDownstreamService.REGISTRO_IMPRESE,
-                                RecipientType.PG,
-                                null
-                        );
+                        logCfWithAddressMetric(correlationId, GatewayDownstreamService.REGISTRO_IMPRESE, RecipientType.PG, null);
+                        return new AddressInternalResult.Found(addressSQSMessageDto);
                     }
-                    return sqsService.pushToOutputQueue(addressSQSMessageDto, pnNationalRegistriesCxId);
+                    return new AddressInternalResult.NotFound(addressSQSMessageDto);
                 })
+                .doOnNext(result -> log.info("retrieved physical address from Registro Imprese for correlationId: {}", correlationId))
                 .doOnError(e -> gatewayUtils.logEServiceError(e, "can not retrieve physical address from Registro Imprese: {}"));
     }
 

@@ -16,6 +16,7 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 
@@ -54,7 +55,7 @@ class IniPecBatchRequestServiceTest {
     @MockitoBean
     private IniPecBatchRequestRepository batchRequestRepository;
     @MockitoBean
-    private InfoCamereClient infoCamereClient;
+    private InfoCamereService infoCamereService;
     @MockitoBean
     private InfoCamereConverter infoCamereConverter;
     @MockitoBean
@@ -101,7 +102,7 @@ class IniPecBatchRequestServiceTest {
         IniPecBatchResponse iniPecBatchResponse = new IniPecBatchResponse();
         iniPecBatchResponse.setIdentificativoRichiesta("pollingId");
 
-        when(infoCamereClient.callEServiceRequestId(isNotNull()))
+        when(infoCamereService.callEService(any(), anyString()))
                 .thenReturn(Mono.just(iniPecBatchResponse));
 
         when(infoCamereConverter.createBatchPollingByBatchIdAndPollingId(anyString(), eq("pollingId"), anyInt()))
@@ -116,8 +117,16 @@ class IniPecBatchRequestServiceTest {
         when(batchRequestRepository.update(any(BatchRequest.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
 
+        IniPecBatchRequest iniPecBatchRequest = new IniPecBatchRequest();
+        IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
+        iniPecCf.setCf("cf1");
+        IniPecBatchRequest.IniPecCf iniPecCf2 = new IniPecBatchRequest.IniPecCf();
+        iniPecCf2.setCf("cf2");
+        iniPecBatchRequest.setElencoCf(List.of(iniPecCf, iniPecCf2));
+        when(infoCamereConverter.createIniPecRequest(anyList())).thenReturn(iniPecBatchRequest);
+
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
-        verify(infoCamereClient, times(1)).callEServiceRequestId(any());
+        verify(infoCamereService, times(1)).callEService(any(), any());
         verify(batchRequestRepository, times(1)).setNewBatchIdToBatchRequest(same(batchRequest1));
         verify(batchRequestRepository, times(1)).setNewBatchIdToBatchRequest(same(batchRequest2));
         verify(batchPollingRepository, times(1)).create(same(batchPolling));
@@ -139,7 +148,7 @@ class IniPecBatchRequestServiceTest {
         when(batchRequestRepository.getBatchRequestByNotBatchId(anyMap(), anyInt()))
                 .thenReturn(Mono.just(Page.create(Collections.emptyList())));
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
-        verifyNoInteractions(infoCamereClient);
+        verifyNoInteractions(infoCamereService);
         verifyNoInteractions(batchPollingRepository);
     }
 
@@ -152,7 +161,7 @@ class IniPecBatchRequestServiceTest {
         when(batchRequestRepository.setNewBatchIdToBatchRequest(same(batchRequest)))
                 .thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
-        verifyNoInteractions(infoCamereClient);
+        verifyNoInteractions(infoCamereService);
     }
 
     @Test
@@ -172,7 +181,7 @@ class IniPecBatchRequestServiceTest {
 
         IniPecBatchResponse iniPecResponse = new IniPecBatchResponse();
         iniPecResponse.setIdentificativoRichiesta("pollingId");
-        when(infoCamereClient.callEServiceRequestId(any()))
+        when(infoCamereService.callEService(any(), anyString()))
                 .thenReturn(Mono.just(iniPecResponse));
 
         BatchPolling batchPolling = new BatchPolling();
@@ -185,10 +194,17 @@ class IniPecBatchRequestServiceTest {
                 .thenReturn(Mono.just(Page.create(List.of(batchRequest2))));
         when(batchRequestRepository.update(same(batchRequest2)))
                 .thenReturn(Mono.just(batchRequest2));
+        IniPecBatchRequest iniPecBatchRequest = new IniPecBatchRequest();
+        IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
+        iniPecCf.setCf("cf1");
+        IniPecBatchRequest.IniPecCf iniPecCf2 = new IniPecBatchRequest.IniPecCf();
+        iniPecCf2.setCf("cf2");
+        iniPecBatchRequest.setElencoCf(List.of(iniPecCf, iniPecCf2));
+        when(infoCamereConverter.createIniPecRequest(anyList())).thenReturn(iniPecBatchRequest);
 
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
 
-        verify(infoCamereClient, times(1)).callEServiceRequestId(any());
+        verify(infoCamereService, times(1)).callEService(any(), any());
         verify(batchRequestRepository, times(1)).setNewBatchIdToBatchRequest(same(batchRequest1));
         verify(batchRequestRepository, times(1)).setNewBatchIdToBatchRequest(same(batchRequest2));
         verify(batchRequestRepository, times(1)).update(same(batchRequest2));
@@ -209,11 +225,18 @@ class IniPecBatchRequestServiceTest {
                 .thenReturn(Mono.just(batchRequest));
 
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
-        when(infoCamereClient.callEServiceRequestId(isNotNull()))
+        when(infoCamereService.callEService(any(), anyString()))
                 .thenReturn(Mono.error(exception));
 
         when(iniPecBatchSqsService.sendListToDlqQueue(anyList()))
                 .thenReturn(Mono.empty().then());
+        IniPecBatchRequest iniPecBatchRequest = new IniPecBatchRequest();
+        IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
+        iniPecCf.setCf("cf1");
+        IniPecBatchRequest.IniPecCf iniPecCf2 = new IniPecBatchRequest.IniPecCf();
+        iniPecCf2.setCf("cf2");
+        iniPecBatchRequest.setElencoCf(List.of(iniPecCf, iniPecCf2));
+        when(infoCamereConverter.createIniPecRequest(anyList())).thenReturn(iniPecBatchRequest);
 
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
 
@@ -235,7 +258,7 @@ class IniPecBatchRequestServiceTest {
         when(batchRequestRepository.update(same(batchRequest)))
                 .thenReturn(Mono.just(batchRequest));
 
-        when(infoCamereClient.callEServiceRequestId(isNotNull()))
+        when(infoCamereService.callEService(any(), any()))
                 .thenReturn(Mono.error(ReadTimeoutException::new));
 
         when(iniPecBatchSqsService.sendListToDlqQueue(anyList()))
@@ -244,9 +267,9 @@ class IniPecBatchRequestServiceTest {
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
 
         verifyNoInteractions(batchPollingRepository);
-        assertEquals(3, batchRequest.getRetry());
-        assertEquals(BatchStatus.ERROR.getValue(), batchRequest.getStatus());
-        assertEquals(BatchSendStatus.NOT_SENT.getValue(), batchRequest.getSendStatus());
+        assertEquals(2, batchRequest.getRetry());
+        assertEquals(BatchStatus.TAKEN_CHARGE.getValue(), batchRequest.getStatus());
+        assertNull(batchRequest.getSendStatus());
     }
 
     @Test
@@ -263,11 +286,19 @@ class IniPecBatchRequestServiceTest {
 
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
         when(exception.getMessage()).thenReturn("message");
-        when(infoCamereClient.callEServiceRequestId(isNotNull()))
+        when(infoCamereService.callEService(any(), anyString()))
                 .thenReturn(Mono.error(exception));
 
         when(iniPecBatchSqsService.sendListToDlqQueue(anyList()))
                 .thenReturn(Mono.empty().then());
+
+        IniPecBatchRequest iniPecBatchRequest = new IniPecBatchRequest();
+        IniPecBatchRequest.IniPecCf iniPecCf = new IniPecBatchRequest.IniPecCf();
+        iniPecCf.setCf("cf1");
+        IniPecBatchRequest.IniPecCf iniPecCf2 = new IniPecBatchRequest.IniPecCf();
+        iniPecCf2.setCf("cf2");
+        iniPecBatchRequest.setElencoCf(List.of(iniPecCf, iniPecCf2));
+        when(infoCamereConverter.createIniPecRequest(anyList())).thenReturn(iniPecBatchRequest);
 
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
         assertDoesNotThrow(() -> iniPecBatchRequestService.batchPecRequest());
@@ -306,7 +337,7 @@ class IniPecBatchRequestServiceTest {
         assertDoesNotThrow(() -> iniPecBatchRequestService.recoveryBatchRequest());
         verify(batchRequestRepository, never()).setNewBatchIdToBatchRequest(any());
         verifyNoInteractions(iniPecBatchSqsService);
-        verifyNoInteractions(infoCamereClient);
+        verifyNoInteractions(infoCamereService);
     }
 
     @Test

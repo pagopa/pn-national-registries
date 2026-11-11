@@ -11,6 +11,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecDt
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPAPecErrorDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.IPARequestBodyDto;
 import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import reactor.core.publisher.Mono;
@@ -23,11 +24,11 @@ import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
 
 @Service
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class IpaService {
 
     private final IpaConverter ipaConverter;
     private final IpaClient ipaClient;
-    private final ValidateTaxIdUtils validateTaxIdUtils;
     private final PnNationalRegistriesSecretService pnNationalRegistriesSecretService;
     private final IpaSecretConfig ipaSecretConfig;
     private final Predicate<Throwable> isResponseDataEmpty = throwable ->
@@ -36,21 +37,7 @@ public class IpaService {
                     && ("Service WS23 responded with 0 items - IPA PEC not found".equalsIgnoreCase(Objects.requireNonNull(exception.getMessage()))
                     || "Service WS05 responded with 0 items - IPA PEC not found".equalsIgnoreCase(Objects.requireNonNull(exception.getMessage())));
 
-
-    public IpaService(IpaConverter ipaConverter,
-                      IpaClient ipaClient,
-                      ValidateTaxIdUtils validateTaxIdUtils,
-                      PnNationalRegistriesSecretService pnNationalRegistriesSecretService,
-                      IpaSecretConfig ipaSecretConfig) {
-        this.ipaConverter = ipaConverter;
-        this.ipaClient = ipaClient;
-        this.validateTaxIdUtils = validateTaxIdUtils;
-        this.pnNationalRegistriesSecretService = pnNationalRegistriesSecretService;
-        this.ipaSecretConfig = ipaSecretConfig;
-    }
-
     public Mono<IPAPecDto> getIpaPec(IPARequestBodyDto request) {
-        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_IPA_ADDRESS, false);
         String authId = pnNationalRegistriesSecretService.getIpaSecret(ipaSecretConfig.getIpaSecret()).getAuthId();
         return callWS23(request.getFilter().getTaxId(), authId)
                 .flatMap(ws23ResponseDto -> {

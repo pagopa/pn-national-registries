@@ -49,12 +49,11 @@ class AgenziaEntrateControllerTest {
 
     @Test
     void checkTaxId() {
-        String traceId = "trace-id-123";
-        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
         CheckTaxIdRequestBodyDto checkTaxIdRequestBodyDto = new CheckTaxIdRequestBodyDto();
         TaxIdFilterDto dto = new TaxIdFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
+        dto.setCorrelationId("correlation-id");
         checkTaxIdRequestBodyDto.setFilter(dto);
 
         CheckTaxIdOKDto checkTaxIdOKDto = new CheckTaxIdOKDto();
@@ -63,7 +62,7 @@ class AgenziaEntrateControllerTest {
 
         when(agenziaEntrateService.callEService(checkTaxIdRequestBodyDto))
                 .thenReturn((Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+                    assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return checkTaxIdOKDto;
                 })));
 
@@ -71,20 +70,19 @@ class AgenziaEntrateControllerTest {
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(checkTaxIdOKDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
+                    assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
 
     @Test
     void checkTaxIdAndVatNumber() {
-        String traceId = "trace-id-456";
-        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
         ADELegalRequestBodyDto adeLegalRequestBodyDto = new ADELegalRequestBodyDto();
         ADELegalRequestBodyFilterDto adeLegalRequestBodyFilterDto = new ADELegalRequestBodyFilterDto();
         adeLegalRequestBodyFilterDto.setTaxId("PPPPLT80A01H501V");
         adeLegalRequestBodyFilterDto.setVatNumber("testVatNumber");
+        adeLegalRequestBodyFilterDto.setCorrelationId("correlation-id");
         adeLegalRequestBodyDto.setFilter(adeLegalRequestBodyFilterDto);
         ADELegalOKDto adeLegalOKDto = new ADELegalOKDto();
         adeLegalOKDto.setResultCode(ResultCodeEnum.fromValue("00"));
@@ -93,7 +91,7 @@ class AgenziaEntrateControllerTest {
 
         when(agenziaEntrateService.checkTaxIdAndVatNumber(adeLegalRequestBodyDto))
                 .thenReturn((Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+                    assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return adeLegalOKDto;
                 })));
 
@@ -101,7 +99,7 @@ class AgenziaEntrateControllerTest {
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(adeLegalOKDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
+                    assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

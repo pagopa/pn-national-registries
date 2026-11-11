@@ -33,9 +33,9 @@ public class IniPecBatchPollingRepositoryImpl implements IniPecBatchPollingRepos
     private final int inProgressMaxRetry;
 
     public IniPecBatchPollingRepositoryImpl(DynamoDbEnhancedAsyncClient dynamoDbEnhancedAsyncClient,
-                                            @Value("${pn.national-registries.inipec.batch.polling.max-retry}") int maxRetry,
+                                            @Value("${pn.national-registries.inipec.batch-polling-max-retry}") int maxRetry,
                                             @Value("${pn.national-registries.inipec.batch.polling.recovery.after}") int retryAfter,
-                                            @Value("${pn.national-registries.inipec.batch.polling.inprogress.max-retry}") int inProgressMaxRetry) {
+                                            @Value("${pn.national-registries.inipec.batch-polling-in-progress-max-retry}") int inProgressMaxRetry) {
         this.table = dynamoDbEnhancedAsyncClient.table("pn-batchPolling", TableSchema.fromClass(BatchPolling.class));
         this.maxRetry = maxRetry;
         this.retryAfter = retryAfter;

@@ -6,21 +6,32 @@ import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.AddressRegistroImprese;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.InfoCamereVerification;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
+import it.pagopa.pn.national.registries.model.infocamere.InfocamereResponseKO;
+import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
+import it.pagopa.pn.national.registries.model.inipec.InipecEvaluationResult;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
-import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.MDC;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Mono;
 
+import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.Objects;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
+import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.removeInvalidEmails;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchRequestMetrics;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetricFromBatchRequest;
 
 @Service
 @lombok.CustomLog
@@ -30,13 +41,54 @@ public class InfoCamereService {
     private final InfoCamereClient infoCamereClient;
     private final InfoCamereConverter infoCamereConverter;
     private final IniPecBatchRequestRepository iniPecBatchRequestRepository;
-    private final ValidateTaxIdUtils validateTaxIdUtils;
     private final NationalRegistriesConfig nationalRegistriesConfig;
+
+    public InipecEvaluationResult evaluateInipecStatoImpresa(String correlationId, String taxId, String recipientType, Pec pec) {
+        log.info("evaluateStatoImpresa for correlationId: {} with statoImpresa: {}", correlationId, pec.getStatoImpresa());
+        if (Objects.isNull(pec.getStatoImpresa())) {
+            log.debug("IniPEC - correlationId {} - statoImpresa is null", correlationId);
+            CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(correlationId, pec);
+            int foundPecCount = CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()) ? 0 : codeSqsDto.getDigitalAddress().size();
+            removeInvalidEmails(codeSqsDto);
+            int validPecCount = CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress()) ? 0 : codeSqsDto.getDigitalAddress().size();
+            log.info("IniPEC - correlationId {} - statoImpresa is null - pec found: {}, valid pec: {}", correlationId, foundPecCount, validPecCount);
+            if (validPecCount == 0) {
+                return new InipecEvaluationResult.NotFound();
+            }
+            logCfWithAddressMetricFromBatchRequest(codeSqsDto, correlationId, taxId, recipientType, GatewayDownstreamService.INIPEC);
+            return new InipecEvaluationResult.Found(codeSqsDto);
+        }
+
+        return switch (pec.getStatoImpresa()) {
+            case ER -> new InipecEvaluationResult.Retry();
+            case ND, NF -> new InipecEvaluationResult.NotFound();
+        };
+    }
+
+    public Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
+        return infoCamereClient.callEServiceRequestId(iniPecBatchRequest)
+                .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest, false))
+                .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest, true))
+                .doOnError(e -> log.warn("IniPEC - batchId {} - failed to call EService", batchId, e));
+    }
+
+    public Mono<IniPecPollingResponse> callIniPecEService(String batchId, String pollingId) {
+        return infoCamereClient.callEServiceRequestPec(pollingId)
+                .doOnNext(response -> {
+                    if (infoCamereConverter.checkIfResponseIsInfoCamereError(response)) {
+                        throw new PnNationalRegistriesException(response.getDescription(), HttpStatus.NOT_FOUND.value(),
+                                HttpStatus.NOT_FOUND.getReasonPhrase(), null, null,
+                                Charset.defaultCharset(), InfocamereResponseKO.class);
+                    } else {
+                        log.info("IniPEC - batchId {} - pollingId {} - response pec size: {}", batchId, pollingId, response.getElencoPec().size());
+                    }
+                })
+                .doOnError(e -> log.warn("IniPEC - pollingId {} - failed to call EService", pollingId, e));
+    }
 
     public Mono<GetDigitalAddressIniPECOKDto> getIniPecDigitalAddress(String pnNationalRegistriesCxId, GetDigitalAddressIniPECRequestBodyDto dto, Date referenceRequestDate, RecipientType recipientType) {
         String cf = dto.getFilter().getTaxId();
         String correlationId = dto.getFilter().getCorrelationId();
-        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_INIPEC_PEC, false);
         return createBatchRequestByCf(pnNationalRegistriesCxId, dto, MDC.get("AWS_messageId"), referenceRequestDate, recipientType)
                 .doOnNext(batchRequest -> log.info("Created Batch Request for correlationId: {}", correlationId))
                 .doOnError(throwable -> log.info("Failed to create Batch Request for correlationId: {}", correlationId))
@@ -45,7 +97,6 @@ public class InfoCamereService {
 
     public Mono<GetAddressRegistroImpreseOKDto> getRegistroImpreseLegalAddress(GetAddressRegistroImpreseRequestBodyDto request) {
         String cf = request.getFilter().getTaxId();
-        validateTaxIdUtils.validateTaxId(cf, PROCESS_NAME_REGISTRO_IMPRESE_ADDRESS, false);
         return infoCamereClient.getLegalAddress(cf)
                 .doOnError(throwable -> log.info("Failed to get Legal Address"))
                 .flatMap(response -> processResponseLegalAddressOk(request, response));
@@ -53,7 +104,6 @@ public class InfoCamereService {
 
     public Mono<InfoCamereLegalInstitutionsOKDto> getLegalInstitutions(InfoCamereLegalInstitutionsRequestBodyDto infoCamereLegalInstitutionsRequestBodyDto) {
         log.logChecking(PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS);
-        validateTaxIdUtils.validateTaxId(infoCamereLegalInstitutionsRequestBodyDto.getFilter().getTaxId(), PROCESS_NAME_INFO_CAMERE_LEGAL_INSTITUTIONS, false);
 
         return infoCamereClient.getLegalInstitutions(infoCamereLegalInstitutionsRequestBodyDto.getFilter())
                 .doOnNext(infoCamereLegalInstitutions -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL_INSTITUTIONS,true))
@@ -98,9 +148,6 @@ public class InfoCamereService {
 
     public Mono<InfoCamereLegalOKDto> checkTaxIdAndVatNumber(InfoCamereLegalRequestBodyDto request) {
         log.logChecking(PROCESS_CHEKING_INFO_CAMERE_LEGAL);
-
-        validateTaxIdUtils.validateTaxId(request.getFilter().getTaxId(), PROCESS_NAME_INFO_CAMERE_LEGAL, false);
-
         return infoCamereClient.checkTaxIdAndVatNumberInfoCamere(request.getFilter())
                 .doOnNext(infoCamereVerification -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL,true))
                 .doOnError(throwable -> log.logCheckingOutcome(PROCESS_CHEKING_INFO_CAMERE_LEGAL,false,throwable.getMessage()))

@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigit
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.service.InadService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,8 +24,8 @@ import reactor.test.StepVerifier;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 
 @ExtendWith(MockitoExtension.class)
@@ -46,7 +47,8 @@ class InadControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        inadController = new InadController(inadService);
+
+        inadController = new InadController(inadService, mock(ValidateTaxIdUtils.class));
     }
 
     @AfterEach
@@ -56,20 +58,19 @@ class InadControllerTest {
 
     @Test
     void getDigitalAddressINAD() {
-        String traceId = "traceId";
-        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
         GetDigitalAddressINADRequestBodyDto extractDigitalAddressINADRequestBodyDto = new GetDigitalAddressINADRequestBodyDto();
         GetDigitalAddressINADRequestBodyFilterDto dto = new GetDigitalAddressINADRequestBodyFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
+        dto.setCorrelationId("correlation-id");
         extractDigitalAddressINADRequestBodyDto.setFilter(dto);
 
         GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
         getDigitalAddressINADOKDto.setTaxId("DDDFGF52F52H501S");
         getDigitalAddressINADOKDto.setSince(new Date());
 
-        when(inadService.callEService(extractDigitalAddressINADRequestBodyDto, RecipientType.PF, null))
+        when(inadService.callEService(extractDigitalAddressINADRequestBodyDto, RecipientType.PF, "correlation-id"))
                 .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+                    assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return getDigitalAddressINADOKDto;
                 }));
 
@@ -77,7 +78,7 @@ class InadControllerTest {
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(getDigitalAddressINADOKDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
+                    assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

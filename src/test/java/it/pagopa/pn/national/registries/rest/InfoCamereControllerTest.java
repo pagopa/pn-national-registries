@@ -3,6 +3,7 @@ package it.pagopa.pn.national.registries.rest;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,7 +46,7 @@ class InfoCamereControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        infoCamereController = new InfoCamereController(infoCamereService);
+        infoCamereController = new InfoCamereController(infoCamereService, mock(ValidateTaxIdUtils.class));
     }
 
     @AfterEach
@@ -82,8 +83,6 @@ class InfoCamereControllerTest {
 
     @Test
     void addressRegistroImprese() {
-        String traceId = "traceId";
-        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
         GetAddressRegistroImpreseOKDto response = new GetAddressRegistroImpreseOKDto();
         response.setTaxId("PPPPLT80A01H501V");
@@ -91,11 +90,12 @@ class InfoCamereControllerTest {
         GetAddressRegistroImpreseRequestBodyDto body = new GetAddressRegistroImpreseRequestBodyDto();
         TaxIdFilterDto dto = new TaxIdFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
+        dto.setCorrelationId("correlation-id");
         body.setFilter(dto);
 
         when(infoCamereService.getRegistroImpreseLegalAddress(body))
                 .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+                    assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return response;
                 }));
 
@@ -103,15 +103,13 @@ class InfoCamereControllerTest {
                 .assertNext(res -> {
                     assertEquals(200, res.getStatusCode().value());
                     assertEquals(response, res.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
+                    assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
 
     @Test
     void checkTaxIdAndVatNumber() {
-        String traceId = "traceId";
-        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
         InfoCamereLegalOKDto response = new InfoCamereLegalOKDto();
         response.setTaxId("PPPPLT80A01H501V");
@@ -121,11 +119,12 @@ class InfoCamereControllerTest {
         InfoCamereLegalRequestBodyFilterDto dto = new InfoCamereLegalRequestBodyFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
         dto.setVatNumber("vatNumber");
+        dto.setCorrelationId("correlation-id");
         body.setFilter(dto);
 
         when(infoCamereService.checkTaxIdAndVatNumber(body))
                 .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+                    assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return response;
                 }));
 
@@ -133,15 +132,13 @@ class InfoCamereControllerTest {
                 .assertNext(res -> {
                     assertEquals(200, res.getStatusCode().value());
                     assertEquals(response, res.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
+                    assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
 
     @Test
     void getLegalInstitutions() {
-        String traceId = "traceId";
-        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
 
         InfoCamereLegalInstitutionsOKDto response = new InfoCamereLegalInstitutionsOKDto();
         response.setBusinessList(new ArrayList<>());
@@ -150,11 +147,12 @@ class InfoCamereControllerTest {
         InfoCamereLegalInstitutionsRequestBodyDto body = new InfoCamereLegalInstitutionsRequestBodyDto();
         TaxIdFilterDto dto = new TaxIdFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
+        dto.setCorrelationId("correlation-id");
         body.setFilter(dto);
 
         when(infoCamereService.getLegalInstitutions(body))
                 .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+                    assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return response;
                 }));
 
@@ -163,7 +161,7 @@ class InfoCamereControllerTest {
                 .assertNext(res -> {
                     assertEquals(200, res.getStatusCode().value());
                     assertEquals(response, res.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
+                    assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }
