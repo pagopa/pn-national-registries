@@ -461,7 +461,6 @@ Resources:
       Parameters:
         QueueName: !Sub '${ProjectName}-national_registry_gateway_responses'
         AlarmSNSTopicName: !Ref AlarmSNSTopicName
-        VisibilityTimeout: 300
         MaxReceiveCount: 10
         DelaySeconds: 1
 
@@ -553,5 +552,7 @@ Outputs:
     Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueName
   NationalRegistriesPollingQueueARN:
     Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueARN
+  NationalRegistriesGatewayResponsesQueueName:
+    Value: !GetAtt PnNationalRegistriesGatewayResponsesQueue.Outputs.QueueName
   NationalRegistriesGatewayResponsesQueueARN:
     Value: !GetAtt PnNationalRegistriesGatewayResponsesQueue.Outputs.QueueARN

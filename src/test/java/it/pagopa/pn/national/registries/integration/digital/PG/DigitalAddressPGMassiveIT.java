@@ -22,7 +22,7 @@ import it.pagopa.pn.national.registries.job.IniPecBatchRequestJob;
 import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.PollingInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
@@ -154,10 +154,10 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         Message output = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(output);
 
-        CodeSqsDto gateway = readOutputMessage(output.body());
+        GatewayResponse gateway = readNewOutputMessage(output.body());
 
-        assertEquals(direct.getDomicilioDigitale(), gateway.getDigitalAddress().getFirst().getAddress());
-        assertEquals("IPA", gateway.getRegistry());
+        assertEquals(direct.getDomicilioDigitale(), gateway.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("IPA", gateway.getPayload().getRegistry());
     }
 
     /**
@@ -176,14 +176,14 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
 
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("IPA", payload.getRegistry());
-        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue(), payload.getAddressType());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("pg@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("IMPRESA", payload.getDigitalAddress().getFirst().getRecipient());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("IPA", payload.getPayload().getRegistry());
+        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL.getValue(), payload.getPayload().getAddressType());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("pg@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("IMPRESA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
@@ -208,13 +208,13 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
 
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("IPA", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("ws05@pec.it", payload.getDigitalAddress().getFirst().getAddress());
-        assertEquals("IMPRESA", payload.getDigitalAddress().getFirst().getRecipient());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("IPA", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("ws05@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
+        assertEquals("IMPRESA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 

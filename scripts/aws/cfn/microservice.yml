@@ -27,6 +27,10 @@ Parameters:
     Type: String
     Description: 'Identify the resource that the policy applies to.'
 
+  NationalRegistriesGatewayResponsesQueueName:
+    Type: String
+    Description: 'The name of the queue of gateway Response'
+
   ProjectName:
     Type: String
     Description: 'Usually pn can be pnXYZ where XYZ are the feature number, useful to create
@@ -796,6 +800,7 @@ Resources:
         ContainerEnvEntry82: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADMASSIVEAPI=${EnableInadMassiveApi}'
         ContainerEnvEntry83: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRETRYAFTER=${PnNationalRegistriesInipecRequestRetryAfter}'
         ContainerEnvEntry84: !Sub 'PN_NATIONALREGISTRIES_ENABLEOLDINIPECFLOW=${EnableOldInipecFlow}'
+        ContainerEnvEntry85: !Sub 'PN_NATIONALREGISTRIES_TOPIC_GATEWAYRESPONSEQUEUENAME=${NationalRegistriesGatewayResponsesQueueName}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -866,6 +871,7 @@ Resources:
               - !Ref NationalRegistryGatewayInputsQueueARN
               - !Ref NationalRegistryGatewayInputsDLQARN
               - !Ref NationalRegistriesPollingQueueARN
+              - !Ref NationalRegistriesGatewayResponsesQueueARN
           - Effect: Allow
             Action:
               - ssm:GetParameter

@@ -7,6 +7,7 @@ import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import lombok.RequiredArgsConstructor;
@@ -94,7 +95,7 @@ public class IniPecBatchSqsService {
                 .flatMap(item -> {
                     if (!BatchStatus.ERROR.getValue().equalsIgnoreCase(item.getStatus())) {
                         CodeSqsDto codeSqsDto = sqsService.toObject(item.getMessage(), CodeSqsDto.class);
-                        return sqsService.pushToOutputQueue(codeSqsDto, item.getClientId())
+                        return sqsService.pushToOutputQueue(new GatewayResponse(codeSqsDto, item.getClientId()))
                                 .thenReturn(item)
                                 .doOnNext(r -> {
                                     log.info("PG - DigitalAddress - pushed message for correlationId: {}", item.getCorrelationId());
@@ -130,7 +131,7 @@ public class IniPecBatchSqsService {
             internalCodeSqsDto.setRecipientType(recipientType.name());
         }
 
-        return sqsService.pushToInputDlqQueue(internalCodeSqsDto, item.getClientId())
+        return sqsService.pushToInputDlqQueue(internalCodeSqsDto)
                 .thenReturn(item)
                 .doOnNext(batchRequest -> {
                     batchRequest.setSendStatus(BatchSendStatus.SENT_TO_DLQ.getValue());

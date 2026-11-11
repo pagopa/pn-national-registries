@@ -451,7 +451,7 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
      * INAD massive senza risultato utilizzabile -> IniPEC con stato ER, retry e passaggio a ERROR al limite configurato.
      */
     @Test
-    void PF_Digital_FullFlow_InipecErRetriesThenEndsInErrorAtConfiguredLimit() {
+    void  PF_Digital_FullFlow_InipecErRetriesThenEndsInErrorAtConfiguredLimit() {
         String correlationId = "pf-massive-inipec-er-" + UUID.randomUUID();
         startInipecFallbackFromMassive(correlationId, PF_ER, null);
         String firstPollingId = "polling-first-" + UUID.randomUUID();

@@ -7,6 +7,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressR
 import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
 import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.service.SqsService;
 import org.junit.jupiter.api.Test;
@@ -46,18 +47,18 @@ class PhysicalAddressSQSTestIT extends AbstractNationalRegistriesComponentIT {
 
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
 
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("ANPR", payload.getRegistry());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("ANPR", payload.getPayload().getRegistry());
 
-        ArgumentCaptor<CodeSqsDto> captor = ArgumentCaptor.forClass(CodeSqsDto.class);
+        ArgumentCaptor<GatewayResponse> captor = ArgumentCaptor.forClass(GatewayResponse.class);
 
-        verify(sqsService).pushToOutputQueue(captor.capture(), any());
+        verify(sqsService).pushToOutputQueue(captor.capture());
 
-        assertEquals(correlationId, captor.getValue().getCorrelationId());
+        assertEquals(correlationId, captor.getValue().getPayload().getCorrelationId());
 
-        verify(sqsService, never()).pushToInputDlqQueue(any(), any());
+        verify(sqsService, never()).pushToInputDlqQueue(any());
     }
 
     @Test
@@ -67,7 +68,7 @@ class PhysicalAddressSQSTestIT extends AbstractNationalRegistriesComponentIT {
 
         when(anprClient.callEService(any())).thenReturn(Mono.just(anprResponse(VALID_PF_CF, "VIA", "ROMA", "10", "Roma", "RM", "00100")));
 
-        doReturn(Mono.error(sqsError)).when(sqsService).pushToOutputQueue(any(CodeSqsDto.class), any());
+        doReturn(Mono.error(sqsError)).when(sqsService).pushToOutputQueue(any(GatewayResponse.class));
 
         AddressOKDto response = enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL, correlationId);
 
@@ -78,13 +79,13 @@ class PhysicalAddressSQSTestIT extends AbstractNationalRegistriesComponentIT {
         assertNull(receiveSingleMessage(OUTPUT_QUEUE));
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
-        ArgumentCaptor<CodeSqsDto> captor = ArgumentCaptor.forClass(CodeSqsDto.class);
+        ArgumentCaptor<GatewayResponse> captor = ArgumentCaptor.forClass(GatewayResponse.class);
 
-        verify(sqsService).pushToOutputQueue(captor.capture(), any());
+        verify(sqsService).pushToOutputQueue(captor.capture());
 
-        assertEquals(correlationId, captor.getValue().getCorrelationId());
+        assertEquals(correlationId, captor.getValue().getPayload().getCorrelationId());
 
-        verify(sqsService, never()).pushToInputDlqQueue(any(), any());
+        verify(sqsService, never()).pushToInputDlqQueue(any());
     }
 
     @Test
@@ -116,7 +117,7 @@ class PhysicalAddressSQSTestIT extends AbstractNationalRegistriesComponentIT {
 
         ArgumentCaptor<InternalCodeSqsDto> captor = ArgumentCaptor.forClass(InternalCodeSqsDto.class);
 
-        verify(sqsService).pushToInputDlqQueue(captor.capture(), any());
+        verify(sqsService).pushToInputDlqQueue(captor.capture());
 
         InternalCodeSqsDto payload = captor.getValue();
 
@@ -125,7 +126,7 @@ class PhysicalAddressSQSTestIT extends AbstractNationalRegistriesComponentIT {
         assertEquals("PG", payload.getRecipientType());
         assertEquals("PHYSICAL", payload.getDomicileType());
 
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 
     @Test
@@ -145,7 +146,7 @@ class PhysicalAddressSQSTestIT extends AbstractNationalRegistriesComponentIT {
 
         when(infoCamereClient.getLegalAddress(VALID_PG_PIVA)).thenReturn(Mono.error(downstreamError));
 
-        doReturn(Mono.error(sqsError)).when(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class), any());
+        doReturn(Mono.error(sqsError)).when(sqsService).pushToInputDlqQueue(any(InternalCodeSqsDto.class));
 
         AddressOKDto response = enqueueGatewayRequest("PG", VALID_PG_PIVA, AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL, correlationId);
 
@@ -158,7 +159,7 @@ class PhysicalAddressSQSTestIT extends AbstractNationalRegistriesComponentIT {
 
         ArgumentCaptor<InternalCodeSqsDto> captor = ArgumentCaptor.forClass(InternalCodeSqsDto.class);
 
-        verify(sqsService).pushToInputDlqQueue(captor.capture(), any());
+        verify(sqsService).pushToInputDlqQueue(captor.capture());
 
         InternalCodeSqsDto payload = captor.getValue();
 
@@ -167,6 +168,6 @@ class PhysicalAddressSQSTestIT extends AbstractNationalRegistriesComponentIT {
         assertEquals("PG", payload.getRecipientType());
         assertEquals("PHYSICAL", payload.getDomicileType());
 
-        verify(sqsService, never()).pushToOutputQueue(any(), any());
+        verify(sqsService, never()).pushToOutputQueue(any());
     }
 }

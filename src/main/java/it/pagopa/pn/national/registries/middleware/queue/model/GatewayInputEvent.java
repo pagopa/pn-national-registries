@@ -1,17 +1,18 @@
 package it.pagopa.pn.national.registries.middleware.queue.model;
 
 import it.pagopa.pn.api.dto.events.GenericEvent;
+import it.pagopa.pn.api.dto.events.GenericEventHeader;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import lombok.AllArgsConstructor;
 
 @AllArgsConstructor
-public class GatewayInputEvent implements GenericEvent<GatewayEventHeader, InternalCodeSqsDto> {
+public class GatewayInputEvent implements GenericEvent<GenericEventHeader, InternalCodeSqsDto> {
 
-    private GatewayEventHeader header;
+    private GenericEventHeader header;
     private InternalCodeSqsDto payload;
 
     @Override
-    public GatewayEventHeader getHeader() {
+    public GenericEventHeader getHeader() {
         return header;
     }
 

@@ -10,6 +10,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
 import it.pagopa.pn.national.registries.model.AddressInternalResult;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
@@ -53,7 +54,7 @@ public class GatewayService {
                         .domicileType(request.getFilter().getDomicileType().getValue())
                         .referenceRequestDate(request.getFilter().getReferenceRequestDate())
                         .pnNationalRegistriesCxId(pnNationalRegistriesCxId)
-                        .build(), pnNationalRegistriesCxId)
+                        .build())
                 .thenReturn(mapToAddressesOKDto(correlationId));
     }
 
@@ -101,7 +102,7 @@ public class GatewayService {
 
     private Mono<Void> getPhysicalAddressForPF(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return physicalAddressService.retrieveAsyncPhysicalAddressFromAnpr(addressRequestBodyDto, correlationId)
-                .flatMap(result -> sqsService.pushToOutputQueue(result.codeSqsDto(), pnNationalRegistriesCxId))
+                .flatMap(result -> sqsService.pushToOutputQueue(new GatewayResponse(result.codeSqsDto(), pnNationalRegistriesCxId)))
                 .then();
     }
 
@@ -117,13 +118,13 @@ public class GatewayService {
                         log.info("correlationId: {} - PEC not found on INAD, fallback to INI-PEC", correlationId);
                         return inizializeInipecRequest(pnNationalRegistriesCxId, addressRequestBodyDto, PF);
                     }
-                    return sqsService.pushToOutputQueue(result.codeSqsDto(), pnNationalRegistriesCxId).then();
+                    return sqsService.pushToOutputQueue(new GatewayResponse(result.codeSqsDto(), pnNationalRegistriesCxId)).then();
                 });
     }
 
     private Mono<Void> getPhysicalAddressForPG(String pnNationalRegistriesCxId, AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return physicalAddressService.retrieveAsyncPhysicalAddressFromRegistroImprese(addressRequestBodyDto, correlationId)
-                .flatMap(result -> sqsService.pushToOutputQueue(result.codeSqsDto(), pnNationalRegistriesCxId))
+                .flatMap(result -> sqsService.pushToOutputQueue(new GatewayResponse(result.codeSqsDto(), pnNationalRegistriesCxId)))
                 .then();
     }
 
@@ -132,7 +133,7 @@ public class GatewayService {
         return digitalAddressService.retrieveDigitalAddressFromIpa(addressRequestBodyDto, correlationId)
                 .flatMap(result -> {
                     if (result instanceof AddressInternalResult.Found(CodeSqsDto codeSqsDto)) {
-                        return sqsService.pushToOutputQueue(codeSqsDto, pnNationalRegistriesCxId).then();
+                        return sqsService.pushToOutputQueue(new GatewayResponse(codeSqsDto, pnNationalRegistriesCxId)).then();
                     }
                     return inizializeInipecRequest(pnNationalRegistriesCxId, addressRequestBodyDto, PG);
                 });
@@ -156,7 +157,7 @@ public class GatewayService {
     }
 
     private Mono<Void> handleError(Throwable error, CodeSqsDto outputMessage, String cxId, InternalCodeSqsDto dlqMessage) {
-        return outputMessage != null ? sqsService.pushToOutputQueue(outputMessage, cxId) : handleExceptionAndSendToDlq(error, dlqMessage);
+        return outputMessage != null ? sqsService.pushToOutputQueue(new GatewayResponse(outputMessage, cxId)) : handleExceptionAndSendToDlq(error, dlqMessage);
     }
 
     private boolean isPhysical(AddressRequestBodyDto request) {
@@ -176,7 +177,7 @@ public class GatewayService {
 
     public Mono<Void> handleExceptionAndSendToDlq(Throwable throwable, InternalCodeSqsDto internalCodeSqsDto) {
         if (isDlqEligible(throwable)) {
-            return sqsService.pushToInputDlqQueue(internalCodeSqsDto, internalCodeSqsDto.getPnNationalRegistriesCxId());
+            return sqsService.pushToInputDlqQueue(internalCodeSqsDto);
         }
         return Mono.error(throwable);
     }
