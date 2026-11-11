@@ -95,7 +95,7 @@ class AnprServiceTest {
 
     @Test
     void getAddressANPR_shouldBuildE002RequestFromCounterAndFilter() {
-        GetAddressANPRRequestBodyDto request = request("DDDFFF80A01H501F", "2022-10-28", "correlation-id");
+        GetAddressANPRRequestBodyDto request = request("DDDFFF80A01H501F", Date.from(Instant.parse("2022-10-28T00:00:00.000Z")), "correlation-id");
         RispostaE002OK response = new RispostaE002OK();
         GetAddressANPROKDto expected = new GetAddressANPROKDto();
         when(counterRepository.getCounter("anpr")).thenReturn(Mono.just(counter(42L)));
@@ -116,7 +116,7 @@ class AnprServiceTest {
 
     @Test
     void getAddressANPR_shouldFailWithBadRequestWhenReferenceRequestDateIsEmpty() {
-        GetAddressANPRRequestBodyDto request = request("DDDFFF80A01H501F", "", "correlation-id");
+        GetAddressANPRRequestBodyDto request = request("DDDFFF80A01H501F", null, "correlation-id");
 
         PnNationalRegistriesException exception = assertThrows(PnNationalRegistriesException.class, () -> anprService.getAddressANPR(request));
 
@@ -127,7 +127,7 @@ class AnprServiceTest {
 
     @Test
     void getAddressANPR_shouldPropagateCounterError() {
-        GetAddressANPRRequestBodyDto request = request("DDDFFF80A01H501F", "2022-10-28", "correlation-id");
+        GetAddressANPRRequestBodyDto request = request("DDDFFF80A01H501F", Date.from(Instant.parse("2022-10-28T00:00:00.000Z")), "correlation-id");
         RuntimeException error = new RuntimeException("counter unavailable");
         when(counterRepository.getCounter("anpr")).thenReturn(Mono.error(error));
 
@@ -138,7 +138,7 @@ class AnprServiceTest {
 
     @Test
     void getAddressANPR_shouldPropagateClientError() {
-        GetAddressANPRRequestBodyDto request = request("DDDFFF80A01H501F", "2022-10-28", "correlation-id");
+        GetAddressANPRRequestBodyDto request = request("DDDFFF80A01H501F", Date.from(Instant.parse("2022-10-28T00:00:00.000Z")), "correlation-id");
         RuntimeException error = new RuntimeException("anpr down");
         when(counterRepository.getCounter("anpr")).thenReturn(Mono.just(counter(1L)));
         when(anprClient.callEService(any())).thenReturn(Mono.error(error));
@@ -148,7 +148,7 @@ class AnprServiceTest {
         verifyNoInteractions(anprConverter);
     }
 
-    private static GetAddressANPRRequestBodyDto request(String taxId, String referenceRequestDate, String requestReason) {
+    private static GetAddressANPRRequestBodyDto request(String taxId, Date referenceRequestDate, String requestReason) {
         GetAddressANPRRequestBodyFilterDto filter = new GetAddressANPRRequestBodyFilterDto();
         filter.setTaxId(taxId);
         filter.setReferenceRequestDate(referenceRequestDate);

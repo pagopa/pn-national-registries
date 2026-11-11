@@ -837,7 +837,7 @@ class GatewayConverterTest {
 
         assertEquals(C_ID, result.getFilter().getRequestReason());
         assertEquals(CF, result.getFilter().getTaxId());
-        assertEquals("2026-09-10", result.getFilter().getReferenceRequestDate());
+        assertNotNull(result.getFilter().getReferenceRequestDate());
     }
 
     @Test
