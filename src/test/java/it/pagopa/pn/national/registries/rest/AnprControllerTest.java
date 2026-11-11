@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddre
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.service.AnprService;
 import it.pagopa.pn.national.registries.service.GatewayService;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +45,7 @@ class AnprControllerTest {
 
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
-        anprController = new AnprController(anprService, new GatewayService(null, null, null, null, null));
+        anprController = new AnprController(anprService, mock(ValidateTaxIdUtils.class));
     }
 
     @AfterEach
@@ -54,11 +55,10 @@ class AnprControllerTest {
 
     @Test
     void testGetAddressANPR() {
-        String traceId = "traceId";
-        MDC.put(MDCUtils.MDC_TRACE_ID_KEY, traceId);
         GetAddressANPRRequestBodyDto getAddressANPRRequestBodyDto = new GetAddressANPRRequestBodyDto();
         GetAddressANPRRequestBodyFilterDto dto = new GetAddressANPRRequestBodyFilterDto();
         dto.setTaxId("PPPPLT80A01H501V");
+        dto.setCorrelationId("correlation-id");
         getAddressANPRRequestBodyDto.setFilter(dto);
 
         GetAddressANPROKDto getAddressANPROKDto = new GetAddressANPROKDto();
@@ -66,7 +66,7 @@ class AnprControllerTest {
 
         when(anprService.getAddressANPR(getAddressANPRRequestBodyDto))
                 .thenReturn(Mono.fromSupplier(() -> {
-                    assertEquals(traceId, MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
+                    assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return getAddressANPROKDto;
                 }));
 
@@ -74,7 +74,7 @@ class AnprControllerTest {
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
                     assertEquals(getAddressANPROKDto, response.getBody());
-                    assertEquals(traceId, httpHeaders.getFirst("X-Request-ID"));
+                    assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();
     }

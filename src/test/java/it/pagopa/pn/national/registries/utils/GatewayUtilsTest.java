@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import reactor.util.context.Context;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -351,6 +352,30 @@ class GatewayUtilsTest {
         assertEquals(
                 GatewayDownstreamService.REGISTRO_IMPRESE.name(),
                 result.getRegistry()
+        );
+    }
+
+    @Test
+    void formatInstant_shouldFormatWithExactlyThreeMilliseconds() {
+        Instant instant = Instant.parse("2026-01-01T10:00:00.123456789Z");
+
+        String result = GatewayUtils.formatInstant(instant);
+
+        assertEquals(
+                "2026-01-01T10:00:00.123Z",
+                result
+        );
+    }
+
+    @Test
+    void formatInstant_shouldAddZeroMillisecondsWhenInstantHasNoFraction() {
+        Instant instant = Instant.parse("2026-01-01T10:00:00Z");
+
+        String result = GatewayUtils.formatInstant(instant);
+
+        assertEquals(
+                "2026-01-01T10:00:00.000Z",
+                result
         );
     }
 }

@@ -12,6 +12,7 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressResponseDto;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,9 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
 import reactor.util.context.Context;
 
+import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.Map;
 import java.util.Objects;
 
@@ -36,10 +40,19 @@ public class GatewayUtils {
 
     private static final int CF_LENGTH = 16;
 
+    private static final DateTimeFormatter INSTANT_MILLIS_FORMATTER = new DateTimeFormatterBuilder().appendInstant(3).toFormatter();
 
     public String convertCodeSqsDtoToString(CodeSqsDto codeSqsDto) {
         try {
             return mapper.writeValueAsString(codeSqsDto);
+        } catch (JsonProcessingException e) {
+            throw new DigitalAddressException("can not convert SQS DTO to String", e);
+        }
+    }
+
+    public String convertGatewayResponseToString(GatewayResponse gatewayResponse) {
+        try {
+            return mapper.writeValueAsString(gatewayResponse);
         } catch (JsonProcessingException e) {
             throw new DigitalAddressException("can not convert SQS DTO to String", e);
         }
@@ -119,5 +132,9 @@ public class GatewayUtils {
         } else {
             log.error(message, throwable.getMessage(), throwable);
         }
+    }
+
+    public static String formatInstant(Instant instant) {
+        return INSTANT_MILLIS_FORMATTER.format(instant);
     }
 }

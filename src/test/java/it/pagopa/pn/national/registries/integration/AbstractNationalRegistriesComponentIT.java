@@ -23,6 +23,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.ipa.v1.dto.WS
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.GatewayInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnAddressGatewayEvent;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.service.DigitalAddressBatchPollingService;
 import it.pagopa.pn.national.registries.service.IniPecBatchRequestService;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,8 +66,8 @@ import java.util.*;
         "pn.national-registries.inipec.batch-request-lock-at-most=27000",
         "pn.national-registries.inipec.batch-request-lock-at-least=22000",
         "pn.national-registries.inipec.batch.request.recovery.delay=30000",
-        "pn.national-registries.inipec.batch.polling.max-retry=3",
-        "pn.national-registries.inipec.batch.polling.inprogress.max-retry=24",
+        "pn.national-registries.inipec.batch-polling-max-retry=3",
+        "pn.national-registries.inipec.batch-polling-in-progress-max-retry=24",
         "pn.national-registries.inipec.first-attempt-delay-seconds-per-cf=0",
         "pn.national-registries.inipec.first-attempt-fixed-delay-seconds=0",
         "pn.national-registries.inad.max-batch-request-size=2",
@@ -97,7 +98,7 @@ import java.util.*;
 public abstract class AbstractNationalRegistriesComponentIT extends BaseTest.WithLocalStack {
 
     protected static final String INPUT_QUEUE = "pn-national_registry_gateway_inputs";
-    protected static final String OUTPUT_QUEUE = "pn-national_registry_gateway_outputs";
+    protected static final String OUTPUT_QUEUE = "pn-national_registry_gateway_responses";
     protected static final String INPUT_DLQ_QUEUE = "pn-national_registry_gateway_inputs-DLQ";
     protected static final String BATCH_REQUESTS_TABLE = "pn-batchRequests";
     protected static final String BATCH_POLLING_TABLE = "pn-batchPolling";
@@ -267,6 +268,14 @@ public abstract class AbstractNationalRegistriesComponentIT extends BaseTest.Wit
     protected it.pagopa.pn.national.registries.model.CodeSqsDto readOutputMessage(String messageBody) {
         try {
             return objectMapper.readValue(messageBody, it.pagopa.pn.national.registries.model.CodeSqsDto.class);
+        } catch (JsonProcessingException e) {
+            throw new AssertionError("Unable to deserialize output queue message", e);
+        }
+    }
+
+    protected GatewayResponse readNewOutputMessage(String messageBody) {
+        try {
+            return objectMapper.readValue(messageBody,GatewayResponse.class);
         } catch (JsonProcessingException e) {
             throw new AssertionError("Unable to deserialize output queue message", e);
         }

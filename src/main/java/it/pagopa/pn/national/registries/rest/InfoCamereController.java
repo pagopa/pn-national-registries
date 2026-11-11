@@ -7,6 +7,8 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
 import it.pagopa.pn.national.registries.utils.RequestIdUtils;
+import it.pagopa.pn.national.registries.utils.ValidateTaxIdUtils;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ServerWebExchange;
@@ -15,6 +17,7 @@ import reactor.core.publisher.Mono;
 import java.util.Date;
 import java.util.Objects;
 
+import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_NAME_IPA_ADDRESS;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetric;
@@ -22,13 +25,11 @@ import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddres
 
 @RestController
 @lombok.CustomLog
+@RequiredArgsConstructor
 public class InfoCamereController implements InfoCamereApi {
 
     private final InfoCamereService infoCamereService;
-
-    public InfoCamereController(InfoCamereService infoCamereService) {
-        this.infoCamereService = infoCamereService;
-    }
+    private final ValidateTaxIdUtils validateTaxIdUtils;
 
     /**
      * POST /national-registries-private/inipec/digital-address : Consente di ottenere la PEC dell’impresa oppure del professionista corrispondente al codice fiscale al momento della consultazione. In caso di impresa si restituisce anche l’indirizzo della sede legale.
@@ -46,6 +47,7 @@ public class InfoCamereController implements InfoCamereApi {
     public Mono<ResponseEntity<GetDigitalAddressIniPECOKDto>> digitalAddressIniPEC(Mono<GetDigitalAddressIniPECRequestBodyDto> getDigitalAddressIniPECRequestBodyDto, String pnNationalRegistriesCxId, final ServerWebExchange exchange) {
         return getDigitalAddressIniPECRequestBodyDto
                 .flatMap(requestBody -> {
+                    validateTaxIdUtils.validateTaxId(requestBody.getFilter().getTaxId(), PROCESS_NAME_IPA_ADDRESS, false);
                     RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
                     var mono = infoCamereService.getIniPecDigitalAddress(
                                     pnNationalRegistriesCxId, requestBody, new Date(),
@@ -72,6 +74,7 @@ public class InfoCamereController implements InfoCamereApi {
     public Mono<ResponseEntity<GetAddressRegistroImpreseOKDto>> addressRegistroImprese(Mono<GetAddressRegistroImpreseRequestBodyDto> getAddressRegistroImpreseRequestBodyDto, final ServerWebExchange exchange) {
         return getAddressRegistroImpreseRequestBodyDto
                 .flatMap(requestBody -> {
+                    validateTaxIdUtils.validateTaxId(requestBody.getFilter().getTaxId(), PROCESS_NAME_IPA_ADDRESS, false);
                     RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
                     var mono = infoCamereService.getRegistroImpreseLegalAddress(requestBody)
                             .doOnNext(responseDto -> {
@@ -109,6 +112,7 @@ public class InfoCamereController implements InfoCamereApi {
     public Mono<ResponseEntity<InfoCamereLegalOKDto>> infoCamereLegal(Mono<InfoCamereLegalRequestBodyDto> infoCamereLegalRequestBodyDto, final ServerWebExchange exchange) {
         return infoCamereLegalRequestBodyDto
                 .flatMap(requestBody -> {
+                    validateTaxIdUtils.validateTaxId(requestBody.getFilter().getTaxId(), PROCESS_NAME_IPA_ADDRESS, false);
                     RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
                     return MDCUtils.addMDCToContextAndExecute(infoCamereService.checkTaxIdAndVatNumber(requestBody)
                             .map(ResponseEntity::ok));
@@ -131,6 +135,7 @@ public class InfoCamereController implements InfoCamereApi {
     public Mono<ResponseEntity<InfoCamereLegalInstitutionsOKDto>> infoCamereLegalInstitutions(Mono<InfoCamereLegalInstitutionsRequestBodyDto> infoCamereLegalInstitutionsRequestBodyDto, final ServerWebExchange exchange) {
         return infoCamereLegalInstitutionsRequestBodyDto
                 .flatMap(requestBody -> {
+                    validateTaxIdUtils.validateTaxId(requestBody.getFilter().getTaxId(), PROCESS_NAME_IPA_ADDRESS, false);
                     RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
                     return MDCUtils.addMDCToContextAndExecute(infoCamereService.getLegalInstitutions(requestBody)
                             .map(ResponseEntity::ok));

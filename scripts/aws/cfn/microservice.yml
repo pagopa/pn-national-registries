@@ -5,6 +5,16 @@ Transform:
   - UpdateDeploymentTransform
 
 Parameters:
+  NationalRegistriesPipeWindowSize:
+    Type: Number
+    Default: 30
+    Description: window size of national registries pipe (sqs to sqs)
+
+  NationalRegistriesPipeBatchSize:
+    Type: Number
+    Default: 2
+    Description: events batch size of national registries pipe (sqs to sqs)
+
   NationalRegistryGatewayOutputsQueueName:
     Type: String
     Description: 'The name of the queue'
@@ -12,6 +22,14 @@ Parameters:
   NationalRegistryGatewayOutputsQueueARN:
     Type: String
     Description: 'Identify the resource that the policy applies to.'
+
+  NationalRegistriesGatewayResponsesQueueARN:
+    Type: String
+    Description: 'Identify the resource that the policy applies to.'
+
+  NationalRegistriesGatewayResponsesQueueName:
+    Type: String
+    Description: 'The name of the queue of gateway Response'
 
   ProjectName:
     Type: String
@@ -200,6 +218,30 @@ Parameters:
     Type: String
     Description: 'ARN of DynamoDB table ShedLock'
 
+  PnNationalRegistriesRequestsTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table Requests'
+
+  PnNationalRegistriesRequestsTableName:
+    Type: String
+    Description: 'Name of DynamoDB table Requests'
+
+  PnNationalRegistriesRequestsTableStreamArn:
+    Type: String
+    Description: 'ARN of DynamoDB Stream for Requests table (StreamViewType NEW_AND_OLD_IMAGES)'
+
+  PnNationalRegistriesBatchesTableArn:
+    Type: String
+    Description: 'ARN of DynamoDB table NationalRegistriesBatches'
+
+  PnNationalRegistriesBatchesTableName:
+    Type: String
+    Description: Name of DynamoDB table used for storing information related to NationalRegistriesBatches
+
+  PnNationalRegistriesBatchesTableStreamArn:
+    Type: String
+    Description: 'ARN of DynamoDB Stream for Batches table (StreamViewType NEW_AND_OLD_IMAGES)'
+
   PnCxIdValidationEnabled:
     Type: String
     AllowedValues:
@@ -212,9 +254,9 @@ Parameters:
     Description: 'Query limit for National Registries Tables'
     Default: 1000
 
-  PnNationalRegistriesInipecTtl:
+  PnNationalRegistriesTtl:
     Type: Number
-    Description: 'IniPEC TTL'
+    Description: 'batch TTL'
     Default: 1209600
 
   PnNationalRegistriesInipecBatchRequestDelay:
@@ -326,15 +368,100 @@ Parameters:
     Type: String
     Description: ECS log group name
 
-  FirstAttemptDelaySecondsPerCf:
+  PnNationalRegistriesInipecPollingFirstAttemptDelaySecondsPerCf:
     Type: Number
-    Description: 'Per-CF delay in seconds for the first polling attempt'
+    Description: 'IniPEC polling per-CF delay in seconds for the first attempt'
     Default: 0.085
 
-  FirstAttemptFixedDelaySeconds:
+  PnNationalRegistriesInipecPollingFirstAttemptFixedDelaySeconds:
     Type: Number
-    Description: 'Minimum fixed delay in seconds before the first polling attempt'
+    Description: 'IniPEC polling fixed delay in seconds for the first attempt'
     Default: 300
+
+  PnNationalRegistriesInipecPollingErrorRetryAfter:
+    Type: Number
+    Description: 'IniPEC polling retry-after delay in seconds'
+    Default: 3600
+
+  PnNationalRegistriesInipecPollingInProgressRetryAfter:
+    Type: Number
+    Description: 'IniPEC polling in-progress retry-after delay in seconds'
+    Default: 3600
+
+  PnNationalRegistriesInadMaxBatchRequestSize:
+    Type: Number
+    Description: 'INAD maximum batch request size'
+    Default: 1000
+
+  PnNationalRegistriesInadOldestRequestMaxWaitingSeconds:
+    Type: Number
+    Description: 'INAD oldest request maximum waiting time in seconds'
+    Default: 300
+
+  PnNationalRegistriesInadBatchRequestDelay:
+    Type: Number
+    Description: 'INAD batch request delay'
+    Default: 5000
+
+  PnNationalRegistriesInadBatchRequestLockAtMost:
+    Type: Number
+    Description: 'INAD batch request lock at most'
+    Default: 27000
+
+  PnNationalRegistriesInadBatchRequestLockAtLeast:
+    Type: Number
+    Description: 'INAD batch request lock at least'
+    Default: 22000
+
+  PnNationalRegistriesPollingDelay:
+    Type: Number
+    Description: 'INAD batch polling delay'
+    Default: 30000
+
+  PnNationalRegistriesPollingLockAtMost:
+    Type: Number
+    Description: 'INAD batch polling lock at most'
+    Default: 30000
+
+  PnNationalRegistriesPollingLockAtLeast:
+    Type: Number
+    Description: 'INAD batch polling lock at least'
+    Default: 1000
+
+  PnNationalRegistriesInadPollingFirstAttemptDelaySecondsPerCf:
+    Type: Number
+    Description: 'INAD polling per-CF delay in seconds for the first attempt'
+    Default: 0.085
+
+  PnNationalRegistriesInadPollingFirstAttemptFixedDelaySeconds:
+    Type: Number
+    Description: 'INAD polling fixed delay in seconds for the first attempt'
+    Default: 300
+
+  PnNationalRegistriesInadPollingErrorRetryAfter:
+    Type: Number
+    Description: 'INAD polling retry-after delay in seconds'
+    Default: 3600
+
+  PnNationalRegistriesInadPollingInProgressRetryAfter:
+    Type: Number
+    Description: 'INAD polling in-progress retry-after delay in seconds'
+    Default: 3600
+
+  PnNationalRegistriesInipecRequestRetryAfter:
+    Type: Number
+    Description: 'INIPEC request retry-after delay in seconds'
+    Default: 3600
+
+  PnNationalRegistriesInadBatchPollingInProgressMaxRetry:
+    Type: Number
+    Description: 'INAD batch polling in-progress maximum retry count'
+    Default: 24
+
+  PnNationalRegistriesInadBatchPollingMaxRetry:
+    Type: Number
+    Description: 'INAD batch polling maximum retry count'
+    Default: 3
 
   # Heath Check parameters
   HealthCheckInterval:
@@ -494,6 +621,14 @@ Parameters:
     Type: String
     Description: 'DLQ ARN for NationalRegistryGatewayInputs'
 
+  NationalRegistriesPollingQueueName:
+    Type: String
+    Description: 'Name for NationalRegistriesPolling'
+
+  NationalRegistriesPollingQueueARN:
+    Type: String
+    Description: 'ARN for NationalRegistriesPolling'
+
   AddressCompositionMode:
     Type: String
     Description: "Mode for address and addressDetail, it can be OLD, FULL, OLD_MINIMAL, MINIMAL"
@@ -522,6 +657,20 @@ Parameters:
   EnablePfPecFallbackFlow:
     Type: String
     Description: 'Enable INIPEC fallback when no PEC address is found in INAD. If disabled, only INAD is used.'
+    AllowedValues:
+      - true
+      - false
+
+  EnableInadMassiveApi:
+    Type: String
+    Description: 'Enable INAD massive API. If disabled, only sync APIs are used.'
+    AllowedValues:
+      - true
+      - false
+
+  EnableOldInipecFlow:
+    Type: String
+    Description: 'Enable INIPEC old workflow. If disabled, the new workflow is used.'
     AllowedValues:
       - true
       - false
@@ -568,7 +717,7 @@ Resources:
         WireTapLogActivation: !Ref WireTapLogActivation
         ContainerImageURI: !Sub '${ContainerImageUri}'
         ContainerEnvEntry1: !Sub 'AWS_REGIONCODE=${AWS::Region}'
-        ContainerEnvEntry2: !Sub 'PN_NATIONAL_REGISTRY_PDND_BASE_URL=${PDNDBaseURL}'
+        ContainerEnvEntry2: !Sub 'PN_NATIONALREGISTRIES_PDNDBASEURL=${PDNDBaseURL}'
         ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
         ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
         ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_ADE_AUTH=${AdESSL}'
@@ -576,7 +725,7 @@ Resources:
         ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_NAME_ID=${AdELegalNameId}'
         ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
         ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PDND_CLIENT_SECRET=${PDNDAdECheckCfSecret}'
-        ContainerEnvEntry10: !Sub 'PN_NATIONAL_REGISTRY_INAD_BASE_URL=${INADBaseURL}'
+        ContainerEnvEntry10: !Sub 'PN_NATIONALREGISTRIES_INADBASEURL=${INADBaseURL}'
         ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_INAD_PDND_CLIENT_SECRET=${PDNDInadSecret}'
         ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
         ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
@@ -585,15 +734,15 @@ Resources:
         ContainerEnvEntry16: !Sub 'PN_NATIONALREGISTRIES_VALCXIDENABLED=${PnCxIdValidationEnabled}'
         ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
         ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_IPA_SECRET=${IPASecret}'
-        ContainerEnvEntry19: !Sub 'PN_NATIONALREGISTRIES_INIPEC_TTL=${PnNationalRegistriesInipecTtl}'
-        ContainerEnvEntry20: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_DELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONALREGISTRIES_TTL=${PnNationalRegistriesTtl}'
+        ContainerEnvEntry20: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTDELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
         ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
         ContainerEnvEntry22: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTRECOVERYAFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
         ContainerEnvEntry23: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTMAXRETRY=${PnNationalRegistriesInipecBatchRequestMaxRetry}'
         ContainerEnvEntry24: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_DELAY=${PnNationalRegistriesInipecBatchPollingDelay}'
         ContainerEnvEntry25: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchPollingRecoveryDelay}'
         ContainerEnvEntry26: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchPollingRecoveryAfter}'
-        ContainerEnvEntry27: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
+        ContainerEnvEntry27: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
         ContainerEnvEntry28: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
         ContainerEnvEntry29: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_TRUST_SECRET=${AdECheckCfTrustSecret}'
         ContainerEnvEntry30: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_TRUST_SECRET=${AdELegalTrustSecret}'
@@ -603,7 +752,7 @@ Resources:
         ContainerEnvEntry34: !Sub 'PN_NATIONALREGISTRIES_TOPIC_INPUTQUEUENAME=${NationalRegistryGatewayInputsQueueName}'
         ContainerEnvEntry35: !Sub 'PN_NATIONALREGISTRIES_TOPIC_INPUTDLQQUEUENAME=${NationalRegistryGatewayInputsDLQName}'
         ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_HEALTH_CHECK_PATH=${HealthCheckPath}'
-        ContainerEnvEntry37: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_INPROGRESS_MAX_RETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
+        ContainerEnvEntry37: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHPOLLINGINPROGRESSMAXRETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
         ContainerEnvEntry38: !Sub 'PN_NATIONALREGISTRIES_INIPEC_MAXBATCHREQUESTSIZE=${PnNationalRegistriesInipecMaxBatchRequestSize}'
         ContainerEnvEntry39: !Sub 'PN_NATIONAL_REGISTRY_CUSTOM_RETRY_MAX_ATTEMPTS=${CustomRetryMaxAttempts}'
         ContainerEnvEntry40: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
@@ -612,8 +761,8 @@ Resources:
         ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_ENABLEPFPECFALLBACKFLOW=${EnablePfPecFallbackFlow}'
         ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_QUERYLIMIT=${PnNationalRegistriesQueryLimit}'
         ContainerEnvEntry45: !Sub 'PN_NATIONALREGISTRIES_DAO_SHEDLOCKTABLENAME=${ShedLockTableName}'
-        ContainerEnvEntry46: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchRequestLockAtMost}'
-        ContainerEnvEntry47: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchRequestLockAtLeast}'
+        ContainerEnvEntry46: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTLOCKATMOST=${PnNationalRegistriesInipecBatchRequestLockAtMost}'
+        ContainerEnvEntry47: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTLOCKATLEAST=${PnNationalRegistriesInipecBatchRequestLockAtLeast}'
         ContainerEnvEntry48: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchPollingLockAtMost}'
         ContainerEnvEntry49: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchPollingLockAtLeast}'
         ContainerEnvEntry50: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchRequestRecoveryLockAtMost}'
@@ -627,8 +776,32 @@ Resources:
         ContainerEnvEntry58: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_READ_TIMEOUT_MILLIS=${IniPecReadTimeoutMillis}'
         ContainerEnvEntry59: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_RETRY_ATTEMPTS=${IniPecMaxRetryAttempts}'
         ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
-        ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTDELAYSECONDSPERCF=${FirstAttemptDelaySecondsPerCf}'
-        ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_FIRSTATTEMPTFIXEDDELAYSECONDS=${FirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${PnNationalRegistriesInipecPollingFirstAttemptDelaySecondsPerCf}'
+        ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${PnNationalRegistriesInipecPollingFirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGERRORRETRYAFTER=${PnNationalRegistriesInipecPollingErrorRetryAfter}'
+        ContainerEnvEntry64: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGINPROGRESSRETRYAFTER=${PnNationalRegistriesInipecPollingInProgressRetryAfter}'
+        ContainerEnvEntry65: !Sub 'PN_NATIONALREGISTRIES_INAD_MAXBATCHREQUESTSIZE=${PnNationalRegistriesInadMaxBatchRequestSize}'
+        ContainerEnvEntry66: !Sub 'PN_NATIONALREGISTRIES_INAD_OLDESTREQUESTMAXWAITINGSECONDS=${PnNationalRegistriesInadOldestRequestMaxWaitingSeconds}'
+        ContainerEnvEntry67: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTDELAY=${PnNationalRegistriesInadBatchRequestDelay}'
+        ContainerEnvEntry68: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTLOCKATMOST=${PnNationalRegistriesInadBatchRequestLockAtMost}'
+        ContainerEnvEntry69: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTLOCKATLEAST=${PnNationalRegistriesInadBatchRequestLockAtLeast}'
+        ContainerEnvEntry70: !Sub 'PN_NATIONALREGISTRIES_POLLINGDELAY=${PnNationalRegistriesPollingDelay}'
+        ContainerEnvEntry71: !Sub 'PN_NATIONALREGISTRIES_POLLINGLOCKATMOST=${PnNationalRegistriesPollingLockAtMost}'
+        ContainerEnvEntry72: !Sub 'PN_NATIONALREGISTRIES_POLLINGLOCKATLEAST=${PnNationalRegistriesPollingLockAtLeast}'
+        ContainerEnvEntry73: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${PnNationalRegistriesInadPollingFirstAttemptDelaySecondsPerCf}'
+        ContainerEnvEntry74: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${PnNationalRegistriesInadPollingFirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry75: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGERRORRETRYAFTER=${PnNationalRegistriesInadPollingErrorRetryAfter}'
+        ContainerEnvEntry76: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGINPROGRESSRETRYAFTER=${PnNationalRegistriesInadPollingInProgressRetryAfter}'
+        ContainerEnvEntry77: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGINPROGRESSMAXRETRY=${PnNationalRegistriesInadBatchPollingInProgressMaxRetry}'
+        ContainerEnvEntry78: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInadBatchPollingMaxRetry}'
+        ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_TOPIC_POLLINGQUEUENAME=${NationalRegistriesPollingQueueName}'
+        ContainerEnvEntry80: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${PnNationalRegistriesRequestsTableName}'
+        ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${PnNationalRegistriesBatchesTableName}'
+        ContainerEnvEntry82: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADMASSIVEAPI=${EnableInadMassiveApi}'
+        ContainerEnvEntry83: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRETRYAFTER=${PnNationalRegistriesInipecRequestRetryAfter}'
+        ContainerEnvEntry84: !Sub 'PN_NATIONALREGISTRIES_ENABLEOLDINIPECFLOW=${EnableOldInipecFlow}'
+        ContainerEnvEntry85: !Sub 'PN_NATIONALREGISTRIES_TOPIC_GATEWAYRESPONSEQUEUENAME=${NationalRegistriesGatewayResponsesQueueName}'
+
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
         ECSClusterName: !Ref ECSClusterName
@@ -678,8 +851,13 @@ Resources:
               - !Ref BatchRequestTableArn
               - !Ref BatchPollingTableArn
               - !Ref ShedLockTableArn
+              - !Ref PnNationalRegistriesRequestsTableArn
+              - !Ref PnNationalRegistriesBatchesTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
+              - !Sub '${PnNationalRegistriesRequestsTableArn}/index/*'
+              - !Sub '${PnNationalRegistriesBatchesTableArn}/index/*'
+
           - Effect: Allow
             Action:
               - sqs:SendMessage
@@ -692,6 +870,8 @@ Resources:
               - !Ref NationalRegistryGatewayOutputsQueueARN
               - !Ref NationalRegistryGatewayInputsQueueARN
               - !Ref NationalRegistryGatewayInputsDLQARN
+              - !Ref NationalRegistriesPollingQueueARN
+              - !Ref NationalRegistriesGatewayResponsesQueueARN
           - Effect: Allow
             Action:
               - ssm:GetParameter
@@ -699,6 +879,356 @@ Resources:
             Resource:
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SecretAndSSMPrefix}/*'
+
+  PnNationalRegistriesRequestErrorPipeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-national-registries-request-error-pipe-role'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pipes.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-request-error-pipe'
+      Policies:
+        - PolicyName: pn-national-registries-request-error-pipe-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadRequestDynamoDbStream
+                Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource:
+                  - !Ref PnNationalRegistriesRequestsTableStreamArn
+              - Sid: SendToNationalRegistryGatewayInputsDlq
+                Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !Ref NationalRegistryGatewayInputsDLQARN
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: !Ref PnBatchRequestEncryptKeyARN
+
+  NationalRegistriesToEventBusPipe:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: !Sub ${ProjectName}-national-registries-to-event-bus-pipe
+      Description: 'Pipe from National Registries Queue to core event bus'
+      RoleArn: !GetAtt NationalRegistriesToEventBusPipeRole.Arn
+      Source: !Ref NationalRegistriesGatewayResponsesQueueARN
+      SourceParameters:
+        SqsQueueParameters:
+          BatchSize: !Ref NationalRegistriesPipeBatchSize
+          MaximumBatchingWindowInSeconds: !Ref NationalRegistriesPipeWindowSize
+      Target: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/${ProjectName}-CoreEventBus
+      TargetParameters:
+        EventBridgeEventBusParameters:
+          DetailType: "NationalRegistriesOutcomeEvent"
+        InputTemplate: >-
+          {
+            "body": <$.body.payload>,
+            "source": <$.body.clientId>
+          }
+
+  NationalRegistriesToEventBusPipeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pipes.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-to-event-bus-pipe'
+
+      Policies:
+        - PolicyName: !Sub ${ProjectName}--National-registries-to-core-event-bus-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sqs:ReceiveMessage'
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:GetQueueAttributes'
+                Resource: !Ref NationalRegistriesGatewayResponsesQueueARN
+        - PolicyName: !Sub ${ProjectName}-National-registries-target-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'events:PutEvents'
+                Resource:
+                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/${ProjectName}-CoreEventBus
+
+  PnNationalRegistriesRequestErrorPipe:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: pn-national-registries-request-error-pipe
+      RoleArn: !GetAtt PnNationalRegistriesRequestErrorPipeRole.Arn
+      Source: !Ref PnNationalRegistriesRequestsTableStreamArn
+      SourceParameters:
+        DynamoDBStreamParameters:
+          StartingPosition: TRIM_HORIZON
+          BatchSize: 1
+        FilterCriteria:
+          Filters:
+            - Pattern: >
+                {
+                  "eventName": ["INSERT"],
+                  "dynamodb": {
+                    "NewImage": {
+                      "status": {
+                        "S": ["ERROR"]
+                      }
+                    }
+                  }
+                }
+            - Pattern: >-
+                {
+                  "eventName": ["MODIFY"],
+                  "dynamodb": {
+                    "NewImage": {
+                      "status": {
+                        "S": ["ERROR"]
+                      }
+                    },
+                    "OldImage": {
+                      "status": {
+                        "S": [
+                          {
+                            "anything-but": "ERROR"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+      Target: !Ref NationalRegistryGatewayInputsDLQARN
+      TargetParameters:
+        InputTemplate: >-
+          {
+            "taxId": "<$.dynamodb.NewImage.taxId.S>",
+            "correlationId": "<$.dynamodb.NewImage.correlationId.S>",
+            "recipientType": "<$.dynamodb.NewImage.recipientType.S>",
+            "domicileType": "<$.dynamodb.NewImage.domicileType.S>",
+            "referenceRequestDate": "<$.dynamodb.NewImage.referenceRequestDate.S>",
+            "pnNationalRegistriesCxId": "<$.dynamodb.NewImage.clientId.S>"
+          }
+
+  PnNationalRegistriesPollingPipeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub '${ProjectName}-national-registries-polling-pipe'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pipes.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-polling-pipe'
+      Policies:
+        - PolicyName: pn-national-registries-polling-pipe-policy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: ReadBatchDynamoDbStream
+                Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource:
+                  - !Ref PnNationalRegistriesBatchesTableStreamArn
+              - Sid: SendToNationalRegistryPollingQueue
+                Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !Ref NationalRegistriesPollingQueueARN
+
+  PnNationalRegistriesPollingPipe:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: pn-national-registries-polling-pipe
+      RoleArn: !GetAtt PnNationalRegistriesPollingPipeRole.Arn
+      Source: !Ref PnNationalRegistriesBatchesTableStreamArn
+      SourceParameters:
+        DynamoDBStreamParameters:
+          StartingPosition: TRIM_HORIZON
+          BatchSize: 1
+        FilterCriteria:
+          Filters:
+            - Pattern: >-
+                {
+                  "eventName": ["MODIFY"],
+                  "dynamodb": {
+                    "NewImage": {
+                      "status": {
+                        "S": ["WORKING"]
+                      }
+                    },
+                    "OldImage": {
+                      "status": {
+                        "S": [
+                          {
+                            "anything-but": "WORKING"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+      Target: !Ref NationalRegistriesPollingQueueARN
+      TargetParameters:
+        SqsQueueParameters:
+          MessageGroupId: $.dynamodb.NewImage.batchId.S
+        InputTemplate: >-
+          {
+            "registry": "<$.dynamodb.NewImage.registry.S>",
+            "batchId": "<$.dynamodb.NewImage.batchId.S>",
+            "pollingId": "<$.dynamodb.NewImage.pollingId.S>",
+            "batchSize": <$.dynamodb.NewImage.batchSize.N>,
+            "errorRetryCount": <$.dynamodb.NewImage.errorRetryCount.N>,
+            "inProgressRetryCount": <$.dynamodb.NewImage.inProgressRetryCount.N>
+          }
+
+  PnNationalRegistriesCompletedRequestPipe:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: pn-national-registries-completed-request-pipe
+      RoleArn: !GetAtt PnNationalRegistriesCompletedRequestPipeRole.Arn
+      Source: !Ref PnNationalRegistriesRequestsTableStreamArn
+
+      SourceParameters:
+        DynamoDBStreamParameters:
+          StartingPosition: TRIM_HORIZON
+          BatchSize: 1
+
+        FilterCriteria:
+          Filters:
+            - Pattern: >
+                {
+                  "eventName": ["INSERT"],
+                  "dynamodb": {
+                    "NewImage": {
+                      "status": {
+                        "S": ["WORKED"]
+                      },
+                      "resultPayload": {
+                        "S": [
+                          {
+                            "exists": true
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+            - Pattern: >
+                {
+                  "eventName": ["MODIFY"],
+                  "dynamodb": {
+                    "NewImage": {
+                      "status": {
+                        "S": ["WORKED"]
+                      },
+                      "resultPayload": {
+                        "S": [
+                          {
+                            "exists": true
+                          }
+                        ]
+                      }
+                    },
+                    "OldImage": {
+                      "status": {
+                        "S": [
+                          {
+                            "anything-but": "WORKED"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+
+      Target: !Ref NationalRegistriesGatewayResponsesQueueARN
+      TargetParameters:
+        InputTemplate: >
+          <$.dynamodb.NewImage.resultPayload.S>
+
+  PnNationalRegistriesCompletedRequestPipeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pipes.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-completed-request-pipe'
+
+      Policies:
+        - PolicyName: pn-national-registries-completed-request-pipe-policy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - dynamodb:DescribeStream
+                  - dynamodb:GetRecords
+                  - dynamodb:GetShardIterator
+                  - dynamodb:ListStreams
+                Resource:
+                  - !Ref PnNationalRegistriesRequestsTableStreamArn
+
+              - Effect: Allow
+                Action:
+                  - sqs:SendMessage
+                Resource:
+                  - !Ref NationalRegistriesGatewayResponsesQueueARN
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: !Ref PnBatchRequestEncryptKeyARN
 
   NationalRegistryApiGateway:
     Type: AWS::CloudFormation::Stack
