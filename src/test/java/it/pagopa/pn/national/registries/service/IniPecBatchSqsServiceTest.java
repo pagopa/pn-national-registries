@@ -32,6 +32,7 @@ import java.time.ZoneId;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -103,7 +104,7 @@ class IniPecBatchSqsServiceTest {
         assertNotNull(batchRequest.getReservationId());
         assertNotNull(batchRequest.getLastReserved());
 
-        verify(sqsService).toObject(MESSAGE, GatewayResponse.class);
+        verify(sqsService).toObject(MESSAGE, CodeSqsDto.class);
         verify(batchRequestRepository).update(same(batchRequest));
         verify(sqsService, never()).pushToInputDlqQueue(any());
     }
@@ -259,23 +260,64 @@ class IniPecBatchSqsServiceTest {
         outputKo.setCorrelationId("correlation-output-ko~001");
         outputOk.setCorrelationId("correlation-output-ok~001");
 
-        GatewayResponse outputKoPayload = mock(GatewayResponse.class);
-        GatewayResponse outputOkPayload = mock(GatewayResponse.class);
+        CodeSqsDto outputKoPayload = mock(CodeSqsDto.class);
+        CodeSqsDto outputOkPayload = mock(CodeSqsDto.class);
 
         when(nationalRegistriesConfig.getTtl()).thenReturn(123);
-        when(batchRequestRepository.setNewReservationIdToBatchRequest(same(reservationKo))).thenReturn(Mono.error(ConditionalCheckFailedException.builder().build()));
-        when(batchRequestRepository.setNewReservationIdToBatchRequest(same(outputKo))).thenReturn(Mono.just(outputKo));
-        when(batchRequestRepository.setNewReservationIdToBatchRequest(same(outputOk))).thenReturn(Mono.just(outputOk));
-        when(sqsService.toObject(MESSAGE, GatewayResponse.class)).thenReturn(outputKoPayload, outputOkPayload);
-        when(sqsService.pushToOutputQueue(any())).thenReturn(Mono.error(SqsException.builder().message("Output KO").build()));
-        when(sqsService.pushToOutputQueue(any())).thenReturn(Mono.empty());
-        when(batchRequestRepository.update(same(outputOk))).thenReturn(Mono.just(outputOk));
 
-        StepVerifier.create(iniPecBatchSqsService.batchSendToSqs(List.of(reservationKo, outputKo, outputOk))).verifyComplete();
+        when(batchRequestRepository.setNewReservationIdToBatchRequest(same(reservationKo)))
+                .thenReturn(Mono.error(
+                        ConditionalCheckFailedException.builder().build()
+                ));
 
-        assertEquals(BatchSendStatus.NOT_SENT.getValue(), reservationKo.getSendStatus());
-        assertEquals(BatchSendStatus.NOT_SENT.getValue(), outputKo.getSendStatus());
-        assertEquals(BatchSendStatus.SENT.getValue(), outputOk.getSendStatus());
+        when(batchRequestRepository.setNewReservationIdToBatchRequest(same(outputKo)))
+                .thenReturn(Mono.just(outputKo));
+
+        when(batchRequestRepository.setNewReservationIdToBatchRequest(same(outputOk)))
+                .thenReturn(Mono.just(outputOk));
+
+        when(sqsService.toObject(MESSAGE, CodeSqsDto.class))
+                .thenReturn(outputKoPayload, outputOkPayload);
+
+        when(sqsService.pushToOutputQueue(argThat(response ->
+                response != null
+                        && response.getPayload() == outputKoPayload
+                        && Objects.equals(response.getClientId(), outputKo.getClientId())
+        )))
+                .thenReturn(Mono.error(
+                        SqsException.builder()
+                                .message("Output KO")
+                                .build()
+                ));
+
+        when(sqsService.pushToOutputQueue(argThat(response ->
+                response != null
+                        && response.getPayload() == outputOkPayload
+                        && Objects.equals(response.getClientId(), outputOk.getClientId())
+        )))
+                .thenReturn(Mono.empty());
+
+        when(batchRequestRepository.update(same(outputOk)))
+                .thenReturn(Mono.just(outputOk));
+
+        StepVerifier.create(
+                iniPecBatchSqsService.batchSendToSqs(
+                        List.of(reservationKo, outputKo, outputOk)
+                )
+        ).verifyComplete();
+
+        assertEquals(
+                BatchSendStatus.NOT_SENT.getValue(),
+                reservationKo.getSendStatus()
+        );
+        assertEquals(
+                BatchSendStatus.NOT_SENT.getValue(),
+                outputKo.getSendStatus()
+        );
+        assertEquals(
+                BatchSendStatus.SENT.getValue(),
+                outputOk.getSendStatus()
+        );
 
         verify(batchRequestRepository, never()).update(same(reservationKo));
         verify(batchRequestRepository, never()).update(same(outputKo));
