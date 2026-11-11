@@ -1663,7 +1663,7 @@ public class DigitalAddressPGOldInipecMassiveIT extends AbstractNationalRegistri
         assertEquals("WORKED", legacyRequest.get("status").s());
         assertNotNull(legacyRequest.get("message"));
 
-        return readNewOutputMessage(legacyRequest.get("message").s());
+        return new GatewayResponse(readOutputMessage(legacyRequest.get("message").s()), legacyRequest.get("clientId").s());
     }
 
     private void completeOldInipecToInad(

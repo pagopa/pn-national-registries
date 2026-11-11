@@ -749,8 +749,8 @@ public class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesC
         assertNotNull( legacyRequest.get("message") );
 
         GatewayResponse payload =
-                readNewOutputMessage(
-                        legacyRequest.get("message").s()
+                new GatewayResponse(readOutputMessage(
+                        legacyRequest.get("message").s()), legacyRequest.get("clientId").s()
                 );
 
         assertEquals( correlationId, payload.getPayload().getCorrelationId() );
@@ -981,8 +981,8 @@ public class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesC
 
         assertNotNull( legacyRequest.get("message") );
 
-        return readNewOutputMessage(
-                legacyRequest.get("message").s()
+        return new GatewayResponse(readOutputMessage(
+                legacyRequest.get("message").s()), legacyRequest.get("clientId").s()
         );
     }
 

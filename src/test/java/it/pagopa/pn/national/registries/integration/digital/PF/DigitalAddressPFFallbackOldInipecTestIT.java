@@ -879,7 +879,7 @@ public class DigitalAddressPFFallbackOldInipecTestIT extends AbstractNationalReg
 
         assertEquals("WORKED", request.get("status").s());
 
-        GatewayResponse payload = readNewOutputMessage(request.get("message").s());
+        GatewayResponse payload = new GatewayResponse(readOutputMessage(request.get("message").s()), request.get("clientId").s());
 
         assertEquals(correlationId, payload.getPayload().getCorrelationId());
         assertEquals("INIPEC", payload.getPayload().getRegistry());
@@ -936,7 +936,7 @@ public class DigitalAddressPFFallbackOldInipecTestIT extends AbstractNationalReg
 
         assertEquals("WORKED", request.get("status").s());
 
-        GatewayResponse payload = readNewOutputMessage(request.get("message").s());
+        GatewayResponse payload = new GatewayResponse(readOutputMessage(request.get("message").s()), request.get("clientId").s());
 
         assertEquals(correlationId, payload.getPayload().getCorrelationId());
         assertEquals("INIPEC", payload.getPayload().getRegistry());
@@ -965,7 +965,7 @@ public class DigitalAddressPFFallbackOldInipecTestIT extends AbstractNationalReg
         assertEquals(taxId, request.get("cf").s());
         assertEquals("WORKED", request.get("status").s());
         assertNotNull(request.get("message"));
-        return readNewOutputMessage(request.get("message").s());
+        return new GatewayResponse(readOutputMessage(request.get("message").s()), request.get("clientId").s());
     }
 
     private String submitLegacyBatch(String correlationId, String pollingId) {

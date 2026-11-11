@@ -871,6 +871,7 @@ Resources:
               - !Ref NationalRegistryGatewayInputsQueueARN
               - !Ref NationalRegistryGatewayInputsDLQARN
               - !Ref NationalRegistriesPollingQueueARN
+              - !Ref NationalRegistriesGatewayResponsesQueueARN
           - Effect: Allow
             Action:
               - ssm:GetParameter

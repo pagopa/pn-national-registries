@@ -1105,7 +1105,7 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
         assertEquals(taxId, request.get("cf").s());
         assertEquals("WORKED", request.get("status").s());
         assertNotNull(request.get("message"));
-        return readNewOutputMessage(request.get("message").s());
+        return new GatewayResponse(readOutputMessage(request.get("message").s()), request.get("clientId").s());
     }
 
     private String submitLegacyBatch(String correlationId, String pollingId) {

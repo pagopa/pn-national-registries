@@ -257,12 +257,12 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
 
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
 
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("IPA", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("pg-output-ok@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("IPA", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("pg-output-ok@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
 
         assertTrue(findBatchRequestsByCorrelationPrefix(correlationId).isEmpty());
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
@@ -336,12 +336,12 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
 
         assertNotNull(outputMessage);
 
-        CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
 
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("INIPEC", payload.getRegistry());
-        assertEquals(1, payload.getDigitalAddress().size());
-        assertEquals("pg-inipec-output-ok@pec.it", payload.getDigitalAddress().getFirst().getAddress());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", payload.getPayload().getRegistry());
+        assertEquals(1, payload.getPayload().getDigitalAddress().size());
+        assertEquals("pg-inipec-output-ok@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
@@ -411,12 +411,12 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
 
         assertNotNull(recoveredOutputMessage);
 
-        CodeSqsDto recoveredPayload = readOutputMessage(recoveredOutputMessage.body());
+        GatewayResponse recoveredPayload = readNewOutputMessage(recoveredOutputMessage.body());
 
-        assertEquals(correlationId, recoveredPayload.getCorrelationId());
-        assertEquals("INIPEC", recoveredPayload.getRegistry());
-        assertEquals(1, recoveredPayload.getDigitalAddress().size());
-        assertEquals("pg-inipec-output-ko@pec.it", recoveredPayload.getDigitalAddress().getFirst().getAddress());
+        assertEquals(correlationId, recoveredPayload.getPayload().getCorrelationId());
+        assertEquals("INIPEC", recoveredPayload.getPayload().getRegistry());
+        assertEquals(1, recoveredPayload.getPayload().getDigitalAddress().size());
+        assertEquals("pg-inipec-output-ko@pec.it", recoveredPayload.getPayload().getDigitalAddress().getFirst().getAddress());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
 
