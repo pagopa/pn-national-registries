@@ -153,9 +153,12 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         fallbackTestKey(source);
         repository.putRequest(source).block();
         var completion = repository.updateStatusToWorked(source.getCorrelationId(), source.getCreatedAt().toString(), null, source.getRegistry(), false);
-        Assertions.assertEquals(RequestStatusEnum.WORKING, readStoredRequest(source).getStatus());
+        NationalRegistriesRequest stored = readStoredRequest(source);
+        Assertions.assertEquals(RequestStatusEnum.WORKING, stored.getStatus());
         completion.block();
-        Assertions.assertEquals(RequestStatusEnum.WORKED, readStoredRequest(source).getStatus());
+        NationalRegistriesRequest storedAfterUpdate = readStoredRequest(source);
+        Assertions.assertEquals(RequestStatusEnum.WORKED, storedAfterUpdate.getStatus());
+        Assertions.assertNotNull(storedAfterUpdate.getTtl());
     }
 
     private NationalRegistriesRequest readStoredRequest(NationalRegistriesRequest request) {
@@ -301,6 +304,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         Assertions.assertEquals(batchId, updated.getBatchId());
         Assertions.assertNotNull(updated.getUpdatedAt());
         Assertions.assertTrue(updated.getUpdatedAt().isAfter(createdAt));
+        Assertions.assertNull(updated.getTtl());
     }
 
     @Test
@@ -721,7 +725,6 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         request.setBatchId(batchId);
         request.setReferenceRequestDate("2026-10-07T10:00:00Z");
         request.setUpdatedAt(createdAt);
-        request.setTtl(createdAt.plus(30,ChronoUnit.DAYS).getEpochSecond());
         return request;
     }
 }

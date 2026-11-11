@@ -143,7 +143,6 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      * - registry
      * - registryStatus
      * - batchId
-     * - ttl
      * - updatedAt
      */
     @Override
@@ -161,8 +160,6 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
         names.put("#batchId", NationalRegistriesRequest.COL_BATCH_ID);
         values.put(":batchId", AttributeValue.builder().s(batchId).build());
         updates.add("#batchId = :batchId");
-
-        addTtl(names, values, updates);
 
         return updateStatus(pk, sk, WORKING, registry, names, values, updates);
     }
