@@ -80,6 +80,6 @@
     "EnablePfPecFallbackFlow": "true",
     "EnableInadMassiveApi": "true",
     "CpuArchitecture": "ARM",
-    "EnableOldInipecFlow": "true"
+    "EnableOldInipecFlow": "false"
   }
 }
