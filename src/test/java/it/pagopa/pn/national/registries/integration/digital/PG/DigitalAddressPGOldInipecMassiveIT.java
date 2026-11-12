@@ -1687,7 +1687,7 @@ public class DigitalAddressPGOldInipecMassiveIT extends AbstractNationalRegistri
 
         legacyRequest = oldInipecRequest(correlationId);
         assertEquals("WORKED", legacyRequest.get("status").s());
-        assertEquals("INAD", legacyRequest.get("eservice").s());
+        assertEquals("INIPEC", legacyRequest.get("eservice").s());
         assertEquals("NOT_TO_SEND", legacyRequest.get("sendStatus").s());
         assertNull(legacyRequest.get("message"));
     }

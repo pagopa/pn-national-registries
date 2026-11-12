@@ -979,7 +979,7 @@ class DigitalAddressBatchPollingServiceTest {
         assertSame(batchRequest, result);
         assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
         assertEquals(BatchSendStatus.NOT_TO_SEND.getValue(), batchRequest.getSendStatus());
-        assertEquals(GatewayDownstreamService.INAD.name(), batchRequest.getEservice());
+        assertEquals(GatewayDownstreamService.INIPEC.name(), batchRequest.getEservice());
 
         verify(nationalRegistriesRequestsRepository).putRequest(any(NationalRegistriesRequest.class));
         verifyNoInteractions(inadService);
@@ -1036,7 +1036,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
         assertEquals(BatchSendStatus.NOT_TO_SEND.getValue(), batchRequest.getSendStatus());
-        assertEquals(GatewayDownstreamService.INAD.name(), batchRequest.getEservice());
+        assertEquals(GatewayDownstreamService.INIPEC.name(), batchRequest.getEservice());
 
         verify(nationalRegistriesRequestsRepository)
                 .putRequest(any(NationalRegistriesRequest.class));
