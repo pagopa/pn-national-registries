@@ -249,7 +249,6 @@ public class DigitalAddressBatchPollingService{
     private Mono<Void> callInadEservice(BatchRequest request) {
         RecipientType recipientType = retrieveRecipientType(request.getCf(), request.getRecipientType());
         String correlationId = request.getCorrelationId().split(nationalRegistriesConfig.getInipec().getBatchRequestPkSeparator())[0];
-        request.setEservice(GatewayDownstreamService.INAD.name());
         if(nationalRegistriesConfig.isEnableInadMassiveApi()){
             NationalRegistriesRequest nationalRegistriesRequest = constructNationalRegistriesRequest(request, recipientType, GatewayDownstreamService.INAD, correlationId);
             return nationalRegistriesRequestsRepository.putRequest(nationalRegistriesRequest)
@@ -257,6 +256,8 @@ public class DigitalAddressBatchPollingService{
                         log.info("CreatedRequest for correlationId: {} for registry INAD", nationalRegistriesRequest.getCorrelationId());
                         request.setStatus(BatchStatus.WORKED.getValue());
                         request.setSendStatus(BatchSendStatus.NOT_TO_SEND.getValue());
+                        request.setEservice(GatewayDownstreamService.INIPEC.name());
+
                     })
                     .doOnNext(batchRequest -> log.info("Closing batchRequest for correlationId: {} to start INAD massive", request.getCorrelationId()))
                     .then();
@@ -268,11 +269,14 @@ public class DigitalAddressBatchPollingService{
                     logCfWithAddressMetricFromBatchRequest(codeSqsDto, request.getCorrelationId(), request.getCf(), request.getRecipientType(), GatewayDownstreamService.INAD);
                     request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
                     request.setStatus(BatchStatus.WORKED.getValue());
+                    request.setEservice(GatewayDownstreamService.INAD.name());
+
                 })
                 .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
                 .onErrorResume(e -> {
                     logEServiceError(e, "can not retrieve digital address from INAD: {}");
                     CodeSqsDto codeSqsDto = GatewayConverter.errorInadToSqsDto(correlationId, e);
+                    request.setEservice(GatewayDownstreamService.INAD.name());
                     if(codeSqsDto != null) {
                         logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
                         request.setMessage(gatewayUtils.convertCodeSqsDtoToString(codeSqsDto));
