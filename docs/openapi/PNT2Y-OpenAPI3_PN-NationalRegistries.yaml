@@ -696,7 +696,7 @@ components:
       description: Identificativo univoco della richiesta
       minLength: 1
       maxLength: 255
-      pattern: '^\S+$'
+      pattern: '^[A-Za-z0-9._:@#+=~-]+$'
     AddressRequestBody:
       type: object
       properties:
