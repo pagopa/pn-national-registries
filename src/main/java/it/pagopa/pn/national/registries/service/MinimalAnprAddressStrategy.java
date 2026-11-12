@@ -62,7 +62,7 @@ public class MinimalAnprAddressStrategy extends UtilsAnprAddressStrategy impleme
                 Optional.ofNullable(numeroCivico.getLettera()).orElse("")
         );
         appendIfFits(sb, houseNumber);
-
+        appendIfFits(sb, Optional.ofNullable(numeroCivico.getEsponente1()).orElse(""));
         return sb.toString();
     }
 

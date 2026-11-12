@@ -110,15 +110,7 @@ abstract class AbstractMinimalAnprAddressStrategyTest {
     }
 
     @Test
-    void createAddressIgnoresEsponente1() {
-        var civico = civico("10", null);
-        civico.setEsponente1("bis");
-        assertEquals("VIA ROMA 10", strategy().createAddress(indirizzo("VIA", "ROMA", civico)));
-    }
-
-    @Test
     void createAddressSkipsTokenThatDoesNotFitMaxLength() {
         assertEquals("VIA 10", strategy().createAddress(indirizzo("VIA", "X".repeat(45), civico("10", null))));
     }
 }
-
