@@ -1066,11 +1066,13 @@ class AnprConverterTest {
         TipoCivicoInterno tipoCivicoInterno = new TipoCivicoInterno();
         tipoCivicoInterno.setIsolato("8");
         tipoCivicoInterno.setScala("9");
+        tipoCivicoInterno.setScalaEsterna("S5");
 
         TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
         tipoNumeroCivico.setNumero("22");
         tipoNumeroCivico.setLettera("B");
         tipoNumeroCivico.setMetrico("100");
+        tipoNumeroCivico.setEsponente1("600");
         tipoNumeroCivico.setCivicoInterno(tipoCivicoInterno);
 
         TipoToponimo tipoToponimo = new TipoToponimo();
@@ -1105,10 +1107,10 @@ class AnprConverterTest {
 
         GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
         assertNotNull(response);
-        assertTrue(response.getResidentialAddresses().getFirst().getAddress().contains("KM 100"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddress().contains("22/B"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("Scala 9"));
-        assertFalse(response.getResidentialAddresses().getFirst().getAddressDetail().contains("Isolato 8"));
+        assertEquals("specie denominazione Toponimo 22/B KM 100",
+                response.getResidentialAddresses().getFirst().getAddress());
+        assertEquals("Scala 9 Scala est. S5",
+                response.getResidentialAddresses().getFirst().getAddressDetail());
     }
 
     @Test
@@ -1122,7 +1124,7 @@ class AnprConverterTest {
         TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
         tipoNumeroCivico.setNumero("22");
         tipoNumeroCivico.setLettera("B");
-        tipoNumeroCivico.setMetrico("100");
+        tipoNumeroCivico.setEsponente1("600");
         tipoNumeroCivico.setCivicoInterno(tipoCivicoInterno);
 
         TipoToponimo tipoToponimo = new TipoToponimo();
@@ -1157,10 +1159,192 @@ class AnprConverterTest {
 
         GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
         assertNotNull(response);
-        assertTrue(response.getResidentialAddresses().getFirst().getAddress().contains("KM 100"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddress().contains("22/B"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("Scala 9"));
-        assertTrue(response.getResidentialAddresses().getFirst().getAddressDetail().contains("Scala est. S5"));
-        assertFalse(response.getResidentialAddresses().getFirst().getAddressDetail().contains("Isolato 8"));
+        assertEquals("specie denominazione Toponimo 22/B 600",
+                response.getResidentialAddresses().getFirst().getAddress());
+        assertEquals("Scala 9 Scala est. S5",
+                response.getResidentialAddresses().getFirst().getAddressDetail());
+
+        tipoNumeroCivico.setEsponente1(" 600 ");
+        response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B 600",
+                response.getResidentialAddresses().getFirst().getAddress());
+
+        tipoNumeroCivico.setEsponente1(null);
+        response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B",
+                response.getResidentialAddresses().getFirst().getAddress());
+
+        tipoNumeroCivico.setEsponente1("");
+        response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B",
+                response.getResidentialAddresses().getFirst().getAddress());
+
+        tipoNumeroCivico.setEsponente1("   ");
+        response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B",
+                response.getResidentialAddresses().getFirst().getAddress());
+
+        tipoNumeroCivico.setEsponente1("600");
+        tipoNumeroCivico.setMetrico("0");
+        tipoNumeroCivico.setProgSNC("0");
+        response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B 600",
+                response.getResidentialAddresses().getFirst().getAddress());
+    }
+
+    @Test
+    void testConvertNewMinimalConEsponenteAlLimiteDi44Caratteri() {
+        configs.setAddressCompositionMode("MINIMAL");
+
+        TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
+        tipoNumeroCivico.setNumero("22");
+        tipoNumeroCivico.setLettera("B");
+        tipoNumeroCivico.setEsponente1("123456789");
+
+        TipoToponimo tipoToponimo = new TipoToponimo();
+        tipoToponimo.setSpecie("specie");
+        tipoToponimo.setDenominazioneToponimo("denominazione Toponimo");
+
+        TipoIndirizzo indirizzo = new TipoIndirizzo();
+        indirizzo.setNumeroCivico(tipoNumeroCivico);
+        indirizzo.setToponimo(tipoToponimo);
+
+        TipoResidenza tipoResidenza = new TipoResidenza();
+        tipoResidenza.setDataDecorrenzaResidenza("2022-11-01");
+        tipoResidenza.setIndirizzo(indirizzo);
+
+        TipoCodiceFiscale tipoCodiceFiscale = new TipoCodiceFiscale();
+        tipoCodiceFiscale.setCodFiscale("COD_FISCALE_1");
+
+        TipoGeneralita tipoGeneralita = new TipoGeneralita();
+        tipoGeneralita.setCodiceFiscale(tipoCodiceFiscale);
+
+        TipoDatiSoggettiEnte tipoDatiSoggettiEnte = new TipoDatiSoggettiEnte();
+        tipoDatiSoggettiEnte.setResidenza(List.of(tipoResidenza));
+        tipoDatiSoggettiEnte.setGeneralita(tipoGeneralita);
+
+        TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
+        tipoListaSoggetti.setDatiSoggetto(List.of(tipoDatiSoggettiEnte));
+
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+
+        GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B 123456789",
+                response.getResidentialAddresses().getFirst().getAddress());
+
+        tipoNumeroCivico.setEsponente1("1234567890");
+        response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B",
+                response.getResidentialAddresses().getFirst().getAddress());
+    }
+
+    @Test
+    void testConvertNewMinimalConMetricoESncIgnoraEsponente() {
+        configs.setAddressCompositionMode("MINIMAL");
+
+        TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
+        tipoNumeroCivico.setNumero("22");
+        tipoNumeroCivico.setLettera("B");
+        tipoNumeroCivico.setEsponente1("600");
+        tipoNumeroCivico.setMetrico("100");
+
+        TipoToponimo tipoToponimo = new TipoToponimo();
+        tipoToponimo.setSpecie("specie");
+        tipoToponimo.setDenominazioneToponimo("denominazione Toponimo");
+
+        TipoIndirizzo indirizzo = new TipoIndirizzo();
+        indirizzo.setNumeroCivico(tipoNumeroCivico);
+        indirizzo.setToponimo(tipoToponimo);
+
+        TipoResidenza tipoResidenza = new TipoResidenza();
+        tipoResidenza.setDataDecorrenzaResidenza("2022-11-01");
+        tipoResidenza.setIndirizzo(indirizzo);
+
+        TipoCodiceFiscale tipoCodiceFiscale = new TipoCodiceFiscale();
+        tipoCodiceFiscale.setCodFiscale("COD_FISCALE_1");
+
+        TipoGeneralita tipoGeneralita = new TipoGeneralita();
+        tipoGeneralita.setCodiceFiscale(tipoCodiceFiscale);
+
+        TipoDatiSoggettiEnte tipoDatiSoggettiEnte = new TipoDatiSoggettiEnte();
+        tipoDatiSoggettiEnte.setResidenza(List.of(tipoResidenza));
+        tipoDatiSoggettiEnte.setGeneralita(tipoGeneralita);
+
+        TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
+        tipoListaSoggetti.setDatiSoggetto(List.of(tipoDatiSoggettiEnte));
+
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+
+        GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B KM 100",
+                response.getResidentialAddresses().getFirst().getAddress());
+
+        tipoNumeroCivico.setMetrico(null);
+        tipoNumeroCivico.setProgSNC("1");
+        response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B SNC",
+                response.getResidentialAddresses().getFirst().getAddress());
+    }
+
+    @Test
+    void testConvertOldMinimalIgnoraEsponente() {
+        configs.setAddressCompositionMode("OLD_MINIMAL");
+
+        TipoNumeroCivico tipoNumeroCivico = new TipoNumeroCivico();
+        tipoNumeroCivico.setNumero("22");
+        tipoNumeroCivico.setLettera("B");
+        tipoNumeroCivico.setEsponente1("600");
+
+        TipoCivicoInterno tipoCivicoInterno = new TipoCivicoInterno();
+        tipoCivicoInterno.setScala("9");
+        tipoCivicoInterno.setScalaEsterna("S5");
+        tipoNumeroCivico.setCivicoInterno(tipoCivicoInterno);
+
+        TipoToponimo tipoToponimo = new TipoToponimo();
+        tipoToponimo.setSpecie("specie");
+        tipoToponimo.setDenominazioneToponimo("denominazione Toponimo");
+
+        TipoIndirizzo indirizzo = new TipoIndirizzo();
+        indirizzo.setNumeroCivico(tipoNumeroCivico);
+        indirizzo.setToponimo(tipoToponimo);
+
+        TipoResidenza tipoResidenza = new TipoResidenza();
+        tipoResidenza.setDataDecorrenzaResidenza("2022-11-01");
+        tipoResidenza.setIndirizzo(indirizzo);
+
+        TipoCodiceFiscale tipoCodiceFiscale = new TipoCodiceFiscale();
+        tipoCodiceFiscale.setCodFiscale("COD_FISCALE_1");
+
+        TipoGeneralita tipoGeneralita = new TipoGeneralita();
+        tipoGeneralita.setCodiceFiscale(tipoCodiceFiscale);
+
+        TipoDatiSoggettiEnte tipoDatiSoggettiEnte = new TipoDatiSoggettiEnte();
+        tipoDatiSoggettiEnte.setResidenza(List.of(tipoResidenza));
+        tipoDatiSoggettiEnte.setGeneralita(tipoGeneralita);
+
+        TipoListaSoggetti tipoListaSoggetti = new TipoListaSoggetti();
+        tipoListaSoggetti.setDatiSoggetto(List.of(tipoDatiSoggettiEnte));
+
+        RispostaE002OK rispostaE002OK = new RispostaE002OK();
+        rispostaE002OK.setListaSoggetti(tipoListaSoggetti);
+
+        GetAddressANPROKDto response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B",
+                response.getResidentialAddresses().getFirst().getAddress());
+        assertEquals("Scala 9 Scala est. S5",
+                response.getResidentialAddresses().getFirst().getAddressDetail());
+
+        tipoNumeroCivico.setEsponente1(null);
+        response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B",
+                response.getResidentialAddresses().getFirst().getAddress());
+
+        tipoNumeroCivico.setEsponente1("600");
+        tipoNumeroCivico.setProgSNC("1");
+        response = anprConverter.convertToGetAddressANPROK(rispostaE002OK, "COD_FISCALE_1");
+        assertEquals("specie denominazione Toponimo 22/B SNC",
+                response.getResidentialAddresses().getFirst().getAddress());
     }
 }
