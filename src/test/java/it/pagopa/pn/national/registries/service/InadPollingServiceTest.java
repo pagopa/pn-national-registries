@@ -229,9 +229,13 @@ class InadPollingServiceTest {
                 .thenReturn(false);
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("{\"result\":\"not-found\"}");
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("{\"result\":\"not-found\"}");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "{\"result\":\"not-found\"}",
                 "{\"result\":\"not-found\"}",
                 true
         )).thenReturn(Mono.empty());
@@ -246,6 +250,8 @@ class InadPollingServiceTest {
         verify(pollingService).markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "{\"result\":\"not-found\"}",
                 "{\"result\":\"not-found\"}",
                 true
         );
@@ -303,6 +309,8 @@ class InadPollingServiceTest {
         verify(pollingService, never()).markRequestAsWorked(
                 eq(request),
                 eq(GatewayDownstreamService.INAD),
+                any(),
+                any(),
                 any(),
                 eq(true)
         );
@@ -492,9 +500,13 @@ class InadPollingServiceTest {
                 .thenReturn(false);
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -515,6 +527,8 @@ class InadPollingServiceTest {
         verify(pollingService).markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         );
@@ -540,9 +554,13 @@ class InadPollingServiceTest {
                 .thenReturn(true);
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -577,9 +595,13 @@ class InadPollingServiceTest {
                 .thenReturn(true);
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -614,9 +636,13 @@ class InadPollingServiceTest {
                 .thenReturn(false);
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -661,7 +687,7 @@ class InadPollingServiceTest {
         );
 
         verify(pollingService, never())
-                .markRequestAsWorked(any(), any(), any(), anyBoolean());
+                .markRequestAsWorked(any(), any(), any(), any(), any(), anyBoolean());
 
         verify(pollingService).markBatchAsWorked(
                 BATCH_ID,
@@ -682,9 +708,13 @@ class InadPollingServiceTest {
                 .thenReturn(false);
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -698,6 +728,8 @@ class InadPollingServiceTest {
         verify(pollingService).markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         );
@@ -719,9 +751,13 @@ class InadPollingServiceTest {
                 .thenReturn(false);
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -769,7 +805,7 @@ class InadPollingServiceTest {
         );
 
         verify(pollingService, never())
-                .markRequestAsWorked(any(), any(), any(), anyBoolean());
+                .markRequestAsWorked(any(), any(), any(),  any(), any(),anyBoolean());
     }
 
     @Test
@@ -792,9 +828,13 @@ class InadPollingServiceTest {
                 .thenReturn(false);
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -827,9 +867,13 @@ class InadPollingServiceTest {
                 .thenReturn(true);
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -843,6 +887,8 @@ class InadPollingServiceTest {
         verify(pollingService).markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         );
@@ -872,7 +918,7 @@ class InadPollingServiceTest {
         assertTrue(batchCloseSubscribed.get());
         verify(nationalRegistriesRequestsRepository).getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING);
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
-        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), any(),  any(),anyBoolean());
     }
 
     /**
@@ -972,10 +1018,14 @@ class InadPollingServiceTest {
 
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
 
         when(pollingService.markRequestAsWorked(
                 found,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -991,6 +1041,8 @@ class InadPollingServiceTest {
         verify(pollingService).markRequestAsWorked(
                 found,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         );
@@ -1003,6 +1055,8 @@ class InadPollingServiceTest {
 
         verify(pollingService, never()).markRequestAsWorked(
                 eq(missing),
+                any(),
+                any(),
                 any(),
                 any(),
                 anyBoolean()

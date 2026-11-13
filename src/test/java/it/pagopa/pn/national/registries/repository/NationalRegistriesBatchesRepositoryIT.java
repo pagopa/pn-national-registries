@@ -148,7 +148,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         nationalRegistriesBatchesRepository.putBatch(batch).block();
 
         NationalRegistriesBatch updatedBatch = nationalRegistriesBatchesRepository
-                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), WORKED)
+                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), WORKED, null, null)
                 .block();
         NationalRegistriesBatch retrievedBatch = nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block();
 
@@ -165,7 +165,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         nationalRegistriesBatchesRepository.putBatch(batch).block();
 
         NationalRegistriesBatch updatedBatch = nationalRegistriesBatchesRepository
-                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), ERROR)
+                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), ERROR, false, 3)
                 .block();
         NationalRegistriesBatch retrievedBatch = nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block();
 
@@ -182,7 +182,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         nationalRegistriesBatchesRepository.putBatch(batch).block();
 
         Assertions.assertThrows(ConditionalCheckFailedException.class, () -> nationalRegistriesBatchesRepository
-                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), WORKED)
+                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), WORKED, null ,null)
                         .block());
     }
 
@@ -216,7 +216,7 @@ class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
         NationalRegistriesBatch batch = batch("deferred-final-status", WORKING, Instant.now());
         nationalRegistriesBatchesRepository.putBatch(batch).block();
         Mono<NationalRegistriesBatch> finalizeBatch = nationalRegistriesBatchesRepository
-                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), WORKED);
+                .updateToFinalStatus(batch.getBatchId(), batch.getSk(), WORKED, null, null);
 
         Assertions.assertEquals(WORKING, nationalRegistriesBatchesRepository.getBatch(batch.getBatchId()).block().getStatus());
         RuntimeException failure = new RuntimeException("request update failed");

@@ -20,10 +20,7 @@ import software.amazon.awssdk.services.dynamodb.model.ReturnValue;
 import software.amazon.awssdk.services.dynamodb.model.UpdateItemRequest;
 
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static it.pagopa.pn.national.registries.constant.BatchesStatusEnum.REQUEST_SENT;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
@@ -104,11 +101,22 @@ public class NationalRegistriesBatchesRepositoryImpl implements NationalRegistri
      * ERROR e WORKED sono stati finali, quindi viene aggiornato anche il TTL.
      */
     @Override
-    public Mono<NationalRegistriesBatch> updateToFinalStatus(String pk, String sk, BatchesStatusEnum finalStatus) {
+    public Mono<NationalRegistriesBatch> updateToFinalStatus(String pk, String sk, BatchesStatusEnum finalStatus, Boolean inProgressRetry, Integer retryCount) {
         Instant now = Instant.now();
         Map<String, String> names = new HashMap<>();
         Map<String, AttributeValue> values = new HashMap<>();
         List<String> updates = new ArrayList<>();
+
+        if (Objects.nonNull(inProgressRetry) && inProgressRetry) {
+            names.put("#inProgressRetryCount", NationalRegistriesBatch.COL_INPROGRESSRETRYCOUNT);
+            values.put(":inProgressRetryCount", AttributeValue.builder().n(String.valueOf(retryCount)).build());
+            updates.add("#inProgressRetryCount = :inProgressRetryCount");
+        } else if(Objects.nonNull(inProgressRetry)) {
+            names.put("#retryCount", NationalRegistriesBatch.COL_ERRORRETRYCOUNT);
+            values.put(":retryCount", AttributeValue.builder().n(String.valueOf(retryCount)).build());
+            updates.add("#retryCount = :retryCount");
+        }
+
 
         addTtl(names, values, updates, now);
 

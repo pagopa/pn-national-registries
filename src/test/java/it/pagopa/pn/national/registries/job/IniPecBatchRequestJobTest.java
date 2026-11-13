@@ -79,7 +79,7 @@ class IniPecBatchRequestJobTest {
 
         verifyNoInteractions(infoCamereConverter, infoCamereService, batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -90,7 +90,7 @@ class IniPecBatchRequestJobTest {
 
         verifyNoInteractions(infoCamereConverter, infoCamereService, batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -137,7 +137,7 @@ class IniPecBatchRequestJobTest {
         verify(requestsRepository).updateStatusToWorking("c1", first.getCreatedAt().toString(), batch.getBatchId(), GatewayDownstreamService.INIPEC);
         verify(requestsRepository).updateStatusToWorking("c2", second.getCreatedAt().toString(), batch.getBatchId(), GatewayDownstreamService.INIPEC);
         verify(requestsRepository, times(2)).updateStatusToWorking(anyString(), anyString(), eq(batch.getBatchId()), eq(GatewayDownstreamService.INIPEC));
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -230,7 +230,7 @@ class IniPecBatchRequestJobTest {
         verifyNoInteractions(batchesRepository);
         verify(infoCamereConverter, never()).calculateFirstAttemptAfter(anyInt());
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -243,14 +243,14 @@ class IniPecBatchRequestJobTest {
         IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
         when(infoCamereConverter.createIniPecRequest(List.of("CF1", "CF2"))).thenReturn(iniPecRequest);
         when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.error(pnException(400)));
-        when(requestsRepository.updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INIPEC)))
+        when(requestsRepository.updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INIPEC), any()))
                 .thenReturn(Mono.just(first));
 
         assertDoesNotThrow(() -> job.batchRequestScheduled());
 
-        verify(requestsRepository).updateStatusToError("c1", first.getCreatedAt().toString(), GatewayDownstreamService.INIPEC);
-        verify(requestsRepository).updateStatusToError("c2", second.getCreatedAt().toString(), GatewayDownstreamService.INIPEC);
-        verify(requestsRepository, times(2)).updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INIPEC));
+        verify(requestsRepository).updateStatusToError("c1", first.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, null);
+        verify(requestsRepository).updateStatusToError("c2", second.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, null);
+        verify(requestsRepository, times(2)).updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INIPEC), any());
         verifyNoInteractions(batchesRepository);
         verify(infoCamereConverter, never()).calculateFirstAttemptAfter(anyInt());
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
@@ -267,14 +267,14 @@ class IniPecBatchRequestJobTest {
         IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
         when(infoCamereConverter.createIniPecRequest(List.of("CF1", "CF2"))).thenReturn(iniPecRequest);
         when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.error(pnException(400)));
-        when(requestsRepository.updateStatusToError("c1", first.getCreatedAt().toString(), GatewayDownstreamService.INIPEC))
+        when(requestsRepository.updateStatusToError("c1", first.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, null))
                 .thenReturn(Mono.error(updateError));
 
         IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequestScheduled());
 
         assertSame(updateError, thrown);
-        verify(requestsRepository).updateStatusToError("c1", first.getCreatedAt().toString(), GatewayDownstreamService.INIPEC);
-        verify(requestsRepository, never()).updateStatusToError(eq("c2"), anyString(), eq(GatewayDownstreamService.INIPEC));
+        verify(requestsRepository).updateStatusToError("c1", first.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, null);
+        verify(requestsRepository, never()).updateStatusToError(eq("c2"), anyString(), eq(GatewayDownstreamService.INIPEC), any());
         verifyNoInteractions(batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
     }
@@ -293,7 +293,7 @@ class IniPecBatchRequestJobTest {
         PnNationalRegistriesException thrown = assertThrows(PnNationalRegistriesException.class, () -> job.batchRequestScheduled());
 
         assertSame(providerError, thrown);
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
         verifyNoInteractions(batchesRepository);
     }
@@ -313,7 +313,7 @@ class IniPecBatchRequestJobTest {
         IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequestScheduled());
 
         assertSame(providerError, thrown);
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
         verifyNoInteractions(batchesRepository);
     }
@@ -333,7 +333,7 @@ class IniPecBatchRequestJobTest {
         verify(infoCamereService).callEService(eq(iniPecRequest), anyString());
         verifyNoInteractions(batchesRepository);
         verify(infoCamereConverter, never()).calculateFirstAttemptAfter(anyInt());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
     }
 
@@ -356,7 +356,7 @@ class IniPecBatchRequestJobTest {
         assertSame(persistenceError, thrown);
         verify(batchesRepository).putBatch(any(NationalRegistriesBatch.class));
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -382,7 +382,7 @@ class IniPecBatchRequestJobTest {
         verify(batchesRepository).putBatch(any(NationalRegistriesBatch.class));
         verify(requestsRepository).updateStatusToWorking(eq("c1"), eq(first.getCreatedAt().toString()), anyString(), eq(GatewayDownstreamService.INIPEC));
         verify(requestsRepository, never()).updateStatusToWorking(eq("c2"), anyString(), anyString(), eq(GatewayDownstreamService.INIPEC));
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -396,7 +396,7 @@ class IniPecBatchRequestJobTest {
         assertSame(repositoryError, thrown);
         verifyNoInteractions(infoCamereConverter, infoCamereService, batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @SafeVarargs

@@ -53,10 +53,11 @@ public class IniPecBatchRequestJob {
             lockAtLeastFor = "${pn.national-registries.inipec.batch-request-lock-at-least}")
     public void batchRequestScheduled() {
         MDCUtils.clearMDCKeys();
-        MDC.put(MDCUtils.MDC_PN_CTX_REQUEST_ID, UUID.randomUUID().toString());
+        String batchId = UUID.randomUUID().toString();
+        MDC.put(MDCUtils.MDC_PN_CTX_REQUEST_ID, batchId);
         MDC.put(MDCUtils.MDC_PN_CTX_TOPIC, "INIPEC_BATCH_REQUEST");
         Mono<Void> execution = collectBatchRequests()
-                .flatMap(requests -> execBatchRequest(requests, UUID.randomUUID().toString()))
+                .flatMap(requests -> execBatchRequest(requests, batchId))
                 .doOnError(error -> log.error("INIPEC batch request job failed", error));
         MDCUtils.addMDCToContextAndExecute(execution).block();
     }
@@ -90,7 +91,8 @@ public class IniPecBatchRequestJob {
                     .concatMap(request -> nationalRegistriesRequestsRepository.updateStatusToError(
                             request.getCorrelationId(),
                             request.getCreatedAt().toString(),
-                            GatewayDownstreamService.INIPEC))
+                            GatewayDownstreamService.INIPEC,
+                            null))
                     .then(Mono.empty());
         }
         return Mono.error(throwable);
