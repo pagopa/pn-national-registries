@@ -25,7 +25,6 @@ import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.isValid
 @Component
 public class InadConverter {
 
-    private static final String INAD_CF_NOT_FOUND = "CF non trovato";
     private static final int PIVA_LENGTH = 11;
     private static final int CF_LENGTH = 16;
 
@@ -47,12 +46,13 @@ public class InadConverter {
                         .filter(address -> isValidEmail(address.getDigitalAddress()))
                         .toList();
 
-                log.info("INAD - correlationId {} - statoImpresa is null - pec found: {}, not expired pec: {}, valid pec: {}",
+                log.info("INAD - correlationId {} - pec found: {}, not expired pec: {}, valid pec: {}",
                         correlationId, elementDigitalAddress.getDigitalAddress().size(), notExpiredPecList.size(), validPecList.size());
 
                 if (validPecList.isEmpty()) {
-                    throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(),
-                            HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class);
+                    log.info("INAD - correlationId {} - no valid pec found for recipientType: {}",
+                            correlationId, recipientType);
+                    return response;
                 }
 
                 List<DigitalAddressDto> digitalAddressDtoList = validPecList.stream()
@@ -61,26 +61,28 @@ public class InadConverter {
 
                 log.info("Found [{}] pec from INAD for correlationId [{}]", digitalAddressDtoList.size(), correlationId);
                 switch (recipientType) {
-                    case PF -> mapToPfAddress(digitalAddressDtoList, response, isEnablePfPecFallbackFlow);
-                    case PG -> mapToPgAddress(digitalAddressDtoList, taxId, response);
+                    case PF -> mapToPfAddress(digitalAddressDtoList, response, isEnablePfPecFallbackFlow, correlationId);
+                    case PG -> mapToPgAddress(digitalAddressDtoList, taxId, response, correlationId);
                     default -> throw new PnNationalRegistriesException("Invalid recipientType",HttpStatus.BAD_REQUEST.value(),
                             HttpStatus.BAD_REQUEST.getReasonPhrase(),null,null , Charset.defaultCharset(), InadResponseKO.class);
                 }
             } else {
-                log.info("inad digital addresses is null");
+                log.info("inad digital addresses is null for correlationId: {}", correlationId);
             }
         }
         return response;
     }
 
-    private static void mapToPgAddress(List<DigitalAddressDto> digitalAddressDtoList, String taxId, GetDigitalAddressINADOKDto response) {
+    private static void mapToPgAddress(List<DigitalAddressDto> digitalAddressDtoList, String taxId, GetDigitalAddressINADOKDto response, String correlationId) {
         if (Objects.nonNull(taxId) && taxId.length() == PIVA_LENGTH &&
                 digitalAddressDtoList.size() == 1 && !StringUtils.hasText(digitalAddressDtoList.getFirst().getPracticedProfession())) {
             response.setDigitalAddress(digitalAddressDtoList.getFirst());
+        }else{
+            log.info("INAD - correlationId: {} - No valid digital address found for PG: more than one digital address found or practicedProfession is not null", correlationId);
         }
     }
 
-    private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response, boolean isEnablePfPecFallbackFlow) {
+    private static void mapToPfAddress(List<DigitalAddressDto> digitalAddressDtoList, GetDigitalAddressINADOKDto response, boolean isEnablePfPecFallbackFlow, String correlationId) {
 
         Optional<DigitalAddressDto> digitalAddress = retrievePersonalAddress(digitalAddressDtoList, response);
         if (isEnablePfPecFallbackFlow && (digitalAddress.isEmpty() || !StringUtils.hasText(digitalAddress.get().getDigitalAddress()))) {
@@ -89,9 +91,7 @@ public class InadConverter {
 
         digitalAddress.ifPresentOrElse(
                 response::setDigitalAddress,
-                () -> {
-                    throw new PnNationalRegistriesException(INAD_CF_NOT_FOUND, HttpStatus.NOT_FOUND.value(), HttpStatus.NOT_FOUND.getReasonPhrase(), null, null, Charset.defaultCharset(), InadResponseKO.class);
-                }
+                () -> log.info("INAD - correlationId: {} - No valid digital address found for PF, setting empty digital address in response", correlationId)
         );
     }
 

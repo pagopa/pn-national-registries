@@ -1,13 +1,12 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.inad.InadClient;
-import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
-import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.UsageInfo;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyFilterDto;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -16,245 +15,247 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
-import java.nio.charset.Charset;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
-import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InadServiceTest {
 
     @InjectMocks
-    InadService inadService;
+    private InadService inadService;
 
     @Mock
-    InadClient inadClient;
-
-    @Mock
-    NationalRegistriesConfig nationalRegistriesConfig;
+    private InadClient inadClient;
 
     private static final String TAX_ID = "CMUJFD29M22L916P";
+    private static final String PRACTICAL_REFERENCE = "00001";
+
     private static final String DIGITAL_ADDRESS_1 = "da1@test.it";
     private static final String DIGITAL_ADDRESS_2 = "da2@test.it";
     private static final String DIGITAL_ADDRESS_3 = "da3@test.it";
 
     @Test
-    void callEServiceOldWorkflow() {
+    void callEServiceShouldReturnClientResponseUnchanged() {
 
-        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(false);
-        String practicalReference = "00001";
         Date now = new Date();
 
         UsageInfo usageInfo1 = new UsageInfo();
-        usageInfo1.setDateEndValidity(Date.from(LocalDate.EPOCH.atStartOfDay(ZoneOffset.UTC).toInstant()));
+        usageInfo1.setDateEndValidity(
+                Date.from(
+                        LocalDate.EPOCH
+                                .atStartOfDay(ZoneOffset.UTC)
+                                .toInstant()
+                )
+        );
         usageInfo1.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
-        ElementDigitalAddress elementDigitalAddressDto1 = new ElementDigitalAddress();
-        elementDigitalAddressDto1.setDigitalAddress(DIGITAL_ADDRESS_1);
-        elementDigitalAddressDto1.setUsageInfo(usageInfo1);
+
+        ElementDigitalAddress address1 = new ElementDigitalAddress();
+        address1.setDigitalAddress(DIGITAL_ADDRESS_1);
+        address1.setUsageInfo(usageInfo1);
 
         UsageInfo usageInfo2 = new UsageInfo();
+        usageInfo2.setDateEndValidity(
+                Date.from(
+                        LocalDate.now()
+                                .plusDays(1)
+                                .atStartOfDay(ZoneOffset.UTC)
+                                .toInstant()
+                )
+        );
         usageInfo2.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
-        usageInfo2.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
-        ElementDigitalAddress elementDigitalAddressDto2 = new ElementDigitalAddress();
-        elementDigitalAddressDto2.setDigitalAddress(DIGITAL_ADDRESS_2);
-        elementDigitalAddressDto2.setUsageInfo(usageInfo2);
+
+        ElementDigitalAddress address2 = new ElementDigitalAddress();
+        address2.setDigitalAddress(DIGITAL_ADDRESS_2);
+        address2.setUsageInfo(usageInfo2);
 
         UsageInfo usageInfo3 = new UsageInfo();
+        usageInfo3.setDateEndValidity(
+                Date.from(
+                        LocalDate.now()
+                                .plusDays(1)
+                                .atStartOfDay(ZoneOffset.UTC)
+                                .toInstant()
+                )
+        );
         usageInfo3.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
-        usageInfo3.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
-        ElementDigitalAddress elementDigitalAddressDto3 = new ElementDigitalAddress();
-        elementDigitalAddressDto3.setPracticedProfession("practicedProfession");
-        elementDigitalAddressDto3.setDigitalAddress(DIGITAL_ADDRESS_3);
-        elementDigitalAddressDto3.setUsageInfo(usageInfo3);
 
-        ResponseRequestDigitalAddress responseRequestDigitalAddressDto = new ResponseRequestDigitalAddress();
-        responseRequestDigitalAddressDto.setCodiceFiscale(TAX_ID);
-        responseRequestDigitalAddressDto.setSince(now);
-        List<ElementDigitalAddress> lista = List.of(elementDigitalAddressDto1, elementDigitalAddressDto2, elementDigitalAddressDto3);
-        responseRequestDigitalAddressDto.setDigitalAddress(lista);
+        ElementDigitalAddress address3 = new ElementDigitalAddress();
+        address3.setDigitalAddress(DIGITAL_ADDRESS_3);
+        address3.setPracticedProfession("practicedProfession");
+        address3.setUsageInfo(usageInfo3);
 
-        when(inadClient.callEService(TAX_ID, practicalReference))
-                .thenReturn(Mono.just(responseRequestDigitalAddressDto));
-
-        GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
-        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
-        filterDto.setTaxId(TAX_ID);
-        filterDto.setPracticalReference(practicalReference);
-        req.setFilter(filterDto);
-
-        StepVerifier.create(inadService.callEService(req, PF, "correlationId"))
-                .expectNextMatches(response ->
-                        DIGITAL_ADDRESS_2.equals(response.getDigitalAddress().getDigitalAddress())
-                                && response.getDigitalAddress().getPracticedProfession() == null)
-                .verifyComplete();
-    }
-
-    @Test
-    void callEServiceREferenceDateNullOldWorkflowPersonalPecRetrieved() {
-        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(false);
-
-        String practicalReference = "00001";
-        Date now = new Date();
-
-        UsageInfo usageInfo1 = new UsageInfo();
-        usageInfo1.setDateEndValidity(Date.from(LocalDate.EPOCH.atStartOfDay(ZoneOffset.UTC).toInstant()));
-        usageInfo1.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
-        ElementDigitalAddress elementDigitalAddressDto1 = new ElementDigitalAddress();
-        elementDigitalAddressDto1.setDigitalAddress(DIGITAL_ADDRESS_1);
-        elementDigitalAddressDto1.setUsageInfo(usageInfo1);
-
-        UsageInfo usageInfo3 = new UsageInfo();
-        usageInfo3.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
-        usageInfo3.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
-        ElementDigitalAddress elementDigitalAddressDto3 = new ElementDigitalAddress();
-        elementDigitalAddressDto3.setPracticedProfession("practicedProfession");
-        elementDigitalAddressDto3.setDigitalAddress(DIGITAL_ADDRESS_3);
-        elementDigitalAddressDto3.setUsageInfo(usageInfo3);
-
-        UsageInfo usageInfo2 = new UsageInfo();
-        usageInfo2.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
-        usageInfo2.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
-        ElementDigitalAddress elementDigitalAddressDto2 = new ElementDigitalAddress();
-        elementDigitalAddressDto2.setDigitalAddress(DIGITAL_ADDRESS_2);
-        elementDigitalAddressDto2.setUsageInfo(usageInfo2);
-
-        ResponseRequestDigitalAddress responseRequestDigitalAddressDto = new ResponseRequestDigitalAddress();
-        responseRequestDigitalAddressDto.setCodiceFiscale(TAX_ID);
-        responseRequestDigitalAddressDto.setSince(now);
-        List<ElementDigitalAddress> lista = List.of(elementDigitalAddressDto1, elementDigitalAddressDto2, elementDigitalAddressDto3);
-        responseRequestDigitalAddressDto.setDigitalAddress(lista);
-
-        when(inadClient.callEService(TAX_ID, practicalReference))
-                .thenReturn(Mono.just(responseRequestDigitalAddressDto));
-
-        GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
-        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
-        filterDto.setTaxId(TAX_ID);
-        filterDto.setPracticalReference(practicalReference);
-        req.setFilter(filterDto);
-
-        GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
-        response.setTaxId(TAX_ID);
+        ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
+        response.setCodiceFiscale(TAX_ID);
         response.setSince(now);
-        response.setDigitalAddress(
-                new DigitalAddressDto()
-                        .digitalAddress(DIGITAL_ADDRESS_2)
-                        .usageInfo(new UsageInfoDto()
-                                .dateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()))
-                                .motivation(UsageInfoDto.MotivationEnum.CESSAZIONE_UFFICIO)));
+        response.setDigitalAddress(List.of(address1, address2, address3));
 
-        StepVerifier.create(inadService.callEService(req, PF, "correlationId"))
+        when(inadClient.callEService(TAX_ID, PRACTICAL_REFERENCE))
+                .thenReturn(Mono.just(response));
+
+        GetDigitalAddressINADRequestBodyDto request = buildRequest();
+
+        StepVerifier.create(inadService.callEService(request))
                 .expectNext(response)
                 .verifyComplete();
+
+        verify(inadClient).callEService(TAX_ID, PRACTICAL_REFERENCE);
+        verifyNoMoreInteractions(inadClient);
     }
 
     @Test
-    void callEServiceREferenceDateNullPfProfessionEnable() {
+    void callEServiceShouldReturnPersonalPecWithoutFiltering() {
 
-        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
-        String practicalReference = "00001";
         Date now = new Date();
 
-        UsageInfo usageInfo3 = new UsageInfo();
-        usageInfo3.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
-        usageInfo3.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
-        ElementDigitalAddress elementDigitalAddressDto3 = new ElementDigitalAddress();
-        elementDigitalAddressDto3.setPracticedProfession("practicedProfession");
-        elementDigitalAddressDto3.setDigitalAddress(DIGITAL_ADDRESS_3);
-        elementDigitalAddressDto3.setUsageInfo(usageInfo3);
+        UsageInfo usageInfo = new UsageInfo();
+        usageInfo.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
+        usageInfo.setDateEndValidity(
+                Date.from(
+                        LocalDate.now()
+                                .plusDays(1)
+                                .atStartOfDay(ZoneOffset.UTC)
+                                .toInstant()
+                )
+        );
+
+        ElementDigitalAddress personalAddress = new ElementDigitalAddress();
+        personalAddress.setDigitalAddress(DIGITAL_ADDRESS_2);
+        personalAddress.setUsageInfo(usageInfo);
+
+        ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
+        response.setCodiceFiscale(TAX_ID);
+        response.setSince(now);
+        response.setDigitalAddress(List.of(personalAddress));
+
+        when(inadClient.callEService(TAX_ID, PRACTICAL_REFERENCE))
+                .thenReturn(Mono.just(response));
+
+        GetDigitalAddressINADRequestBodyDto request = buildRequest();
+
+        StepVerifier.create(inadService.callEService(request))
+                .expectNext(response)
+                .verifyComplete();
+
+        verify(inadClient).callEService(TAX_ID, PRACTICAL_REFERENCE);
+        verifyNoMoreInteractions(inadClient);
+    }
+
+    @Test
+    void callEServiceShouldReturnProfessionalAddressesWithoutFiltering() {
+
+        Date now = new Date();
 
         UsageInfo usageInfo2 = new UsageInfo();
         usageInfo2.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
-        usageInfo2.setDateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()));
-        ElementDigitalAddress elementDigitalAddressDto2 = new ElementDigitalAddress();
-        elementDigitalAddressDto2.setDigitalAddress(DIGITAL_ADDRESS_2);
-        elementDigitalAddressDto2.setPracticedProfession("practicedProfession2");
-        elementDigitalAddressDto2.setUsageInfo(usageInfo2);
+        usageInfo2.setDateEndValidity(
+                Date.from(
+                        LocalDate.now()
+                                .plusDays(1)
+                                .atStartOfDay(ZoneOffset.UTC)
+                                .toInstant()
+                )
+        );
 
-        ResponseRequestDigitalAddress responseRequestDigitalAddressDto = new ResponseRequestDigitalAddress();
-        responseRequestDigitalAddressDto.setCodiceFiscale(TAX_ID);
-        responseRequestDigitalAddressDto.setSince(now);
-        List<ElementDigitalAddress> lista = List.of(elementDigitalAddressDto2, elementDigitalAddressDto3);
-        responseRequestDigitalAddressDto.setDigitalAddress(lista);
+        ElementDigitalAddress address2 = new ElementDigitalAddress();
+        address2.setDigitalAddress(DIGITAL_ADDRESS_2);
+        address2.setPracticedProfession("practicedProfession2");
+        address2.setUsageInfo(usageInfo2);
 
-        when(inadClient.callEService(TAX_ID, practicalReference))
-                .thenReturn(Mono.just(responseRequestDigitalAddressDto));
+        UsageInfo usageInfo3 = new UsageInfo();
+        usageInfo3.setMotivation(MotivationTermination.CESSAZIONE_UFFICIO);
+        usageInfo3.setDateEndValidity(
+                Date.from(
+                        LocalDate.now()
+                                .plusDays(1)
+                                .atStartOfDay(ZoneOffset.UTC)
+                                .toInstant()
+                )
+        );
 
-        GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
-        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
-        filterDto.setTaxId(TAX_ID);
-        filterDto.setPracticalReference(practicalReference);
-        req.setFilter(filterDto);
+        ElementDigitalAddress address3 = new ElementDigitalAddress();
+        address3.setDigitalAddress(DIGITAL_ADDRESS_3);
+        address3.setPracticedProfession("practicedProfession");
+        address3.setUsageInfo(usageInfo3);
 
-        GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
-        response.setTaxId(TAX_ID);
+        ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
+        response.setCodiceFiscale(TAX_ID);
         response.setSince(now);
-        response.setDigitalAddress(
-                new DigitalAddressDto()
-                        .digitalAddress(DIGITAL_ADDRESS_2)
-                        .practicedProfession("practicedProfession2")
-                        .usageInfo(new UsageInfoDto()
-                                .dateEndValidity(Date.from(LocalDate.now().plusDays(1).atStartOfDay(ZoneOffset.UTC).toInstant()))
-                                .motivation(UsageInfoDto.MotivationEnum.CESSAZIONE_UFFICIO)));
+        response.setDigitalAddress(List.of(address2, address3));
 
-        StepVerifier.create(inadService.callEService(req, PF, "correlationId"))
+        when(inadClient.callEService(TAX_ID, PRACTICAL_REFERENCE))
+                .thenReturn(Mono.just(response));
+
+        GetDigitalAddressINADRequestBodyDto request = buildRequest();
+
+        StepVerifier.create(inadService.callEService(request))
                 .expectNext(response)
                 .verifyComplete();
+
+        verify(inadClient).callEService(TAX_ID, PRACTICAL_REFERENCE);
+        verifyNoMoreInteractions(inadClient);
     }
 
     @Test
-    void callEServiceShouldIgnoreNullDigitalAddressElements() {
-        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(false);
-
-        String practicalReference = "00001";
+    void callEServiceShouldPreserveNullDigitalAddressElements() {
 
         ElementDigitalAddress validAddress = new ElementDigitalAddress();
         validAddress.setDigitalAddress(DIGITAL_ADDRESS_2);
 
-        ResponseRequestDigitalAddress responseRequestDigitalAddressDto = new ResponseRequestDigitalAddress();
-        responseRequestDigitalAddressDto.setCodiceFiscale(TAX_ID);
-        responseRequestDigitalAddressDto.setDigitalAddress(Arrays.asList(null, validAddress));
+        ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
+        response.setCodiceFiscale(TAX_ID);
+        response.setDigitalAddress(Arrays.asList(null, validAddress));
 
-        when(inadClient.callEService(TAX_ID, practicalReference))
-                .thenReturn(Mono.just(responseRequestDigitalAddressDto));
+        when(inadClient.callEService(TAX_ID, PRACTICAL_REFERENCE))
+                .thenReturn(Mono.just(response));
 
-        GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
-        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
-        filterDto.setTaxId(TAX_ID);
-        filterDto.setPracticalReference(practicalReference);
-        req.setFilter(filterDto);
+        GetDigitalAddressINADRequestBodyDto request = buildRequest();
 
-        StepVerifier.create(inadService.callEService(req, PF, "correlationId"))
-                .expectNextMatches(response ->
-                        DIGITAL_ADDRESS_2.equals(response.getDigitalAddress().getDigitalAddress()))
+        StepVerifier.create(inadService.callEService(request))
+                .expectNext(response)
                 .verifyComplete();
+
+        verify(inadClient).callEService(TAX_ID, PRACTICAL_REFERENCE);
+        verifyNoMoreInteractions(inadClient);
     }
 
     @Test
     void callEServiceShouldPropagateClientError() {
-        String practicalReference = "00001";
+
         RuntimeException error = new RuntimeException("INAD unavailable");
 
-        GetDigitalAddressINADRequestBodyDto req = new GetDigitalAddressINADRequestBodyDto();
-        GetDigitalAddressINADRequestBodyFilterDto filterDto = new GetDigitalAddressINADRequestBodyFilterDto();
-        filterDto.setTaxId(TAX_ID);
-        filterDto.setPracticalReference(practicalReference);
-        req.setFilter(filterDto);
+        when(inadClient.callEService(TAX_ID, PRACTICAL_REFERENCE))
+                .thenReturn(Mono.error(error));
 
-        when(inadClient.callEService(TAX_ID, practicalReference)).thenReturn(Mono.error(error));
+        GetDigitalAddressINADRequestBodyDto request = buildRequest();
 
-        StepVerifier.create(inadService.callEService(req, PF, "correlationId"))
-                .expectErrorMatches(throwable -> throwable == error)
+        StepVerifier.create(inadService.callEService(request))
+                .expectError(RuntimeException.class)
                 .verify();
 
-        verify(inadClient).callEService(TAX_ID, practicalReference);
-        verifyNoInteractions(nationalRegistriesConfig);
+        verify(inadClient).callEService(TAX_ID, PRACTICAL_REFERENCE);
+        verifyNoMoreInteractions(inadClient);
+    }
+
+    private GetDigitalAddressINADRequestBodyDto buildRequest() {
+
+        GetDigitalAddressINADRequestBodyFilterDto filter =
+                new GetDigitalAddressINADRequestBodyFilterDto();
+
+        filter.setTaxId(TAX_ID);
+        filter.setPracticalReference(PRACTICAL_REFERENCE);
+
+        GetDigitalAddressINADRequestBodyDto request =
+                new GetDigitalAddressINADRequestBodyDto();
+
+        request.setFilter(filter);
+
+        return request;
     }
 }

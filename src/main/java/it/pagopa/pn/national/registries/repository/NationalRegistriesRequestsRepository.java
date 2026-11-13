@@ -21,10 +21,10 @@ public interface NationalRegistriesRequestsRepository {
 
     Mono<NationalRegistriesRequest> updateStatusToWorking(String pk, String sk, String batchId, GatewayDownstreamService registry);
 
-    Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload, GatewayDownstreamService registry, boolean isFinalRegistry);
+    Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload, String originalResponse, GatewayDownstreamService sourceRegistry, GatewayDownstreamService targetRegistry, boolean isFinalRegistry);
 
     Mono<NationalRegistriesRequest> resetStatusForRetry(String pk, String sk, Integer retry, Instant attemptAfter, GatewayDownstreamService registry);
 
-    Mono<NationalRegistriesRequest> updateStatusToError(String pk, String sk, GatewayDownstreamService registry);
+    Mono<NationalRegistriesRequest> updateStatusToError(String pk, String sk, GatewayDownstreamService registry, Integer retryCount);
 
 }

@@ -142,7 +142,7 @@ class InadBatchRequestJobTest {
 
         verifyNoInteractions(inadClient, batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), anyInt());
     }
 
     @Test
@@ -163,7 +163,7 @@ class InadBatchRequestJobTest {
         assertSame(providerError, thrown);
         verifyNoInteractions(batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -178,7 +178,7 @@ class InadBatchRequestJobTest {
         assertSame(repositoryError, thrown);
         verifyNoInteractions(inadClient, batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -284,7 +284,7 @@ class InadBatchRequestJobTest {
 
         verifyNoInteractions(inadClient, batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -297,7 +297,7 @@ class InadBatchRequestJobTest {
 
         verifyNoInteractions(inadClient, batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -400,14 +400,14 @@ class InadBatchRequestJobTest {
                 .thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
                 .thenReturn(Mono.error(providerException(400)));
-        when(requestsRepository.updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
+        when(requestsRepository.updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INAD), any()))
                 .thenReturn(Mono.just(first));
 
         job.batchRequest();
 
-        verify(requestsRepository).updateStatusToError("first", first.getCreatedAt().toString(), GatewayDownstreamService.INAD);
-        verify(requestsRepository).updateStatusToError("second", second.getCreatedAt().toString(), GatewayDownstreamService.INAD);
-        verify(requestsRepository).updateStatusToError("third", third.getCreatedAt().toString(), GatewayDownstreamService.INAD);
+        verify(requestsRepository).updateStatusToError("first", first.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
+        verify(requestsRepository).updateStatusToError("second", second.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
+        verify(requestsRepository).updateStatusToError("third", third.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
         verifyNoInteractions(batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
     }
@@ -426,16 +426,16 @@ class InadBatchRequestJobTest {
         when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
                 .thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.error(providerException(400)));
-        when(requestsRepository.updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INAD))).thenReturn(Mono.just(validPf));
+        when(requestsRepository.updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INAD), any())).thenReturn(Mono.just(validPf));
 
         job.batchRequest();
 
         ArgumentCaptor<RequestListDigitalAddress> requestCaptor = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
         verify(inadClient).callMassiveEService(requestCaptor.capture());
         assertEquals(List.of("RSSMRA80A01H501U", "rssmra80a01h501u", "VRDLGI80A01H501K"), requestCaptor.getValue().getCodiciFiscali());
-        verify(requestsRepository).updateStatusToError("valid-pf", validPf.getCreatedAt().toString(), GatewayDownstreamService.INAD);
-        verify(requestsRepository).updateStatusToError("invalid-lowercase", invalidLowercase.getCreatedAt().toString(), GatewayDownstreamService.INAD);
-        verify(requestsRepository).updateStatusToError("valid-second", validSecond.getCreatedAt().toString(), GatewayDownstreamService.INAD);
+        verify(requestsRepository).updateStatusToError("valid-pf", validPf.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
+        verify(requestsRepository).updateStatusToError("invalid-lowercase", invalidLowercase.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
+        verify(requestsRepository).updateStatusToError("valid-second", validSecond.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
         verifyNoInteractions(batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
     }
@@ -453,15 +453,15 @@ class InadBatchRequestJobTest {
                 .thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
                 .thenReturn(Mono.error(providerException(400)));
-        when(requestsRepository.updateStatusToError("first", first.getCreatedAt().toString(), GatewayDownstreamService.INAD))
+        when(requestsRepository.updateStatusToError("first", first.getCreatedAt().toString(), GatewayDownstreamService.INAD, null))
                 .thenReturn(Mono.error(updateError));
 
         IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequest());
 
         assertSame(updateError, thrown);
-        verify(requestsRepository).updateStatusToError("first", first.getCreatedAt().toString(), GatewayDownstreamService.INAD);
-        verify(requestsRepository, never()).updateStatusToError(eq("second"), anyString(), eq(GatewayDownstreamService.INAD));
-        verify(requestsRepository, never()).updateStatusToError(eq("third"), anyString(), eq(GatewayDownstreamService.INAD));
+        verify(requestsRepository).updateStatusToError("first", first.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
+        verify(requestsRepository, never()).updateStatusToError(eq("second"), anyString(), eq(GatewayDownstreamService.INAD), any());
+        verify(requestsRepository, never()).updateStatusToError(eq("third"), anyString(), eq(GatewayDownstreamService.INAD), any());
         verifyNoInteractions(batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
     }
@@ -481,7 +481,7 @@ class InadBatchRequestJobTest {
         PnNationalRegistriesException thrown = assertThrows(PnNationalRegistriesException.class, () -> job.batchRequest());
 
         assertSame(providerError, thrown);
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
         verifyNoInteractions(batchesRepository);
     }
@@ -503,7 +503,7 @@ class InadBatchRequestJobTest {
         verify(inadClient).callMassiveEService(any(RequestListDigitalAddress.class));
         verifyNoInteractions(batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -523,7 +523,7 @@ class InadBatchRequestJobTest {
         assertTrue(thrown.getProblem().getDetail().contains("INAD returned no polling identifier for batch"));
         verifyNoInteractions(batchesRepository);
         verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test

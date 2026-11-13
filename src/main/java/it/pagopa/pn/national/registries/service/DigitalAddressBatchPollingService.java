@@ -6,6 +6,7 @@ import it.pagopa.pn.national.registries.constant.BatchStatus;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
+import it.pagopa.pn.national.registries.converter.InadConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.entity.BatchRequest;
@@ -262,7 +263,8 @@ public class DigitalAddressBatchPollingService{
                     .doOnNext(batchRequest -> log.info("Closing batchRequest for correlationId: {} to start INAD massive", request.getCorrelationId()))
                     .then();
         }
-        return inadService.callEService(GatewayConverter.convertToGetDigitalAddressInadRequest(request.getCorrelationId(), request.getCf()), recipientType, correlationId)
+        return inadService.callEService(GatewayConverter.convertToGetDigitalAddressInadRequest(request.getCorrelationId(), request.getCf()))
+                .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, request.getCf(), nationalRegistriesConfig.isEnablePfPecFallbackFlow(), correlationId))
                 .doOnNext(getDigitalAddressINADOKDto -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
                 .doOnNext(inadResponse -> {
                     CodeSqsDto codeSqsDto = GatewayConverter.inadToSqsDto(correlationId, inadResponse);
@@ -272,7 +274,6 @@ public class DigitalAddressBatchPollingService{
                     request.setEservice(GatewayDownstreamService.INAD.name());
 
                 })
-                .doOnNext(sendMessageResponse -> log.info("retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
                 .onErrorResume(e -> {
                     logEServiceError(e, "can not retrieve digital address from INAD: {}");
                     CodeSqsDto codeSqsDto = GatewayConverter.errorInadToSqsDto(correlationId, e);

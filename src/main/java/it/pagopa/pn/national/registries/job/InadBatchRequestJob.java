@@ -58,13 +58,13 @@ public class InadBatchRequestJob {
         Instant now = Instant.now();
         MDC.put(MDCUtils.MDC_PN_CTX_REQUEST_ID, executionId);
         MDC.put(MDCUtils.MDC_PN_CTX_TOPIC, "INAD_BATCH_REQUEST");
-        Mono<Void> executeBatch = processNextBatch(now)
+        Mono<Void> executeBatch = processNextBatch(now, executionId)
                 .doOnSuccess(ignored -> log.trace("INAD batch request job completed"))
                 .doOnError(error -> log.error("INAD batch request job failed", error));
         MDCUtils.addMDCToContextAndExecute(executeBatch).block();
     }
 
-    private Mono<Void> processNextBatch(Instant now) {
+    private Mono<Void> processNextBatch(Instant now, String executionId) {
         int maxBatchSize = nationalRegistriesConfig.getInad().getMaxBatchRequestSize();
         int queryLimit = nationalRegistriesConfig.getQueryLimit();
 
@@ -72,9 +72,14 @@ public class InadBatchRequestJob {
                         .getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, queryLimit))
                 .concatMapIterable(Page::items)
                 .buffer(maxBatchSize)
-                .concatMap(requests -> isEligible(requests, maxBatchSize, now)
-                        ? submitBatch(requests, now)
-                        : Mono.empty())
+                .index()
+                .concatMap(indexedBatch -> {
+                    long batchIndex = indexedBatch.getT1();
+                    List<NationalRegistriesRequest> requests = indexedBatch.getT2();
+                    return isEligible(requests, maxBatchSize, now)
+                            ? submitBatch(requests, now, batchIndex, executionId)
+                            : Mono.empty();
+                })
                 .then();
     }
 
@@ -98,11 +103,11 @@ public class InadBatchRequestJob {
         return waitIsOver;
     }
 
-    private Mono<Void> submitBatch(List<NationalRegistriesRequest> requests, Instant now) {
-        String batchId = UUID.randomUUID().toString();
+    private Mono<Void> submitBatch(List<NationalRegistriesRequest> requests, Instant now, long index, String executionId) {
+        String batchId = String.join("#", executionId, String.valueOf(index));
+        log.info("Submitting INAD batch request, batchId: {}, requestsSize: {}", batchId, requests.size());
         RequestListDigitalAddress request = new RequestListDigitalAddress();
         request.setCodiciFiscali(requests.stream().map(NationalRegistriesRequest::getTaxId).toList());
-        // INAD persists this reference with the provider request, making retries traceable to this batch.
         request.setPraticalReference(batchId);
 
         return inadClient.callMassiveEService(request)
@@ -118,7 +123,8 @@ public class InadBatchRequestJob {
                     .concatMap(request -> nationalRegistriesRequestsRepository.updateStatusToError(
                             request.getCorrelationId(),
                             request.getCreatedAt().toString(),
-                            GatewayDownstreamService.INAD))
+                            GatewayDownstreamService.INAD,
+                            null))
                     .then(Mono.empty());
         }
         return Mono.error(throwable);
