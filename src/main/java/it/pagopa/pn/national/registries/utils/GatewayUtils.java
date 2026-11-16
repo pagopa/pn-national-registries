@@ -58,12 +58,15 @@ public class GatewayUtils {
         }
     }
 
-    public <T> String convertToString(T object){
-    try {
-            return mapper.writeValueAsString(object);
-        } catch (JsonProcessingException e) {
-            throw new DigitalAddressException("can not convert DTO to String", e);
+    public <T> String convertToString(T object) {
+        if (Objects.nonNull(object)) {
+            try {
+                return mapper.writeValueAsString(object);
+            } catch (JsonProcessingException e) {
+                throw new DigitalAddressException("can not convert DTO to String", e);
+            }
         }
+        return null;
     }
 
     public static RecipientType retrieveRecipientType(String cf, String recipientType) {

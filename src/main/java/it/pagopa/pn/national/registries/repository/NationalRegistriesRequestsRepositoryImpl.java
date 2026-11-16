@@ -193,13 +193,16 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
             names.put("#resultPayload", NationalRegistriesRequest.COL_RESULT_PAYLOAD);
             values.put(":resultPayload", AttributeValue.builder().s(resultPayload).build());
             updates.add("#resultPayload = :resultPayload");
-            names.put("#originalResponse", NationalRegistriesRequest.COL_ORIGINALRESPONSE);
-            values.put(":originalResponse", AttributeValue.builder().s(originalResponse).build());
-            updates.add("#originalResponse = :originalResponse");
         }else if(Objects.nonNull(targetRegistry)){
             names.put("#targetRegistry", NationalRegistriesRequest.COL_NEXTREGISTRY);
             values.put(":targetRegistry", AttributeValue.builder().s(targetRegistry.name()).build());
             updates.add("#targetRegistry = :targetRegistry");
+        }
+
+        if(StringUtils.hasText(originalResponse)){
+            names.put("#originalResponse", NationalRegistriesRequest.COL_ORIGINALRESPONSE);
+            values.put(":originalResponse", AttributeValue.builder().s(originalResponse).build());
+            updates.add("#originalResponse = :originalResponse");
         }
 
         addTtl(names, values, updates);

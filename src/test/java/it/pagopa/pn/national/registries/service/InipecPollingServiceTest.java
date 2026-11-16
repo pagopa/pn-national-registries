@@ -175,13 +175,11 @@ class InipecPollingServiceTest {
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(REQUEST_CORRELATION_ID, null)).thenReturn(codeSqsDto);
         when(gatewayUtils.convertGatewayResponseToString(any())).thenReturn("payload");
-        when(gatewayUtils.convertToString(any()))
-                .thenReturn("payload");
-        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC,null, "payload", "payload", true)).thenReturn(Mono.empty());
+        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC,null, "payload", null, true)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
-        verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null,"payload", "payload", true);
+        verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null,"payload", null, true);
         verifyNoInteractions(inadService);
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
     }
@@ -542,14 +540,12 @@ class InipecPollingServiceTest {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(pf.getCorrelationId(), null)).thenReturn(codeSqsDto);
         when(gatewayUtils.convertGatewayResponseToString(any())).thenReturn("payload");
-        when(gatewayUtils.convertToString(any()))
-                .thenReturn("payload");
-        when(pollingService.markRequestAsWorked(pf, GatewayDownstreamService.INIPEC, null,"payload", "payload", true)).thenReturn(Mono.empty());
+        when(pollingService.markRequestAsWorked(pf, GatewayDownstreamService.INIPEC, null,"payload", null, true)).thenReturn(Mono.empty());
         when(pollingService.createFallbackRequest(pg, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
-        verify(pollingService).markRequestAsWorked(pf, GatewayDownstreamService.INIPEC, null,"payload", "payload", true);
+        verify(pollingService).markRequestAsWorked(pf, GatewayDownstreamService.INIPEC, null,"payload", null, true);
         verify(pollingService).createFallbackRequest(pg, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD);
         verify(pollingService).markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC);
     }

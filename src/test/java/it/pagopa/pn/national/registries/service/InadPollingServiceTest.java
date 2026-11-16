@@ -229,14 +229,12 @@ class InadPollingServiceTest {
                 .thenReturn(false);
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("{\"result\":\"not-found\"}");
-        when(gatewayUtils.convertToString(any()))
-                .thenReturn("{\"result\":\"not-found\"}");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
                 null,
                 "{\"result\":\"not-found\"}",
-                "{\"result\":\"not-found\"}",
+                null,
                 true
         )).thenReturn(Mono.empty());
         when(pollingService.markBatchAsWorked(
@@ -252,7 +250,7 @@ class InadPollingServiceTest {
                 GatewayDownstreamService.INAD,
                 null,
                 "{\"result\":\"not-found\"}",
-                "{\"result\":\"not-found\"}",
+                null,
                 true
         );
 
