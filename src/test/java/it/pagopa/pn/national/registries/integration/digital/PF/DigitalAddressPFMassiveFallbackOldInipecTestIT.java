@@ -1123,12 +1123,6 @@ public class DigitalAddressPFMassiveFallbackOldInipecTestIT extends AbstractNati
             if ("NOT_WORKED".equals(findLegacyPolling(batchId).get("status").s())) {
                 return;
             }
-           /* try {
-                Thread.sleep(20);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                fail(e);
-            }*/
         }
         fail("Legacy polling not recovered for batchId " + batchId);
     }
@@ -1144,12 +1138,6 @@ public class DigitalAddressPFMassiveFallbackOldInipecTestIT extends AbstractNati
             if (request.get("sendStatus") != null && expected.equals(request.get("sendStatus").s())) {
                 return request;
             }
-           /* try {
-                Thread.sleep(20);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                fail(e);
-            }*/
         }
         fail("sendStatus non aggiornato a " + expected + " per correlationId " + correlationId);
         return request;
