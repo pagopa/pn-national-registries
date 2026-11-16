@@ -473,6 +473,7 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
         pollInipec(secondBatchId, secondPollingId, 1);
         request = requestByRegistry(correlationId, "INIPEC");
         assertEquals("ERROR", request.get("status").s());
+        assertEquals("2", request.get("retryCount").n());
         assertEquals("INIPEC#ERROR", request.get("registryStatus").s());
         assertNull(request.get("resultPayload"));
     }
@@ -748,7 +749,9 @@ public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNational
             assertEquals("WORKING", findBatch(flow.batchId()).get("status").s());
         }
         pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(pollingPayload(flow, maxRetry, 0)).build());
-        assertEquals("ERROR", findBatch(flow.batchId()).get("status").s());
+        Map<String, AttributeValue> finalBatch = findBatch(flow.batchId);
+        assertEquals("ERROR", finalBatch.get("status").s());
+        assertEquals("5", finalBatch.get("errorRetryCount").n());
         assertEquals("ERROR", requestByRegistry(flow.correlationId(), "INAD").get("status").s());
         assertTrue(requestsByRegistry(flow.correlationId(), "INIPEC").isEmpty());
     }

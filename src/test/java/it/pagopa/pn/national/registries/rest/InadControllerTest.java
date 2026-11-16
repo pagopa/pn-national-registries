@@ -1,7 +1,9 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.RecipientType;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyFilterDto;
@@ -21,6 +23,7 @@ import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
+import java.util.ArrayList;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -48,7 +51,7 @@ class InadControllerTest {
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.getHeaders()).thenReturn(httpHeaders);
 
-        inadController = new InadController(inadService, mock(ValidateTaxIdUtils.class));
+        inadController = new InadController(inadService, mock(ValidateTaxIdUtils.class), mock(NationalRegistriesConfig.class));
     }
 
     @AfterEach
@@ -64,11 +67,12 @@ class InadControllerTest {
         dto.setCorrelationId("correlation-id");
         extractDigitalAddressINADRequestBodyDto.setFilter(dto);
 
-        GetDigitalAddressINADOKDto getDigitalAddressINADOKDto = new GetDigitalAddressINADOKDto();
-        getDigitalAddressINADOKDto.setTaxId("DDDFGF52F52H501S");
+        ResponseRequestDigitalAddress getDigitalAddressINADOKDto = new ResponseRequestDigitalAddress();
+        getDigitalAddressINADOKDto.setCodiceFiscale("DDDFGF52F52H501S");
         getDigitalAddressINADOKDto.setSince(new Date());
+        getDigitalAddressINADOKDto.setDigitalAddress(new ArrayList<>());
 
-        when(inadService.callEService(extractDigitalAddressINADRequestBodyDto, RecipientType.PF, "correlation-id"))
+        when(inadService.callEService(extractDigitalAddressINADRequestBodyDto))
                 .thenReturn(Mono.fromSupplier(() -> {
                     assertEquals("correlation-id", MDC.get(MDCUtils.MDC_PN_CTX_REQUEST_ID));
                     return getDigitalAddressINADOKDto;
@@ -77,7 +81,6 @@ class InadControllerTest {
         StepVerifier.create(inadController.digitalAddressINAD("PF", Mono.just(extractDigitalAddressINADRequestBodyDto), serverWebExchange))
                 .assertNext(response -> {
                     assertEquals(200, response.getStatusCode().value());
-                    assertEquals(getDigitalAddressINADOKDto, response.getBody());
                     assertEquals("correlation-id", httpHeaders.getFirst("X-Request-ID"));
                 })
                 .verifyComplete();

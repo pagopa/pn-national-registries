@@ -24,13 +24,11 @@ import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.nio.charset.Charset;
 import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
 import java.util.Date;
 import java.util.List;
 
 import static it.pagopa.pn.national.registries.entity.NationalRegistriesBatch.SK;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
@@ -76,7 +74,7 @@ class PollingServiceTest {
         when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING))
                 .thenReturn(SdkPublisher.adapt(Flux.just(Page.create(List.of(request)))));
         RuntimeException failure = new RuntimeException("request update failed");
-        when(nationalRegistriesRequestsRepository.updateStatusToError(anyString(), anyString(), any()))
+        when(nationalRegistriesRequestsRepository.updateStatusToError(anyString(), anyString(), any(), any()))
                 .thenReturn(Mono.error(failure), Mono.just(request));
 
         Mono<Void> firstAttempt = pollingService.incrementAndCheckRetry(
@@ -85,14 +83,14 @@ class PollingServiceTest {
         StepVerifier.create(firstAttempt).expectErrorMatches(error -> error == failure).verify();
         verifyNoInteractions(nationalRegistriesBatchesRepository);
 
-        when(nationalRegistriesBatchesRepository.updateToFinalStatus(BATCH_ID, SK, BatchesStatusEnum.ERROR))
+        when(nationalRegistriesBatchesRepository.updateToFinalStatus(BATCH_ID, SK, BatchesStatusEnum.ERROR, false, 1))
                 .thenReturn(Mono.empty());
         StepVerifier.create(pollingService.incrementAndCheckRetry(
                 BATCH_ID, 0, 0, false, 1, 1, GatewayDownstreamService.INIPEC, failure)).verifyComplete();
         var order = inOrder(nationalRegistriesRequestsRepository, nationalRegistriesBatchesRepository);
         order.verify(nationalRegistriesRequestsRepository, times(2))
-                .updateStatusToError(anyString(), anyString(), any());
-        order.verify(nationalRegistriesBatchesRepository).updateToFinalStatus(BATCH_ID, SK, BatchesStatusEnum.ERROR);
+                .updateStatusToError(anyString(), anyString(), any(), any());
+        order.verify(nationalRegistriesBatchesRepository).updateToFinalStatus(BATCH_ID, SK, BatchesStatusEnum.ERROR, false, 1);
     }
 
     @Test
@@ -248,13 +246,16 @@ class PollingServiceTest {
         when(nationalRegistriesRequestsRepository.updateStatusToError(
                 CORRELATION_ID,
                 CREATED_AT.toString(),
-                GatewayDownstreamService.INIPEC
+                GatewayDownstreamService.INIPEC,
+                null
         )).thenReturn(Mono.empty());
 
         when(nationalRegistriesBatchesRepository.updateToFinalStatus(
                 BATCH_ID,
                 SK,
-                BatchesStatusEnum.ERROR
+                BatchesStatusEnum.ERROR,
+                false,
+                5
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
@@ -275,14 +276,17 @@ class PollingServiceTest {
                 .updateStatusToError(
                         CORRELATION_ID,
                         CREATED_AT.toString(),
-                        GatewayDownstreamService.INIPEC
+                        GatewayDownstreamService.INIPEC,
+                        null
                 );
 
         verify(nationalRegistriesBatchesRepository)
                 .updateToFinalStatus(
                         BATCH_ID,
                         SK,
-                        BatchesStatusEnum.ERROR
+                        BatchesStatusEnum.ERROR,
+                        false,
+                        5
                 );
 
         verify(nationalRegistriesBatchesRepository, never())
@@ -305,7 +309,9 @@ class PollingServiceTest {
         when(nationalRegistriesBatchesRepository.updateToFinalStatus(
                 BATCH_ID,
                 SK,
-                BatchesStatusEnum.ERROR
+                BatchesStatusEnum.ERROR,
+                true,
+                10
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
@@ -326,7 +332,9 @@ class PollingServiceTest {
                 .updateToFinalStatus(
                         BATCH_ID,
                         SK,
-                        BatchesStatusEnum.ERROR
+                        BatchesStatusEnum.ERROR,
+                        true,
+                        10
                 );
 
         verify(nationalRegistriesBatchesRepository, never())
@@ -360,7 +368,9 @@ class PollingServiceTest {
         when(nationalRegistriesBatchesRepository.updateToFinalStatus(
                 BATCH_ID,
                 SK,
-                BatchesStatusEnum.ERROR
+                BatchesStatusEnum.ERROR,
+                false,
+                5
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
@@ -381,7 +391,9 @@ class PollingServiceTest {
                 .updateToFinalStatus(
                         BATCH_ID,
                         SK,
-                        BatchesStatusEnum.ERROR
+                        BatchesStatusEnum.ERROR,
+                        false,
+                        5
                 );
 
         verify(nationalRegistriesBatchesRepository, never())
@@ -442,6 +454,8 @@ class PollingServiceTest {
                 .updateToFinalStatus(
                         anyString(),
                         anyString(),
+                        any(),
+                        any(),
                         any()
                 );
     }
@@ -483,6 +497,8 @@ class PollingServiceTest {
                 .updateToFinalStatus(
                         anyString(),
                         anyString(),
+                        any(),
+                        any(),
                         any()
                 );
     }
@@ -537,13 +553,16 @@ class PollingServiceTest {
         when(nationalRegistriesRequestsRepository.updateStatusToError(
                 anyString(),
                 anyString(),
-                eq(GatewayDownstreamService.INIPEC)
+                eq(GatewayDownstreamService.INIPEC),
+                any()
         )).thenReturn(Mono.empty());
 
         when(nationalRegistriesBatchesRepository.updateToFinalStatus(
                 BATCH_ID,
                 SK,
-                BatchesStatusEnum.ERROR
+                BatchesStatusEnum.ERROR,
+                false,
+                5
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
@@ -564,14 +583,16 @@ class PollingServiceTest {
                 .updateStatusToError(
                         CORRELATION_ID,
                         CREATED_AT.toString(),
-                        GatewayDownstreamService.INIPEC
+                        GatewayDownstreamService.INIPEC,
+                        null
                 );
 
         verify(nationalRegistriesRequestsRepository)
                 .updateStatusToError(
                         "correlation-id-2",
                         "2026-01-01T11:00:00Z",
-                        GatewayDownstreamService.INIPEC
+                        GatewayDownstreamService.INIPEC,
+                        null
                 );
     }
 
@@ -593,7 +614,8 @@ class PollingServiceTest {
         when(nationalRegistriesRequestsRepository.updateStatusToError(
                 CORRELATION_ID,
                 CREATED_AT.toString(),
-                GatewayDownstreamService.INIPEC
+                GatewayDownstreamService.INIPEC,
+                null
         )).thenReturn(Mono.error(failure));
 
 
@@ -628,7 +650,9 @@ class PollingServiceTest {
         when(nationalRegistriesBatchesRepository.updateToFinalStatus(
                 BATCH_ID,
                 SK,
-                BatchesStatusEnum.ERROR
+                BatchesStatusEnum.ERROR,
+                false,
+                5
         )).thenReturn(Mono.error(failure));
 
         StepVerifier.create(
@@ -734,7 +758,9 @@ class PollingServiceTest {
                 CORRELATION_ID,
                 CREATED_AT.toString(),
                 null,
+                null,
                 GatewayDownstreamService.INAD,
+                GatewayDownstreamService.INIPEC,
                 false
         )).thenReturn(Mono.empty());
 
@@ -746,7 +772,7 @@ class PollingServiceTest {
                         )
                 )
                 .then(() -> {
-                    verify(nationalRegistriesRequestsRepository, never()).updateStatusToWorked(anyString(), anyString(), any(), any(), anyBoolean());
+                    verify(nationalRegistriesRequestsRepository, never()).updateStatusToWorked(anyString(), anyString(), any(), any(), any(), any(), anyBoolean());
                     persisted.tryEmitEmpty();
                 })
                 .verifyComplete();
@@ -778,7 +804,9 @@ class PollingServiceTest {
                         CORRELATION_ID,
                         CREATED_AT.toString(),
                         null,
+                        null,
                         GatewayDownstreamService.INAD,
+                        GatewayDownstreamService.INIPEC,
                         false
                 );
 
@@ -918,7 +946,9 @@ class PollingServiceTest {
                 CORRELATION_ID,
                 CREATED_AT.toString(),
                 payload,
+                payload,
                 GatewayDownstreamService.INIPEC,
+                null,
                 true
         )).thenReturn(Mono.empty());
 
@@ -926,6 +956,8 @@ class PollingServiceTest {
                         pollingService.markRequestAsWorked(
                                 request,
                                 GatewayDownstreamService.INIPEC,
+                                null,
+                                payload,
                                 payload,
                                 true
                         )
@@ -937,7 +969,9 @@ class PollingServiceTest {
                         CORRELATION_ID,
                         CREATED_AT.toString(),
                         payload,
+                        payload,
                         GatewayDownstreamService.INIPEC,
+                        null,
                         true
                 );
     }
@@ -950,7 +984,9 @@ class PollingServiceTest {
                 CORRELATION_ID,
                 CREATED_AT.toString(),
                 null,
+                null,
                 GatewayDownstreamService.INIPEC,
+                GatewayDownstreamService.INAD,
                 false
         )).thenReturn(Mono.empty());
 
@@ -958,6 +994,8 @@ class PollingServiceTest {
                         pollingService.markRequestAsWorked(
                                 request,
                                 GatewayDownstreamService.INIPEC,
+                                GatewayDownstreamService.INAD,
+                                null,
                                 null,
                                 false
                         )
@@ -969,7 +1007,9 @@ class PollingServiceTest {
                         CORRELATION_ID,
                         CREATED_AT.toString(),
                         null,
+                        null,
                         GatewayDownstreamService.INIPEC,
+                        GatewayDownstreamService.INAD,
                         false
                 );
     }
@@ -985,7 +1025,9 @@ class PollingServiceTest {
                 CORRELATION_ID,
                 CREATED_AT.toString(),
                 null,
+                null,
                 GatewayDownstreamService.INIPEC,
+                GatewayDownstreamService.INAD,
                 false
         )).thenReturn(Mono.error(failure));
 
@@ -993,6 +1035,8 @@ class PollingServiceTest {
                         pollingService.markRequestAsWorked(
                                 request,
                                 GatewayDownstreamService.INIPEC,
+                                GatewayDownstreamService.INAD,
+                                null,
                                 null,
                                 false
                         )
@@ -1006,7 +1050,9 @@ class PollingServiceTest {
         when(nationalRegistriesBatchesRepository.updateToFinalStatus(
                 BATCH_ID,
                 SK,
-                BatchesStatusEnum.WORKED
+                BatchesStatusEnum.WORKED,
+                null,
+                null
         )).thenReturn(Mono.empty());
 
         StepVerifier.create(
@@ -1021,7 +1067,9 @@ class PollingServiceTest {
                 .updateToFinalStatus(
                         BATCH_ID,
                         SK,
-                        BatchesStatusEnum.WORKED
+                        BatchesStatusEnum.WORKED,
+                        null,
+                        null
                 );
     }
 
@@ -1033,7 +1081,9 @@ class PollingServiceTest {
         when(nationalRegistriesBatchesRepository.updateToFinalStatus(
                 BATCH_ID,
                 SK,
-                BatchesStatusEnum.WORKED
+                BatchesStatusEnum.WORKED,
+                null,
+                null
         )).thenReturn(Mono.error(failure));
 
         StepVerifier.create(

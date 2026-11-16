@@ -11,6 +11,8 @@ import it.pagopa.pn.national.registries.entity.BatchRequest;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
@@ -288,11 +290,11 @@ class DigitalAddressBatchPollingServiceTest {
         when(batchRequestRepository.getBatchRequestByBatchIdAndStatus("batchId3", BatchStatus.WORKING, new HashMap<>()))
                 .thenReturn(Mono.just(Page.create(List.of(batchRequest3))));
 
-        GetDigitalAddressINADOKDto inadResp = new GetDigitalAddressINADOKDto();
-        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        ResponseRequestDigitalAddress inadResp = new ResponseRequestDigitalAddress();
+        ElementDigitalAddress digitalAddressDto = new ElementDigitalAddress();
         digitalAddressDto.setDigitalAddress("inad@pec.it");
-        inadResp.setDigitalAddress(digitalAddressDto);
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(inadResp));
+        inadResp.setDigitalAddress(List.of(digitalAddressDto));
+        when(inadService.callEService(any())).thenReturn(Mono.just(inadResp));
 
         when(iniPecBatchSqsService.batchSendToSqs(anyList()))
                 .thenReturn(Mono.empty().then());
@@ -649,7 +651,7 @@ class DigitalAddressBatchPollingServiceTest {
         Pec pec = new Pec();
         pec.setPecImpresa("2026-08-10T00:00:00Z");
         pec.setStatoImpresa(null);
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.empty());
+        when(inadService.callEService(any())).thenReturn(Mono.empty());
         BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         DigitalAddress address = new DigitalAddress();
@@ -719,14 +721,14 @@ class DigitalAddressBatchPollingServiceTest {
 
         BatchStatus status = BatchStatus.valueOf(batchRequest.getStatus());
 
-        GetDigitalAddressINADOKDto inadResp = new GetDigitalAddressINADOKDto();
-        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        ResponseRequestDigitalAddress inadResp = new ResponseRequestDigitalAddress();
+        ElementDigitalAddress digitalAddressDto = new ElementDigitalAddress();
         digitalAddressDto.setDigitalAddress("inad@pec.it");
-        inadResp.setDigitalAddress(digitalAddressDto);
+        inadResp.setDigitalAddress(List.of(digitalAddressDto));
 
         when(infoCamereService.evaluateInipecStatoImpresa(any(), any(), any(), same(pec)))
                 .thenReturn(new InipecEvaluationResult.NotFound());
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any()))
                 .thenReturn(Mono.just(inadResp));
 
         BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, status, LocalDateTime.now()).block();
@@ -745,7 +747,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         when(infoCamereService.evaluateInipecStatoImpresa(any(), any(), any(), same(pec)))
                 .thenReturn(new InipecEvaluationResult.NotFound());
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(validInadResponse()));
+        when(inadService.callEService(any())).thenReturn(Mono.just(validInadResponse()));
 
         BatchRequest result = digitalAddressBatchPollingService
                 .evaluateStatoImpresa(batchRequest, pec, BatchStatus.WORKED, LocalDateTime.now())
@@ -754,7 +756,7 @@ class DigitalAddressBatchPollingServiceTest {
         assertSame(batchRequest, result);
         assertEquals(BatchStatus.WORKED.getValue(), result.getStatus());
         assertEquals(GatewayDownstreamService.INAD.name(), result.getEservice());
-        verify(inadService, times(1)).callEService(any(), any(), any());
+        verify(inadService, times(1)).callEService(any());
         verify(infoCamereConverter, never()).updateBatchRequestFields(any(), any(), any(), any());
         verifyNoInteractions(ipaService);
     }
@@ -768,7 +770,7 @@ class DigitalAddressBatchPollingServiceTest {
         codeSqsDto.setDigitalAddress(null);
         when(infoCamereService.evaluateInipecStatoImpresa(any(), any(), any(), same(pec)))
                 .thenReturn(new InipecEvaluationResult.NotFound());
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(validInadResponse()));
+        when(inadService.callEService(any())).thenReturn(Mono.just(validInadResponse()));
 
         BatchRequest result = digitalAddressBatchPollingService
                 .evaluateStatoImpresa(batchRequest, pec, BatchStatus.WORKED, LocalDateTime.now())
@@ -776,7 +778,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         assertSame(batchRequest, result);
         assertEquals(GatewayDownstreamService.INAD.name(), result.getEservice());
-        verify(inadService, times(1)).callEService(any(), any(), any());
+        verify(inadService, times(1)).callEService(any());
         verify(infoCamereConverter, never()).updateBatchRequestFields(any(), any(), any(), any());
     }
 
@@ -787,7 +789,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         when(infoCamereService.evaluateInipecStatoImpresa(any(), any(), any(), same(pec)))
                 .thenReturn(new InipecEvaluationResult.NotFound());
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(validInadResponse()));
+        when(inadService.callEService(any())).thenReturn(Mono.just(validInadResponse()));
 
         BatchRequest result = digitalAddressBatchPollingService
                 .evaluateStatoImpresa(batchRequest, pec, BatchStatus.WORKED, LocalDateTime.now())
@@ -796,7 +798,7 @@ class DigitalAddressBatchPollingServiceTest {
         assertSame(batchRequest, result);
         assertEquals(BatchStatus.WORKED.getValue(), result.getStatus());
         assertEquals(GatewayDownstreamService.INAD.name(), result.getEservice());
-        verify(inadService, times(1)).callEService(any(), any(), any());
+        verify(inadService, times(1)).callEService(any());
         verify(infoCamereConverter, never()).updateBatchRequestFields(any(), any(), any(), any());
         verifyNoInteractions(ipaService);
     }
@@ -808,7 +810,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         when(infoCamereService.evaluateInipecStatoImpresa(any(), any(), any(), same(pec)))
                 .thenReturn(new InipecEvaluationResult.NotFound());
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any()))
                 .thenReturn(Mono.error(new PnNationalRegistriesException("CF non trovato", 404, "Not Found",
                         null, null, Charset.defaultCharset(), null)));
 
@@ -818,7 +820,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         assertSame(batchRequest, result);
         assertEquals(BatchStatus.WORKED.getValue(), result.getStatus());
-        verify(inadService, times(1)).callEService(any(), any(), any());
+        verify(inadService, times(1)).callEService(any());
     }
 
     @Test
@@ -828,7 +830,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         when(infoCamereService.evaluateInipecStatoImpresa(any(), any(), any(), same(pec)))
                 .thenReturn(new InipecEvaluationResult.NotFound());
-        when(inadService.callEService(any(), any(), any()))
+        when(inadService.callEService(any()))
                 .thenReturn(Mono.error(new PnNationalRegistriesException("Internal Server Error", 500, "Internal Server Error",
                         null, null, Charset.defaultCharset(), null)));
 
@@ -838,7 +840,7 @@ class DigitalAddressBatchPollingServiceTest {
 
         assertSame(batchRequest, result);
         assertEquals(BatchStatus.ERROR.getValue(), result.getStatus());
-        verify(inadService, times(1)).callEService(any(), any(), any());
+        verify(inadService, times(1)).callEService(any());
     }
 
     @Test
@@ -917,11 +919,11 @@ class DigitalAddressBatchPollingServiceTest {
         when(iniPecBatchSqsService.batchSendToSqs(anyList())).thenReturn(Mono.empty());
         when(infoCamereService.evaluateInipecStatoImpresa(any(), any(), any(), same(pec)))
                 .thenReturn(new InipecEvaluationResult.NotFound());
-        when(inadService.callEService(any(), any(), any())).thenReturn(Mono.just(validInadResponse()));
+        when(inadService.callEService(any())).thenReturn(Mono.just(validInadResponse()));
 
         assertDoesNotThrow(() -> digitalAddressBatchPollingService.batchPecPolling());
 
-        verify(inadService, times(1)).callEService(any(), any(), any());
+        verify(inadService, times(1)).callEService(any());
         verify(infoCamereConverter, never()).updateBatchRequestFields(any(), any(), any(), any());
         verify(iniPecBatchSqsService, times(1)).batchSendToSqs(List.of(batchRequest));
         assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
@@ -950,12 +952,12 @@ class DigitalAddressBatchPollingServiceTest {
         return codeSqsDto;
     }
 
-    private static GetDigitalAddressINADOKDto validInadResponse() {
-        GetDigitalAddressINADOKDto inadResp = new GetDigitalAddressINADOKDto();
-        inadResp.setTaxId("28223913097");
-        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+    private static ResponseRequestDigitalAddress validInadResponse() {
+        ResponseRequestDigitalAddress inadResp = new ResponseRequestDigitalAddress();
+        inadResp.setCodiceFiscale("28223913097");
+        ElementDigitalAddress digitalAddressDto = new ElementDigitalAddress();
         digitalAddressDto.setDigitalAddress("inad@pec.it");
-        inadResp.setDigitalAddress(digitalAddressDto);
+        inadResp.setDigitalAddress(List.of(digitalAddressDto));
         return inadResp;
     }
 
@@ -1079,14 +1081,14 @@ class DigitalAddressBatchPollingServiceTest {
         batchRequest.setRecipientType(PG.name());
         batchRequest.setCf("12345678901");
 
-        GetDigitalAddressINADOKDto inadResponse = new GetDigitalAddressINADOKDto();
-        inadResponse.setTaxId("12345678901");
-        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        ResponseRequestDigitalAddress inadResponse = new ResponseRequestDigitalAddress();
+        inadResponse.setCodiceFiscale("12345678901");
+        ElementDigitalAddress digitalAddressDto = new ElementDigitalAddress();
         digitalAddressDto.setDigitalAddress("pg@pec.it");
-        inadResponse.setDigitalAddress(digitalAddressDto);
+        inadResponse.setDigitalAddress(List.of(digitalAddressDto));
 
         when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
-        when(inadService.callEService(any(), eq(PG), eq("correlationId"))).thenReturn(Mono.just(inadResponse));
+        when(inadService.callEService(any())).thenReturn(Mono.just(inadResponse));
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("serialized-message");
 
         BatchRequest result = digitalAddressBatchPollingService
@@ -1097,7 +1099,7 @@ class DigitalAddressBatchPollingServiceTest {
         assertEquals(BatchStatus.WORKED.getValue(), batchRequest.getStatus());
         assertEquals("serialized-message", batchRequest.getMessage());
         assertEquals("INAD", batchRequest.getEservice());
-        verify(inadService).callEService(any(), eq(PG), eq("correlationId"));
+        verify(inadService).callEService(any());
     }
 
     @Test
@@ -1107,14 +1109,14 @@ class DigitalAddressBatchPollingServiceTest {
         batchRequest.setRecipientType(null);
         batchRequest.setCf("RSSMRA80A01H501U");
 
-        GetDigitalAddressINADOKDto inadResponse = new GetDigitalAddressINADOKDto();
-        inadResponse.setTaxId("RSSMRA80A01H501U");
-        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        ResponseRequestDigitalAddress inadResponse = new ResponseRequestDigitalAddress();
+        inadResponse.setCodiceFiscale("RSSMRA80A01H501U");
+        ElementDigitalAddress digitalAddressDto = new ElementDigitalAddress();
         digitalAddressDto.setDigitalAddress("pf@pec.it");
-        inadResponse.setDigitalAddress(digitalAddressDto);
+        inadResponse.setDigitalAddress(List.of(digitalAddressDto));
 
         when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
-        when(inadService.callEService(any(), eq(PF), eq("correlationId"))).thenReturn(Mono.just(inadResponse));
+        when(inadService.callEService(any())).thenReturn(Mono.just(inadResponse));
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("serialized-message");
 
         BatchRequest result = digitalAddressBatchPollingService
@@ -1122,7 +1124,7 @@ class DigitalAddressBatchPollingServiceTest {
                 .block();
 
         assertSame(batchRequest, result);
-        verify(inadService).callEService(any(), eq(PF), eq("correlationId"));
+        verify(inadService).callEService(any());
         verify(infoCamereConverter, never()).updateBatchRequestFields(any(), any(), any(), any());
     }
 
@@ -1143,22 +1145,22 @@ class DigitalAddressBatchPollingServiceTest {
         invalidAddress.setAddress("not-an-email");
         codeSqsDto.setDigitalAddress(List.of(invalidAddress));
 
-        GetDigitalAddressINADOKDto inadResponse = new GetDigitalAddressINADOKDto();
-        inadResponse.setTaxId("12345678901");
-        DigitalAddressDto digitalAddressDto = new DigitalAddressDto();
+        ResponseRequestDigitalAddress inadResponse = new ResponseRequestDigitalAddress();
+        inadResponse.setCodiceFiscale("12345678901");
+        ElementDigitalAddress digitalAddressDto = new ElementDigitalAddress();
         digitalAddressDto.setDigitalAddress("fallback@pec.it");
-        inadResponse.setDigitalAddress(digitalAddressDto);
+        inadResponse.setDigitalAddress(List.of(digitalAddressDto));
 
         when(infoCamereService.evaluateInipecStatoImpresa(any(), any(), any(), same(pec)))
                 .thenReturn(new InipecEvaluationResult.NotFound());
         when(nationalRegistriesConfig.isEnableInadMassiveApi()).thenReturn(false);
-        when(inadService.callEService(any(), eq(PG), eq("correlationId"))).thenReturn(Mono.just(inadResponse));
+        when(inadService.callEService(any())).thenReturn(Mono.just(inadResponse));
         when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class))).thenReturn("serialized-message");
 
         BatchRequest result = digitalAddressBatchPollingService.evaluateStatoImpresa(batchRequest, pec, BatchStatus.WORKING, LocalDateTime.now()).block();
 
         assertSame(batchRequest, result);
-        verify(inadService).callEService(any(), eq(PG), eq("correlationId"));
+        verify(inadService).callEService(any());
         verify(infoCamereConverter, never()).updateBatchRequestFields(any(), any(), any(), any());
     }
 

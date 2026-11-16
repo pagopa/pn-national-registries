@@ -1052,8 +1052,9 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
         }
 
         pollingInputsHandler.pnNationalRegistriesPollingInputsConsumer(MessageBuilder.withPayload(pollingPayload(flow, maxRetry, 0)).build());
-
-        assertEquals("ERROR", findBatch(flow.batchId()).get("status").s());
+        Map<String, AttributeValue> finalBatch = findBatch(flow.batchId());
+        assertEquals("ERROR", finalBatch.get("status").s());
+        assertEquals("5", finalBatch.get("errorRetryCount").n());
         assertEquals("ERROR", request(flow.correlationId(), "INAD").get("status").s());
         assertInadIsTerminal(flow.correlationId());
     }
@@ -1172,7 +1173,9 @@ public class DigitalAddressPGMassiveIT extends AbstractNationalRegistriesCompone
                 MessageBuilder.withPayload(pollingPayload(flow, 0, maxRetry - 1)).build()
         );
 
-        assertEquals("ERROR", findBatch(flow.batchId()).get("status").s());
+        Map<String, AttributeValue> finalBatch = findBatch(flow.batchId());
+        assertEquals("ERROR", finalBatch.get("status").s());
+        assertEquals("10", finalBatch.get("inProgressRetryCount").n());
 
         Map<String, AttributeValue> request = requestByRegistry(flow.correlationId(), "INAD");
 

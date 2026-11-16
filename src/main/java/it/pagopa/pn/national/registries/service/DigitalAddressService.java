@@ -1,13 +1,14 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
+import it.pagopa.pn.national.registries.converter.InadConverter;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyDto;
 import it.pagopa.pn.national.registries.model.AddressInternalResult;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
-import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -29,6 +30,7 @@ public class DigitalAddressService{
     private final IpaService ipaService;
     private final InadService inadService;
     private final GatewayUtils gatewayUtils;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     Mono<AddressInternalResult> retrieveDigitalAddressFromIpa(AddressRequestBodyDto addressRequestBodyDto, String correlationId) {
         return ipaService.getIpaPec(GatewayConverter.convertToGetIpaPecRequest(addressRequestBodyDto))
@@ -50,12 +52,13 @@ public class DigitalAddressService{
     }
 
     public Mono<AddressInternalResult> retrieveDigitalAddressFromInadSync(AddressRequestBodyDto addressRequestBodyDto, String correlationId, RecipientType recipientType) {
-        return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto.getFilter().getCorrelationId(), addressRequestBodyDto.getFilter().getTaxId()), recipientType, correlationId)
+        return inadService.callEService(convertToGetDigitalAddressInadRequest(addressRequestBodyDto.getFilter().getCorrelationId(), addressRequestBodyDto.getFilter().getTaxId()))
+                .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, addressRequestBodyDto.getFilter().getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow(), correlationId))
                 .doOnNext(response -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
-                .doOnNext(response -> log.info("retrieved digital address from INAD for correlationId: {}", correlationId))
                 .map(response -> GatewayConverter.inadToSqsDto(correlationId, response))
                 .<AddressInternalResult>map(codeSqsDto -> {
                     if (!CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
+                        log.info("retrieved digital address from INAD for correlationId: {}", correlationId);
                         logCfWithAddressMetric(correlationId, GatewayDownstreamService.INAD, recipientType, DigitalAddressRecipientType.fromValue(codeSqsDto.getDigitalAddress().getFirst().getRecipient()));
                         return new AddressInternalResult.Found(codeSqsDto);
                     }

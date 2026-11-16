@@ -170,6 +170,7 @@ public class MetricUtils {
 
     public static void logCfWithAddressMetricFromBatchRequest(CodeSqsDto codeSqsDto, String correlationId, String taxId, String recipientType, GatewayDownstreamService registry) {
         if(Objects.nonNull(codeSqsDto) && !CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())){
+            log.info("retrieved digital address from {} for correlationId: {}", registry, correlationId);
             RecipientType recipientTypeEnum = retrieveRecipientType(taxId, recipientType);
             DigitalAddressRecipientType digitalAddressRecipientType = DigitalAddressRecipientType.fromValue(codeSqsDto.getDigitalAddress().getFirst().getRecipient());
             logCfWithAddressMetric(correlationId, registry, recipientTypeEnum, digitalAddressRecipientType);

@@ -585,7 +585,8 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
 
         assertEquals("WORKED", request.get("status").s());
         assertEquals("INAD#WORKED", request.get("registryStatus").s());
-        assertNotNull(request.get("resultPayload"));
+        assertNotNull(request.get("resultPayload").s());
+        assertNotNull(request.get("originalResponse").s());
         assertNull(request.get("batchId"));
 
         GatewayResponse payload = readNewOutputMessage(request.get("resultPayload").s());

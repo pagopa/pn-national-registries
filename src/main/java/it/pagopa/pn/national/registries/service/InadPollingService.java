@@ -111,7 +111,7 @@ public class InadPollingService {
         ResponseRequestDigitalAddress inadResponse = resultByTaxId.get(request.getTaxId());
         if (Objects.isNull(inadResponse)) {
             log.warn("INAD - correlationId {} - taxId not present in massive response", request.getCorrelationId());
-            return handlePecNotFoundResponse(request,  GatewayConverter.inadToSqsDto(request.getCorrelationId(), null));
+            return handlePecNotFoundResponse(request,  GatewayConverter.inadToSqsDto(request.getCorrelationId(), null), null);
         }
         return processInadResponse(request, inadResponse);
     }
@@ -121,10 +121,10 @@ public class InadPollingService {
         String correlationId = request.getCorrelationId();
 
         return Mono.fromCallable(() -> InadConverter.mapToResponseOk(inadResponse, recipientType, request.getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow(), correlationId))
-                .doOnNext(unused -> log.info("INAD - retrieved digital address from massive response for correlationId: {}", correlationId))
                 .map(response -> GatewayConverter.inadToSqsDto(correlationId, response))
                 .flatMap(codeSqsDto -> {
                     if (!CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
+                        log.info("INAD - correlationId {} - digital address found in massive response", correlationId);
                         logCfWithAddressMetricFromBatchRequest(
                                 codeSqsDto,
                                 request.getCorrelationId(),
@@ -134,26 +134,28 @@ public class InadPollingService {
                         );
                         GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
                         String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
-                        return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, resultPayload, true);
+                        String originalResponse = gatewayUtils.convertToString(inadResponse);
+                        return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, null,  resultPayload, originalResponse,true);
                     }
-                    return handlePecNotFoundResponse(request, codeSqsDto);
+                    return handlePecNotFoundResponse(request, codeSqsDto, inadResponse);
                 })
                 .onErrorResume(e -> {
                     CodeSqsDto codeSqsDto = GatewayConverter.errorInadToSqsDto(correlationId, e);
                     if (codeSqsDto != null) {
                         log.info("correlationId: {} - INAD - indirizzo non presente", correlationId);
-                        return handlePecNotFoundResponse(request, codeSqsDto);
+                        return handlePecNotFoundResponse(request, codeSqsDto, null);
                     }
                     return Mono.error(e);
                 });
     }
 
-    private Mono<Void> handlePecNotFoundResponse(NationalRegistriesRequest request, CodeSqsDto codeSqsDto) {
+    private Mono<Void> handlePecNotFoundResponse(NationalRegistriesRequest request, CodeSqsDto codeSqsDto, ResponseRequestDigitalAddress originalResponse) {
         if (nationalRegistriesConfig.isEnablePfPecFallbackFlow() && PF.name().equalsIgnoreCase(request.getRecipientType())) {
             return pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
         }
         GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
         String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
-        return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, resultPayload, true);
+        String originalResponseString = gatewayUtils.convertToString(originalResponse);
+        return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, null, resultPayload, originalResponseString ,true);
     }
 }

@@ -1,16 +1,17 @@
 package it.pagopa.pn.national.registries.integration.digital.PF;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
 import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
 import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
 import it.pagopa.pn.national.registries.job.IniPecBatchRequestJob;
 import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
-import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
@@ -22,18 +23,14 @@ import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.sqs.model.Message;
+
 import java.time.Instant;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
+
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
-import java.util.HashMap;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 /**
  * Scenari funzionali PF DIGITAL
@@ -109,7 +106,7 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
      * Inad 404 NotFound
      */
     @Test
-    void PF_Digital_INAD_NotFound_InipecFallback() {
+    void PF_Digital_INAD_NotFound_InipecFallback() throws JsonProcessingException {
         String correlationId = "pf-digital-inad-not-found-fallback-" + UUID.randomUUID();
         when(inadClient.callEService(eq(VALID_PF_CF), eq(correlationId))).thenReturn(Mono.error(inadNotFoundException()));
 
@@ -129,7 +126,7 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
      * Inad 200 con lista vuota
      */
     @Test
-    void PF_Digital_INAD_EmptyList_FallbackEnabled() {
+    void PF_Digital_INAD_EmptyList_FallbackEnabled() throws JsonProcessingException {
         String correlationId = "pf-digital-empty-list-enabled-" + UUID.randomUUID();
 
         ResponseRequestDigitalAddress emptyResponse = new ResponseRequestDigitalAddress();
@@ -155,7 +152,7 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
      * Inad pec personale scaduta
      */
     @Test
-    void shouldFallbackToInipecWhenPersonalExpired() {
+    void shouldFallbackToInipecWhenPersonalExpired() throws JsonProcessingException {
         String correlationId = "pf-digital-expired-personal-fallback-" + UUID.randomUUID();
         ElementDigitalAddress expiredPersonal = inadAddress("expired-personal@pec.it", null);
         expiredPersonal.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
@@ -441,7 +438,7 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
      * Inad personale non valida, Inad professionale scaduta
      */
     @Test
-    void PF_Digital_INAD_OnlyProfessionalExpired_FallbackEnabled() {
+    void PF_Digital_INAD_OnlyProfessionalExpired_FallbackEnabled() throws JsonProcessingException {
         String correlationId = "pf-digital-only-professional-expired-fallback-" + UUID.randomUUID();
         ElementDigitalAddress expiredProfessional = inadAddress("expired-professional@pec.it", "AVVOCATO");
         expiredProfessional.getUsageInfo().setDateEndValidity(Date.from(Instant.now().minusSeconds(3600)));
@@ -825,7 +822,7 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
     }
 
-    private void completeInipecFinal(String correlationId, String address) {
+    private void completeInipecFinal(String correlationId, String address) throws JsonProcessingException {
         String pollingId = "inipec-full-flow-" + UUID.randomUUID();
         when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class))).thenReturn(Mono.just(iniPecBatchResponse(pollingId)));
         iniPecBatchRequestJob.batchRequestScheduled();
@@ -835,7 +832,8 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
                 .orElseThrow();
         String batchId = request.get("batchId").s();
         pollingJob.polling();
-        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(iniPecPollingResponse(pecResponse(VALID_PF_CF, address))));
+        Pec pec = pecResponse(VALID_PF_CF, address);
+        when(infoCamereClient.callEServiceRequestPec(pollingId)).thenReturn(Mono.just(iniPecPollingResponse(pec)));
         inipecPollingService.handleMessage(PnPollingEvent.Payload.builder()
                 .registry(GatewayDownstreamService.INIPEC)
                 .batchId(batchId)
@@ -849,7 +847,10 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
                 .findFirst()
                 .orElseThrow();
         assertEquals("WORKED", request.get("status").s());
+        assertNotNull(request.get("originalResponse").s());
+        Pec originalResponse = objectMapper.readValue(request.get("originalResponse").s(), Pec.class);
         assertNotNull(request.get("resultPayload"));
+        assertEquals(pec, originalResponse);
         GatewayResponse payload = readNewOutputMessage(request.get("resultPayload").s());
         assertEquals("INIPEC", payload.getPayload().getRegistry());
         assertEquals(address, payload.getPayload().getDigitalAddress().getFirst().getAddress());

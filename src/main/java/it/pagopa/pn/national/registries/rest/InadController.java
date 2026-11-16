@@ -1,7 +1,9 @@
 package it.pagopa.pn.national.registries.rest;
 
 import it.pagopa.pn.commons.utils.MDCUtils;
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.RecipientType;
+import it.pagopa.pn.national.registries.converter.InadConverter;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.api.DigitalAddressInadApi;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
@@ -23,6 +25,7 @@ public class InadController implements DigitalAddressInadApi {
 
     private final InadService inadService;
     private final ValidateTaxIdUtils validateTaxIdUtils;
+    private final NationalRegistriesConfig nationalRegistriesConfig;
 
     /**
      * POST /national-registries-private/{recipient-type}/inad/digital-address : Consente di ottenere il domicilio digitale corrispondente al codice fiscale al momento della consultazione e, in caso di domicilio digitale eletto in qualità di Professionista, anche l&#39;attività professionale esercitata.
@@ -44,7 +47,9 @@ public class InadController implements DigitalAddressInadApi {
                 .flatMap(requestBody -> {
                     validateTaxIdUtils.validateTaxId(requestBody.getFilter().getTaxId(), PROCESS_NAME_INAD_ADDRESS, false);
                     RequestIdUtils.putRequestIdToMDCAndExchangeResponseHeader(requestBody.getFilter().getCorrelationId(), exchange);
-                    return MDCUtils.addMDCToContextAndExecute(inadService.callEService(requestBody, recipientTypeEnum, requestBody.getFilter().getCorrelationId()))
+                    return MDCUtils.addMDCToContextAndExecute(inadService.callEService(requestBody)
+                                    .map(responseRequestDigitalAddressDto ->
+                                            InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientTypeEnum, requestBody.getFilter().getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow(), requestBody.getFilter().getCorrelationId())))
                             .map(ResponseEntity::ok);
                 });
     }

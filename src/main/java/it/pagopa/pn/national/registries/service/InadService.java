@@ -1,10 +1,7 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.client.inad.InadClient;
-import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
-import it.pagopa.pn.national.registries.constant.RecipientType;
-import it.pagopa.pn.national.registries.converter.InadConverter;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADRequestBodyDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -17,10 +14,8 @@ import reactor.core.publisher.Mono;
 public class InadService{
 
     private final InadClient inadClient;
-    private final NationalRegistriesConfig nationalRegistriesConfig;
 
-    public Mono<GetDigitalAddressINADOKDto> callEService(GetDigitalAddressINADRequestBodyDto request, RecipientType recipientType, String correlationId) {
-        return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference())
-                .map(responseRequestDigitalAddressDto -> InadConverter.mapToResponseOk(responseRequestDigitalAddressDto, recipientType, request.getFilter().getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow(), correlationId));
+    public Mono<ResponseRequestDigitalAddress> callEService(GetDigitalAddressINADRequestBodyDto request) {
+        return inadClient.callEService(request.getFilter().getTaxId(), request.getFilter().getPracticalReference());
     }
 }

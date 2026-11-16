@@ -1499,6 +1499,7 @@ public class DigitalAddressPGOldInipecMassiveIT extends AbstractNationalRegistri
 
             assertEquals("WORKED", stored.get("status").s());
             assertNotNull(stored.get("resultPayload"));
+            assertNotNull(stored.get("originalResponse"));
 
             GatewayResponse resultPayload = readNewOutputMessage(stored.get("resultPayload").s());
             assertEquals(CX_ID, resultPayload.getClientId());
@@ -1588,6 +1589,7 @@ public class DigitalAddressPGOldInipecMassiveIT extends AbstractNationalRegistri
         assertEquals("INAD#WORKED", stored.get("registryStatus").s());
         assertEquals(batchId, stored.get("batchId").s());
         assertNotNull(stored.get("resultPayload"));
+        assertNotNull(stored.get("originalResponse"));
 
         verify(inadClient, never()).callEService(any(), any());
         assertInadIsTerminal(correlationId);
@@ -1721,6 +1723,8 @@ public class DigitalAddressPGOldInipecMassiveIT extends AbstractNationalRegistri
         assertEquals("INAD#NOT_WORKED", request.get("registryStatus").s());
         assertNull(request.get("batchId"));
         assertNull(request.get("resultPayload"));
+        assertNull(request.get("originalResponse"));
+
     }
 
     private Pec nf(String taxId) {

@@ -56,6 +56,9 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
             Map<String, String> names = new HashMap<>();
             Map<String, AttributeValue> values = new HashMap<>();
             List<String> updates = new ArrayList<>();
+            names.put("#nextRegistry", NationalRegistriesRequest.COL_NEXTREGISTRY);
+            values.put(":nextRegistry", AttributeValue.builder().s(destination.getRegistry().name()).build());
+            updates.add("#nextRegistry = :nextRegistry");
 
             addTtl(names, values, updates);
 
@@ -171,7 +174,7 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      * WORKED è uno stato finale, quindi viene aggiornato anche il TTL.
      */
     @Override
-    public Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload, GatewayDownstreamService registry, boolean isFinalRegistry) {
+    public Mono<NationalRegistriesRequest> updateStatusToWorked(String pk, String sk, String resultPayload, String originalResponse, GatewayDownstreamService sourceRegistry, GatewayDownstreamService targetRegistry, boolean isFinalRegistry) {
         Map<String, String> names = new HashMap<>();
         Map<String, AttributeValue> values = new HashMap<>();
         List<String> updates = new ArrayList<>();
@@ -190,11 +193,18 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
             names.put("#resultPayload", NationalRegistriesRequest.COL_RESULT_PAYLOAD);
             values.put(":resultPayload", AttributeValue.builder().s(resultPayload).build());
             updates.add("#resultPayload = :resultPayload");
+            names.put("#originalResponse", NationalRegistriesRequest.COL_ORIGINALRESPONSE);
+            values.put(":originalResponse", AttributeValue.builder().s(originalResponse).build());
+            updates.add("#originalResponse = :originalResponse");
+        }else if(Objects.nonNull(targetRegistry)){
+            names.put("#targetRegistry", NationalRegistriesRequest.COL_NEXTREGISTRY);
+            values.put(":targetRegistry", AttributeValue.builder().s(targetRegistry.name()).build());
+            updates.add("#targetRegistry = :targetRegistry");
         }
 
         addTtl(names, values, updates);
 
-        return updateStatus(pk, sk, WORKED, registry, names, values, updates);
+        return updateStatus(pk, sk, WORKED, sourceRegistry, names, values, updates);
     }
 
     /**
@@ -203,11 +213,16 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
      * ERROR è uno stato finale, quindi viene aggiornato anche il TTL.
      */
     @Override
-    public Mono<NationalRegistriesRequest> updateStatusToError(String pk, String sk, GatewayDownstreamService registry) {
+    public Mono<NationalRegistriesRequest> updateStatusToError(String pk, String sk, GatewayDownstreamService registry, Integer retryCount) {
 
         Map<String, String> names = new HashMap<>();
         Map<String, AttributeValue> values = new HashMap<>();
         List<String> updates = new ArrayList<>();
+        if(Objects.nonNull(retryCount)){
+            names.put("#retryCount", NationalRegistriesRequest.COL_RETRY_COUNT);
+            values.put(":retryCount", AttributeValue.builder().n(String.valueOf(retryCount)).build());
+            updates.add("#retryCount = :retryCount");
+        }
 
         addTtl(names, values, updates);
 

@@ -5,10 +5,10 @@ import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.DigitalAddressDto;
-import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.GatewayResponse;
@@ -129,7 +129,7 @@ class InipecPollingServiceTest {
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
         verify(pollingService).markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC);
-        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), any(),any(), anyBoolean());
     }
 
     @Test
@@ -153,11 +153,13 @@ class InipecPollingServiceTest {
         when(infoCamereService.evaluateInipecStatoImpresa(REQUEST_CORRELATION_ID, request.getTaxId(), "PF", pec))
                 .thenReturn(new InipecEvaluationResult.Found(codeSqsDto));
         when(gatewayUtils.convertGatewayResponseToString(any())).thenReturn("payload");
-        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, "payload", true)).thenReturn(Mono.empty());
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
+        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, "payload","payload", true)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
-        verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INIPEC, "payload", true);
+        verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, "payload", "payload", true);
         verify(pollingService).markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC);
         verifyNoInteractions(inadService);
     }
@@ -173,11 +175,13 @@ class InipecPollingServiceTest {
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(REQUEST_CORRELATION_ID, null)).thenReturn(codeSqsDto);
         when(gatewayUtils.convertGatewayResponseToString(any())).thenReturn("payload");
-        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, "payload", true)).thenReturn(Mono.empty());
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
+        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC,null, "payload", "payload", true)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
-        verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INIPEC, "payload", true);
+        verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null,"payload", "payload", true);
         verifyNoInteractions(inadService);
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
     }
@@ -193,11 +197,13 @@ class InipecPollingServiceTest {
                 .thenReturn(new InipecEvaluationResult.NotFound());
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(REQUEST_CORRELATION_ID, null)).thenReturn(codeSqsDto);
         when(gatewayUtils.convertGatewayResponseToString(any())).thenReturn("payload");
-        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, "payload", true)).thenReturn(Mono.empty());
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
+        when(pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null,"payload", "payload", true)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
-        verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INIPEC, "payload", true);
+        verify(pollingService).markRequestAsWorked(request, GatewayDownstreamService.INIPEC,null, "payload", "payload", true);
     }
 
     // ---- flag enable-inad-massive-api ----
@@ -243,8 +249,8 @@ class InipecPollingServiceTest {
         Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request));
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
 
-        GetDigitalAddressINADOKDto inadResponse = inadResponse(TAX_ID_PG, "pec@pec.it");
-        when(inadService.callEService(any(), eq(it.pagopa.pn.national.registries.constant.RecipientType.PG), eq(CORRELATION_ID)))
+        ResponseRequestDigitalAddress inadResponse = inadResponse(TAX_ID_PG, "pec@pec.it");
+        when(inadService.callEService(any()))
                 .thenReturn(Mono.just(inadResponse));
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class))).thenReturn("inad-payload");
         when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
@@ -259,7 +265,7 @@ class InipecPollingServiceTest {
         assertEquals(RequestStatusEnum.WORKED, saved.getStatus());
         assertEquals("inad-payload", saved.getResultPayload());
         assertEquals(REQUEST_CORRELATION_ID, saved.getCorrelationId());
-        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), any(), any(),anyBoolean());
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
     }
 
@@ -269,7 +275,7 @@ class InipecPollingServiceTest {
         NationalRegistriesRequest request = request("PG", TAX_ID_PG, null);
         Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request), false);
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
-        when(inadService.callEService(any(), any(), eq(CORRELATION_ID)))
+        when(inadService.callEService(any()))
                 .thenReturn(Mono.just(inadResponse(TAX_ID_PG, "pec@pec.it")));
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class))).thenReturn("inad-payload");
         IllegalStateException failure = new IllegalStateException("transaction failed");
@@ -278,7 +284,7 @@ class InipecPollingServiceTest {
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).expectErrorMatches(error -> error == failure).verify();
 
-        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), any(),any(),anyBoolean());
         verify(pollingService, never()).markBatchAsWorked(anyString(), any());
     }
 
@@ -288,9 +294,9 @@ class InipecPollingServiceTest {
         request.setClientId("clientid");
         Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request));
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
-        GetDigitalAddressINADOKDto inadResponse = new GetDigitalAddressINADOKDto();
-        inadResponse.setTaxId(TAX_ID_PG);
-        when(inadService.callEService(any(), any(), eq(CORRELATION_ID))).thenReturn(Mono.just(inadResponse));
+        ResponseRequestDigitalAddress inadResponse = new ResponseRequestDigitalAddress();
+        inadResponse.setCodiceFiscale(TAX_ID_PG);
+        when(inadService.callEService(any())).thenReturn(Mono.just(inadResponse));
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class))).thenReturn("inad-payload");
         when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(1)));
@@ -309,7 +315,7 @@ class InipecPollingServiceTest {
         NationalRegistriesRequest request = request("PG", TAX_ID_PG, null);
         Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request));
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
-        when(inadService.callEService(any(), any(), eq(CORRELATION_ID)))
+        when(inadService.callEService(any()))
                 .thenReturn(Mono.just(inadResponse(TAX_ID_PG, "not-an-email")));
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class))).thenReturn("inad-payload");
         when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
@@ -329,7 +335,7 @@ class InipecPollingServiceTest {
         NationalRegistriesRequest request = request("PG", TAX_ID_PG, null);
         Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request));
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
-        when(inadService.callEService(any(), any(), eq(CORRELATION_ID))).thenReturn(Mono.error(inadException(404, "CF non trovato")));
+        when(inadService.callEService(any())).thenReturn(Mono.error(inadException(404, "CF non trovato")));
         when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class))).thenReturn("inad-payload");
         when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(1)));
@@ -348,7 +354,7 @@ class InipecPollingServiceTest {
         NationalRegistriesRequest request = request("PG", TAX_ID_PG, null);
         Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request));
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
-        when(inadService.callEService(any(), any(), eq(CORRELATION_ID))).thenReturn(Mono.error(inadException(500, "boom")));
+        when(inadService.callEService(any())).thenReturn(Mono.error(inadException(500, "boom")));
         when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(1)));
 
@@ -367,14 +373,14 @@ class InipecPollingServiceTest {
         NationalRegistriesRequest request = request(null, TAX_ID_PG, null);
         Map<String, Pec> pecByTaxId = mockPollingSuccess(List.of(request));
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(null);
-        when(inadService.callEService(any(), eq(it.pagopa.pn.national.registries.constant.RecipientType.PG), eq(CORRELATION_ID)))
+        when(inadService.callEService(any()))
                 .thenReturn(Mono.error(inadException(500, "boom")));
         when(requestsRepository.completeWithFallback(eq(request), any(NationalRegistriesRequest.class)))
                 .thenAnswer(invocation -> Mono.just(invocation.getArgument(1)));
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
-        verify(inadService).callEService(any(), eq(it.pagopa.pn.national.registries.constant.RecipientType.PG), eq(CORRELATION_ID));
+        verify(inadService).callEService(any());
     }
 
     // ---- stato impresa "da riprovare" ----
@@ -396,7 +402,7 @@ class InipecPollingServiceTest {
         ArgumentCaptor<Instant> attemptAfter = ArgumentCaptor.forClass(Instant.class);
         verify(requestsRepository).resetStatusForRetry(eq(REQUEST_CORRELATION_ID), eq(request.getCreatedAt().toString()), eq(2), attemptAfter.capture(), eq(GatewayDownstreamService.INIPEC));
         assertFalse(attemptAfter.getValue().isBefore(before.plusSeconds(REQUEST_RETRY_AFTER)));
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any());
+        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -424,12 +430,12 @@ class InipecPollingServiceTest {
         when(infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId)).thenReturn(pec);
         when(infoCamereService.evaluateInipecStatoImpresa(REQUEST_CORRELATION_ID, TAX_ID_PG, "PG", pec))
                 .thenReturn(new InipecEvaluationResult.Retry());
-        when(requestsRepository.updateStatusToError(REQUEST_CORRELATION_ID, request.getCreatedAt().toString(), GatewayDownstreamService.INIPEC))
+        when(requestsRepository.updateStatusToError(REQUEST_CORRELATION_ID, request.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, previousRetries + 1))
                 .thenReturn(Mono.just(request));
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
-        verify(requestsRepository).updateStatusToError(REQUEST_CORRELATION_ID, request.getCreatedAt().toString(), GatewayDownstreamService.INIPEC);
+        verify(requestsRepository).updateStatusToError(REQUEST_CORRELATION_ID, request.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, previousRetries + 1);
         verify(requestsRepository, never()).resetStatusForRetry(anyString(), anyString(), any(), any(), any());
     }
 
@@ -471,7 +477,7 @@ class InipecPollingServiceTest {
         assertTrue(batchCloseSubscribed.get());
         verify(requestsRepository).getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING);
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
-        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(),any(), any(),anyBoolean());
     }
 
     /**
@@ -536,12 +542,14 @@ class InipecPollingServiceTest {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         when(infoCamereConverter.convertResponsePecToCodeSqsDto(pf.getCorrelationId(), null)).thenReturn(codeSqsDto);
         when(gatewayUtils.convertGatewayResponseToString(any())).thenReturn("payload");
-        when(pollingService.markRequestAsWorked(pf, GatewayDownstreamService.INIPEC, "payload", true)).thenReturn(Mono.empty());
+        when(gatewayUtils.convertToString(any()))
+                .thenReturn("payload");
+        when(pollingService.markRequestAsWorked(pf, GatewayDownstreamService.INIPEC, null,"payload", "payload", true)).thenReturn(Mono.empty());
         when(pollingService.createFallbackRequest(pg, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD)).thenReturn(Mono.empty());
 
         StepVerifier.create(service.handleMessage(payload(0, 0))).verifyComplete();
 
-        verify(pollingService).markRequestAsWorked(pf, GatewayDownstreamService.INIPEC, "payload", true);
+        verify(pollingService).markRequestAsWorked(pf, GatewayDownstreamService.INIPEC, null,"payload", "payload", true);
         verify(pollingService).createFallbackRequest(pg, GatewayDownstreamService.INIPEC, GatewayDownstreamService.INAD);
         verify(pollingService).markBatchAsWorked(BATCH_ID, GatewayDownstreamService.INIPEC);
     }
@@ -587,12 +595,12 @@ class InipecPollingServiceTest {
         return request;
     }
 
-    private static GetDigitalAddressINADOKDto inadResponse(String taxId, String address) {
-        DigitalAddressDto digitalAddress = new DigitalAddressDto();
+    private static ResponseRequestDigitalAddress inadResponse(String taxId, String address) {
+        ElementDigitalAddress digitalAddress = new ElementDigitalAddress();
         digitalAddress.setDigitalAddress(address);
-        GetDigitalAddressINADOKDto response = new GetDigitalAddressINADOKDto();
-        response.setTaxId(taxId);
-        response.setDigitalAddress(digitalAddress);
+        ResponseRequestDigitalAddress response = new ResponseRequestDigitalAddress();
+        response.setCodiceFiscale(taxId);
+        response.setDigitalAddress(List.of(digitalAddress));
         return response;
     }
 
