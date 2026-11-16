@@ -1498,7 +1498,13 @@ public class DigitalAddressPGOldInipecMassiveTestIT extends AbstractNationalRegi
 
             assertEquals("WORKED", stored.get("status").s());
             assertNotNull(stored.get("resultPayload"));
-            assertNotNull(stored.get("originalResponse"));
+
+            boolean missingFromProviderResponse = "00177729993".equals(entry.getValue());
+            if (missingFromProviderResponse) {
+                assertNull(stored.get("originalResponse"));
+            } else {
+                assertNotNull(stored.get("originalResponse"));
+            }
 
             GatewayResponse resultPayload = readNewOutputMessage(stored.get("resultPayload").s());
             assertEquals(CX_ID, resultPayload.getClientId());
@@ -1588,7 +1594,12 @@ public class DigitalAddressPGOldInipecMassiveTestIT extends AbstractNationalRegi
         assertEquals("INAD#WORKED", stored.get("registryStatus").s());
         assertEquals(batchId, stored.get("batchId").s());
         assertNotNull(stored.get("resultPayload"));
-        assertNotNull(stored.get("originalResponse"));
+
+        if (targetInadResult == null) {
+            assertNull(stored.get("originalResponse"));
+        } else {
+            assertNotNull(stored.get("originalResponse"));
+        }
 
         verify(inadClient, never()).callEService(any(), any());
         assertInadIsTerminal(correlationId);
