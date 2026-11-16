@@ -62,6 +62,12 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
 
             addTtl(names, values, updates);
 
+            if(StringUtils.hasText(source.getOriginalResponse())) {
+                names.put("#originalResponse", NationalRegistriesRequest.COL_ORIGINALRESPONSE);
+                values.put(":originalResponse", AttributeValue.builder().s(source.getOriginalResponse()).build());
+                updates.add("#originalResponse = :originalResponse");
+            }
+
             String conditionExpression = prepareStatusUpdate(WORKED, source.getRegistry(), names, values, updates);
 
             Update completeSource = Update.builder()
@@ -200,6 +206,7 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
         }
 
         if(StringUtils.hasText(originalResponse)){
+            log.info("Updating originalResponse for request with pk: {}, sk: {}", pk, sk);
             names.put("#originalResponse", NationalRegistriesRequest.COL_ORIGINALRESPONSE);
             values.put(":originalResponse", AttributeValue.builder().s(originalResponse).build());
             updates.add("#originalResponse = :originalResponse");
