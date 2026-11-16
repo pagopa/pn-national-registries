@@ -535,13 +535,6 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
                     && expectedSendStatus.equals(request.get("sendStatus").s())) {
                 return request;
             }
-
-            try {
-                Thread.sleep(20);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                fail(e);
-            }
         }
 
         fail("sendStatus non aggiornato a " + expectedSendStatus + " per correlationId " + correlationId);

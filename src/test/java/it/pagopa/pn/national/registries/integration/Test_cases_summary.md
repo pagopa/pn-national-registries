@@ -155,7 +155,7 @@ In aggiunta sono coperti i comportamenti specifici del flusso legacy:
 
 ### 3.5 C5 - INAD massive, fallback OFF, nuovo IniPEC
 
-**Classe:** `DigitalAddressPFMassiveNoFallbackIT`
+**Classe:** `DigitalAddressPFMassiveNoFallbackTestIT`
 
 | Scenario E2E                                        | Esito atteso                                                        |
 |-----------------------------------------------------|---------------------------------------------------------------------|
@@ -180,11 +180,11 @@ In aggiunta sono coperti i comportamenti specifici del flusso legacy:
 ### 3.6 C6 - INAD massive, fallback OFF, legacy IniPEC
 
 Con fallback PF disabilitato, il legacy IniPEC non viene attraversato. Gli scenari funzionali 
-sono quelli di `DigitalAddressPFMassiveNoFallbackIT`; un esito INAD massive non risolutivo termina senza creare fallback legacy.
+sono quelli di `DigitalAddressPFMassiveNoFallbackTestIT`; un esito INAD massive non risolutivo termina senza creare fallback legacy.
 
 ### 3.7 C7 - INAD massive, fallback ON, nuovo IniPEC
 
-**Classe:** `DigitalAddressPFMassiveFallbackNewInipecIT`
+**Classe:** `DigitalAddressPFMassiveFallbackNewInipecTestIT`
 
 La classe combina gli scenari funzionali INAD massive della C5 con il fallback nuovo IniPEC 
 e aggiunge copertura full-flow e recovery della transizione INAD -> IniPEC.
@@ -212,7 +212,7 @@ e aggiunge copertura full-flow e recovery della transizione INAD -> IniPEC.
 
 ### 3.8 C8 - INAD massive, fallback ON, legacy IniPEC
 
-**Classe:** `DigitalAddressPFMassiveFallbackOldInipecIT`
+**Classe:** `DigitalAddressPFMassiveFallbackOldInipecTestIT`
 
 La classe combina gli scenari INAD massive della C5 con il fallback legacy e include anche i casi specifici del legacy IniPEC.
 
@@ -295,7 +295,7 @@ Funzionalmente copre quindi gli scenari PG sync con nuovo IniPEC.
 
 ### 4.3 C5 / C7 - INAD massive, nuovo IniPEC
 
-**Classe:** `DigitalAddressPGMassiveIT`
+**Classe:** `DigitalAddressPGMassiveTestIT`
 
 | Scenario E2E                                        | Esito atteso                                                        |
 |-----------------------------------------------------|---------------------------------------------------------------------|
@@ -330,7 +330,7 @@ Funzionalmente copre quindi gli scenari PG sync con nuovo IniPEC.
 
 ### 4.4 C6 / C8 - INAD massive, legacy IniPEC
 
-**Classe:** `DigitalAddressPGOldInipecMassiveIT`
+**Classe:** `DigitalAddressPGOldInipecMassiveTestIT`
 
 | Scenario E2E                                    | Esito atteso                              |
 |-------------------------------------------------|-------------------------------------------|
@@ -369,13 +369,13 @@ Funzionalmente copre quindi gli scenari PG sync con nuovo IniPEC.
 |---------------------------------|------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
 | INAD sync                       | Risultato finale o errore coerente             | `DigitalAddressPFNoFallbackTestIT`, `DigitalAddressPFFallbackNewInipecTestIT`, `DigitalAddressPFFallbackOldInipecTestIT`, `DigitalAddressPGTestIT`, `DigitalAddressPGOldInipecTestIT` |
 | INAD massive: batch + polling   | Request finale `WORKED` / `ERROR`              | tutte le classi `*Massive*IT`                                                                                                                                                         |
-| Nuovo IniPEC: submit + polling  | Request finale `WORKED` / `ERROR`              | `DigitalAddressPFFallbackNewInipecTestIT`, `DigitalAddressPFMassiveFallbackNewInipecIT`, `DigitalAddressPGTestIT`, `DigitalAddressPGMassiveIT`                                        |
-| Legacy IniPEC: submit + polling | Request/batch legacy finale coerente           | `DigitalAddressPFFallbackOldInipecTestIT`, `DigitalAddressPFMassiveFallbackOldInipecIT`, `DigitalAddressPGOldInipecTestIT`, `DigitalAddressPGOldInipecMassiveIT`                      |
+| Nuovo IniPEC: submit + polling  | Request finale `WORKED` / `ERROR`              | `DigitalAddressPFFallbackNewInipecTestIT`, `DigitalAddressPFMassiveFallbackNewInipecTestIT`, `DigitalAddressPGTestIT`, `DigitalAddressPGMassiveTestIT`                                        |
+| Legacy IniPEC: submit + polling | Request/batch legacy finale coerente           | `DigitalAddressPFFallbackOldInipecTestIT`, `DigitalAddressPFMassiveFallbackOldInipecTestIT`, `DigitalAddressPGOldInipecTestIT`, `DigitalAddressPGOldInipecMassiveTestIT`                      |
 | Retry polling normale           | Nuovo tentativo con contatori/stato aggiornati | classi PF/PG massive e IniPEC                                                                                                                                                         |
 | Retry polling in-progress       | Contatore dedicato e retry / errore a soglia   | classi PF/PG massive e IniPEC                                                                                                                                                         |
 | Retry request IniPEC `ER`       | `NOT_WORKED` fino alla soglia, poi `ERROR`     | classi PF/PG IniPEC                                                                                                                                                                   |
 | Risultato finale persistito     | `resultPayload` coerente con il flusso         | full-flow nuovi e massive                                                                                                                                                             |
-| INAD terminale per PG           | Nessun registro successivo a INAD              | `DigitalAddressPGTestIT`, `DigitalAddressPGOldInipecTestIT`, `DigitalAddressPGMassiveIT`, `DigitalAddressPGOldInipecMassiveIT`                                                        |
+| INAD terminale per PG           | Nessun registro successivo a INAD              | `DigitalAddressPGTestIT`, `DigitalAddressPGOldInipecTestIT`, `DigitalAddressPGMassiveTestIT`, `DigitalAddressPGOldInipecMassiveTestIT`                                                        |
 
 ### 5.1 Resilienza, replay, recovery e concorrenza
 
@@ -386,14 +386,14 @@ Funzionalmente copre quindi gli scenari PG sync con nuovo IniPEC.
 | Due worker competono sullo stesso batch                     | Una sola reservation effettiva                                      | PF/PG massive                                                                           |
 | Processing risultato parziale                               | Replay completa solo gli elementi ancora `WORKING`                  | PF/PG massive                                                                           |
 | Error retry exhaustion su cicli reali                       | Contatori persistiti e batch/request finali `ERROR`                 | PF/PG massive                                                                           |
-| In-progress retry exhaustion PG massive nuovo IniPEC        | Batch/request finali `ERROR`, `INAD#ERROR`                          | `DigitalAddressPGMassiveIT`                                                             |
+| In-progress retry exhaustion PG massive nuovo IniPEC        | Batch/request finali `ERROR`, `INAD#ERROR`                          | `DigitalAddressPGMassiveTestIT`                                                             |
 | Paginazione/correlazione massive                            | Matching stabile con duplicati, ordine diverso e risultati mancanti | PF/PG massive                                                                           |
-| INAD -> nuovo IniPEC: batch già lavorato, chiusura fallita  | Replay chiude solo il batch                                         | `DigitalAddressPFMassiveFallbackNewInipecIT`                                            |
-| INAD -> nuovo IniPEC: processing parziale                   | Replay solo sulle request ancora `WORKING`                          | `DigitalAddressPFMassiveFallbackNewInipecIT`                                            |
-| INAD -> nuovo IniPEC: identità richiesta                    | `correlationId` e `referenceRequestDate` preservati                 | `DigitalAddressPFMassiveFallbackNewInipecIT`                                            |
-| INAD -> legacy IniPEC: batch già lavorato, chiusura fallita | Replay chiude solo il batch                                         | `DigitalAddressPFMassiveFallbackOldInipecIT`                                            |
-| INAD -> legacy IniPEC: processing parziale                  | Replay solo sulle request ancora `WORKING`                          | `DigitalAddressPFMassiveFallbackOldInipecIT`                                            |
-| Legacy output inviato ma persistenza `sendStatus` fallisce  | Recovery completa la delivery                                       | `DigitalAddressPFFallbackOldInipecTestIT`, `DigitalAddressPFMassiveFallbackOldInipecIT` |
+| INAD -> nuovo IniPEC: batch già lavorato, chiusura fallita  | Replay chiude solo il batch                                         | `DigitalAddressPFMassiveFallbackNewInipecTestIT`                                            |
+| INAD -> nuovo IniPEC: processing parziale                   | Replay solo sulle request ancora `WORKING`                          | `DigitalAddressPFMassiveFallbackNewInipecTestIT`                                            |
+| INAD -> nuovo IniPEC: identità richiesta                    | `correlationId` e `referenceRequestDate` preservati                 | `DigitalAddressPFMassiveFallbackNewInipecTestIT`                                            |
+| INAD -> legacy IniPEC: batch già lavorato, chiusura fallita | Replay chiude solo il batch                                         | `DigitalAddressPFMassiveFallbackOldInipecTestIT`                                            |
+| INAD -> legacy IniPEC: processing parziale                  | Replay solo sulle request ancora `WORKING`                          | `DigitalAddressPFMassiveFallbackOldInipecTestIT`                                            |
+| Legacy output inviato ma persistenza `sendStatus` fallisce  | Recovery completa la delivery                                       | `DigitalAddressPFFallbackOldInipecTestIT`, `DigitalAddressPFMassiveFallbackOldInipecTestIT` |
 
 ---
 
@@ -401,7 +401,7 @@ Funzionalmente copre quindi gli scenari PG sync con nuovo IniPEC.
 
 ### 6.1 Agenzia Entrate
 
-**Classe:** `AgenziaEntrateSyncEndpointsIT`
+**Classe:** `AgenziaEntrateSyncEndpointsTestIT`
 
 | Scenario E2E                       | Esito atteso                               |
 |------------------------------------|--------------------------------------------|
@@ -413,7 +413,7 @@ Funzionalmente copre quindi gli scenari PG sync con nuovo IniPEC.
 
 ### 6.2 InfoCamere / Registro Imprese
 
-**Classe:** `InfoCamereSyncEndpointsIT`
+**Classe:** `InfoCamereSyncEndpointsTestIT`
 
 | Scenario E2E                       | Esito atteso                |
 |------------------------------------|-----------------------------|

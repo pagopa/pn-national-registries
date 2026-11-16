@@ -15,7 +15,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
  * PN-22205 / PN-22206 / PN-22207: il correlationId deve rispettare lo schema CorrelationId dell'OpenAPI.
  */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
-class CorrelationIdValidationIT extends AbstractNationalRegistriesComponentIT {
+class CorrelationIdValidationTestIT extends AbstractNationalRegistriesComponentIT {
 
     private static final String X_REQUEST_ID = "X-Request-ID";
 

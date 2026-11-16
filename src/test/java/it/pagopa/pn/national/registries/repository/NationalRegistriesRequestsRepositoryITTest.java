@@ -47,7 +47,7 @@ import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
         "spring.cloud.aws.sqs.enabled=false",
         "pn.national-registries.query-limit=5"
 })
-class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
+class NationalRegistriesRequestsRepositoryITTest extends BaseTest.WithLocalStack {
 
     @MockitoBean
     private SqsService sqsService;
