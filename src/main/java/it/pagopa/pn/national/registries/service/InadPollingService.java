@@ -111,7 +111,7 @@ public class InadPollingService {
         ResponseRequestDigitalAddress inadResponse = resultByTaxId.get(request.getTaxId());
         if (Objects.isNull(inadResponse)) {
             log.warn("INAD - correlationId {} - taxId not present in massive response", request.getCorrelationId());
-            return handlePecNotFoundResponse(request,  GatewayConverter.inadToSqsDto(request.getCorrelationId(), null), null);
+            return handlePecNotFoundResponse(request,  GatewayConverter.inadToSqsDto(request.getCorrelationId(), null));
         }
         return processInadResponse(request, inadResponse);
     }
@@ -119,6 +119,8 @@ public class InadPollingService {
     private Mono<Void> processInadResponse(NationalRegistriesRequest request, ResponseRequestDigitalAddress inadResponse) {
         RecipientType recipientType = retrieveRecipientType(request.getTaxId(), request.getRecipientType());
         String correlationId = request.getCorrelationId();
+        String originalResponse = gatewayUtils.convertToString(inadResponse);
+        request.setOriginalResponse(originalResponse);
 
         return Mono.fromCallable(() -> InadConverter.mapToResponseOk(inadResponse, recipientType, request.getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow(), correlationId))
                 .map(response -> GatewayConverter.inadToSqsDto(correlationId, response))
@@ -134,28 +136,26 @@ public class InadPollingService {
                         );
                         GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
                         String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
-                        String originalResponse = gatewayUtils.convertToString(inadResponse);
                         return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, null,  resultPayload, originalResponse,true);
                     }
-                    return handlePecNotFoundResponse(request, codeSqsDto, inadResponse);
+                    return handlePecNotFoundResponse(request, codeSqsDto);
                 })
                 .onErrorResume(e -> {
                     CodeSqsDto codeSqsDto = GatewayConverter.errorInadToSqsDto(correlationId, e);
                     if (codeSqsDto != null) {
                         log.info("correlationId: {} - INAD - indirizzo non presente", correlationId);
-                        return handlePecNotFoundResponse(request, codeSqsDto, null);
+                        return handlePecNotFoundResponse(request, codeSqsDto);
                     }
                     return Mono.error(e);
                 });
     }
 
-    private Mono<Void> handlePecNotFoundResponse(NationalRegistriesRequest request, CodeSqsDto codeSqsDto, ResponseRequestDigitalAddress originalResponse) {
+    private Mono<Void> handlePecNotFoundResponse(NationalRegistriesRequest request, CodeSqsDto codeSqsDto) {
         if (nationalRegistriesConfig.isEnablePfPecFallbackFlow() && PF.name().equalsIgnoreCase(request.getRecipientType())) {
             return pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
         }
         GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
         String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
-        String originalResponseString = gatewayUtils.convertToString(originalResponse);
-        return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, null, resultPayload, originalResponseString ,true);
+        return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, null, resultPayload, request.getOriginalResponse() ,true);
     }
 }

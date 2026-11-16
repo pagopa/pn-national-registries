@@ -75,7 +75,7 @@ public class InipecPollingService {
     private Mono<Void> processSuccessfulRequest(NationalRegistriesRequest request, Map<String, Pec> pecByTaxId) {
         Pec pec = infoCamereConverter.retrievePec(request.getTaxId(), pecByTaxId);
         if (Objects.isNull(pec)) {
-            return handlePecNotFoundResponse(request, pec);
+            return handlePecNotFoundResponse(request);
         }
         return evaluateStatoImpresa(request, pec);
     }
@@ -130,11 +130,12 @@ public class InipecPollingService {
 
     private Mono<Void> evaluateStatoImpresa(NationalRegistriesRequest request, Pec pec) {
         InipecEvaluationResult result = infoCamereService.evaluateInipecStatoImpresa(request.getCorrelationId(), request.getTaxId(), request.getRecipientType(), pec);
+        String originalResponse = gatewayUtils.convertToString(pec);
+        request.setOriginalResponse(originalResponse);
         return switch (result) {
             case InipecEvaluationResult.Found found -> {
                 GatewayResponse gatewayResponse = new GatewayResponse(found.codeSqsDto(), request.getClientId());
                 String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
-                String originalResponse = gatewayUtils.convertToString(pec);
                 yield pollingService.markRequestAsWorked(
                         request,
                         GatewayDownstreamService.INIPEC,
@@ -144,18 +145,17 @@ public class InipecPollingService {
                         true
                 );
             }
-            case InipecEvaluationResult.NotFound ignored -> handlePecNotFoundResponse(request, pec);
+            case InipecEvaluationResult.NotFound ignored -> handlePecNotFoundResponse(request);
             case InipecEvaluationResult.Retry ignored -> handleERState(request);
         };
     }
 
-    private Mono<Void> handlePecNotFoundResponse(NationalRegistriesRequest request, Pec pec) {
+    private Mono<Void> handlePecNotFoundResponse(NationalRegistriesRequest request) {
         if (PF.name().equalsIgnoreCase(request.getRecipientType())) {
             CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(request.getCorrelationId(), null);
             GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
             String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
-            String originalResponse = gatewayUtils.convertToString(pec);
-            return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, resultPayload, originalResponse, true);
+            return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, resultPayload, request.getOriginalResponse(), true);
         }
         return callInadEservice(request);
     }
