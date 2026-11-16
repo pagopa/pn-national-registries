@@ -40,7 +40,7 @@ import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
         "pn.national-registries.inad.polling-in-progress-retry-after=120",
         "pn.national-registries.ttl=3600"
 })
-class NationalRegistriesBatchesRepositoryIT extends BaseTest.WithLocalStack {
+class NationalRegistriesBatchesRepositoryITTest extends BaseTest.WithLocalStack {
 
     @Autowired
     NationalRegistriesBatchesRepository nationalRegistriesBatchesRepository;

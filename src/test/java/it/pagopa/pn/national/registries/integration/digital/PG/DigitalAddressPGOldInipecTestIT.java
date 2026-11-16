@@ -900,12 +900,12 @@ public class DigitalAddressPGOldInipecTestIT extends AbstractNationalRegistriesC
                 return polling;
             }
 
-            try {
+       /*     try {
                 Thread.sleep(20);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 fail(e);
-            }
+            }*/
         }
 
         fail( "Unexpected legacy polling state for batchId " + batchId + ": status=" + polling.get("status").s() + ", retry=" + polling.get("retry").n() + ", inProgressRetry=" + polling.get("inProgressRetry").n() );

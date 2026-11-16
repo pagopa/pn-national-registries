@@ -53,7 +53,7 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inad.polling-error-retry-after=1",
         "pn.national-registries.inad.polling-in-progress-retry-after=1"
 })
-public class DigitalAddressPFMassiveNoFallbackIT extends AbstractNationalRegistriesComponentIT {
+public class DigitalAddressPFMassiveNoFallbackTestIT extends AbstractNationalRegistriesComponentIT {
 
     private static final String PF_FOUND = "JSMKRV95P54H501D";
     private static final String PF_NOT_FOUND = "XLPJSM93B21H501O";

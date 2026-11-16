@@ -70,7 +70,7 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inipec.polling-in-progress-retry-after=0",
         "spring.task.scheduling.enabled=false"
 })
-public class DigitalAddressPFMassiveFallbackNewInipecIT extends AbstractNationalRegistriesComponentIT {
+public class DigitalAddressPFMassiveFallbackNewInipecTestIT extends AbstractNationalRegistriesComponentIT {
 
     private static final String PF_FOUND = "RSSMRA80A01H501U";
     private static final String PF_NOT_FOUND = "RSSMRA80A02H501Z";

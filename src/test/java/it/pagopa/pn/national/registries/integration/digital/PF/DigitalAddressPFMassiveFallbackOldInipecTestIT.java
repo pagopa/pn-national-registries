@@ -17,7 +17,6 @@ import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.PollingInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.model.GatewayResponse;
-import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
@@ -77,7 +76,7 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inipec.batch-request-recovery-after=0",
         "spring.task.scheduling.enabled=false"
 })
-public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNationalRegistriesComponentIT {
+public class DigitalAddressPFMassiveFallbackOldInipecTestIT extends AbstractNationalRegistriesComponentIT {
 
     private static final String PF_FOUND = "KRSJSM88S03H501A";
     private static final String PF_NOT_FOUND = "JSMKRV95P54H501D";
@@ -1124,12 +1123,12 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
             if ("NOT_WORKED".equals(findLegacyPolling(batchId).get("status").s())) {
                 return;
             }
-            try {
+           /* try {
                 Thread.sleep(20);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 fail(e);
-            }
+            }*/
         }
         fail("Legacy polling not recovered for batchId " + batchId);
     }
@@ -1145,12 +1144,12 @@ public class DigitalAddressPFMassiveFallbackOldInipecIT extends AbstractNational
             if (request.get("sendStatus") != null && expected.equals(request.get("sendStatus").s())) {
                 return request;
             }
-            try {
+           /* try {
                 Thread.sleep(20);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 fail(e);
-            }
+            }*/
         }
         fail("sendStatus non aggiornato a " + expected + " per correlationId " + correlationId);
         return request;

@@ -21,7 +21,6 @@ import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.PollingInputsHandler;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.model.GatewayResponse;
-import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;
@@ -75,7 +74,7 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inad.polling-in-progress-retry-after=1",
         "spring.task.scheduling.enabled=false"
 })
-public class DigitalAddressPGOldInipecMassiveIT extends AbstractNationalRegistriesComponentIT {
+public class DigitalAddressPGOldInipecMassiveTestIT extends AbstractNationalRegistriesComponentIT {
 
     private static final String PG_PROFESSIONAL = "01501320442";
     private static final String PG_BUSINESS_PROFESSIONAL = "00056530256";

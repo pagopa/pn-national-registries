@@ -536,12 +536,12 @@ class DigitalAddressPGOldInipecSQSTestIT extends AbstractNationalRegistriesCompo
                 return request;
             }
 
-            try {
+      /*      try {
                 Thread.sleep(20);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
                 fail(e);
-            }
+            }*/
         }
 
         fail("sendStatus non aggiornato a " + expectedSendStatus + " per correlationId " + correlationId);
