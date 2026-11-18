@@ -192,7 +192,7 @@ public class DigitalAddressBatchPollingService{
         return batchRequestRepository
                 .getBatchRequestByBatchIdAndStatus(polling.getBatchId(), BatchStatus.WORKING, new HashMap<>())
                 .flatMap(page -> processPageRecursively(polling.getBatchId(), page, status, iniPecPollingResponse, error, now))
-                .doOnSuccess(unused -> logBatchEndingMetricsLegacy(polling, status, GatewayDownstreamService.INIPEC));
+                .doOnSuccess(unused -> logLegacyInipecBatchEndingMetrics(polling, status));
     }
 
     private Mono<Void> processPageRecursively(String batchId, Page<BatchRequest> page, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, String error, LocalDateTime now) {

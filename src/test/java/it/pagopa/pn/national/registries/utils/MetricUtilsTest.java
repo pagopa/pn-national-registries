@@ -114,8 +114,16 @@ class MetricUtilsTest {
         cf.setCf("12345678901");
         request.setElencoCf(List.of(cf));
 
-        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", 1, false, GatewayDownstreamService.INIPEC));
-        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", 1, true, GatewayDownstreamService.INIPEC));
+        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", request.getElencoCf().size(), false, GatewayDownstreamService.INIPEC));
+        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", request.getElencoCf().size(), true, GatewayDownstreamService.INIPEC));
+    }
+
+    @Test
+    void logBatchRequestMetricsFailsWhenCfListIsMissing() {
+        IniPecBatchRequest request = new IniPecBatchRequest();
+        request.setElencoCf(null);
+
+        assertThrows(NullPointerException.class, () -> MetricUtils.logBatchRequestMetrics("batchId", request.getElencoCf().size(), false, GatewayDownstreamService.INIPEC));
     }
 
     @Test
@@ -124,8 +132,8 @@ class MetricUtilsTest {
         polling.setBatchId("batchId");
         polling.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5));
 
-        assertDoesNotThrow(() -> MetricUtils.logBatchEndingMetricsLegacy(polling, BatchStatus.ERROR, GatewayDownstreamService.INIPEC));
-        assertDoesNotThrow(() -> MetricUtils.logBatchEndingMetricsLegacy(polling, BatchStatus.WORKED, GatewayDownstreamService.INIPEC));
+        assertDoesNotThrow(() -> MetricUtils.logLegacyInipecBatchEndingMetrics(polling, BatchStatus.ERROR));
+        assertDoesNotThrow(() -> MetricUtils.logLegacyInipecBatchEndingMetrics(polling, BatchStatus.WORKED));
     }
 
     @Test

@@ -4,6 +4,7 @@ import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
+import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
@@ -71,6 +72,8 @@ class PollingServiceTest {
     @Test
     void failedRequestUpdateMustLeaveBatchOpenForReplay() {
         NationalRegistriesRequest request = buildRequest();
+        NationalRegistriesBatch batch = new NationalRegistriesBatch();
+        batch.setCreatedAt(Instant.now());
         when(nationalRegistriesRequestsRepository.getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING))
                 .thenReturn(SdkPublisher.adapt(Flux.just(Page.create(List.of(request)))));
         RuntimeException failure = new RuntimeException("request update failed");
@@ -84,7 +87,7 @@ class PollingServiceTest {
         verifyNoInteractions(nationalRegistriesBatchesRepository);
 
         when(nationalRegistriesBatchesRepository.updateToFinalStatus(BATCH_ID, SK, BatchesStatusEnum.ERROR, false, 1))
-                .thenReturn(Mono.empty());
+                .thenReturn(Mono.just(batch));
         StepVerifier.create(pollingService.incrementAndCheckRetry(
                 BATCH_ID, 0, 0, false, 1, 1, GatewayDownstreamService.INIPEC, failure)).verifyComplete();
         var order = inOrder(nationalRegistriesRequestsRepository, nationalRegistriesBatchesRepository);
@@ -238,6 +241,9 @@ class PollingServiceTest {
         Page<NationalRegistriesRequest> page =
                 Page.create(List.of(request));
 
+        NationalRegistriesBatch batch = new NationalRegistriesBatch();
+        batch.setCreatedAt(Instant.now());
+
         when(nationalRegistriesRequestsRepository.getRequestsBatchId(
                 BATCH_ID,
                 RequestStatusEnum.WORKING
@@ -256,7 +262,7 @@ class PollingServiceTest {
                 BatchesStatusEnum.ERROR,
                 false,
                 5
-        )).thenReturn(Mono.empty());
+        )).thenReturn(Mono.just(batch));
 
         StepVerifier.create(
                         pollingService.incrementAndCheckRetry(
@@ -301,6 +307,8 @@ class PollingServiceTest {
 
     @Test
     void incrementAndCheckRetry_shouldHandlePollingFailure_whenInProgressRetryIsExhausted() {
+        NationalRegistriesBatch batch = new NationalRegistriesBatch();
+        batch.setCreatedAt(Instant.now());
         when(nationalRegistriesRequestsRepository.getRequestsBatchId(
                 BATCH_ID,
                 RequestStatusEnum.WORKING
@@ -312,7 +320,7 @@ class PollingServiceTest {
                 BatchesStatusEnum.ERROR,
                 true,
                 10
-        )).thenReturn(Mono.empty());
+        )).thenReturn(Mono.just(batch));
 
         StepVerifier.create(
                         pollingService.incrementAndCheckRetry(
@@ -360,6 +368,9 @@ class PollingServiceTest {
                         Object.class
                 );
 
+        NationalRegistriesBatch batch = new NationalRegistriesBatch();
+        batch.setCreatedAt(Instant.now());
+
         when(nationalRegistriesRequestsRepository.getRequestsBatchId(
                 BATCH_ID,
                 RequestStatusEnum.WORKING
@@ -371,7 +382,7 @@ class PollingServiceTest {
                 BatchesStatusEnum.ERROR,
                 false,
                 5
-        )).thenReturn(Mono.empty());
+        )).thenReturn(Mono.just(batch));
 
         StepVerifier.create(
                         pollingService.incrementAndCheckRetry(
@@ -542,6 +553,9 @@ class PollingServiceTest {
                 Instant.parse("2026-01-01T11:00:00Z")
         );
 
+        NationalRegistriesBatch batch = new NationalRegistriesBatch();
+        batch.setCreatedAt(Instant.now());
+
         Page<NationalRegistriesRequest> page =
                 Page.create(List.of(request1, request2));
 
@@ -563,7 +577,7 @@ class PollingServiceTest {
                 BatchesStatusEnum.ERROR,
                 false,
                 5
-        )).thenReturn(Mono.empty());
+        )).thenReturn(Mono.just(batch));
 
         StepVerifier.create(
                         pollingService.incrementAndCheckRetry(

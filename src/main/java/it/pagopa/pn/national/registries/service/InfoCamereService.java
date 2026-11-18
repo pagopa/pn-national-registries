@@ -26,12 +26,13 @@ import java.nio.charset.Charset;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Date;
+import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
 import static it.pagopa.pn.national.registries.utils.DigitalAddressUtils.removeInvalidEmails;
-import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchRequestMetrics;
-import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetricFromBatchRequest;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.*;
 
 @Service
 @lombok.CustomLog
@@ -66,9 +67,10 @@ public class InfoCamereService {
     }
 
     public Mono<IniPecBatchResponse> callEService(IniPecBatchRequest iniPecBatchRequest, String batchId) {
+        Integer batchSize = Optional.ofNullable(iniPecBatchRequest.getElencoCf()).map(List::size).orElse(0);
         return infoCamereClient.callEServiceRequestId(iniPecBatchRequest)
-                .doOnNext(res -> logBatchRequestMetrics(batchId, iniPecBatchRequest.getElencoCf().size(), false, GatewayDownstreamService.INIPEC))
-                .doOnError(t -> logBatchRequestMetrics(batchId, iniPecBatchRequest.getElencoCf().size(), true, GatewayDownstreamService.INIPEC))
+                .doOnNext(res -> logBatchRequestMetrics(batchId, batchSize, false, GatewayDownstreamService.INIPEC))
+                .doOnError(t -> logBatchRequestMetrics(batchId, batchSize, true, GatewayDownstreamService.INIPEC))
                 .doOnError(e -> log.warn("IniPEC - batchId {} - failed to call EService", batchId, e));
     }
 
