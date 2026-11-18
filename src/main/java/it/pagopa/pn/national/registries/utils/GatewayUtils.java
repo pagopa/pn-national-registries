@@ -12,6 +12,7 @@ import it.pagopa.pn.national.registries.exceptions.DigitalAddressException;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.PhysicalAddressResponseDto;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.AddressQueryRequest;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import lombok.RequiredArgsConstructor;
@@ -47,6 +48,25 @@ public class GatewayUtils {
         } catch (JsonProcessingException e) {
             throw new DigitalAddressException("can not convert SQS DTO to String", e);
         }
+    }
+
+    public String convertGatewayResponseToString(GatewayResponse gatewayResponse) {
+        try {
+            return mapper.writeValueAsString(gatewayResponse);
+        } catch (JsonProcessingException e) {
+            throw new DigitalAddressException("can not convert SQS DTO to String", e);
+        }
+    }
+
+    public <T> String convertToString(T object) {
+        if (Objects.nonNull(object)) {
+            try {
+                return mapper.writeValueAsString(object);
+            } catch (JsonProcessingException e) {
+                throw new DigitalAddressException("can not convert DTO to String", e);
+            }
+        }
+        return null;
     }
 
     public static RecipientType retrieveRecipientType(String cf, String recipientType) {

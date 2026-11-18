@@ -14,6 +14,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.R
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.StatusProcessingRequest;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
@@ -116,12 +117,14 @@ public class InadPollingService {
     private Mono<Void> processInadResponse(NationalRegistriesRequest request, ResponseRequestDigitalAddress inadResponse) {
         RecipientType recipientType = retrieveRecipientType(request.getTaxId(), request.getRecipientType());
         String correlationId = request.getCorrelationId();
+        String originalResponse = gatewayUtils.convertToString(inadResponse);
+        request.setOriginalResponse(originalResponse);
 
         return Mono.fromCallable(() -> InadConverter.mapToResponseOk(inadResponse, recipientType, request.getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow(), correlationId))
-                .doOnNext(unused -> log.info("INAD - retrieved digital address from massive response for correlationId: {}", correlationId))
                 .map(response -> GatewayConverter.inadToSqsDto(correlationId, response))
                 .flatMap(codeSqsDto -> {
                     if (!CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())) {
+                        log.info("INAD - correlationId {} - digital address found in massive response", correlationId);
                         logCfWithAddressMetricFromBatchRequest(
                                 codeSqsDto,
                                 request.getCorrelationId(),
@@ -129,8 +132,9 @@ public class InadPollingService {
                                 request.getRecipientType(),
                                 GatewayDownstreamService.INAD
                         );
-                        String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
-                        return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, resultPayload, true);
+                        GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
+                        String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
+                        return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, null,  resultPayload, originalResponse,true);
                     }
                     return handlePecNotFoundResponse(request, codeSqsDto);
                 })
@@ -148,7 +152,8 @@ public class InadPollingService {
         if (nationalRegistriesConfig.isEnablePfPecFallbackFlow() && PF.name().equalsIgnoreCase(request.getRecipientType())) {
             return pollingService.createFallbackRequest(request, GatewayDownstreamService.INAD, GatewayDownstreamService.INIPEC);
         }
-        String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
-        return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, resultPayload, true);
+        GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
+        String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
+        return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INAD, null, resultPayload, request.getOriginalResponse() ,true);
     }
 }

@@ -19,7 +19,7 @@ import static org.mockito.Mockito.*;
  * Il client di Agenzia delle entrate è mockato
  */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
-class AgenziaEntrateSyncEndpointsIT extends AbstractNationalRegistriesComponentIT {
+class AgenziaEntrateSyncEndpointsTestIT extends AbstractNationalRegistriesComponentIT {
 
     @Autowired
     private AgenziaEntrateService agenziaEntrateService;

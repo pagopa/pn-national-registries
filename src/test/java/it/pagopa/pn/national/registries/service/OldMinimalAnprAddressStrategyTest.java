@@ -6,7 +6,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.T
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoNumeroCivico;
 import org.junit.jupiter.api.Test;
 
-import static it.pagopa.pn.national.registries.service.AnprAddressTestData.indirizzoConDettaglio;
+import static it.pagopa.pn.national.registries.service.AnprAddressTestData.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class OldMinimalAnprAddressStrategyTest extends AbstractMinimalAnprAddressStrategyTest {
@@ -21,6 +21,13 @@ class OldMinimalAnprAddressStrategyTest extends AbstractMinimalAnprAddressStrate
     @Test
     void strategyName() {
         assertEquals(AddressModeEnum.OLD_MINIMAL.name(), strategy.getStrategyName());
+    }
+
+    @Test
+    void createAddressIgnoresEsponente1() {
+        var civico = civico("10", null);
+        civico.setEsponente1("bis");
+        assertEquals("VIA ROMA 10", strategy.createAddress(indirizzo("VIA", "ROMA", civico)));
     }
 
     @Test
@@ -53,25 +60,26 @@ class OldMinimalAnprAddressStrategyTest extends AbstractMinimalAnprAddressStrate
     void createAddressDetailWithColorAndScala() {
         TipoCivicoInterno interno = new TipoCivicoInterno();
         interno.setScala("2");
-        assertEquals("ROSSO Scala 2", strategy.createAddressDetail(indirizzoConDettaglio("1", interno)));
+        interno.setScalaEsterna("PAL");
+        assertEquals("ROSSO Scala 2 Scala est. PAL", strategy.createAddressDetail(indirizzoConDettaglio("1", interno)));
     }
 
     @Test
     void createAddressDetailWithBlankScalaIsIgnored() {
         TipoCivicoInterno interno = new TipoCivicoInterno();
         interno.setScala(" ");
+        interno.setScalaEsterna(" ");
         assertEquals("ROSSO", strategy.createAddressDetail(indirizzoConDettaglio("1", interno)));
     }
 
     @Test
-    void createAddressDetailIgnoresScalaEsternaCorteInterniAndIsolato() {
+    void createAddressDetailIncludesScalaEsternaAndIgnoresCorteInterniAndIsolato() {
         TipoCivicoInterno interno = new TipoCivicoInterno();
         interno.setScalaEsterna("PAL");
         interno.setCorte("1");
         interno.setInterno1("2");
         interno.setInterno2("3");
         interno.setIsolato("4");
-        assertEquals("", strategy.createAddressDetail(indirizzoConDettaglio(null, interno)));
+        assertEquals("Scala est. PAL", strategy.createAddressDetail(indirizzoConDettaglio(null, interno)));
     }
 }
-

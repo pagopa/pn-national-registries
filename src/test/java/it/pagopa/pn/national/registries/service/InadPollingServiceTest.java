@@ -8,13 +8,9 @@ import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.InadConverter;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseListDigitalAddress;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseStatusListDigitalAddress;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.StatusProcessingRequest;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.*;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
@@ -34,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
@@ -232,12 +227,14 @@ class InadPollingServiceTest {
         )).thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(false);
-        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class)))
+        when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
                 .thenReturn("{\"result\":\"not-found\"}");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
                 "{\"result\":\"not-found\"}",
+                null,
                 true
         )).thenReturn(Mono.empty());
         when(pollingService.markBatchAsWorked(
@@ -251,7 +248,9 @@ class InadPollingServiceTest {
         verify(pollingService).markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
                 "{\"result\":\"not-found\"}",
+                null,
                 true
         );
 
@@ -308,6 +307,8 @@ class InadPollingServiceTest {
         verify(pollingService, never()).markRequestAsWorked(
                 eq(request),
                 eq(GatewayDownstreamService.INAD),
+                any(),
+                any(),
                 any(),
                 eq(true)
         );
@@ -495,11 +496,15 @@ class InadPollingServiceTest {
 
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(false);
-        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class)))
+        when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
+                .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
                 .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -507,19 +512,21 @@ class InadPollingServiceTest {
         StepVerifier.create(inadPollingService.handleMessage(buildPayload()))
                 .verifyComplete();
 
-        verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
-                GatewayDownstreamService.INAD.name().equals(dto.getRegistry())
-                        && CORRELATION_ID.equals(dto.getCorrelationId())
-                        && dto.getDigitalAddress() != null
-                        && dto.getDigitalAddress().size() == 1
+        verify(gatewayUtils).convertGatewayResponseToString(argThat(dto ->
+                GatewayDownstreamService.INAD.name().equals(dto.getPayload().getRegistry())
+                        && CORRELATION_ID.equals(dto.getPayload().getCorrelationId())
+                        && dto.getPayload().getDigitalAddress() != null
+                        && dto.getPayload().getDigitalAddress().size() == 1
                         && "personal@pec.it".equals(
-                        dto.getDigitalAddress().getFirst().getAddress()
+                        dto.getPayload().getDigitalAddress().getFirst().getAddress()
                 )
         ));
 
         verify(pollingService).markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         );
@@ -543,11 +550,15 @@ class InadPollingServiceTest {
 
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(true);
-        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class)))
+        when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
+                .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
                 .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -555,10 +566,10 @@ class InadPollingServiceTest {
         StepVerifier.create(inadPollingService.handleMessage(buildPayload()))
                 .verifyComplete();
 
-        verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
-                dto.getDigitalAddress().size() == 1
+        verify(gatewayUtils).convertGatewayResponseToString(argThat(dto ->
+                dto.getPayload().getDigitalAddress().size() == 1
                         && "personal@pec.it".equals(
-                        dto.getDigitalAddress().getFirst().getAddress()
+                        dto.getPayload().getDigitalAddress().getFirst().getAddress()
                 )
         ));
 
@@ -580,11 +591,15 @@ class InadPollingServiceTest {
 
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(true);
-        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class)))
+        when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
+                .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
                 .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -592,10 +607,10 @@ class InadPollingServiceTest {
         StepVerifier.create(inadPollingService.handleMessage(buildPayload()))
                 .verifyComplete();
 
-        verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
-                dto.getDigitalAddress().size() == 1
+        verify(gatewayUtils).convertGatewayResponseToString(argThat(dto ->
+                dto.getPayload().getDigitalAddress().size() == 1
                         && "pro@pec.it".equals(
-                        dto.getDigitalAddress().getFirst().getAddress()
+                        dto.getPayload().getDigitalAddress().getFirst().getAddress()
                 )
         ));
 
@@ -617,11 +632,15 @@ class InadPollingServiceTest {
 
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(false);
-        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class)))
+        when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
+                .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
                 .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -629,9 +648,9 @@ class InadPollingServiceTest {
         StepVerifier.create(inadPollingService.handleMessage(buildPayload()))
                 .verifyComplete();
 
-        verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
-                dto.getDigitalAddress() != null
-                        && dto.getDigitalAddress().isEmpty()
+        verify(gatewayUtils).convertGatewayResponseToString(argThat(dto ->
+                dto.getPayload().getDigitalAddress() != null
+                        && dto.getPayload().getDigitalAddress().isEmpty()
         ));
 
         verify(pollingService, never())
@@ -666,7 +685,7 @@ class InadPollingServiceTest {
         );
 
         verify(pollingService, never())
-                .markRequestAsWorked(any(), any(), any(), anyBoolean());
+                .markRequestAsWorked(any(), any(), any(), any(), any(), anyBoolean());
 
         verify(pollingService).markBatchAsWorked(
                 BATCH_ID,
@@ -685,11 +704,15 @@ class InadPollingServiceTest {
 
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(false);
-        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class)))
+        when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
+                .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
                 .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -703,6 +726,8 @@ class InadPollingServiceTest {
         verify(pollingService).markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         );
@@ -722,11 +747,15 @@ class InadPollingServiceTest {
 
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(false);
-        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class)))
+        when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
+                .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
                 .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -734,9 +763,9 @@ class InadPollingServiceTest {
         StepVerifier.create(inadPollingService.handleMessage(buildPayload()))
                 .verifyComplete();
 
-        verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
-                dto.getDigitalAddress() != null
-                        && dto.getDigitalAddress().isEmpty()
+        verify(gatewayUtils).convertGatewayResponseToString(argThat(dto ->
+                dto.getPayload().getDigitalAddress() != null
+                        && dto.getPayload().getDigitalAddress().isEmpty()
         ));
 
         verify(pollingService, never())
@@ -774,7 +803,7 @@ class InadPollingServiceTest {
         );
 
         verify(pollingService, never())
-                .markRequestAsWorked(any(), any(), any(), anyBoolean());
+                .markRequestAsWorked(any(), any(), any(),  any(), any(),anyBoolean());
     }
 
     @Test
@@ -795,11 +824,15 @@ class InadPollingServiceTest {
 
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(false);
-        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class)))
+        when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
+                .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
                 .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -807,10 +840,10 @@ class InadPollingServiceTest {
         StepVerifier.create(inadPollingService.handleMessage(buildPayload()))
                 .verifyComplete();
 
-        verify(gatewayUtils).convertCodeSqsDtoToString(argThat(dto ->
-                dto.getDigitalAddress().size() == 1
+        verify(gatewayUtils).convertGatewayResponseToString(argThat(dto ->
+                dto.getPayload().getDigitalAddress().size() == 1
                         && "company@pec.it".equals(
-                        dto.getDigitalAddress().getFirst().getAddress()
+                        dto.getPayload().getDigitalAddress().getFirst().getAddress()
                 )
         ));
     }
@@ -830,11 +863,15 @@ class InadPollingServiceTest {
 
         when(nationalRegistriesConfig.isEnablePfPecFallbackFlow())
                 .thenReturn(true);
-        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class)))
+        when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
+                .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
                 .thenReturn("payload");
         when(pollingService.markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -848,6 +885,8 @@ class InadPollingServiceTest {
         verify(pollingService).markRequestAsWorked(
                 request,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         );
@@ -877,7 +916,7 @@ class InadPollingServiceTest {
         assertTrue(batchCloseSubscribed.get());
         verify(nationalRegistriesRequestsRepository).getRequestsBatchId(BATCH_ID, RequestStatusEnum.WORKING);
         verify(pollingService, never()).createFallbackRequest(any(), any(), any());
-        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), anyBoolean());
+        verify(pollingService, never()).markRequestAsWorked(any(), any(), any(), any(),  any(),anyBoolean());
     }
 
     /**
@@ -975,12 +1014,16 @@ class InadPollingServiceTest {
                 GatewayDownstreamService.INIPEC
         )).thenReturn(Mono.empty());
 
-        when(gatewayUtils.convertCodeSqsDtoToString(any(CodeSqsDto.class)))
+        when(gatewayUtils.convertGatewayResponseToString(any(GatewayResponse.class)))
+                .thenReturn("payload");
+        when(gatewayUtils.convertToString(any()))
                 .thenReturn("payload");
 
         when(pollingService.markRequestAsWorked(
                 found,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         )).thenReturn(Mono.empty());
@@ -996,6 +1039,8 @@ class InadPollingServiceTest {
         verify(pollingService).markRequestAsWorked(
                 found,
                 GatewayDownstreamService.INAD,
+                null,
+                "payload",
                 "payload",
                 true
         );
@@ -1008,6 +1053,8 @@ class InadPollingServiceTest {
 
         verify(pollingService, never()).markRequestAsWorked(
                 eq(missing),
+                any(),
+                any(),
                 any(),
                 any(),
                 anyBoolean()

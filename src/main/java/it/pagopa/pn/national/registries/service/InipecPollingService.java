@@ -1,17 +1,19 @@
 package it.pagopa.pn.national.registries.service;
 
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
-import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
+import it.pagopa.pn.national.registries.converter.InadConverter;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.InipecEvaluationResult;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
@@ -19,9 +21,9 @@ import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
-import org.springframework.util.CollectionUtils;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
+import reactor.util.function.Tuples;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
 import java.time.Instant;
@@ -30,7 +32,6 @@ import java.util.Objects;
 import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
-import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static it.pagopa.pn.national.registries.converter.GatewayConverter.errorInadToSqsDto;
 import static it.pagopa.pn.national.registries.converter.GatewayConverter.inadToSqsDto;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
@@ -89,21 +90,23 @@ public class InipecPollingService {
     }
 
     private Mono<Void> callInadSync(NationalRegistriesRequest request, RecipientType recipientType, String correlationId) {
-        return inadService.callEService(GatewayConverter.convertToGetDigitalAddressInadRequest(request.getCorrelationId(), request.getTaxId()), recipientType, correlationId)
+        return inadService.callEService(GatewayConverter.convertToGetDigitalAddressInadRequest(request.getCorrelationId(), request.getTaxId()))
+                .map(originalResponse -> Tuples.of(originalResponse, InadConverter.mapToResponseOk(originalResponse, recipientType, request.getTaxId(), nationalRegistriesConfig.isEnablePfPecFallbackFlow(), correlationId)))
                 .doOnNext(unused -> logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1))
-                .onErrorResume(e -> handleInadError(request, correlationId, e)
-                        .then(Mono.empty()))
-                .flatMap(response -> handleInadResponse(request, correlationId, response))
+                .onErrorResume(e -> handleInadError(request, correlationId, e).then(Mono.empty()))
+                .flatMap(tuple -> handleInadResponse(request, correlationId, tuple.getT2(), tuple.getT1()))
                 .doOnSuccess(unused -> log.info("Retrieved digital address from INAD for correlationId: {}", request.getCorrelationId()))
                 .then();
     }
 
 
-    private Mono<Void> handleInadResponse(NationalRegistriesRequest request, String correlationId, GetDigitalAddressINADOKDto response) {
+    private Mono<Void> handleInadResponse(NationalRegistriesRequest request, String correlationId, GetDigitalAddressINADOKDto response, ResponseRequestDigitalAddress originalResponse) {
         CodeSqsDto codeSqsDto = inadToSqsDto(correlationId, response);
         logCfWithAddressMetricFromBatchRequest(codeSqsDto, request.getCorrelationId(), request.getTaxId(), request.getRecipientType(), GatewayDownstreamService.INAD);
-        String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
-        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.WORKED, GatewayDownstreamService.INAD, resultPayload, nationalRegistriesConfig.getTtl());
+        GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
+        String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
+        String originalResponseString = gatewayUtils.convertToString(originalResponse);
+        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.WORKED, GatewayDownstreamService.INAD, resultPayload, originalResponseString, nationalRegistriesConfig.getTtl());
         return nationalRegistriesRequestsRepository.completeWithFallback(request, inadRequest).then();
     }
 
@@ -114,28 +117,31 @@ public class InipecPollingService {
             return createInadErrorRequest(request);
         }
         logCfRequestedMetric(correlationId, GatewayDownstreamService.INAD, 1);
-        if(!CollectionUtils.isEmpty(codeSqsDto.getDigitalAddress())){
-            logCfWithAddressMetric(correlationId, GatewayDownstreamService.INAD, PG, DigitalAddressRecipientType.IMPRESA);
-        }
-        String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
-        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.WORKED, GatewayDownstreamService.INAD, resultPayload, nationalRegistriesConfig.getTtl());
+        GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
+        String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
+        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.WORKED, GatewayDownstreamService.INAD, resultPayload, null, nationalRegistriesConfig.getTtl());
         return nationalRegistriesRequestsRepository.completeWithFallback(request, inadRequest).then();
     }
 
     private Mono<Void> createInadErrorRequest(NationalRegistriesRequest request) {
-        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.ERROR, GatewayDownstreamService.INAD, null, nationalRegistriesConfig.getTtl());
+        NationalRegistriesRequest inadRequest = new NationalRegistriesRequest(request, RequestStatusEnum.ERROR, GatewayDownstreamService.INAD, null, null, nationalRegistriesConfig.getTtl());
         return nationalRegistriesRequestsRepository.completeWithFallback(request, inadRequest).then();
     }
 
     private Mono<Void> evaluateStatoImpresa(NationalRegistriesRequest request, Pec pec) {
         InipecEvaluationResult result = infoCamereService.evaluateInipecStatoImpresa(request.getCorrelationId(), request.getTaxId(), request.getRecipientType(), pec);
+        String originalResponse = gatewayUtils.convertToString(pec);
+        request.setOriginalResponse(originalResponse);
         return switch (result) {
             case InipecEvaluationResult.Found found -> {
-                String resultPayload = gatewayUtils.convertCodeSqsDtoToString(found.codeSqsDto());
+                GatewayResponse gatewayResponse = new GatewayResponse(found.codeSqsDto(), request.getClientId());
+                String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
                 yield pollingService.markRequestAsWorked(
                         request,
                         GatewayDownstreamService.INIPEC,
+                        null,
                         resultPayload,
+                        originalResponse,
                         true
                 );
             }
@@ -147,8 +153,9 @@ public class InipecPollingService {
     private Mono<Void> handlePecNotFoundResponse(NationalRegistriesRequest request) {
         if (PF.name().equalsIgnoreCase(request.getRecipientType())) {
             CodeSqsDto codeSqsDto = infoCamereConverter.convertResponsePecToCodeSqsDto(request.getCorrelationId(), null);
-            String resultPayload = gatewayUtils.convertCodeSqsDtoToString(codeSqsDto);
-            return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, resultPayload, true);
+            GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, request.getClientId());
+            String resultPayload = gatewayUtils.convertGatewayResponseToString(gatewayResponse);
+            return pollingService.markRequestAsWorked(request, GatewayDownstreamService.INIPEC, null, resultPayload, request.getOriginalResponse(), true);
         }
         return callInadEservice(request);
     }
@@ -159,7 +166,7 @@ public class InipecPollingService {
         int maxRetry = nationalRegistriesConfig.getInipec().getBatchRequestMaxRetry();
         if (retry >= maxRetry) {
             log.warn("IniPEC - correlationId {} - max retry reached ({}/{})", request.getCorrelationId(), retry, maxRetry);
-            return nationalRegistriesRequestsRepository.updateStatusToError(request.getCorrelationId(), request.getCreatedAt().toString(), GatewayDownstreamService.INIPEC).then();
+            return nationalRegistriesRequestsRepository.updateStatusToError(request.getCorrelationId(), request.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, retry).then();
         }
         Instant attemptAfter = Instant.now().plusSeconds(nationalRegistriesConfig.getInipec().getRequestRetryAfter());
         return nationalRegistriesRequestsRepository.resetStatusForRetry(request.getCorrelationId(), request.getCreatedAt().toString(), retry, attemptAfter, GatewayDownstreamService.INIPEC)

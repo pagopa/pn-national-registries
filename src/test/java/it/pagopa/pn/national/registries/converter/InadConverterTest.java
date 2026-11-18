@@ -1,12 +1,12 @@
 package it.pagopa.pn.national.registries.converter;
 
-import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.MotivationTermination;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.UsageInfo;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetDigitalAddressINADOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.UsageInfoDto;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -87,7 +87,8 @@ class InadConverterTest {
     void mapToResponseOkShouldThrowForPfWhenOnlyProfessionalAddressExistsAndFallbackDisabled() {
         ElementDigitalAddress professionalAddress = createProfessionalAddress("professional@pec.it", "INGEGNERE");
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), professionalAddress);
-        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationId"));
+        GetDigitalAddressINADOKDto response = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationId");
+        Assertions.assertNull(response.getDigitalAddress());
     }
 
     @Test
@@ -237,37 +238,41 @@ class InadConverterTest {
     void mapToResponseOkShouldThrowForPgWhenAllAddressesAreExpired() {
         ResponseRequestDigitalAddress input = createResponse(VALID_PIVA, new Date(),
                 createAddress("expired@pec.it", null, daysFromNow(-2), MotivationTermination.CESSAZIONE_VOLONTARIA));
-        assertThrows(PnNationalRegistriesException.class,
-                () -> InadConverter.mapToResponseOk(input, PG, VALID_PIVA, false, "correlationid"));
+        GetDigitalAddressINADOKDto response = InadConverter.mapToResponseOk(input, PG, VALID_PIVA, false, "correlationid");
+        Assertions.assertNull(response.getDigitalAddress());
+
     }
 
     @Test
     void mapToResponseOkShouldThrowForPfWhenAllAddressesAreExpired() {
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(),
                 createAddress("expired@pec.it", null, daysFromNow(-2), MotivationTermination.CESSAZIONE_UFFICIO));
-        assertThrows(PnNationalRegistriesException.class, () -> InadConverter.mapToResponseOk(input, PF, VALID_CF, true, "correlationId"));
+        GetDigitalAddressINADOKDto response = InadConverter.mapToResponseOk(input, PF, VALID_CF, true, "correlationId");
+        Assertions.assertNull(response.getDigitalAddress());
+
     }
 
     @Test
     void mapToResponseOkShouldThrowForPfWhenResponseTaxIdIsNotACodiceFiscale() {
         ResponseRequestDigitalAddress input = createResponse(VALID_PIVA, new Date(), createPersonalAddress("personal@pec.it"));
-        PnNationalRegistriesException exception = assertThrows(PnNationalRegistriesException.class,
-                () -> InadConverter.mapToResponseOk(input, PF, VALID_PIVA, false, "correlationId"));
-        assertEquals(org.springframework.http.HttpStatus.NOT_FOUND, exception.getStatusCode());
+        GetDigitalAddressINADOKDto response = InadConverter.mapToResponseOk(input, PF, VALID_PIVA, false, "correlationId");
+        Assertions.assertNull(response.getDigitalAddress());
+
     }
 
     @Test
     void mapToResponseOkShouldThrowForPfWhenPersonalEmailIsInvalidAndFallbackDisabled() {
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), createPersonalAddress("not-an-email"));
-        assertThrows(PnNationalRegistriesException.class,
-                () -> InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid"));
+        GetDigitalAddressINADOKDto response = InadConverter.mapToResponseOk(input, PF, VALID_CF, false, "correlationid");
+        Assertions.assertNull(response.getDigitalAddress());
+
     }
 
     @Test
     void mapToResponseOkShouldThrowForPfWhenFallbackEnabledPersonalEmailInvalidAndNoProfessionalAddress() {
         ResponseRequestDigitalAddress input = createResponse(VALID_CF, new Date(), createPersonalAddress("not-an-email"));
-        assertThrows(PnNationalRegistriesException.class,
-                () -> InadConverter.mapToResponseOk(input, PF, VALID_CF, true, "correlationid"));
+        GetDigitalAddressINADOKDto response = InadConverter.mapToResponseOk(input, PF, VALID_CF, true, "correlationid");
+        Assertions.assertNull(response.getDigitalAddress());
     }
 
     @Test

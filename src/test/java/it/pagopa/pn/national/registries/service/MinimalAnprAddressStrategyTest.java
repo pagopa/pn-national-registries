@@ -6,7 +6,7 @@ import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.T
 import it.pagopa.pn.national.registries.generated.openapi.msclient.anpr.v1.dto.TipoNumeroCivico;
 import org.junit.jupiter.api.Test;
 
-import static it.pagopa.pn.national.registries.service.AnprAddressTestData.indirizzoConDettaglio;
+import static it.pagopa.pn.national.registries.service.AnprAddressTestData.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MinimalAnprAddressStrategyTest extends AbstractMinimalAnprAddressStrategyTest {
@@ -21,6 +21,13 @@ class MinimalAnprAddressStrategyTest extends AbstractMinimalAnprAddressStrategyT
     @Test
     void strategyName() {
         assertEquals(AddressModeEnum.MINIMAL.name(), strategy.getStrategyName());
+    }
+
+    @Test
+    void createAddressIncludesEsponente1() {
+        var civico = civico("10", null);
+        civico.setEsponente1("bis");
+        assertEquals("VIA ROMA 10 bis", strategy.createAddress(indirizzo("VIA", "ROMA", civico)));
     }
 
     @Test
@@ -77,4 +84,3 @@ class MinimalAnprAddressStrategyTest extends AbstractMinimalAnprAddressStrategyT
         assertEquals("", strategy.createAddressDetail(indirizzoConDettaglio(null, interno)));
     }
 }
-

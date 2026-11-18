@@ -1,28 +1,33 @@
 package it.pagopa.pn.national.registries.service;
 
+import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.*;
 import it.pagopa.pn.national.registries.model.AddressInternalResult;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.http.HttpStatus;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
 import java.nio.charset.Charset;
 import java.util.Date;
+import java.util.List;
 
-import static it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType.*;
+import static it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType.IMPRESA;
+import static it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType.PERSONALE;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PG;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,6 +47,9 @@ class DigitalAddressServiceTest {
 
     @InjectMocks
     private DigitalAddressService digitalAddressService;
+
+    @Mock
+    private NationalRegistriesConfig nationalRegistriesConfig;
 
     @Test
     void retrieveDigitalAddressFromIpa_shouldReturnFoundWhenIpaResponseIsValid() {
@@ -117,15 +125,17 @@ class DigitalAddressServiceTest {
     @Test
     void retrieveDigitalAddressFromInadSync_shouldReturnFoundWhenDigitalAddressIsValid() {
         AddressRequestBodyDto request = buildRequest();
-        DigitalAddressDto digitalAddress = new DigitalAddressDto();
+        ElementDigitalAddress digitalAddress = new ElementDigitalAddress();
         digitalAddress.setDigitalAddress("inad@pec.it");
 
-        GetDigitalAddressINADOKDto inadResponse = new GetDigitalAddressINADOKDto();
-        inadResponse.setTaxId(TAX_ID);
-        inadResponse.setDigitalAddress(digitalAddress);
+        ResponseRequestDigitalAddress inadResponse = new ResponseRequestDigitalAddress();
+        inadResponse.setCodiceFiscale(TAX_ID);
+        inadResponse.setDigitalAddress(List.of(digitalAddress));
 
-        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class), eq(PF), eq(CORRELATION_ID)))
+        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class)))
                 .thenReturn(Mono.just(inadResponse));
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+
 
         StepVerifier.create(digitalAddressService.retrieveDigitalAddressFromInadSync(request, CORRELATION_ID, PF))
                 .assertNext(result -> {
@@ -140,7 +150,7 @@ class DigitalAddressServiceTest {
                 .verifyComplete();
 
         ArgumentCaptor<GetDigitalAddressINADRequestBodyDto> requestCaptor = ArgumentCaptor.forClass(GetDigitalAddressINADRequestBodyDto.class);
-        verify(inadService).callEService(requestCaptor.capture(), eq(PF), eq(CORRELATION_ID));
+        verify(inadService).callEService(requestCaptor.capture());
         assertEquals(TAX_ID, requestCaptor.getValue().getFilter().getTaxId());
         assertEquals(CORRELATION_ID, requestCaptor.getValue().getFilter().getPracticalReference());
     }
@@ -148,12 +158,14 @@ class DigitalAddressServiceTest {
     @Test
     void retrieveDigitalAddressFromInadSync_shouldReturnNotFoundWhenDigitalAddressIsMissing() {
         AddressRequestBodyDto request = buildRequest();
-        GetDigitalAddressINADOKDto inadResponse = new GetDigitalAddressINADOKDto();
-        inadResponse.setTaxId(TAX_ID);
+        ResponseRequestDigitalAddress inadResponse = new ResponseRequestDigitalAddress();
+        inadResponse.setCodiceFiscale(TAX_ID);
         inadResponse.setDigitalAddress(null);
 
-        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class), eq(PF), eq(CORRELATION_ID)))
+        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class)))
                 .thenReturn(Mono.just(inadResponse));
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+
 
         StepVerifier.create(digitalAddressService.retrieveDigitalAddressFromInadSync(request, CORRELATION_ID, PF))
                 .assertNext(result -> {
@@ -170,7 +182,7 @@ class DigitalAddressServiceTest {
         AddressRequestBodyDto request = buildRequest();
         RuntimeException exception = new RuntimeException("INAD error");
 
-        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class), eq(PF), eq(CORRELATION_ID)))
+        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class)))
                 .thenReturn(Mono.error(exception));
 
         StepVerifier.create(digitalAddressService.retrieveDigitalAddressFromInadSync(request, CORRELATION_ID, PF))
@@ -194,7 +206,7 @@ class DigitalAddressServiceTest {
                 Object.class
         );
 
-        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class), eq(PF), eq(CORRELATION_ID)))
+        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class)))
                 .thenReturn(Mono.error(exception));
 
         StepVerifier.create(digitalAddressService.retrieveDigitalAddressFromInadSync(request, CORRELATION_ID, PF))
@@ -216,15 +228,17 @@ class DigitalAddressServiceTest {
         AddressRequestBodyDto request = buildRequest();
         request.getFilter().setTaxId("12345678901");
 
-        DigitalAddressDto digitalAddress = new DigitalAddressDto();
+        ElementDigitalAddress digitalAddress = new ElementDigitalAddress();
         digitalAddress.setDigitalAddress("company@pec.it");
 
-        GetDigitalAddressINADOKDto inadResponse = new GetDigitalAddressINADOKDto();
-        inadResponse.setTaxId("12345678901");
-        inadResponse.setDigitalAddress(digitalAddress);
+        ResponseRequestDigitalAddress inadResponse = new ResponseRequestDigitalAddress();
+        inadResponse.setCodiceFiscale("12345678901");
+        inadResponse.setDigitalAddress(List.of(digitalAddress));
 
-        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class), eq(PG), eq(CORRELATION_ID)))
+        when(inadService.callEService(any(GetDigitalAddressINADRequestBodyDto.class)))
                 .thenReturn(Mono.just(inadResponse));
+        when(nationalRegistriesConfig.isEnablePfPecFallbackFlow()).thenReturn(true);
+
 
         StepVerifier.create(digitalAddressService.retrieveDigitalAddressFromInadSync(request, CORRELATION_ID, PG))
                 .assertNext(result -> {

@@ -5,6 +5,16 @@ Transform:
   - UpdateDeploymentTransform
 
 Parameters:
+  NationalRegistriesPipeWindowSize:
+    Type: Number
+    Default: 30
+    Description: window size of national registries pipe (sqs to sqs)
+
+  NationalRegistriesPipeBatchSize:
+    Type: Number
+    Default: 2
+    Description: events batch size of national registries pipe (sqs to sqs)
+
   NationalRegistryGatewayOutputsQueueName:
     Type: String
     Description: 'The name of the queue'
@@ -16,6 +26,10 @@ Parameters:
   NationalRegistriesGatewayResponsesQueueARN:
     Type: String
     Description: 'Identify the resource that the policy applies to.'
+
+  NationalRegistriesGatewayResponsesQueueName:
+    Type: String
+    Description: 'The name of the queue of gateway Response'
 
   ProjectName:
     Type: String
@@ -786,6 +800,7 @@ Resources:
         ContainerEnvEntry82: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADMASSIVEAPI=${EnableInadMassiveApi}'
         ContainerEnvEntry83: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRETRYAFTER=${PnNationalRegistriesInipecRequestRetryAfter}'
         ContainerEnvEntry84: !Sub 'PN_NATIONALREGISTRIES_ENABLEOLDINIPECFLOW=${EnableOldInipecFlow}'
+        ContainerEnvEntry85: !Sub 'PN_NATIONALREGISTRIES_TOPIC_GATEWAYRESPONSEQUEUENAME=${NationalRegistriesGatewayResponsesQueueName}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -856,6 +871,7 @@ Resources:
               - !Ref NationalRegistryGatewayInputsQueueARN
               - !Ref NationalRegistryGatewayInputsDLQARN
               - !Ref NationalRegistriesPollingQueueARN
+              - !Ref NationalRegistriesGatewayResponsesQueueARN
           - Effect: Allow
             Action:
               - ssm:GetParameter
@@ -877,6 +893,11 @@ Resources:
                 - pipes.amazonaws.com
             Action:
               - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-request-error-pipe'
       Policies:
         - PolicyName: pn-national-registries-request-error-pipe-policy
           PolicyDocument:
@@ -897,6 +918,70 @@ Resources:
                   - sqs:SendMessage
                 Resource:
                   - !Ref NationalRegistryGatewayInputsDLQARN
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: !Ref PnBatchRequestEncryptKeyARN
+
+  NationalRegistriesToEventBusPipe:
+    Type: AWS::Pipes::Pipe
+    Properties:
+      Name: !Sub ${ProjectName}-national-registries-to-event-bus-pipe
+      Description: 'Pipe from National Registries Queue to core event bus'
+      RoleArn: !GetAtt NationalRegistriesToEventBusPipeRole.Arn
+      Source: !Ref NationalRegistriesGatewayResponsesQueueARN
+      SourceParameters:
+        SqsQueueParameters:
+          BatchSize: !Ref NationalRegistriesPipeBatchSize
+          MaximumBatchingWindowInSeconds: !Ref NationalRegistriesPipeWindowSize
+      Target: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/${ProjectName}-CoreEventBus
+      TargetParameters:
+        EventBridgeEventBusParameters:
+          DetailType: "NationalRegistriesOutcomeEvent"
+        InputTemplate: >-
+          {
+            "body": <$.body.payload>,
+            "source": <$.body.clientId>
+          }
+
+  NationalRegistriesToEventBusPipeRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - pipes.amazonaws.com
+            Action:
+              - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-to-event-bus-pipe'
+
+      Policies:
+        - PolicyName: !Sub ${ProjectName}--National-registries-to-core-event-bus-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sqs:ReceiveMessage'
+                  - 'sqs:DeleteMessage'
+                  - 'sqs:GetQueueAttributes'
+                Resource: !Ref NationalRegistriesGatewayResponsesQueueARN
+        - PolicyName: !Sub ${ProjectName}-National-registries-target-policy
+          PolicyDocument:
+            Version: 2012-10-17
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'events:PutEvents'
+                Resource:
+                  - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/${ProjectName}-CoreEventBus
 
   PnNationalRegistriesRequestErrorPipe:
     Type: AWS::Pipes::Pipe
@@ -906,7 +991,7 @@ Resources:
       Source: !Ref PnNationalRegistriesRequestsTableStreamArn
       SourceParameters:
         DynamoDBStreamParameters:
-          StartingPosition: LATEST
+          StartingPosition: TRIM_HORIZON
           BatchSize: 1
         FilterCriteria:
           Filters:
@@ -966,6 +1051,11 @@ Resources:
                 - pipes.amazonaws.com
             Action:
               - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-polling-pipe'
       Policies:
         - PolicyName: pn-national-registries-polling-pipe-policy
           PolicyDocument:
@@ -995,7 +1085,7 @@ Resources:
       Source: !Ref PnNationalRegistriesBatchesTableStreamArn
       SourceParameters:
         DynamoDBStreamParameters:
-          StartingPosition: LATEST
+          StartingPosition: TRIM_HORIZON
           BatchSize: 1
         FilterCriteria:
           Filters:
@@ -1023,7 +1113,6 @@ Resources:
       TargetParameters:
         SqsQueueParameters:
           MessageGroupId: $.dynamodb.NewImage.batchId.S
-          MessageDeduplicationId: $.dynamodb.NewImage.batchId.S
         InputTemplate: >-
           {
             "registry": "<$.dynamodb.NewImage.registry.S>",
@@ -1043,7 +1132,7 @@ Resources:
 
       SourceParameters:
         DynamoDBStreamParameters:
-          StartingPosition: LATEST
+          StartingPosition: TRIM_HORIZON
           BatchSize: 1
 
         FilterCriteria:
@@ -1111,6 +1200,11 @@ Resources:
                 - pipes.amazonaws.com
             Action:
               - sts:AssumeRole
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Ref AWS::AccountId
+              ArnEquals:
+                aws:SourceArn: !Sub 'arn:${AWS::Partition}:pipes:${AWS::Region}:${AWS::AccountId}:pipe/pn-national-registries-completed-request-pipe'
 
       Policies:
         - PolicyName: pn-national-registries-completed-request-pipe-policy
@@ -1131,6 +1225,10 @@ Resources:
                   - sqs:SendMessage
                 Resource:
                   - !Ref NationalRegistriesGatewayResponsesQueueARN
+              - Effect: Allow
+                Action:
+                  - kms:Decrypt
+                Resource: !Ref PnBatchRequestEncryptKeyARN
 
   NationalRegistryApiGateway:
     Type: AWS::CloudFormation::Stack

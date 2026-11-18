@@ -47,7 +47,7 @@ import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
         "spring.cloud.aws.sqs.enabled=false",
         "pn.national-registries.query-limit=5"
 })
-class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
+class NationalRegistriesRequestsRepositoryITTest extends BaseTest.WithLocalStack {
 
     @MockitoBean
     private SqsService sqsService;
@@ -102,7 +102,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
             fallbackTestKey(source);
             repository.putRequest(source).block();
             NationalRegistriesRequest destination = new NationalRegistriesRequest(source, destinationStatus, GatewayDownstreamService.INAD,
-                    destinationStatus == RequestStatusEnum.WORKED ? "payload" : null, 10);
+                    destinationStatus == RequestStatusEnum.WORKED ? "payload" : null, destinationStatus == RequestStatusEnum.WORKED ? "originalPayload" : null, 10);
             fallbackTestKey(destination);
             var handoff = repository.completeWithFallback(source, destination);
             Assertions.assertEquals(RequestStatusEnum.WORKING, readStoredRequest(source).getStatus());
@@ -114,7 +114,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
             Assertions.assertEquals(destinationStatus, readStoredRequest(destination).getStatus());
 
             // A stale replay cannot create a second destination after the transaction committed.
-            NationalRegistriesRequest duplicate = new NationalRegistriesRequest(source, destinationStatus, GatewayDownstreamService.INAD, null, 10);
+            NationalRegistriesRequest duplicate = new NationalRegistriesRequest(source, destinationStatus, GatewayDownstreamService.INAD, null, null, 10);
             StepVerifier.create(repository.completeWithFallback(source, duplicate))
                     .expectError(TransactionCanceledException.class).verify();
             Assertions.assertNull(readStoredRequest(duplicate));
@@ -128,10 +128,10 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 "source-batch", GatewayDownstreamService.INAD, RequestStatusEnum.WORKING);
         fallbackTestKey(source);
         repository.putRequest(source).block();
-        NationalRegistriesRequest occupied = new NationalRegistriesRequest(source, RequestStatusEnum.WORKED, GatewayDownstreamService.INIPEC, "existing", 10);
+        NationalRegistriesRequest occupied = new NationalRegistriesRequest(source, RequestStatusEnum.WORKED, GatewayDownstreamService.INIPEC, "existing", "existing", 10);
         fallbackTestKey(occupied);
         repository.putRequest(occupied).block();
-        NationalRegistriesRequest destination = new NationalRegistriesRequest(source, RequestStatusEnum.NOT_WORKED, GatewayDownstreamService.INIPEC, null, 10);
+        NationalRegistriesRequest destination = new NationalRegistriesRequest(source, RequestStatusEnum.NOT_WORKED, GatewayDownstreamService.INIPEC, null, null, 10);
         destination.setCreatedAt(occupied.getCreatedAt());
 
         StepVerifier.create(repository.completeWithFallback(source, destination))
@@ -152,10 +152,13 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 "source-batch", GatewayDownstreamService.INAD, RequestStatusEnum.WORKING);
         fallbackTestKey(source);
         repository.putRequest(source).block();
-        var completion = repository.updateStatusToWorked(source.getCorrelationId(), source.getCreatedAt().toString(), null, source.getRegistry(), false);
-        Assertions.assertEquals(RequestStatusEnum.WORKING, readStoredRequest(source).getStatus());
+        var completion = repository.updateStatusToWorked(source.getCorrelationId(), source.getCreatedAt().toString(), null, null, source.getRegistry(), null, false);
+        NationalRegistriesRequest stored = readStoredRequest(source);
+        Assertions.assertEquals(RequestStatusEnum.WORKING, stored.getStatus());
         completion.block();
-        Assertions.assertEquals(RequestStatusEnum.WORKED, readStoredRequest(source).getStatus());
+        NationalRegistriesRequest storedAfterUpdate = readStoredRequest(source);
+        Assertions.assertEquals(RequestStatusEnum.WORKED, storedAfterUpdate.getStatus());
+        Assertions.assertNotNull(storedAfterUpdate.getTtl());
     }
 
     private NationalRegistriesRequest readStoredRequest(NationalRegistriesRequest request) {
@@ -301,6 +304,7 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         Assertions.assertEquals(batchId, updated.getBatchId());
         Assertions.assertNotNull(updated.getUpdatedAt());
         Assertions.assertTrue(updated.getUpdatedAt().isAfter(createdAt));
+        Assertions.assertNull(updated.getTtl());
     }
 
     @Test
@@ -363,6 +367,43 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         Assertions.assertTrue(exception.getProblem().getDetail().contains("Unable to transition to WORKING"));
     }
 
+    @Test
+    void updateStatusToWorkedNotFinalRegistryTest() {
+
+        Instant createdAt = Instant.parse("2026-10-07T12:10:00Z");
+        String batchId = UUID.randomUUID().toString();
+
+        NationalRegistriesRequest request = buildRequest(
+                "CORRELATION-" + UUID.randomUUID(),
+                createdAt,
+                batchId,
+                GatewayDownstreamService.INIPEC,
+                RequestStatusEnum.WORKING
+        );
+
+        request.setTtl(null);
+        repository.putRequest(request).block();
+
+        repository.updateStatusToWorked(
+                request.getCorrelationId(),
+                request.getCreatedAt().toString(),
+                null,
+                null,
+                GatewayDownstreamService.INIPEC,
+                GatewayDownstreamService.INAD,
+                false
+        ).block();
+
+        NationalRegistriesRequest updated = getRequestByBatchId(batchId, RequestStatusEnum.WORKED);
+        Assertions.assertEquals(RequestStatusEnum.WORKED, updated.getStatus());
+        Assertions.assertEquals(GatewayDownstreamService.INIPEC, updated.getRegistry());
+        Assertions.assertEquals(GatewayDownstreamService.INAD, updated.getNextRegistry());
+        Assertions.assertEquals(GatewayDownstreamService.INIPEC.name() + "#" + RequestStatusEnum.WORKED.name(), updated.getRegistryStatus());
+        Assertions.assertNotNull(updated.getTtl());
+        Assertions.assertNotNull(updated.getUpdatedAt());
+        Assertions.assertTrue(updated.getTtl() > Instant.now().getEpochSecond());
+    }
+
 
     @Test
     void updateStatusToWorkedTest() {
@@ -381,12 +422,15 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         request.setTtl(null);
         repository.putRequest(request).block();
         String resultPayload = "{\"digitalAddress\":\"test@pec.it\"}";
+        String originalPayload = "{\"digitalAddress\":\"test@pec.it\"}";
 
         repository.updateStatusToWorked(
                 request.getCorrelationId(),
                 request.getCreatedAt().toString(),
                 resultPayload,
+                originalPayload,
                 GatewayDownstreamService.INIPEC,
+                null,
                 true
         ).block();
 
@@ -417,12 +461,15 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         request.setTtl(null);
         repository.putRequest(request).block();
         String resultPayload = "{\"digitalAddress\":\"test@pec.it\"}";
+        String originalPayload = "{\"digitalAddress\":\"test@pec.it\"}";
 
         repository.updateStatusToWorked(
                 request.getCorrelationId(),
                 request.getCreatedAt().toString(),
                 resultPayload,
+                originalPayload,
                 GatewayDownstreamService.INAD,
+                null,
                 true
         ).block();
 
@@ -456,6 +503,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         "payload",
+                        "payload",
+                        null,
                         null,
                         true
                 ).block()
@@ -485,6 +534,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         "resultPayload",
+                        "originalpayload",
+                        null,
                         null,
                         true
                 ).block()
@@ -515,7 +566,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         repository.updateStatusToError(
                 request.getCorrelationId(),
                 request.getCreatedAt().toString(),
-                GatewayDownstreamService.INAD
+                GatewayDownstreamService.INAD,
+                null
         ).block();
 
         NationalRegistriesRequest updated = getRequestByBatchId(batchId, RequestStatusEnum.ERROR);
@@ -544,7 +596,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 () -> repository.updateStatusToError(
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
-                        GatewayDownstreamService.INAD
+                        GatewayDownstreamService.INAD,
+                        null
                 ).block()
         );
 
@@ -571,7 +624,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                 () -> repository.updateStatusToError(
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
-                        GatewayDownstreamService.INAD
+                        GatewayDownstreamService.INAD,
+                        null
                 ).block()
         );
 
@@ -661,6 +715,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCreatedAt().toString(),
                         null,
                         null,
+                        null,
+                        null,
                         true
                 ).block()
         );
@@ -691,6 +747,8 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
                         request.getCorrelationId(),
                         request.getCreatedAt().toString(),
                         " ",
+                        " ",
+                        null,
                         null,
                         true
                 ).block()
@@ -721,7 +779,6 @@ class NationalRegistriesRequestsRepositoryIT extends BaseTest.WithLocalStack {
         request.setBatchId(batchId);
         request.setReferenceRequestDate("2026-10-07T10:00:00Z");
         request.setUpdatedAt(createdAt);
-        request.setTtl(createdAt.plus(30,ChronoUnit.DAYS).getEpochSecond());
         return request;
     }
 }

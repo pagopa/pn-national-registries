@@ -13,7 +13,7 @@ import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddre
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.GetAddressANPRRequestBodyDto;
 import it.pagopa.pn.national.registries.integration.AbstractNationalRegistriesComponentIT;
 import it.pagopa.pn.national.registries.integration.PnNationalRegistriesTestApplication;
-import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.anpr.AnprResponseKO;
 import java.lang.reflect.Method;
 import java.nio.charset.StandardCharsets;
@@ -71,11 +71,11 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         processNextGatewayInputMessage();
         Message output = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(output);
-        CodeSqsDto gateway = readOutputMessage(output.body());
+        GatewayResponse gateway = readNewOutputMessage(output.body());
 
-        assertEquals(direct.getResidentialAddresses().getFirst().getAddress(), gateway.getPhysicalAddress().getAddress());
-        assertEquals(direct.getResidentialAddresses().getFirst().getMunicipality(), gateway.getPhysicalAddress().getMunicipality());
-        assertEquals("ANPR", gateway.getRegistry());
+        assertEquals(direct.getResidentialAddresses().getFirst().getAddress(), gateway.getPayload().getPhysicalAddress().getAddress());
+        assertEquals(direct.getResidentialAddresses().getFirst().getMunicipality(), gateway.getPayload().getPhysicalAddress().getMunicipality());
+        assertEquals("ANPR", gateway.getPayload().getRegistry());
     }
 
     /**
@@ -93,10 +93,10 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("ANPR", payload.getRegistry());
-        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue(), payload.getAddressType());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("ANPR", payload.getPayload().getRegistry());
+        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue(), payload.getPayload().getAddressType());
         assertPhysicalAddress(payload,
                 "VIA ROMA 10",
                 "",
@@ -131,10 +131,10 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("ANPR", payload.getRegistry());
-        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue(), payload.getAddressType());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("ANPR", payload.getPayload().getRegistry());
+        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue(), payload.getPayload().getAddressType());
         assertPhysicalAddress(payload,
                 "VIA ROMA MAGGIORE 10",
                 "Scala A",
@@ -169,7 +169,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA ROMA 10",
                 "Scala B",
@@ -201,7 +201,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA SANT'AGATA 22",
                 "",
@@ -233,7 +233,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA ROMA 22/B SNC",
                 "",
@@ -266,7 +266,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA 100",
                 "",
@@ -298,11 +298,11 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("ANPR", payload.getRegistry());
-        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue(), payload.getAddressType());
-        assertNull(payload.getPhysicalAddress());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("ANPR", payload.getPayload().getRegistry());
+        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue(), payload.getPayload().getAddressType());
+        assertNull(payload.getPayload().getPhysicalAddress());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
@@ -348,10 +348,10 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("REGISTRO_IMPRESE", payload.getRegistry());
-        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue(), payload.getAddressType());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("REGISTRO_IMPRESE", payload.getPayload().getRegistry());
+        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue(), payload.getPayload().getAddressType());
         assertPhysicalAddress(payload,
                 "VIA Milano 25",
                 null,
@@ -385,7 +385,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA REPUBBLICA 100",
                 null,
@@ -416,7 +416,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "AVENUE EUROPA 5",
                 null,
@@ -446,7 +446,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA SANT'AGATA D'ESARO 15",
                 null,
@@ -476,7 +476,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA SECONDARIA 50",
                 null,
@@ -507,7 +507,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "STREET LONDON ROAD 42",
                 null,
@@ -540,7 +540,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA STRADA PROVINCIALE 5 KM 5",
                 "",
@@ -572,7 +572,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA ROMA 10/A",
                 "",
@@ -604,7 +604,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA ROMA SNC",
                 "",
@@ -636,7 +636,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA MILANO 25",
                 "ROSSO Scala A",
@@ -667,7 +667,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA ROMA 10",
                 "",
@@ -699,7 +699,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "VIA NAZIONALE DELLE COMUNICAZIONI 100",
                 "NERO Scala B Scala est. C",
@@ -730,7 +730,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
         assertPhysicalAddress(payload,
                 "PIAZZA DELLA REPUBBLICA 15",
                 "",
@@ -764,11 +764,11 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         Message outputMessage = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(outputMessage);
 
-        it.pagopa.pn.national.registries.model.CodeSqsDto payload = readOutputMessage(outputMessage.body());
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("REGISTRO_IMPRESE", payload.getRegistry());
-        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue(), payload.getAddressType());
-        assertNull(payload.getPhysicalAddress());
+        GatewayResponse payload = readNewOutputMessage(outputMessage.body());
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("REGISTRO_IMPRESE", payload.getPayload().getRegistry());
+        assertEquals(AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL.getValue(), payload.getPayload().getAddressType());
+        assertNull(payload.getPayload().getPhysicalAddress());
 
         assertNull(receiveSingleMessage(INPUT_DLQ_QUEUE));
         assertTrue(findNationalRegistriesRequestsByCorrelationId(correlationId).isEmpty());
@@ -801,7 +801,7 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
 
     }
 
-    private void assertPhysicalAddress(it.pagopa.pn.national.registries.model.CodeSqsDto payload,
+    private void assertPhysicalAddress(GatewayResponse payload,
                                        String address,
                                        String addressDetails,
                                        String at,
@@ -810,34 +810,34 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
                                        String province,
                                        String foreignState,
                                        String municipalityDetails) {
-        assertNotNull(payload.getPhysicalAddress());
-        assertEquals(address, payload.getPhysicalAddress().getAddress());
+        assertNotNull(payload.getPayload().getPhysicalAddress());
+        assertEquals(address, payload.getPayload().getPhysicalAddress().getAddress());
         if (addressDetails == null) {
-            assertNull(payload.getPhysicalAddress().getAddressDetails());
+            assertNull(payload.getPayload().getPhysicalAddress().getAddressDetails());
         } else {
-            assertEquals(addressDetails, payload.getPhysicalAddress().getAddressDetails());
+            assertEquals(addressDetails, payload.getPayload().getPhysicalAddress().getAddressDetails());
         }
         if (at == null) {
-            assertNull(payload.getPhysicalAddress().getAt());
+            assertNull(payload.getPayload().getPhysicalAddress().getAt());
         } else {
-            assertEquals(at, payload.getPhysicalAddress().getAt());
+            assertEquals(at, payload.getPayload().getPhysicalAddress().getAt());
         }
-        assertEquals(zip, payload.getPhysicalAddress().getZip());
-        assertEquals(municipality, payload.getPhysicalAddress().getMunicipality());
+        assertEquals(zip, payload.getPayload().getPhysicalAddress().getZip());
+        assertEquals(municipality, payload.getPayload().getPhysicalAddress().getMunicipality());
         if (province == null) {
-            assertNull(payload.getPhysicalAddress().getProvince());
+            assertNull(payload.getPayload().getPhysicalAddress().getProvince());
         } else {
-            assertEquals(province, payload.getPhysicalAddress().getProvince());
+            assertEquals(province, payload.getPayload().getPhysicalAddress().getProvince());
         }
         if (foreignState == null) {
-            assertNull(payload.getPhysicalAddress().getForeignState());
+            assertNull(payload.getPayload().getPhysicalAddress().getForeignState());
         } else {
-            assertEquals(foreignState, payload.getPhysicalAddress().getForeignState());
+            assertEquals(foreignState, payload.getPayload().getPhysicalAddress().getForeignState());
         }
         if (municipalityDetails == null) {
-            assertNull(payload.getPhysicalAddress().getMunicipalityDetails());
+            assertNull(payload.getPayload().getPhysicalAddress().getMunicipalityDetails());
         } else {
-            assertEquals(municipalityDetails, payload.getPhysicalAddress().getMunicipalityDetails());
+            assertEquals(municipalityDetails, payload.getPayload().getPhysicalAddress().getMunicipalityDetails());
         }
     }
 
@@ -853,10 +853,10 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL, correlationId);
         processNextGatewayInputMessage();
 
-        CodeSqsDto payload = output();
-        assertEquals(correlationId, payload.getCorrelationId());
-        assertEquals("ANPR", payload.getRegistry());
-        assertNull(payload.getPhysicalAddress());
+        GatewayResponse payload = output();
+        assertEquals(correlationId, payload.getPayload().getCorrelationId());
+        assertEquals("ANPR", payload.getPayload().getRegistry());
+        assertNull(payload.getPayload().getPhysicalAddress());
     }
 
     /**
@@ -888,13 +888,13 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         enqueueGatewayRequest("PF", VALID_PF_CF, AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL, correlationId);
         processNextGatewayInputMessage();
 
-        CodeSqsDto payload = output();
-        assertNotNull(payload.getPhysicalAddress());
-        assertEquals("RUE DE PARIS 12", payload.getPhysicalAddress().getAddress());
-        assertEquals("75001", payload.getPhysicalAddress().getZip());
-        assertEquals("Parigi", payload.getPhysicalAddress().getMunicipality());
-        assertEquals("Ile-de-France", payload.getPhysicalAddress().getProvince());
-        assertEquals("FRANCIA", payload.getPhysicalAddress().getForeignState());
+        GatewayResponse payload = output();
+        assertNotNull(payload.getPayload().getPhysicalAddress());
+        assertEquals("RUE DE PARIS 12", payload.getPayload().getPhysicalAddress().getAddress());
+        assertEquals("75001", payload.getPayload().getPhysicalAddress().getZip());
+        assertEquals("Parigi", payload.getPayload().getPhysicalAddress().getMunicipality());
+        assertEquals("Ile-de-France", payload.getPayload().getPhysicalAddress().getProvince());
+        assertEquals("FRANCIA", payload.getPayload().getPhysicalAddress().getForeignState());
     }
 
     /**
@@ -915,9 +915,9 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         enqueueGatewayRequest("PF", VALID_PF_CF.toLowerCase(), AddressRequestBodyFilterDto.DomicileTypeEnum.PHYSICAL, correlationId);
         processNextGatewayInputMessage();
 
-        CodeSqsDto payload = output();
-        assertNotNull(payload.getPhysicalAddress());
-        assertEquals("VIA CORRETTA 99", payload.getPhysicalAddress().getAddress());
+        GatewayResponse payload = output();
+        assertNotNull(payload.getPayload().getPhysicalAddress());
+        assertEquals("VIA CORRETTA 99", payload.getPayload().getPhysicalAddress().getAddress());
     }
 
     /**
@@ -953,10 +953,10 @@ public class PhysicalAddressTestIT extends AbstractNationalRegistriesComponentIT
         assertTrue(requests.stream().allMatch(request -> VALID_PF_CF.equalsIgnoreCase(request.getCriteriRicerca().getCodiceFiscale())));
     }
 
-    private CodeSqsDto output() {
+    private GatewayResponse output() {
         Message message = receiveSingleMessage(OUTPUT_QUEUE);
         assertNotNull(message);
-        return readOutputMessage(message.body());
+        return readNewOutputMessage(message.body());
     }
 
     private Object newForSetter(Object target, String setterName) throws Exception {

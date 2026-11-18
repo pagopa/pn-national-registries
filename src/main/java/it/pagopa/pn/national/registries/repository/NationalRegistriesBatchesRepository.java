@@ -18,7 +18,7 @@ public interface NationalRegistriesBatchesRepository {
 
     SdkPublisher<Page<NationalRegistriesBatch>> getBatchesToProcess(BatchesStatusEnum status, Instant now);
 
-    Mono<NationalRegistriesBatch> updateToFinalStatus(String pk, String sk, BatchesStatusEnum finalStatus);
+    Mono<NationalRegistriesBatch> updateToFinalStatus(String pk, String sk, BatchesStatusEnum finalStatus, Boolean inProgress, Integer retryCount);
 
     Mono<NationalRegistriesBatch> resetStatusForRetry(String pk, String sk, Integer retry, boolean isInProgressRetry, GatewayDownstreamService registry);
 

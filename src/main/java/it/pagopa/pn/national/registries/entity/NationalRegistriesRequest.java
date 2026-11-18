@@ -37,6 +37,8 @@ public class NationalRegistriesRequest {
     public static final String COL_UPDATED_AT = "updatedAt";
     public static final String COL_RETRY_COUNT = "retryCount";
     public static final String COL_ATTEMPTAFTER = "attemptAfter";
+    public static final String COL_NEXTREGISTRY = "nextRegistry";
+    public static final String COL_ORIGINALRESPONSE = "originalResponse";
     public static final String COL_TTL = "ttl";
 
     public static final String BATCH_ID_INDEX = "batchId-status-index";
@@ -87,6 +89,12 @@ public class NationalRegistriesRequest {
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_ATTEMPTAFTER), @DynamoDbSecondarySortKey(indexNames = REGISTRY_STATUS_ATTEMPT_AFTER_INDEX)}))
     private String attemptAfter;
 
+    @Getter(onMethod = @__({@DynamoDbAttribute(COL_NEXTREGISTRY)}))
+    private GatewayDownstreamService nextRegistry;
+
+    @Getter(onMethod = @__({@DynamoDbAttribute(COL_ORIGINALRESPONSE)}))
+    private String originalResponse;
+
     @Getter(onMethod = @__({@DynamoDbAttribute(COL_TTL)}))
     private Long ttl;
 
@@ -109,7 +117,7 @@ public class NationalRegistriesRequest {
         return SCHEMA.mapToItem(item);
     }
 
-    public NationalRegistriesRequest(NationalRegistriesRequest nationalRegistriesRequest, RequestStatusEnum status, GatewayDownstreamService registry, String resultPayload, Integer ttl) {
+    public NationalRegistriesRequest(NationalRegistriesRequest nationalRegistriesRequest, RequestStatusEnum status, GatewayDownstreamService registry, String resultPayload, String originalResponse, Integer ttl) {
         Instant now = Instant.now();
         correlationId = nationalRegistriesRequest.getCorrelationId();
         taxId = nationalRegistriesRequest.getTaxId();
@@ -125,6 +133,9 @@ public class NationalRegistriesRequest {
         this.status = status;
         if(StringUtils.hasText(resultPayload)){
             this.resultPayload = resultPayload;
+        }
+        if(StringUtils.hasText(originalResponse)){
+            this.originalResponse = originalResponse;
         }
 
         if(WORKED.equals(status) || ERROR.equals(status)){

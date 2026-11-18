@@ -122,7 +122,7 @@ class AnprConverterStrategyModeTest {
     @Test
     void modeMinimal() {
         ResidentialAddressDto result = convertSingle(converterWithMode(AddressModeEnum.MINIMAL.name()));
-        assertEquals("VIA ROMA 10/A", result.getAddress());
+        assertEquals("VIA ROMA 10/A bis", result.getAddress());
         assertEquals("ROSSO Scala 2", result.getAddressDetail());
     }
 

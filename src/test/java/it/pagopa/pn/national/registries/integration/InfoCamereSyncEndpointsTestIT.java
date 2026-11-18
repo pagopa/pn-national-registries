@@ -21,7 +21,7 @@ import static org.mockito.Mockito.*;
  * rappresentante legale e imprese rappresentate, inclusi errori applicativi e risultati vuoti.
  */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
-class InfoCamereSyncEndpointsIT extends AbstractNationalRegistriesComponentIT {
+class InfoCamereSyncEndpointsTestIT extends AbstractNationalRegistriesComponentIT {
 
     /**
      * Verifica che l’endpoint Registro Imprese restituisca correttamente la sede legale.

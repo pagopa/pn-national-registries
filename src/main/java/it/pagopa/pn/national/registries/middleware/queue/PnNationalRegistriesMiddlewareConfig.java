@@ -3,10 +3,10 @@ package it.pagopa.pn.national.registries.middleware.queue;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
 import it.pagopa.pn.national.registries.middleware.queue.model.GatewayInputEvent;
-import it.pagopa.pn.national.registries.middleware.queue.model.GatewayOutputEvent;
+import it.pagopa.pn.national.registries.middleware.queue.model.GatewayResponseEvent;
+import it.pagopa.pn.national.registries.middleware.queue.producer.GatewayResponseQueueMomProducer;
 import it.pagopa.pn.national.registries.middleware.queue.producer.InternalDlqQueueMomProducer;
 import it.pagopa.pn.national.registries.middleware.queue.producer.InternalQueueMomProducer;
-import it.pagopa.pn.national.registries.middleware.queue.producer.OutputQueueMomProducer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import software.amazon.awssdk.services.sqs.SqsClient;
@@ -21,8 +21,8 @@ public class PnNationalRegistriesMiddlewareConfig {
     }
 
     @Bean
-    public OutputQueueMomProducer outputQueueMomProducer(SqsClient sqs, ObjectMapper objMapper) {
-        return new OutputQueueMomProducer( sqs, cfg.getTopic().getOutputQueueName(), objMapper, GatewayOutputEvent.class);
+    public GatewayResponseQueueMomProducer gatewayResponseQueueMomProducer(SqsClient sqs, ObjectMapper objMapper) {
+        return new GatewayResponseQueueMomProducer( sqs, cfg.getTopic().getGatewayResponseQueueName(), objMapper, GatewayResponseEvent.class);
     }
 
     @Bean

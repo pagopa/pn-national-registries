@@ -45,7 +45,7 @@ public class PollingService {
         boolean badRequest = throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST;
 
         if (retryExhausted || badRequest) {
-            return handlePollingFailure(batchId, registry, throwable);
+            return handlePollingFailure(batchId, registry, inProgress, retryLimit, throwable);
         }
 
         return nationalRegistriesBatchesRepository
@@ -55,12 +55,12 @@ public class PollingService {
                 .then();
     }
 
-    private Mono<Void> handlePollingFailure(String batchId, GatewayDownstreamService registry, Throwable throwable) {
+    private Mono<Void> handlePollingFailure(String batchId, GatewayDownstreamService registry, boolean inProgress, int retryCount, Throwable throwable) {
         log.warn("{} - batchId {} - polling retries exhausted or non-retryable error", registry, batchId, throwable);
         return Flux.from(nationalRegistriesRequestsRepository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
                 .flatMapIterable(Page::items)
                 .concatMap(this::moveRequestToError)
-                .then(Mono.defer(() -> nationalRegistriesBatchesRepository.updateToFinalStatus(batchId, SK, BatchesStatusEnum.ERROR)))
+                .then(Mono.defer(() -> nationalRegistriesBatchesRepository.updateToFinalStatus(batchId, SK, BatchesStatusEnum.ERROR, inProgress, retryCount)))
                 .doOnNext(nationalRegistriesBatch -> logBatchEndingMetricsNew(nationalRegistriesBatch, registry))
                 .then();
     }
@@ -72,25 +72,25 @@ public class PollingService {
                     Instant.parse(request.getReferenceRequestDate())
             );
             return infoCamereService.getIniPecDigitalAddress(request.getClientId(), convertToGetDigitalAddressIniPecRequest(request.getCorrelationId(), request.getTaxId()), referenceRequestDate, RecipientType.fromString(request.getRecipientType()))
-                    .then(Mono.defer(() -> markRequestAsWorked(request, sourceRegistry, null, false)))
+                    .then(Mono.defer(() -> markRequestAsWorked(request, sourceRegistry, targetRegistry, null, null, false)))
                     .then();
         }
-        NationalRegistriesRequest fallbackRequest = new NationalRegistriesRequest(request, RequestStatusEnum.NOT_WORKED, targetRegistry, null, nationalRegistriesConfig.getTtl());
+        NationalRegistriesRequest fallbackRequest = new NationalRegistriesRequest(request, RequestStatusEnum.NOT_WORKED, targetRegistry, null, null, nationalRegistriesConfig.getTtl());
         return nationalRegistriesRequestsRepository
                 .completeWithFallback(request, fallbackRequest)
                 .doOnNext(r -> log.info("Created request for correlationId: {} for registry {}", r.getCorrelationId(), targetRegistry))
                 .then();
     }
 
-    public Mono<Void> markRequestAsWorked(NationalRegistriesRequest request, GatewayDownstreamService registry, String resultPayload, boolean publishResult) {
+    public Mono<Void> markRequestAsWorked(NationalRegistriesRequest request, GatewayDownstreamService sourceRegistry, GatewayDownstreamService targetRegistry, String resultPayload, String originalResponse, boolean publishResult) {
         return nationalRegistriesRequestsRepository
-                .updateStatusToWorked(request.getCorrelationId(), request.getCreatedAt().toString(), resultPayload, registry, publishResult)
+                .updateStatusToWorked(request.getCorrelationId(), request.getCreatedAt().toString(), resultPayload, originalResponse, sourceRegistry, targetRegistry, publishResult)
                 .then();
     }
 
     public Mono<Void> markBatchAsWorked(String batchId, GatewayDownstreamService registry) {
         return nationalRegistriesBatchesRepository
-                .updateToFinalStatus(batchId, SK, BatchesStatusEnum.WORKED)
+                .updateToFinalStatus(batchId, SK, BatchesStatusEnum.WORKED, null, null)
                 .doOnNext(nationalRegistriesBatch -> logBatchEndingMetricsNew(nationalRegistriesBatch, registry))
                 .doOnSuccess(batch -> log.debug("{} - batchId {} - updated status to WORKED", registry, batchId))
                 .doOnError(error -> log.warn("{} - batchId {} - failed to update status to WORKED", registry, batchId, error))
@@ -99,7 +99,7 @@ public class PollingService {
 
     private Mono<Void> moveRequestToError(NationalRegistriesRequest request) {
         return nationalRegistriesRequestsRepository
-                .updateStatusToError(request.getCorrelationId(), request.getCreatedAt().toString(), request.getRegistry())
+                .updateStatusToError(request.getCorrelationId(), request.getCreatedAt().toString(), request.getRegistry(), null)
                 .then();
     }
 }

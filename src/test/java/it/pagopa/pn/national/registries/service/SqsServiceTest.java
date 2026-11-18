@@ -2,11 +2,12 @@ package it.pagopa.pn.national.registries.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.national.registries.middleware.queue.model.GatewayInputEvent;
-import it.pagopa.pn.national.registries.middleware.queue.model.GatewayOutputEvent;
+import it.pagopa.pn.national.registries.middleware.queue.model.GatewayResponseEvent;
+import it.pagopa.pn.national.registries.middleware.queue.producer.GatewayResponseQueueMomProducer;
 import it.pagopa.pn.national.registries.middleware.queue.producer.InternalDlqQueueMomProducer;
 import it.pagopa.pn.national.registries.middleware.queue.producer.InternalQueueMomProducer;
-import it.pagopa.pn.national.registries.middleware.queue.producer.OutputQueueMomProducer;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
+import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.InternalCodeSqsDto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,7 @@ import static org.mockito.Mockito.*;
 
 class SqsServiceTest {
 
-    private OutputQueueMomProducer outputQueueMomProducer;
+    private GatewayResponseQueueMomProducer outputQueueMomProducer;
     private InternalQueueMomProducer internalQueueMomProducer;
     private InternalDlqQueueMomProducer internalDlqQueueMomProducer;
 
@@ -27,7 +28,7 @@ class SqsServiceTest {
 
     @BeforeEach
     void setup() {
-        outputQueueMomProducer = mock(OutputQueueMomProducer.class);
+        outputQueueMomProducer = mock(GatewayResponseQueueMomProducer.class);
         internalQueueMomProducer = mock(InternalQueueMomProducer.class);
         internalDlqQueueMomProducer = mock(InternalDlqQueueMomProducer.class);
         objectMapper = mock(ObjectMapper.class);
@@ -44,29 +45,26 @@ class SqsServiceTest {
     void testPushToOutputQueue() {
         CodeSqsDto codeSqsDto = new CodeSqsDto();
         codeSqsDto.setCorrelationId("correlationId");
-
-        String clientId = "clientId";
-
+        GatewayResponse gatewayResponse = new GatewayResponse(codeSqsDto, "client-id");
         StepVerifier.create(
-                        sqsService.pushToOutputQueue(codeSqsDto, clientId)
+                        sqsService.pushToOutputQueue(gatewayResponse)
                 )
                 .verifyComplete();
 
-        ArgumentCaptor<GatewayOutputEvent> captor =
-                ArgumentCaptor.forClass(GatewayOutputEvent.class);
+        ArgumentCaptor<GatewayResponseEvent> captor =
+                ArgumentCaptor.forClass(GatewayResponseEvent.class);
 
         verify(outputQueueMomProducer, times(1))
                 .push(captor.capture());
 
-        GatewayOutputEvent event = captor.getValue();
+        GatewayResponseEvent event = captor.getValue();
 
         assertNotNull(event);
         assertNotNull(event.getHeader());
         assertEquals("NR_GATEWAY_RESPONSE", event.getHeader().getEventType());
-        assertEquals(clientId, event.getHeader().getClientId());
         assertNotNull(event.getHeader().getCreatedAt());
 
-        assertSame(codeSqsDto, event.getPayload());
+        assertSame(gatewayResponse, event.getPayload());
 
         verifyNoInteractions(internalQueueMomProducer);
         verifyNoInteractions(internalDlqQueueMomProducer);
@@ -81,7 +79,7 @@ class SqsServiceTest {
         String clientId = "clientId";
 
         StepVerifier.create(
-                        sqsService.pushToInputQueue(codeSqsDto, clientId)
+                        sqsService.pushToInputQueue(codeSqsDto)
                 )
                 .verifyComplete();
 
@@ -96,7 +94,6 @@ class SqsServiceTest {
         assertNotNull(event);
         assertNotNull(event.getHeader());
         assertEquals("NR_GATEWAY_INPUT", event.getHeader().getEventType());
-        assertEquals(clientId, event.getHeader().getClientId());
         assertNotNull(event.getHeader().getCreatedAt());
 
         assertSame(codeSqsDto, event.getPayload());
@@ -109,12 +106,11 @@ class SqsServiceTest {
     void testPushToInputDlqQueue() {
         InternalCodeSqsDto codeSqsDto = InternalCodeSqsDto.builder()
                 .correlationId("correlationId")
+                .pnNationalRegistriesCxId("clientId")
                 .build();
 
-        String clientId = "clientId";
-
         StepVerifier.create(
-                        sqsService.pushToInputDlqQueue(codeSqsDto, clientId)
+                        sqsService.pushToInputDlqQueue(codeSqsDto)
                 )
                 .verifyComplete();
 
@@ -129,7 +125,6 @@ class SqsServiceTest {
         assertNotNull(event);
         assertNotNull(event.getHeader());
         assertEquals("NR_GATEWAY_INPUT", event.getHeader().getEventType());
-        assertEquals(clientId, event.getHeader().getClientId());
         assertNotNull(event.getHeader().getCreatedAt());
 
         assertSame(codeSqsDto, event.getPayload());
