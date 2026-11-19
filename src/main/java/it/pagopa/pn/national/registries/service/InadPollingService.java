@@ -17,7 +17,6 @@ import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
-import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,7 +32,7 @@ import java.util.Objects;
 import static it.pagopa.pn.national.registries.constant.RecipientType.PF;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_INAD_RESPONSE_EMPTY;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.retrieveRecipientType;
-import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfRequestedMetric;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchCfRequestedMetric;
 import static it.pagopa.pn.national.registries.utils.MetricUtils.logCfWithAddressMetricFromBatchRequest;
 
 @Component
@@ -98,13 +97,12 @@ public class InadPollingService {
     }
 
     private Mono<Void> handleSuccessfulPolling(String batchId, Integer batchSize, ResponseListDigitalAddress response) {
-        logCfRequestedMetric(batchId, GatewayDownstreamService.INAD, batchSize);
+        logBatchCfRequestedMetric(batchId, GatewayDownstreamService.INAD, batchSize);
         Map<String, ResponseRequestDigitalAddress> resultByTaxId = inadConverter.mapResponseByTaxId(response);
         return Flux.from(nationalRegistriesRequestsRepository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
                 .flatMapIterable(Page::items)
                 .flatMap(request -> processSuccessfulRequest(request, resultByTaxId))
-                .then(Mono.defer(() -> pollingService.markBatchAsWorked(batchId, GatewayDownstreamService.INAD)))
-                .then();
+                .then(Mono.defer(() -> pollingService.markBatchAsWorked(batchId, GatewayDownstreamService.INAD)));
     }
 
     private Mono<Void> processSuccessfulRequest(NationalRegistriesRequest request, Map<String, ResponseRequestDigitalAddress> resultByTaxId) {

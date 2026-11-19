@@ -149,7 +149,7 @@ public class InadConverter {
         if (Objects.isNull(parsedEndValidity) || parsedEndValidity.equals(now) || parsedEndValidity.after(now)) {
             return true;
         } else {
-            log.info("inad digital address is not valid");
+            log.info("inad digital address is expired");
             return false;
         }
     }

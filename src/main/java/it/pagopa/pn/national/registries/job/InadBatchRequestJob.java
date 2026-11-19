@@ -4,7 +4,6 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
-import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.GatewayConverter;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
@@ -37,6 +36,7 @@ import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID;
 import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchRequestMetrics;
 
 @Component
 @Slf4j
@@ -111,6 +111,8 @@ public class InadBatchRequestJob {
         request.setPraticalReference(batchId);
 
         return inadClient.callMassiveEService(request)
+                .doOnNext(res -> logBatchRequestMetrics(batchId, requests.size(), false, GatewayDownstreamService.INAD))
+                .doOnError(t -> logBatchRequestMetrics(batchId, requests.size(), true, GatewayDownstreamService.INAD))
                 .onErrorResume(PnNationalRegistriesException.class,throwable -> checkIfIsBadRequestAndMarkRequestAsError(throwable, requests))
                 .flatMap(response -> persistBatch(response, batchId, requests, now))
                 .doOnError(error -> log.error("INAD batch {} failed", batchId, error));
