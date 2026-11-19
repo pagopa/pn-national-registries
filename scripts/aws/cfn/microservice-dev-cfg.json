@@ -61,6 +61,6 @@
     "EnablePfPecFallbackFlow": "true",
     "FirstAttemptDelaySecondsPerCf": "0.085",
     "FirstAttemptFixedDelaySeconds": "300",
-    "CpuArchitecture": "AMD"
+    "CpuArchitecture": "ARM"
   }
 }
