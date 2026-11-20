@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.integration.digital.PF;
 
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressOKDto;
 import it.pagopa.pn.national.registries.generated.openapi.server.v1.dto.AddressRequestBodyFilterDto;
@@ -23,6 +24,7 @@ import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -44,6 +46,8 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.enable-pf-pec-fallback-flow=false",
         "pn.national-registries.enable-inad-massive-api=true",
         "pn.national-registries.inad.max-batch-request-size=9",
+        "pn.national-registries.inad.batch-request-max-retry=2",
+        "pn.national-registries.inad.request-retry-after=0",
         "pn.national-registries.query-limit=2",
         "pn.national-registries.inad.oldest-request-max-waiting-seconds=60",
         "pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0",
@@ -866,6 +870,94 @@ public class DigitalAddressPFMassiveNoFallbackTestIT extends AbstractNationalReg
         }
 
         assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
+    }
+
+    /**
+     * HTTP 400 during INAD massive submission is terminal for the entire batch.
+     * The legacy INIPEC flow is not involved.
+     */
+    @Test
+    void InadBatch_SubmitBadRequest_MarksEveryRequestAsErrorWithoutRetry() {
+        List<TestRequest> requests = createNineRequests("inad-submit-400");
+        enqueueMassiveRequests(requests);
+
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(inadSubmitException(400)));
+
+        assertDoesNotThrow(() -> inadBatchRequestJob.batchRequest());
+
+        for (TestRequest testRequest : requests) {
+            Map<String, AttributeValue> stored = request(testRequest.correlationId(), "INAD");
+            assertEquals("ERROR", stored.get("status").s());
+            assertEquals("INAD#ERROR", stored.get("registryStatus").s());
+            assertNull(stored.get("batchId"));
+
+        }
+
+        // ERROR requests are not submitted again.
+        inadBatchRequestJob.batchRequest();
+        verify(inadClient, times(1)).callMassiveEService(any(RequestListDigitalAddress.class));
+    }
+
+    /**
+     * HTTP 500 during INAD massive submission: first attempt increments the retry
+     * counter to 1, the second reaches maxRetry=2 and marks every request ERROR.
+     */
+    @Test
+    void InadBatch_SubmitHttp500_RetriesUntilErrorAndNeverSubmitsAgain() {
+        List<TestRequest> requests = createNineRequests("inad-submit-500");
+        enqueueMassiveRequests(requests);
+
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(inadSubmitException(500)));
+
+        inadBatchRequestJob.batchRequest();
+
+        for (TestRequest testRequest : requests) {
+            Map<String, AttributeValue> stored = request(testRequest.correlationId(), "INAD");
+            assertEquals("NOT_WORKED", stored.get("status").s());
+            assertEquals("INAD#NOT_WORKED", stored.get("registryStatus").s());
+            assertEquals("1", stored.get("retryCount").n());
+            assertNull(stored.get("batchId"));
+        }
+        verify(inadClient, times(1)).callMassiveEService(any(RequestListDigitalAddress.class));
+
+        // Force eligibility to avoid a boundary race between timestamp precision
+        // and the query filter (request-retry-after is configured to zero).
+        for (TestRequest testRequest : requests) {
+            Map<String, AttributeValue> stored = new HashMap<>(
+                    request(testRequest.correlationId(), "INAD"));
+            stored.put("attemptAfter", AttributeValue.builder()
+                    .s(Instant.now().minusSeconds(5).toString()).build());
+            putRequestItem(stored);
+        }
+
+        inadBatchRequestJob.batchRequest();
+
+        for (TestRequest testRequest : requests) {
+            Map<String, AttributeValue> stored = request(testRequest.correlationId(), "INAD");
+            assertEquals("ERROR", stored.get("status").s());
+            assertEquals("INAD#ERROR", stored.get("registryStatus").s());
+            assertEquals("2", stored.get("retryCount").n());
+            assertNull(stored.get("batchId"));
+
+        }
+        verify(inadClient, times(2)).callMassiveEService(any(RequestListDigitalAddress.class));
+
+        // Once maxRetry is exhausted, there must be no third provider call.
+        inadBatchRequestJob.batchRequest();
+        verify(inadClient, times(2)).callMassiveEService(any(RequestListDigitalAddress.class));
+    }
+
+    private PnNationalRegistriesException inadSubmitException(int status) {
+        return new PnNationalRegistriesException(
+                "INAD massive submit failed",
+                status,
+                "provider error",
+                null,
+                null,
+                StandardCharsets.UTF_8,
+                null);
     }
 
     private GatewayResponse runMassiveFunctionalScenario(String correlationId, String taxId, ResponseRequestDigitalAddress targetResult) {

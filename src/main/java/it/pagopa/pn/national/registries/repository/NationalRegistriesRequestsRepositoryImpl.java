@@ -264,6 +264,34 @@ public class NationalRegistriesRequestsRepositoryImpl implements NationalRegistr
         return updateStatus(pk, sk, NOT_WORKED, registry, names, values, updates);
     }
 
+    @Override
+    public Mono<NationalRegistriesRequest> incrementRetryAndAttemptAfter(String pk, String sk, Integer retry, Instant attemptAfter) {
+
+        Map<String, String> names = new HashMap<>();
+        Map<String, AttributeValue> values = new HashMap<>();
+        List<String> updates = new ArrayList<>();
+
+        names.put("#retryCount", NationalRegistriesRequest.COL_RETRY_COUNT);
+        values.put(":retryCount", AttributeValue.builder().n(String.valueOf(retry)).build());
+        updates.add("#retryCount = :retryCount");
+
+        names.put("#attemptAfter", NationalRegistriesRequest.COL_ATTEMPTAFTER);
+        values.put(":attemptAfter", AttributeValue.builder().s(formatInstant(attemptAfter)).build());
+        updates.add("#attemptAfter = :attemptAfter");
+
+        UpdateItemRequest request = UpdateItemRequest.builder().tableName(nationalRegistriesConfig.getDao().getRequestsTableName())
+                .key(Map.of(NationalRegistriesRequest.COL_CORRELATION_ID, AttributeValue.builder().s(pk).build(),
+                        NationalRegistriesRequest.COL_CREATED_AT, AttributeValue.builder().s(sk).build()))
+                .updateExpression("SET " + String.join(", ", updates))
+                .expressionAttributeNames(names)
+                .expressionAttributeValues(values)
+                .returnValues(ReturnValue.ALL_NEW)
+                .build();
+
+        return Mono.fromCallable(() -> dynamoDbClient.updateItem(request))
+                .map(updateItemResponse -> NationalRegistriesRequest.attributeValueMapToNationalRegistriesRequest(updateItemResponse.attributes()));
+    }
+
     /**
      * Esegue l'aggiornamento condizionale dello stato della richiesta.
      * Ogni modifica dello status aggiorna contestualmente anche registryStatus

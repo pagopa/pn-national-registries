@@ -64,7 +64,7 @@ public class InipecPollingService {
     }
 
     private Mono<Void> handleSuccessfulPolling(String batchId, Integer batchSize, IniPecPollingResponse response) {
-        logInipecCfRequestedMetric(batchId, GatewayDownstreamService.INIPEC, batchSize);
+        logBatchCfRequestedMetric(batchId, GatewayDownstreamService.INIPEC, batchSize);
         Map<String, Pec> pecByTaxId = infoCamereConverter.mapPecByTaxId(response);
         return Flux.from(nationalRegistriesRequestsRepository.getRequestsBatchId(batchId, RequestStatusEnum.WORKING))
                 .flatMapIterable(Page::items)

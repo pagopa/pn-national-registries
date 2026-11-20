@@ -114,15 +114,16 @@ class MetricUtilsTest {
         cf.setCf("12345678901");
         request.setElencoCf(List.of(cf));
 
-        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", request, false));
-        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", request, true));
+        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", request.getElencoCf().size(), false, GatewayDownstreamService.INIPEC));
+        assertDoesNotThrow(() -> MetricUtils.logBatchRequestMetrics("batchId", request.getElencoCf().size(), true, GatewayDownstreamService.INIPEC));
     }
 
     @Test
     void logBatchRequestMetricsFailsWhenCfListIsMissing() {
         IniPecBatchRequest request = new IniPecBatchRequest();
+        request.setElencoCf(null);
 
-        assertThrows(NullPointerException.class, () -> MetricUtils.logBatchRequestMetrics("batchId", request, false));
+        assertThrows(NullPointerException.class, () -> MetricUtils.logBatchRequestMetrics("batchId", request.getElencoCf().size(), false, GatewayDownstreamService.INIPEC));
     }
 
     @Test
@@ -131,14 +132,14 @@ class MetricUtilsTest {
         polling.setBatchId("batchId");
         polling.setCreatedAt(LocalDateTime.now(ZoneOffset.UTC).minusMinutes(5));
 
-        assertDoesNotThrow(() -> MetricUtils.logBatchEndingMetrics(polling, BatchStatus.ERROR));
-        assertDoesNotThrow(() -> MetricUtils.logBatchEndingMetrics(polling, BatchStatus.WORKED));
+        assertDoesNotThrow(() -> MetricUtils.logLegacyInipecBatchEndingMetrics(polling, BatchStatus.ERROR));
+        assertDoesNotThrow(() -> MetricUtils.logLegacyInipecBatchEndingMetrics(polling, BatchStatus.WORKED));
     }
 
     @Test
     void logInipecCfRequestedMetricIgnoresNullCount() {
-        assertDoesNotThrow(() -> MetricUtils.logInipecCfRequestedMetric("batchId", GatewayDownstreamService.INIPEC, null));
-        assertDoesNotThrow(() -> MetricUtils.logInipecCfRequestedMetric("batchId", GatewayDownstreamService.INIPEC, 5));
+        assertDoesNotThrow(() -> MetricUtils.logBatchCfRequestedMetric("batchId", GatewayDownstreamService.INIPEC, null));
+        assertDoesNotThrow(() -> MetricUtils.logBatchCfRequestedMetric("batchId", GatewayDownstreamService.INIPEC, 5));
     }
 
     @Test

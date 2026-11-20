@@ -4,12 +4,12 @@ import it.pagopa.pn.commons.log.dto.metrics.Dimension;
 import it.pagopa.pn.commons.log.dto.metrics.GeneralMetric;
 import it.pagopa.pn.commons.log.dto.metrics.Metric;
 import it.pagopa.pn.national.registries.constant.BatchStatus;
+import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.constant.DigitalAddressRecipientType;
 import it.pagopa.pn.national.registries.constant.RecipientType;
 import it.pagopa.pn.national.registries.entity.BatchPolling;
 import it.pagopa.pn.national.registries.model.CodeSqsDto;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
-import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.model.metrics.DimensionName;
 import it.pagopa.pn.national.registries.model.metrics.MetricName;
 import it.pagopa.pn.national.registries.model.metrics.MetricUnit;
@@ -112,48 +112,63 @@ public class MetricUtils {
         return dimensions;
     }
 
-    public static void logBatchRequestMetrics(String batchId, IniPecBatchRequest iniPecBatchRequest, boolean isError) {
+    public static void logBatchRequestMetrics(String batchId, Integer batchSize, boolean isError, GatewayDownstreamService registry) {
         StatusDimension status = isError ? StatusDimension.FAILURE : StatusDimension.OK;
-        String logMessage = "IniPEC - Logging batch request metrics for batchId: " + batchId + " - called EService and batch size is: " + iniPecBatchRequest.getElencoCf().size() + " with status: " + status;
+        String logMessage = String.format("%s - Logging batch request metrics for batchId: %s - called EService and batch size is: %s with status: %s", registry, batchId, batchSize, status)
+        ;
         List<GeneralMetric> requestMetrics = List.of(
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH_REQUEST_CREATION,
                         1,
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()),
+                                MetricUtils.generateDimension(DimensionName.REGISTRY, registry.name()))
                 ),
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH_SIZE,
-                        iniPecBatchRequest.getElencoCf().size(),
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
+                        batchSize,
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()),
+                                MetricUtils.generateDimension(DimensionName.REGISTRY, registry.name()))
                 )
         );
 
         log.logMetric(requestMetrics, logMessage);
     }
 
-    public static void logBatchEndingMetrics(BatchPolling polling, BatchStatus batchStatus) {
+    public static void logLegacyInipecBatchEndingMetrics(BatchPolling polling, BatchStatus batchStatus) {
         StatusDimension status = batchStatus == BatchStatus.ERROR ? StatusDimension.FAILURE : StatusDimension.OK;
-        long batchClosureDurationMillis = Instant.now().toEpochMilli() - polling.getCreatedAt().toInstant(ZoneOffset.UTC).toEpochMilli();
+        Instant createdAtInstant = polling.getCreatedAt().toInstant(ZoneOffset.UTC);
+        logBatchEndingMetrics(polling.getBatchId(),createdAtInstant.toEpochMilli(), status, GatewayDownstreamService.INIPEC);
+    }
+
+    public static void logBatchesEndingMetrics(String batchId, Instant createdAt, BatchesStatusEnum batchStatus, GatewayDownstreamService registry) {
+        StatusDimension status = batchStatus == BatchesStatusEnum.ERROR ? StatusDimension.FAILURE : StatusDimension.OK;
+        logBatchEndingMetrics(batchId, createdAt.toEpochMilli(), status, registry);
+    }
+
+    private static void logBatchEndingMetrics(String batchId, long epochMilli, StatusDimension status, GatewayDownstreamService registry) {
+        long batchClosureDurationMillis = Instant.now().toEpochMilli() - epochMilli;
         int batchClosureDurationSeconds = (int) (batchClosureDurationMillis / 1000);
 
         List<GeneralMetric> batchEndingMetrics = List.of(
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH,
                         1,
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()))
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()),
+                                MetricUtils.generateDimension(DimensionName.REGISTRY, registry.name()))
                 ),
                 MetricUtils.generateGeneralMetric(
                         MetricName.BATCH_CLOSURE_DURATION,
                         batchClosureDurationSeconds,
-                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name())),
+                        List.of(MetricUtils.generateDimension(DimensionName.STATUS, status.name()),
+                                MetricUtils.generateDimension(DimensionName.REGISTRY, registry.name())),
                         MetricUnit.SECONDS
                 )
         );
 
-        log.logMetric(batchEndingMetrics, "IniPEC - Logging batch ending metrics for batchId: " + polling.getBatchId() + " with status: " + status);
+        log.logMetric(batchEndingMetrics, String.format("%s - Logging batch ending metrics for batchId: %s with status: %s", registry, batchId, status));
     }
 
-    public static void logInipecCfRequestedMetric(String batchId, GatewayDownstreamService registry, Integer count) {
+    public static void logBatchCfRequestedMetric(String batchId, GatewayDownstreamService registry, Integer count) {
         String logMessage = "Logging CF_REQUESTED metrics for batchId: " + batchId + " - called EService:  " + registry;
         if (Objects.nonNull(count)) {
             List<GeneralMetric> requestMetrics = new ArrayList<>();

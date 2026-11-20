@@ -4,22 +4,18 @@ import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.utils.MDCUtils;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
-import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
-import it.pagopa.pn.national.registries.converter.GatewayConverter;
-import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.RequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
-import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
+import it.pagopa.pn.national.registries.service.BatchRequestService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.MDC;
-import org.springframework.http.HttpStatus;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
@@ -36,7 +32,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID;
-import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
+import static it.pagopa.pn.national.registries.utils.MetricUtils.logBatchRequestMetrics;
 
 @Component
 @Slf4j
@@ -44,9 +40,9 @@ import static it.pagopa.pn.national.registries.utils.GatewayUtils.formatInstant;
 public class InadBatchRequestJob {
 
     private final NationalRegistriesRequestsRepository nationalRegistriesRequestsRepository;
-    private final NationalRegistriesBatchesRepository nationalRegistriesBatchesRepository;
     private final InadClient inadClient;
     private final NationalRegistriesConfig nationalRegistriesConfig;
+    private final BatchRequestService batchRequestService;
 
     @Scheduled(fixedDelayString = "${pn.national-registries.inad.batch-request-delay}")
     @SchedulerLock(name = "inadRequests",
@@ -111,43 +107,21 @@ public class InadBatchRequestJob {
         request.setPraticalReference(batchId);
 
         return inadClient.callMassiveEService(request)
-                .onErrorResume(PnNationalRegistriesException.class,throwable -> checkIfIsBadRequestAndMarkRequestAsError(throwable, requests))
+                .doOnNext(res -> logBatchRequestMetrics(batchId, requests.size(), false, GatewayDownstreamService.INAD))
+                .doOnError(t -> logBatchRequestMetrics(batchId, requests.size(), true, GatewayDownstreamService.INAD))
+                .onErrorResume(PnNationalRegistriesException.class,throwable -> batchRequestService.handleBatchError(throwable, requests, GatewayDownstreamService.INAD, nationalRegistriesConfig.getInad().getBatchRequestMaxRetry(), nationalRegistriesConfig.getInad().getRequestRetryAfter())
+                        .then(Mono.empty()))
                 .flatMap(response -> persistBatch(response, batchId, requests, now))
                 .doOnError(error -> log.error("INAD batch {} failed", batchId, error));
     }
 
-    private Mono<ResponseRequestListDigitalAddress> checkIfIsBadRequestAndMarkRequestAsError(PnNationalRegistriesException throwable, List<NationalRegistriesRequest> requests) {
-        boolean badRequest = throwable instanceof PnNationalRegistriesException exception && exception.getStatusCode() == HttpStatus.BAD_REQUEST;
-        if(badRequest){
-            return Flux.fromIterable(requests)
-                    .concatMap(request -> nationalRegistriesRequestsRepository.updateStatusToError(
-                            request.getCorrelationId(),
-                            request.getCreatedAt().toString(),
-                            GatewayDownstreamService.INAD,
-                            null))
-                    .then(Mono.empty());
-        }
-        return Mono.error(throwable);
-
-    }
 
     private Mono<Void> persistBatch(ResponseRequestListDigitalAddress providerResponse, String batchId, List<NationalRegistriesRequest> requests, Instant now) {
-        if (!Objects.nonNull(providerResponse) || !StringUtils.hasText(providerResponse.getId())) {
+        if (Objects.isNull(providerResponse) || !StringUtils.hasText(providerResponse.getId())) {
             return Mono.error(new PnInternalException("INAD returned no polling identifier for batch " + batchId, 400, ERROR_CODE_NATIONAL_REGISTRIES_MISSINGPOLLINGID));
         }
 
-        NationalRegistriesBatch batch = GatewayConverter.constructBatchEntity(batchId, requests, now, GatewayDownstreamService.INAD, providerResponse.getId());
-        batch.setAttemptAfter(formatInstant(calculateFirstPollingAttempt(requests.size(), now)));
-
-        return nationalRegistriesBatchesRepository.putBatch(batch)
-                .thenMany(reactor.core.publisher.Flux.fromIterable(requests)
-                        // The repository conditionally accepts only NOT_WORKED -> WORKING transitions.
-                        .flatMap(request -> nationalRegistriesRequestsRepository.updateStatusToWorking(
-                                request.getCorrelationId(),
-                                request.getCreatedAt().toString(),
-                                batchId,
-                                GatewayDownstreamService.INAD)))
-                .then();
+        return batchRequestService.persistBatch(batchId, providerResponse.getId(), requests, now, GatewayDownstreamService.INAD, calculateFirstPollingAttempt(requests.size(), now));
     }
 
     private Instant calculateFirstPollingAttempt(Integer inadBatchSize, Instant now) {

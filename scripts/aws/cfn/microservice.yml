@@ -388,6 +388,11 @@ Parameters:
     Description: 'IniPEC polling in-progress retry-after delay in seconds'
     Default: 3600
 
+  PnNationalRegistriesInadRequestRetryAfter:
+    Type: Number
+    Description: 'Inad request retry-after delay in seconds'
+    Default: 3600
+
   PnNationalRegistriesInadMaxBatchRequestSize:
     Type: Number
     Description: 'INAD maximum batch request size'
@@ -412,6 +417,11 @@ Parameters:
     Type: Number
     Description: 'INAD batch request lock at least'
     Default: 22000
+
+  PnNationalRegistriesInadBatchRequestMaxRetry:
+    Type: Number
+    Description: 'Inad batch request max retry'
+    Default: 3
 
   PnNationalRegistriesPollingDelay:
     Type: Number
@@ -801,6 +811,8 @@ Resources:
         ContainerEnvEntry83: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRETRYAFTER=${PnNationalRegistriesInipecRequestRetryAfter}'
         ContainerEnvEntry84: !Sub 'PN_NATIONALREGISTRIES_ENABLEOLDINIPECFLOW=${EnableOldInipecFlow}'
         ContainerEnvEntry85: !Sub 'PN_NATIONALREGISTRIES_TOPIC_GATEWAYRESPONSEQUEUENAME=${NationalRegistriesGatewayResponsesQueueName}'
+        ContainerEnvEntry86: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTMAXRETRY=${PnNationalRegistriesInadBatchRequestMaxRetry}'
+        ContainerEnvEntry87: !Sub 'PN_NATIONALREGISTRIES_INAD_REQUESTRETRYAFTER=${PnNationalRegistriesInadRequestRetryAfter}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'

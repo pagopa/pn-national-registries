@@ -22,7 +22,6 @@ import it.pagopa.pn.national.registries.repository.IniPecBatchPollingRepository;
 import it.pagopa.pn.national.registries.repository.IniPecBatchRequestRepository;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
 import it.pagopa.pn.national.registries.utils.CheckExceptionUtils;
-import it.pagopa.pn.national.registries.utils.DigitalAddressUtils;
 import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import lombok.CustomLog;
 import lombok.RequiredArgsConstructor;
@@ -152,7 +151,7 @@ public class DigitalAddressBatchPollingService{
     }
 
     private Mono<Void> handleSuccessfulPolling(BatchPolling polling, IniPecPollingResponse response) {
-        logInipecCfRequestedMetric(polling.getBatchId(), GatewayDownstreamService.INIPEC, polling.getBatchSize());
+        logBatchCfRequestedMetric(polling.getBatchId(), GatewayDownstreamService.INIPEC, polling.getBatchSize());
         return updateBatchRequest(polling, BatchStatus.WORKED, response, null)
                 .thenReturn(polling)
                 .doOnNext(batchPolling -> batchPolling.setStatus(BatchStatus.WORKED.getValue()))
@@ -193,7 +192,7 @@ public class DigitalAddressBatchPollingService{
         return batchRequestRepository
                 .getBatchRequestByBatchIdAndStatus(polling.getBatchId(), BatchStatus.WORKING, new HashMap<>())
                 .flatMap(page -> processPageRecursively(polling.getBatchId(), page, status, iniPecPollingResponse, error, now))
-                .doOnSuccess(unused -> logBatchEndingMetrics(polling, status));
+                .doOnSuccess(unused -> logLegacyInipecBatchEndingMetrics(polling, status));
     }
 
     private Mono<Void> processPageRecursively(String batchId, Page<BatchRequest> page, BatchStatus status, IniPecPollingResponse iniPecPollingResponse, String error, LocalDateTime now) {

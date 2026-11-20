@@ -30,6 +30,7 @@ import it.pagopa.pn.national.registries.service.InadPollingService;
 import it.pagopa.pn.national.registries.service.InipecPollingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.support.MessageBuilder;
@@ -78,6 +79,8 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inad.max-batch-request-size=9",
         "pn.national-registries.query-limit=2",
         "pn.national-registries.inad.oldest-request-max-waiting-seconds=60",
+        "pn.national-registries.inad.batch-request-max-retry=2",
+        "pn.national-registries.inad.request-retry-after=0",
         "pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0",
         "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0",
         "pn.national-registries.inad.batch-polling-max-retry=5",
@@ -112,6 +115,85 @@ public class DigitalAddressPGMassiveTestIT extends AbstractNationalRegistriesCom
 
     @Autowired
     private InipecPollingService inipecPollingService;
+
+    /**
+     * Errore HTTP 400 durante il submit del batch INAD: tutte le richieste diventano ERROR
+     * senza creare un batch e senza essere reinviate.
+     */
+    @Test
+    void InadBatch_SubmitHttp400_MarksAllRequestsErrorWithoutRetry() {
+        List<TestRequest> requests = createNineRequests("pg-inad-submit-400");
+        enqueueMassiveRequests(requests);
+
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(inadSubmitException(HttpStatus.BAD_REQUEST)));
+
+        inadBatchRequestJob.batchRequest();
+
+        for (TestRequest item : requests) {
+            Map<String, AttributeValue> stored = request(item.correlationId(), "INAD");
+            assertEquals("ERROR", stored.get("status").s());
+            assertEquals("INAD#ERROR", stored.get("registryStatus").s());
+            assertNull(stored.get("batchId"));
+        }
+
+        inadBatchRequestJob.batchRequest();
+        verify(inadClient, times(1)).callMassiveEService(any(RequestListDigitalAddress.class));
+    }
+
+    /**
+     * Submit INAD HTTP 500: primo tentativo NOT_WORKED/retryCount=1,
+     * secondo tentativo ERROR/retryCount=2; nessun terzo invio.
+     */
+    @Test
+    void InadBatch_SubmitHttp500_RetriesUntilMaxAndStops() {
+        List<TestRequest> requests = createNineRequests("pg-inad-submit-500");
+        enqueueMassiveRequests(requests);
+
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(inadSubmitException(HttpStatus.INTERNAL_SERVER_ERROR)));
+
+        inadBatchRequestJob.batchRequest();
+
+        for (TestRequest item : requests) {
+            Map<String, AttributeValue> stored = request(item.correlationId(), "INAD");
+            assertEquals("NOT_WORKED", stored.get("status").s());
+            assertEquals("INAD#NOT_WORKED", stored.get("registryStatus").s());
+            assertEquals("1", stored.get("retryCount").n());
+            makeInadRequestImmediatelyRetryable(item.correlationId());
+        }
+
+        inadBatchRequestJob.batchRequest();
+
+        for (TestRequest item : requests) {
+            Map<String, AttributeValue> stored = request(item.correlationId(), "INAD");
+            assertEquals("ERROR", stored.get("status").s());
+            assertEquals("INAD#ERROR", stored.get("registryStatus").s());
+            assertEquals("2", stored.get("retryCount").n());
+            assertNull(stored.get("batchId"));
+        }
+
+        inadBatchRequestJob.batchRequest();
+        verify(inadClient, times(2)).callMassiveEService(any(RequestListDigitalAddress.class));
+    }
+
+    private PnNationalRegistriesException inadSubmitException(HttpStatus status) {
+        return new PnNationalRegistriesException(
+                "INAD batch submit failed",
+                status.value(),
+                status.getReasonPhrase(),
+                null,
+                null,
+                StandardCharsets.UTF_8,
+                null);
+    }
+
+    private void makeInadRequestImmediatelyRetryable(String correlationId) {
+        Map<String, AttributeValue> item = new HashMap<>(request(correlationId, "INAD"));
+        item.put("attemptAfter", AttributeValue.builder()
+                .s(Instant.now().minusSeconds(60).toString()).build());
+        putRequestItem(item);
+    }
 
     @Autowired
     private InadBatchRequestJob inadBatchRequestJob;
@@ -1134,7 +1216,7 @@ public class DigitalAddressPGMassiveTestIT extends AbstractNationalRegistriesCom
 
         assertEquals(BatchesStatusEnum.WORKED, getBatch(batchId).getStatus());
     }
-    
+
     /**
      * INAD massivo in progress fino all'esaurimento dei retry.
      */
