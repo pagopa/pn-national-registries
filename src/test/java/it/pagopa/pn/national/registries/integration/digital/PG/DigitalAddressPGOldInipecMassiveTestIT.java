@@ -2,6 +2,7 @@ package it.pagopa.pn.national.registries.integration.digital.PG;
 
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.*;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.Pec;
@@ -27,6 +28,7 @@ import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepo
 import it.pagopa.pn.national.registries.service.InadPollingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.messaging.support.MessageBuilder;
@@ -35,6 +37,7 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.sqs.model.Message;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -66,6 +69,8 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inad.max-batch-request-size=9",
         "pn.national-registries.query-limit=2",
         "pn.national-registries.inad.oldest-request-max-waiting-seconds=60",
+        "pn.national-registries.inad.batch-request-max-retry=2",
+        "pn.national-registries.inad.request-retry-after=0",
         "pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0",
         "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0",
         "pn.national-registries.inad.batch-polling-max-retry=5",
@@ -92,6 +97,85 @@ public class DigitalAddressPGOldInipecMassiveTestIT extends AbstractNationalRegi
     private static final String PG_INAD_EMPTY = "94017570246";
     private static final String PG_INAD_EXPIRED_BUSINESS_AND_PROFESSIONAL = "95053220240";
     private static final String PG_INAD_EXPIRED_BUSINESS = "03861600249";
+
+    /**
+     * Errore HTTP 400 durante il submit del batch INAD: tutte le richieste diventano ERROR
+     * senza creare un batch e senza essere reinviate.
+     */
+    @Test
+    void InadBatch_SubmitHttp400_MarksAllRequestsErrorWithoutRetry() {
+        List<TestRequest> requests = createNineRequests("pg-inad-submit-400");
+        enqueueMassiveRequests(requests);
+
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(inadSubmitException(HttpStatus.BAD_REQUEST)));
+
+        inadBatchRequestJob.batchRequest();
+
+        for (TestRequest item : requests) {
+            Map<String, AttributeValue> stored = request(item.correlationId(), "INAD");
+            assertEquals("ERROR", stored.get("status").s());
+            assertEquals("INAD#ERROR", stored.get("registryStatus").s());
+            assertNull(stored.get("batchId"));
+        }
+
+        inadBatchRequestJob.batchRequest();
+        verify(inadClient, times(1)).callMassiveEService(any(RequestListDigitalAddress.class));
+    }
+
+    /**
+     * Submit INAD HTTP 500: primo tentativo NOT_WORKED/retryCount=1,
+     * secondo tentativo ERROR/retryCount=2; nessun terzo invio.
+     */
+    @Test
+    void InadBatch_SubmitHttp500_RetriesUntilMaxAndStops() {
+        List<TestRequest> requests = createNineRequests("pg-inad-submit-500");
+        enqueueMassiveRequests(requests);
+
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(inadSubmitException(HttpStatus.INTERNAL_SERVER_ERROR)));
+
+        inadBatchRequestJob.batchRequest();
+
+        for (TestRequest item : requests) {
+            Map<String, AttributeValue> stored = request(item.correlationId(), "INAD");
+            assertEquals("NOT_WORKED", stored.get("status").s());
+            assertEquals("INAD#NOT_WORKED", stored.get("registryStatus").s());
+            assertEquals("1", stored.get("retryCount").n());
+            makeInadRequestImmediatelyRetryable(item.correlationId());
+        }
+
+        inadBatchRequestJob.batchRequest();
+
+        for (TestRequest item : requests) {
+            Map<String, AttributeValue> stored = request(item.correlationId(), "INAD");
+            assertEquals("ERROR", stored.get("status").s());
+            assertEquals("INAD#ERROR", stored.get("registryStatus").s());
+            assertEquals("2", stored.get("retryCount").n());
+            assertNull(stored.get("batchId"));
+        }
+
+        inadBatchRequestJob.batchRequest();
+        verify(inadClient, times(2)).callMassiveEService(any(RequestListDigitalAddress.class));
+    }
+
+    private PnNationalRegistriesException inadSubmitException(HttpStatus status) {
+        return new PnNationalRegistriesException(
+                "INAD batch submit failed",
+                status.value(),
+                status.getReasonPhrase(),
+                null,
+                null,
+                StandardCharsets.UTF_8,
+                null);
+    }
+
+    private void makeInadRequestImmediatelyRetryable(String correlationId) {
+        Map<String, AttributeValue> item = new HashMap<>(request(correlationId, "INAD"));
+        item.put("attemptAfter", AttributeValue.builder()
+                .s(Instant.now().minusSeconds(60).toString()).build());
+        putRequestItem(item);
+    }
 
     @Autowired
     private InadBatchRequestJob inadBatchRequestJob;

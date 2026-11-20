@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.integration.digital.PF;
 
 import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
+import it.pagopa.pn.national.registries.client.inad.InadClient;
+import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.*;
@@ -25,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.messaging.support.MessageBuilder;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.TestPropertySource;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
@@ -57,6 +60,8 @@ import static org.mockito.Mockito.*;
         "pn.national-registries.inad.polling-first-attempt-delay-seconds-per-cf=0",
         "pn.national-registries.inad.polling-first-attempt-fixed-delay-seconds=0",
         "pn.national-registries.inad.batch-polling-max-retry=5",
+        "pn.national-registries.inad.batch-request-max-retry=2",
+        "pn.national-registries.inad.request-retry-after=0",
         "pn.national-registries.inad.batch-polling-in-progress-max-retry=10",
         "pn.national-registries.inad.polling-error-retry-after=1",
         "pn.national-registries.inad.polling-in-progress-retry-after=1",
@@ -900,6 +905,108 @@ public class DigitalAddressPFMassiveFallbackNewInipecTestIT extends AbstractNati
         assertEquals(source.get("referenceRequestDate").s(), fallback.get("referenceRequestDate").s());
         assertEquals(source.get("taxId").s(), fallback.get("taxId").s());
         assertEquals(source.get("recipientType").s(), fallback.get("recipientType").s());
+    }
+
+
+    /** HTTP 400 durante l'invio INAD: tutte le richieste vengono marcate ERROR senza retry. */
+    @Test
+    void InadBatchRequest_Http400_MarksAllRequestsAsError() {
+        List<TestRequest> requests = createNineRequests("inad-submit-400");
+        enqueueMassiveRequests(requests);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(batchProviderException(400, InadClient.class)));
+
+        inadBatchRequestJob.batchRequest();
+
+        for (TestRequest item : requests) {
+            Map<String, AttributeValue> stored = requestByRegistry(item.correlationId(), "INAD");
+            assertEquals("ERROR", stored.get("status").s());
+            assertEquals("INAD#ERROR", stored.get("registryStatus").s());
+            assertNull(stored.get("batchId"));
+            assertTrue(requestsByRegistry(item.correlationId(), "INIPEC").isEmpty());
+        }
+        verify(inadClient, times(1)).callMassiveEService(any(RequestListDigitalAddress.class));
+        inadBatchRequestJob.batchRequest();
+        verify(inadClient, times(1)).callMassiveEService(any(RequestListDigitalAddress.class));
+    }
+
+    /** HTTP 500 durante l'invio INAD: retryCount 1 -> 2, quindi ERROR e nessun terzo invio. */
+    @Test
+    void InadBatchRequest_Http500_RetriesThenError() {
+        List<TestRequest> requests = createNineRequests("inad-submit-500");
+        enqueueMassiveRequests(requests);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(batchProviderException(500, InadClient.class)));
+
+        inadBatchRequestJob.batchRequest();
+        for (TestRequest item : requests) {
+            Map<String, AttributeValue> stored = requestByRegistry(item.correlationId(), "INAD");
+            assertEquals("NOT_WORKED", stored.get("status").s());
+            assertEquals("INAD#NOT_WORKED", stored.get("registryStatus").s());
+            assertEquals("1", stored.get("retryCount").n());
+        }
+
+        inadBatchRequestJob.batchRequest();
+        for (TestRequest item : requests) {
+            Map<String, AttributeValue> stored = requestByRegistry(item.correlationId(), "INAD");
+            assertEquals("ERROR", stored.get("status").s());
+            assertEquals("INAD#ERROR", stored.get("registryStatus").s());
+            assertEquals("2", stored.get("retryCount").n());
+            assertNull(stored.get("batchId"));
+            assertTrue(requestsByRegistry(item.correlationId(), "INIPEC").isEmpty());
+        }
+        verify(inadClient, times(2)).callMassiveEService(any(RequestListDigitalAddress.class));
+        inadBatchRequestJob.batchRequest();
+        verify(inadClient, times(2)).callMassiveEService(any(RequestListDigitalAddress.class));
+    }
+
+    /** Fallback INIPEC dopo INAD massivo: HTTP 400 all'invio del batch. */
+    @Test
+    void InipecFallbackBatchRequest_Http400_MarksRequestAsError() {
+        String correlationId = "inipec-fallback-submit-400-" + UUID.randomUUID();
+        startInipecFallbackFromMassive(correlationId, PF_NOT_FOUND, null);
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class)))
+                .thenReturn(Mono.error(batchProviderException(400, InfoCamereClient.class)));
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+
+        Map<String, AttributeValue> stored = requestByRegistry(correlationId, "INIPEC");
+        assertEquals("ERROR", stored.get("status").s());
+        assertEquals("INIPEC#ERROR", stored.get("registryStatus").s());
+        assertNull(stored.get("batchId"));
+        verify(infoCamereClient, times(1)).callEServiceRequestId(any(IniPecBatchRequest.class));
+        iniPecBatchRequestJob.batchRequestScheduled();
+        verify(infoCamereClient, times(1)).callEServiceRequestId(any(IniPecBatchRequest.class));
+    }
+
+    /** Fallback INIPEC: HTTP 500 all'invio, retryCount 1 -> 2, ERROR e stop. */
+    @Test
+    void InipecFallbackBatchRequest_Http500_RetriesThenError() {
+        String correlationId = "inipec-fallback-submit-500-" + UUID.randomUUID();
+        startInipecFallbackFromMassive(correlationId, PF_NOT_FOUND, null);
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class)))
+                .thenReturn(Mono.error(batchProviderException(500, InfoCamereClient.class)));
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+        Map<String, AttributeValue> stored = requestByRegistry(correlationId, "INIPEC");
+        assertEquals("NOT_WORKED", stored.get("status").s());
+        assertEquals("INIPEC#NOT_WORKED", stored.get("registryStatus").s());
+        assertEquals("1", stored.get("retryCount").n());
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+        stored = requestByRegistry(correlationId, "INIPEC");
+        assertEquals("ERROR", stored.get("status").s());
+        assertEquals("INIPEC#ERROR", stored.get("registryStatus").s());
+        assertEquals("2", stored.get("retryCount").n());
+        assertNull(stored.get("batchId"));
+        verify(infoCamereClient, times(2)).callEServiceRequestId(any(IniPecBatchRequest.class));
+        iniPecBatchRequestJob.batchRequestScheduled();
+        verify(infoCamereClient, times(2)).callEServiceRequestId(any(IniPecBatchRequest.class));
+    }
+
+    private PnNationalRegistriesException batchProviderException(int status, Class<?> source) {
+        return new PnNationalRegistriesException("Batch provider error", status, "error",
+                new HttpHeaders(), new byte[0], StandardCharsets.UTF_8, source);
     }
 
     private GatewayResponse runMassiveInadResolvedScenario(String correlationId, String taxId, ResponseRequestDigitalAddress targetResult) {

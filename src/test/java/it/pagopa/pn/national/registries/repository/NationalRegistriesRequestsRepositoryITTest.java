@@ -94,6 +94,136 @@ class NationalRegistriesRequestsRepositoryITTest extends BaseTest.WithLocalStack
     @Autowired
     DynamoDbClient dynamoDbClient;
 
+
+    @Test
+    void incrementRetryAndAttemptAfterTest() {
+        Instant createdAt = Instant.parse("2026-10-07T12:00:00Z");
+        Instant attemptAfter = Instant.parse("2026-10-07T12:05:00Z");
+
+        NationalRegistriesRequest request = buildRequest(
+                "CORRELATION-" + UUID.randomUUID(),
+                createdAt,
+                UUID.randomUUID().toString(),
+                GatewayDownstreamService.INAD,
+                RequestStatusEnum.NOT_WORKED
+        );
+
+        fallbackTestKey(request);
+        repository.putRequest(request).block();
+
+        int retry = 3;
+
+        StepVerifier.create(repository.incrementRetryAndAttemptAfter(
+                        request.getCorrelationId(),
+                        request.getCreatedAt().toString(),
+                        retry,
+                        attemptAfter
+                ))
+                .assertNext(updated -> {
+                    Assertions.assertEquals(retry, updated.getRetryCount());
+                    Assertions.assertEquals(formatInstant(attemptAfter), updated.getAttemptAfter());
+                    Assertions.assertEquals(request.getCorrelationId(), updated.getCorrelationId());
+                    Assertions.assertEquals(RequestStatusEnum.NOT_WORKED, updated.getStatus());
+                })
+                .verifyComplete();
+
+        NationalRegistriesRequest stored = readStoredRequest(request);
+
+        Assertions.assertEquals(retry, stored.getRetryCount());
+        Assertions.assertEquals(formatInstant(attemptAfter), stored.getAttemptAfter());
+    }
+
+    @Test
+    void incrementRetryAndAttemptAfterIsDeferredUntilSubscriptionTest() {
+        Instant createdAt = Instant.parse("2026-10-07T12:00:00Z");
+        Instant attemptAfter = Instant.parse("2026-10-07T12:10:00Z");
+
+        NationalRegistriesRequest request = buildRequest(
+                "CORRELATION-" + UUID.randomUUID(),
+                createdAt,
+                UUID.randomUUID().toString(),
+                GatewayDownstreamService.INAD,
+                RequestStatusEnum.NOT_WORKED
+        );
+
+        fallbackTestKey(request);
+        repository.putRequest(request).block();
+
+        var update = repository.incrementRetryAndAttemptAfter(
+                request.getCorrelationId(),
+                request.getCreatedAt().toString(),
+                2,
+                attemptAfter
+        );
+
+        // Prima della subscription i valori devono essere invariati
+        NationalRegistriesRequest storedBefore = readStoredRequest(request);
+
+        Assertions.assertEquals(formatInstant(createdAt), storedBefore.getAttemptAfter());
+
+        // La subscription esegue l'update
+        StepVerifier.create(update)
+                .assertNext(updated -> {
+                    Assertions.assertEquals(2, updated.getRetryCount());
+                    Assertions.assertEquals(formatInstant(attemptAfter), updated.getAttemptAfter());
+                })
+                .verifyComplete();
+
+        NationalRegistriesRequest storedAfter = readStoredRequest(request);
+
+        Assertions.assertEquals(2, storedAfter.getRetryCount());
+        Assertions.assertEquals(formatInstant(attemptAfter), storedAfter.getAttemptAfter());
+    }
+
+    @Test
+    void incrementRetryAndAttemptAfterMultipleUpdatesTest() {
+        Instant createdAt = Instant.parse("2026-10-07T12:00:00Z");
+        Instant firstAttemptAfter = Instant.parse("2026-10-07T12:05:00Z");
+        Instant secondAttemptAfter = Instant.parse("2026-10-07T12:15:00Z");
+
+        NationalRegistriesRequest request = buildRequest(
+                "CORRELATION-" + UUID.randomUUID(),
+                createdAt,
+                UUID.randomUUID().toString(),
+                GatewayDownstreamService.INIPEC,
+                RequestStatusEnum.NOT_WORKED
+        );
+
+        fallbackTestKey(request);
+        repository.putRequest(request).block();
+
+        repository.incrementRetryAndAttemptAfter(
+                request.getCorrelationId(),
+                request.getCreatedAt().toString(),
+                1,
+                firstAttemptAfter
+        ).block();
+
+        NationalRegistriesRequest firstUpdate = readStoredRequest(request);
+
+        Assertions.assertEquals(1, firstUpdate.getRetryCount());
+        Assertions.assertEquals(formatInstant(firstAttemptAfter), firstUpdate.getAttemptAfter());
+
+        repository.incrementRetryAndAttemptAfter(
+                request.getCorrelationId(),
+                request.getCreatedAt().toString(),
+                2,
+                secondAttemptAfter
+        ).block();
+
+        NationalRegistriesRequest secondUpdate = readStoredRequest(request);
+
+        Assertions.assertEquals(2, secondUpdate.getRetryCount());
+        Assertions.assertEquals(formatInstant(secondAttemptAfter), secondUpdate.getAttemptAfter());
+
+        // Gli altri attributi non devono essere modificati
+        Assertions.assertEquals(RequestStatusEnum.NOT_WORKED, secondUpdate.getStatus());
+        Assertions.assertEquals(GatewayDownstreamService.INIPEC, secondUpdate.getRegistry());
+        Assertions.assertEquals(request.getCorrelationId(), secondUpdate.getCorrelationId());
+        Assertions.assertEquals(request.getBatchId(), secondUpdate.getBatchId());
+    }
+
+
     @Test
     void fallbackAndSourceCompletionAreAtomicAndDeferred() {
         for (RequestStatusEnum destinationStatus : List.of(RequestStatusEnum.NOT_WORKED, RequestStatusEnum.WORKED, RequestStatusEnum.ERROR)) {

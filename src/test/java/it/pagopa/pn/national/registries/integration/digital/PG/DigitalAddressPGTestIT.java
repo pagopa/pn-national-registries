@@ -18,12 +18,12 @@ import it.pagopa.pn.national.registries.job.IniPecBatchRequestJob;
 import it.pagopa.pn.national.registries.job.PollingJob;
 import it.pagopa.pn.national.registries.middleware.queue.consumer.event.PnPollingEvent;
 import it.pagopa.pn.national.registries.model.GatewayResponse;
-import it.pagopa.pn.national.registries.model.GatewayResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
 import it.pagopa.pn.national.registries.service.InipecPollingService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.TestPropertySource;
@@ -32,6 +32,7 @@ import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.sqs.model.Message;
 
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -79,6 +80,81 @@ public class DigitalAddressPGTestIT extends AbstractNationalRegistriesComponentI
     private static final String PG_NF = "12825810299";
     private static final String PG_MISSING = "00534280912";
     private static final String PG_ER = "03649090796";
+
+    /**
+     * Errore HTTP 400 nel submit del nuovo IniPEC: errore definitivo senza retry.
+     */
+    @Test
+    void InipecBatch_SubmitHttp400_MarksRequestErrorWithoutRetry() {
+        String correlationId = "pg-inipec-submit-400-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, VALID_PG_PIVA);
+
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class)))
+                .thenReturn(Mono.error(inipecSubmitException(HttpStatus.BAD_REQUEST)));
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+
+        Map<String, AttributeValue> stored = requestByRegistry(correlationId, "INIPEC");
+        assertEquals("ERROR", stored.get("status").s());
+        assertEquals("INIPEC#ERROR", stored.get("registryStatus").s());
+        assertNull(stored.get("batchId"));
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+        verify(infoCamereClient, times(1))
+                .callEServiceRequestId(any(IniPecBatchRequest.class));
+    }
+
+    /**
+     * Nuovo IniPEC HTTP 500: retryCount 1 -> 2, poi ERROR.
+     * Un'esecuzione successiva non reinvia la richiesta.
+     */
+    @Test
+    void InipecBatch_SubmitHttp500_RetriesUntilMaxAndStops() {
+        String correlationId = "pg-inipec-submit-500-" + UUID.randomUUID();
+        startInipecFromIpaNotFound(correlationId, VALID_PG_PIVA);
+
+        when(infoCamereClient.callEServiceRequestId(any(IniPecBatchRequest.class)))
+                .thenReturn(Mono.error(inipecSubmitException(HttpStatus.INTERNAL_SERVER_ERROR)));
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+
+        Map<String, AttributeValue> stored = requestByRegistry(correlationId, "INIPEC");
+        assertEquals("NOT_WORKED", stored.get("status").s());
+        assertEquals("INIPEC#NOT_WORKED", stored.get("registryStatus").s());
+        assertEquals("1", stored.get("retryCount").n());
+        makeInipecRequestImmediatelyRetryable(correlationId);
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+
+        stored = requestByRegistry(correlationId, "INIPEC");
+        assertEquals("ERROR", stored.get("status").s());
+        assertEquals("INIPEC#ERROR", stored.get("registryStatus").s());
+        assertEquals("2", stored.get("retryCount").n());
+        assertNull(stored.get("batchId"));
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+        verify(infoCamereClient, times(2))
+                .callEServiceRequestId(any(IniPecBatchRequest.class));
+    }
+
+    private PnNationalRegistriesException inipecSubmitException(HttpStatus status) {
+        return new PnNationalRegistriesException(
+                "IniPEC batch submit failed",
+                status.value(),
+                status.getReasonPhrase(),
+                null,
+                null,
+                StandardCharsets.UTF_8,
+                null);
+    }
+
+    private void makeInipecRequestImmediatelyRetryable(String correlationId) {
+        Map<String, AttributeValue> item = new HashMap<>(requestByRegistry(correlationId, "INIPEC"));
+        item.put("attemptAfter", AttributeValue.builder()
+                .s(Instant.now().minusSeconds(60).toString()).build());
+        dynamoDbClient.putItem(builder -> builder
+                .tableName(NATIONAL_REGISTRIES_REQUESTS_TABLE).item(item));
+    }
 
     @Autowired
     private IniPecBatchRequestJob iniPecBatchRequestJob;

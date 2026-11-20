@@ -74,7 +74,7 @@ public class BatchRequestService {
             return nationalRegistriesRequestsRepository.updateStatusToError(request.getCorrelationId(), request.getCreatedAt().toString(), request.getRegistry(), retry).then();
         }
         Instant attemptAfter = Instant.now().plusSeconds(requestRetryAfter);
-        return nationalRegistriesRequestsRepository.resetStatusForRetry(request.getCorrelationId(), request.getCreatedAt().toString(), retry, attemptAfter, request.getRegistry())
+        return nationalRegistriesRequestsRepository.incrementRetryAndAttemptAfter(request.getCorrelationId(), request.getCreatedAt().toString(), retry, attemptAfter)
                 .doOnSuccess(r -> log.info("{}- correlationId {} - reset for retry ({}/{})", request.getRegistry(), request.getCorrelationId(), retry, maxRetry))
                 .doOnError(e -> log.warn("{}- correlationId {} - failed to reset for retry",request.getRegistry(), request.getCorrelationId(), e))
                 .then();

@@ -27,4 +27,5 @@ public interface NationalRegistriesRequestsRepository {
 
     Mono<NationalRegistriesRequest> updateStatusToError(String pk, String sk, GatewayDownstreamService registry, Integer retryCount);
 
+    Mono<NationalRegistriesRequest> incrementRetryAndAttemptAfter(String pk, String sk, Integer retry, Instant attemptAfter);
 }

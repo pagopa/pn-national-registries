@@ -1,6 +1,8 @@
 package it.pagopa.pn.national.registries.integration.digital.PF;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ElementDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecPollingResponse;
@@ -24,6 +26,7 @@ import reactor.core.publisher.Mono;
 import software.amazon.awssdk.services.dynamodb.model.AttributeValue;
 import software.amazon.awssdk.services.sqs.model.Message;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 
@@ -34,11 +37,11 @@ import static org.mockito.Mockito.*;
 
 /**
  * Scenari funzionali PF DIGITAL
- *
+ * <p>
  * Configurazione:
- *  - fallback PF attivo
- *  - INAD massivo disattivato
- *  - old IniPEC disattivo
+ * - fallback PF attivo
+ * - INAD massivo disattivato
+ * - old IniPEC disattivo
  */
 @SpringBootTest(classes = PnNationalRegistriesTestApplication.class)
 @TestPropertySource(properties = {
@@ -820,6 +823,104 @@ public class DigitalAddressPFFallbackNewInipecTestIT extends AbstractNationalReg
         assertEquals(1, payload.getPayload().getDigitalAddress().size());
         assertEquals("professional@pec.it", payload.getPayload().getDigitalAddress().getFirst().getAddress());
         assertEquals("PROFESSIONISTA", payload.getPayload().getDigitalAddress().getFirst().getRecipient());
+    }
+
+    @Test
+    void PF_Digital_InipecBatchRequest_Http500_RetriesThenError() {
+        String correlationId =
+                "pf-inipec-batch-retry-" + UUID.randomUUID();
+
+        when(inadClient.callEService(
+                eq(VALID_PF_CF),
+                eq(correlationId)))
+                .thenReturn(Mono.error(inadNotFoundException()));
+
+        enqueueGatewayRequest(
+                "PF",
+                VALID_PF_CF,
+                AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL,
+                correlationId);
+
+        processNextGatewayInputMessage();
+
+        assertInipecPendingRequest(correlationId);
+
+        when(infoCamereClient.callEServiceRequestId(
+                any(IniPecBatchRequest.class)))
+                .thenReturn(Mono.error(
+                        new PnNationalRegistriesException(
+                                "Internal server error",
+                                500,
+                                "error",
+                                null,
+                                new byte[0],
+                                StandardCharsets.UTF_8,
+                                InfoCamereClient.class)));
+
+        // Primo tentativo: retryCount = 1
+        iniPecBatchRequestJob.batchRequestScheduled();
+
+        Map<String, AttributeValue> request =
+                requestByRegistry(correlationId, "INIPEC");
+
+        assertEquals("NOT_WORKED", request.get("status").s());
+        assertEquals("1", request.get("retryCount").n());
+
+        // Secondo tentativo: raggiunto maxRetry = 2
+        iniPecBatchRequestJob.batchRequestScheduled();
+
+        request = requestByRegistry(correlationId, "INIPEC");
+
+        assertEquals("ERROR", request.get("status").s());
+        assertEquals("INIPEC#ERROR", request.get("registryStatus").s());
+        assertEquals("2", request.get("retryCount").n());
+
+        verify(infoCamereClient, times(2))
+                .callEServiceRequestId(any(IniPecBatchRequest.class));
+    }
+
+    @Test
+    void PF_Digital_InipecBatchRequest_Http400_MarksRequestAsError() {
+        String correlationId =
+                "pf-inipec-batch-bad-request-" + UUID.randomUUID();
+
+        when(inadClient.callEService(
+                eq(VALID_PF_CF),
+                eq(correlationId)))
+                .thenReturn(Mono.error(inadNotFoundException()));
+
+        enqueueGatewayRequest(
+                "PF",
+                VALID_PF_CF,
+                AddressRequestBodyFilterDto.DomicileTypeEnum.DIGITAL,
+                correlationId);
+
+        processNextGatewayInputMessage();
+
+        assertInipecPendingRequest(correlationId);
+
+        when(infoCamereClient.callEServiceRequestId(
+                any(IniPecBatchRequest.class)))
+                .thenReturn(Mono.error(
+                        new PnNationalRegistriesException(
+                                "Bad request",
+                                400,
+                                "error",
+                                null,
+                                new byte[0],
+                                StandardCharsets.UTF_8,
+                                InfoCamereClient.class)));
+
+        iniPecBatchRequestJob.batchRequestScheduled();
+
+        Map<String, AttributeValue> request =
+                requestByRegistry(correlationId, "INIPEC");
+
+        assertEquals("ERROR", request.get("status").s());
+        assertEquals("INIPEC#ERROR", request.get("registryStatus").s());
+
+        verify(infoCamereClient)
+                .callEServiceRequestId(any(IniPecBatchRequest.class));
     }
 
     private void completeInipecFinal(String correlationId, String address) throws JsonProcessingException {
