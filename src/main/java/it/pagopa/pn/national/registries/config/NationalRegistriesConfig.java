@@ -73,6 +73,8 @@ public class NationalRegistriesConfig {
         private Integer pollingFirstAttemptFixedDelaySeconds;
         private Integer pollingErrorRetryAfter;
         private Integer pollingInProgressRetryAfter;
+        private Integer batchRequestMaxRetry;
+        private Integer requestRetryAfter;
     }
 
     @Data

@@ -3,19 +3,16 @@ package it.pagopa.pn.national.registries.job;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.client.infocamere.InfoCamereClient;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
-import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
 import it.pagopa.pn.national.registries.converter.InfoCamereConverter;
-import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.dto.IniPecBatchResponse;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
 import it.pagopa.pn.national.registries.model.inipec.IniPecBatchRequest;
-import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
+import it.pagopa.pn.national.registries.service.BatchRequestService;
 import it.pagopa.pn.national.registries.service.InfoCamereService;
-import it.pagopa.pn.national.registries.utils.GatewayUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -44,17 +41,15 @@ class IniPecBatchRequestJobTest {
 
     private static final int QUERY_LIMIT = 10;
     private static final int MAX_BATCH_SIZE = 2;
+    private static final int MAX_RETRY = 3;
+    private static final int RETRY_AFTER = 60;
+    private static final GatewayDownstreamService REGISTRY = GatewayDownstreamService.INIPEC;
 
-    @Mock
-    private NationalRegistriesRequestsRepository requestsRepository;
-    @Mock
-    private NationalRegistriesBatchesRepository batchesRepository;
-    @Mock
-    private InfoCamereService infoCamereService;
-    @Mock
-    private InfoCamereConverter infoCamereConverter;
-    @Mock
-    private Page<NationalRegistriesRequest> page;
+    @Mock private NationalRegistriesRequestsRepository requestsRepository;
+    @Mock private InfoCamereService infoCamereService;
+    @Mock private InfoCamereConverter infoCamereConverter;
+    @Mock private BatchRequestService batchRequestService;
+    @Mock private Page<NationalRegistriesRequest> page;
 
     private IniPecBatchRequestJob job;
 
@@ -62,346 +57,240 @@ class IniPecBatchRequestJobTest {
     void setUp() {
         NationalRegistriesConfig.Inipec inipec = new NationalRegistriesConfig.Inipec();
         inipec.setMaxBatchRequestSize(MAX_BATCH_SIZE);
-
+        inipec.setBatchRequestMaxRetry(MAX_RETRY);
+        inipec.setRequestRetryAfter(RETRY_AFTER);
         NationalRegistriesConfig config = new NationalRegistriesConfig();
         config.setInipec(inipec);
         config.setQueryLimit(QUERY_LIMIT);
-
-        job = new IniPecBatchRequestJob(requestsRepository, batchesRepository, config, infoCamereService, infoCamereConverter);
+        job = new IniPecBatchRequestJob(requestsRepository, config, infoCamereService,
+                infoCamereConverter, batchRequestService);
     }
 
     @Test
     void doesNothingWhenThereAreNoRequests() {
         when(page.items()).thenReturn(List.of());
         mockPages(page);
-
         job.batchRequestScheduled();
-
-        verifyNoInteractions(infoCamereConverter, infoCamereService, batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
+        verifyNoInteractions(infoCamereConverter, infoCamereService, batchRequestService);
     }
 
     @Test
     void doesNothingWhenRepositoryReturnsNoPages() {
         mockPages();
-
         job.batchRequestScheduled();
-
-        verifyNoInteractions(infoCamereConverter, infoCamereService, batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
+        verifyNoInteractions(infoCamereConverter, infoCamereService, batchRequestService);
     }
 
     @Test
-    void submitsBatchAndMarksRequestsAsWorking() {
-        NationalRegistriesRequest first = request("c1", "RSSMRA80A01H501U", Instant.parse("2026-01-01T10:00:00Z"));
-        NationalRegistriesRequest second = request("c2", "VRDLGI80A01H501K", Instant.parse("2026-01-01T10:01:00Z"));
-        when(page.items()).thenReturn(List.of(first, second));
+    void submitsBatchAndDelegatesPersistence() {
+        NationalRegistriesRequest first = request("c1", "RSSMRA80A01H501U", "2026-01-01T10:00:00Z");
+        NationalRegistriesRequest second = request("c2", "VRDLGI80A01H501K", "2026-01-01T10:01:00Z");
+        List<NationalRegistriesRequest> requests = List.of(first, second);
+        when(page.items()).thenReturn(requests);
         mockPages(page);
-
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
+        IniPecBatchRequest payload = new IniPecBatchRequest();
         Instant attemptAfter = Instant.parse("2026-01-01T10:10:00Z");
-        when(infoCamereConverter.createIniPecRequest(List.of("RSSMRA80A01H501U", "VRDLGI80A01H501K"))).thenReturn(iniPecRequest);
+        when(infoCamereConverter.createIniPecRequest(List.of(first.getTaxId(), second.getTaxId())))
+                .thenReturn(payload);
+        when(infoCamereService.callEService(eq(payload), anyString()))
+                .thenReturn(Mono.just(response("polling-id")));
         when(infoCamereConverter.calculateFirstAttemptAfter(2)).thenReturn(attemptAfter);
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.just(response("polling-id")));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INIPEC)))
-                .thenReturn(Mono.just(first));
+        mockSuccessfulPersistence();
 
         job.batchRequestScheduled();
 
-        verify(infoCamereConverter).createIniPecRequest(List.of("RSSMRA80A01H501U", "VRDLGI80A01H501K"));
+        ArgumentCaptor<String> id = ArgumentCaptor.forClass(String.class);
+        verify(infoCamereService).callEService(eq(payload), id.capture());
+        ArgumentCaptor<Instant> now = ArgumentCaptor.forClass(Instant.class);
+        verify(batchRequestService).persistBatch(eq(id.getValue()), eq("polling-id"), eq(requests),
+                now.capture(), eq(REGISTRY), eq(attemptAfter));
+        assertNotNull(now.getValue());
+        verify(infoCamereConverter).createIniPecRequest(List.of(first.getTaxId(), second.getTaxId()));
         verify(infoCamereConverter).calculateFirstAttemptAfter(2);
-
-        ArgumentCaptor<String> batchIdCaptor = ArgumentCaptor.forClass(String.class);
-        verify(infoCamereService).callEService(eq(iniPecRequest), batchIdCaptor.capture());
-
-        ArgumentCaptor<NationalRegistriesBatch> batchCaptor = ArgumentCaptor.forClass(NationalRegistriesBatch.class);
-        verify(batchesRepository).putBatch(batchCaptor.capture());
-        NationalRegistriesBatch batch = batchCaptor.getValue();
-        assertNotNull(batch.getBatchId());
-        assertEquals(batchIdCaptor.getValue(), batch.getBatchId());
-        assertEquals(batch.getBatchId(), batch.getPracticalReferenceValue());
-        assertEquals("polling-id", batch.getPollingId());
-        assertEquals(GatewayDownstreamService.INIPEC.name(), batch.getRegistry());
-        assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
-        assertEquals(2, batch.getBatchSize());
-        assertEquals(0, batch.getErrorRetryCount());
-        assertEquals(0, batch.getInProgressRetryCount());
-        assertNotNull(batch.getCreatedAt());
-        assertEquals(batch.getCreatedAt(), batch.getUpdatedAt());
-        assertEquals(GatewayUtils.formatInstant(attemptAfter), batch.getAttemptAfter());
-
-        verify(requestsRepository).updateStatusToWorking("c1", first.getCreatedAt().toString(), batch.getBatchId(), GatewayDownstreamService.INIPEC);
-        verify(requestsRepository).updateStatusToWorking("c2", second.getCreatedAt().toString(), batch.getBatchId(), GatewayDownstreamService.INIPEC);
-        verify(requestsRepository, times(2)).updateStatusToWorking(anyString(), anyString(), eq(batch.getBatchId()), eq(GatewayDownstreamService.INIPEC));
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
+        verify(batchRequestService, never()).handleBatchError(any(), anyList(), any(), anyInt(), anyInt());
     }
 
     @Test
-    void submitsIncompleteBatchWhenLessRequestsThanMaxBatchSizeAreAvailable() {
-        NationalRegistriesRequest first = request("c1", "CF1", Instant.parse("2026-01-01T10:00:00Z"));
+    void submitsIncompleteBatch() {
+        NationalRegistriesRequest first = request("c1", "CF1", "2026-01-01T10:00:00Z");
         when(page.items()).thenReturn(List.of(first));
         mockPages(page);
-
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
+        IniPecBatchRequest payload = new IniPecBatchRequest();
         Instant attemptAfter = Instant.parse("2026-01-01T10:10:00Z");
-        when(infoCamereConverter.createIniPecRequest(List.of("CF1"))).thenReturn(iniPecRequest);
+        when(infoCamereConverter.createIniPecRequest(List.of("CF1"))).thenReturn(payload);
+        when(infoCamereService.callEService(eq(payload), anyString())).thenReturn(Mono.just(response("polling-id")));
         when(infoCamereConverter.calculateFirstAttemptAfter(1)).thenReturn(attemptAfter);
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.just(response("polling-id")));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INIPEC)))
-                .thenReturn(Mono.just(first));
+        mockSuccessfulPersistence();
 
         job.batchRequestScheduled();
 
-        verify(infoCamereConverter).createIniPecRequest(List.of("CF1"));
-        verify(infoCamereConverter).calculateFirstAttemptAfter(1);
-        verify(infoCamereService).callEService(eq(iniPecRequest), anyString());
-
-        ArgumentCaptor<NationalRegistriesBatch> batchCaptor = ArgumentCaptor.forClass(NationalRegistriesBatch.class);
-        verify(batchesRepository).putBatch(batchCaptor.capture());
-        NationalRegistriesBatch batch = batchCaptor.getValue();
-        assertEquals(1, batch.getBatchSize());
-        assertEquals("polling-id", batch.getPollingId());
-        assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
-        assertEquals(GatewayUtils.formatInstant(attemptAfter), batch.getAttemptAfter());
-
-        verify(requestsRepository).updateStatusToWorking("c1", first.getCreatedAt().toString(), batch.getBatchId(), GatewayDownstreamService.INIPEC);
+        verify(batchRequestService).persistBatch(anyString(), eq("polling-id"), eq(List.of(first)),
+                any(Instant.class), eq(REGISTRY), eq(attemptAfter));
     }
 
     @Test
     void readsRequestsWithConfiguredLimitAndRegistryStatus() {
-        when(page.items()).thenReturn(List.of());
-        mockPages(page);
-
+        mockPages();
         job.batchRequestScheduled();
-
-        verify(requestsRepository).getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, RequestStatusEnum.NOT_WORKED, QUERY_LIMIT);
+        verify(requestsRepository).getRequestsByRegistryStatus(REGISTRY, RequestStatusEnum.NOT_WORKED, QUERY_LIMIT);
     }
 
     @Test
+    @SuppressWarnings("unchecked")
     void limitsRequestsToMaxBatchRequestSizeAcrossPages() {
-        NationalRegistriesRequest first = request("c1", "CF1", Instant.parse("2026-01-01T10:00:00Z"));
-        NationalRegistriesRequest second = request("c2", "CF2", Instant.parse("2026-01-01T10:01:00Z"));
-        NationalRegistriesRequest third = request("c3", "CF3", Instant.parse("2026-01-01T10:02:00Z"));
+        NationalRegistriesRequest first = request("c1", "CF1", "2026-01-01T10:00:00Z");
+        NationalRegistriesRequest second = request("c2", "CF2", "2026-01-01T10:01:00Z");
+        NationalRegistriesRequest third = request("c3", "CF3", "2026-01-01T10:02:00Z");
         Page<NationalRegistriesRequest> secondPage = mock(Page.class);
         when(page.items()).thenReturn(List.of(first));
         when(secondPage.items()).thenReturn(List.of(second, third));
         mockPages(page, secondPage);
-
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
-        when(infoCamereConverter.createIniPecRequest(List.of("CF1", "CF2"))).thenReturn(iniPecRequest);
-        when(infoCamereConverter.calculateFirstAttemptAfter(2)).thenReturn(Instant.parse("2026-01-01T10:10:00Z"));
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.just(response("polling-id")));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INIPEC)))
-                .thenReturn(Mono.just(first));
+        IniPecBatchRequest payload = new IniPecBatchRequest();
+        when(infoCamereConverter.createIniPecRequest(List.of("CF1", "CF2"))).thenReturn(payload);
+        when(infoCamereService.callEService(eq(payload), anyString())).thenReturn(Mono.just(response("polling-id")));
+        Instant attemptAfter = Instant.parse("2026-01-01T10:10:00Z");
+        when(infoCamereConverter.calculateFirstAttemptAfter(2)).thenReturn(attemptAfter);
+        mockSuccessfulPersistence();
 
         job.batchRequestScheduled();
 
-        verify(infoCamereConverter).createIniPecRequest(List.of("CF1", "CF2"));
-        verify(infoCamereConverter).calculateFirstAttemptAfter(2);
-        verify(infoCamereService).callEService(eq(iniPecRequest), anyString());
-        verify(batchesRepository).putBatch(any(NationalRegistriesBatch.class));
-        verify(requestsRepository, times(2)).updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INIPEC));
-        verify(requestsRepository, never()).updateStatusToWorking(eq("c3"), anyString(), anyString(), any());
+        verify(batchRequestService).persistBatch(anyString(), eq("polling-id"), eq(List.of(first, second)),
+                any(Instant.class), eq(REGISTRY), eq(attemptAfter));
+        verify(infoCamereConverter, never()).createIniPecRequest(List.of("CF1", "CF2", "CF3"));
     }
 
     @ParameterizedTest
     @NullAndEmptySource
     @ValueSource(strings = {"   "})
     void failsWhenProviderReturnsNoPollingIdentifier(String pollingId) {
-        NationalRegistriesRequest first = request("c1", "CF1", Instant.parse("2026-01-01T10:00:00Z"));
-        when(page.items()).thenReturn(List.of(first));
-        mockPages(page);
+        prepareOneRequest();
+        when(infoCamereService.callEService(any(IniPecBatchRequest.class), anyString()))
+                .thenReturn(Mono.just(response(pollingId)));
 
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
-        when(infoCamereConverter.createIniPecRequest(List.of("CF1"))).thenReturn(iniPecRequest);
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.just(response(pollingId)));
-
-        PnInternalException thrown = assertThrows(PnInternalException.class, () -> job.batchRequestScheduled());
-
-        assertEquals("INIPEC returned no polling identifier", thrown.getProblem().getDetail());
-        verifyNoInteractions(batchesRepository);
+        PnInternalException error = assertThrows(PnInternalException.class, job::batchRequestScheduled);
+        assertEquals("INIPEC returned no polling identifier", error.getProblem().getDetail());
+        verify(batchRequestService, never()).persistBatch(anyString(), anyString(), anyList(), any(), any(), any());
+        verifyNoInteractions(batchRequestService);
         verify(infoCamereConverter, never()).calculateFirstAttemptAfter(anyInt());
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
     }
 
     @Test
-    void marksAllRequestsAsErrorWhenProviderReturnsBadRequest() {
-        NationalRegistriesRequest first = request("c1", "CF1", Instant.parse("2026-01-01T10:00:00Z"));
-        NationalRegistriesRequest second = request("c2", "CF2", Instant.parse("2026-01-01T10:01:00Z"));
-        when(page.items()).thenReturn(List.of(first, second));
-        mockPages(page);
+    void badRequestDelegatesErrorHandlingAndSkipsPersistence() {
+        List<NationalRegistriesRequest> requests = prepareTwoRequests();
+        PnNationalRegistriesException providerError = pnException(400);
+        when(infoCamereService.callEService(any(IniPecBatchRequest.class), anyString()))
+                .thenReturn(Mono.error(providerError));
+        when(batchRequestService.handleBatchError(same(providerError), eq(requests), eq(REGISTRY),
+                eq(MAX_RETRY), eq(RETRY_AFTER))).thenReturn(Mono.empty());
 
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
-        when(infoCamereConverter.createIniPecRequest(List.of("CF1", "CF2"))).thenReturn(iniPecRequest);
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.error(pnException(400)));
-        when(requestsRepository.updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INIPEC), any()))
-                .thenReturn(Mono.just(first));
+        assertDoesNotThrow(job::batchRequestScheduled);
 
-        assertDoesNotThrow(() -> job.batchRequestScheduled());
-
-        verify(requestsRepository).updateStatusToError("c1", first.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, null);
-        verify(requestsRepository).updateStatusToError("c2", second.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, null);
-        verify(requestsRepository, times(2)).updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INIPEC), any());
-        verifyNoInteractions(batchesRepository);
-        verify(infoCamereConverter, never()).calculateFirstAttemptAfter(anyInt());
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
+        verify(batchRequestService).handleBatchError(providerError, requests, REGISTRY, MAX_RETRY, RETRY_AFTER);
+        verify(batchRequestService, never()).persistBatch(anyString(), anyString(), anyList(), any(), any(), any());
     }
 
     @Test
-    void propagatesErrorWhenMarkingRequestsAsErrorFails() {
-        NationalRegistriesRequest first = request("c1", "CF1", Instant.parse("2026-01-01T10:00:00Z"));
-        NationalRegistriesRequest second = request("c2", "CF2", Instant.parse("2026-01-01T10:01:00Z"));
-        IllegalStateException updateError = new IllegalStateException("update error failed");
-        when(page.items()).thenReturn(List.of(first, second));
-        mockPages(page);
-
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
-        when(infoCamereConverter.createIniPecRequest(List.of("CF1", "CF2"))).thenReturn(iniPecRequest);
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.error(pnException(400)));
-        when(requestsRepository.updateStatusToError("c1", first.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, null))
-                .thenReturn(Mono.error(updateError));
-
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequestScheduled());
-
-        assertSame(updateError, thrown);
-        verify(requestsRepository).updateStatusToError("c1", first.getCreatedAt().toString(), GatewayDownstreamService.INIPEC, null);
-        verify(requestsRepository, never()).updateStatusToError(eq("c2"), anyString(), eq(GatewayDownstreamService.INIPEC), any());
-        verifyNoInteractions(batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-    }
-
-    @Test
-    void propagatesProviderErrorDifferentFromBadRequest() {
-        NationalRegistriesRequest first = request("c1", "CF1", Instant.parse("2026-01-01T10:00:00Z"));
+    void nonBadRequestAlsoDelegatesToRetryHandling() {
+        List<NationalRegistriesRequest> requests = prepareTwoRequests();
         PnNationalRegistriesException providerError = pnException(500);
-        when(page.items()).thenReturn(List.of(first));
-        mockPages(page);
+        when(infoCamereService.callEService(any(IniPecBatchRequest.class), anyString()))
+                .thenReturn(Mono.error(providerError));
+        when(batchRequestService.handleBatchError(same(providerError), eq(requests), eq(REGISTRY),
+                eq(MAX_RETRY), eq(RETRY_AFTER))).thenReturn(Mono.empty());
 
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
-        when(infoCamereConverter.createIniPecRequest(List.of("CF1"))).thenReturn(iniPecRequest);
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.error(providerError));
+        assertDoesNotThrow(job::batchRequestScheduled);
 
-        PnNationalRegistriesException thrown = assertThrows(PnNationalRegistriesException.class, () -> job.batchRequestScheduled());
+        verify(batchRequestService).handleBatchError(providerError, requests, REGISTRY, MAX_RETRY, RETRY_AFTER);
+        verify(batchRequestService, never()).persistBatch(anyString(), anyString(), anyList(), any(), any(), any());
+    }
 
-        assertSame(providerError, thrown);
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verifyNoInteractions(batchesRepository);
+    @Test
+    void propagatesErrorWhenErrorHandlerFails() {
+        List<NationalRegistriesRequest> requests = prepareTwoRequests();
+        PnNationalRegistriesException providerError = pnException(400);
+        IllegalStateException handlerError = new IllegalStateException("update error failed");
+        when(infoCamereService.callEService(any(IniPecBatchRequest.class), anyString()))
+                .thenReturn(Mono.error(providerError));
+        when(batchRequestService.handleBatchError(same(providerError), eq(requests), eq(REGISTRY),
+                eq(MAX_RETRY), eq(RETRY_AFTER))).thenReturn(Mono.error(handlerError));
+
+        assertSame(handlerError, assertThrows(IllegalStateException.class, job::batchRequestScheduled));
+        verify(batchRequestService, never()).persistBatch(anyString(), anyString(), anyList(), any(), any(), any());
     }
 
     @Test
     void propagatesGenericProviderError() {
-        NationalRegistriesRequest first = request("c1", "CF1", Instant.parse("2026-01-01T10:00:00Z"));
+        prepareOneRequest();
         IllegalStateException providerError = new IllegalStateException("unavailable");
-        when(page.items()).thenReturn(List.of(first));
-        mockPages(page);
-
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
-        when(infoCamereConverter.createIniPecRequest(List.of("CF1"))).thenReturn(iniPecRequest);
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString()))
+        when(infoCamereService.callEService(any(IniPecBatchRequest.class), anyString()))
                 .thenReturn(Mono.error(providerError));
 
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequestScheduled());
-
-        assertSame(providerError, thrown);
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verifyNoInteractions(batchesRepository);
+        assertSame(providerError, assertThrows(IllegalStateException.class, job::batchRequestScheduled));
+        verifyNoInteractions(batchRequestService);
     }
 
     @Test
-    void completesWithoutPersistingWhenProviderReturnsEmptyMono() {
-        NationalRegistriesRequest first = request("c1", "CF1", Instant.parse("2026-01-01T10:00:00Z"));
-        when(page.items()).thenReturn(List.of(first));
-        mockPages(page);
+    void emptyProviderResponseDoesNotPersist() {
+        prepareOneRequest();
+        when(infoCamereService.callEService(any(IniPecBatchRequest.class), anyString()))
+                .thenReturn(Mono.empty());
 
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
-        when(infoCamereConverter.createIniPecRequest(List.of("CF1"))).thenReturn(iniPecRequest);
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.empty());
-
-        assertDoesNotThrow(() -> job.batchRequestScheduled());
-
-        verify(infoCamereService).callEService(eq(iniPecRequest), anyString());
-        verifyNoInteractions(batchesRepository);
+        assertDoesNotThrow(job::batchRequestScheduled);
+        verifyNoInteractions(batchRequestService);
         verify(infoCamereConverter, never()).calculateFirstAttemptAfter(anyInt());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
     }
 
     @Test
-    void doesNotUpdateRequestsWhenBatchPersistenceFails() {
-        NationalRegistriesRequest first = request("c1", "CF1", Instant.parse("2026-01-01T10:00:00Z"));
-        IllegalStateException persistenceError = new IllegalStateException("dynamo down");
+    void propagatesPersistenceFailure() {
+        prepareOneRequest();
+        when(infoCamereService.callEService(any(IniPecBatchRequest.class), anyString()))
+                .thenReturn(Mono.just(response("polling-id")));
+        when(infoCamereConverter.calculateFirstAttemptAfter(1))
+                .thenReturn(Instant.parse("2026-01-01T10:10:00Z"));
+        IllegalStateException error = new IllegalStateException("dynamo down");
+        when(batchRequestService.persistBatch(anyString(), eq("polling-id"), anyList(),
+                any(Instant.class), eq(REGISTRY), any(Instant.class))).thenReturn(Mono.error(error));
+
+        assertSame(error, assertThrows(IllegalStateException.class, job::batchRequestScheduled));
+        verify(batchRequestService, never()).handleBatchError(any(), anyList(), any(), anyInt(), anyInt());
+    }
+
+    @Test
+    void propagatesRepositoryReadFailure() {
+        IllegalStateException error = new IllegalStateException("query failed");
+        when(requestsRepository.getRequestsByRegistryStatus(REGISTRY, RequestStatusEnum.NOT_WORKED, QUERY_LIMIT))
+                .thenReturn(SdkPublisher.adapt(Flux.error(error)));
+
+        assertSame(error, assertThrows(IllegalStateException.class, job::batchRequestScheduled));
+        verifyNoInteractions(infoCamereConverter, infoCamereService, batchRequestService);
+    }
+
+    private void mockSuccessfulPersistence() {
+        when(batchRequestService.persistBatch(anyString(), anyString(), anyList(),
+                any(Instant.class), eq(REGISTRY), any(Instant.class))).thenReturn(Mono.empty());
+    }
+
+    private void prepareOneRequest() {
+        NationalRegistriesRequest first = request("c1", "CF1", "2026-01-01T10:00:00Z");
         when(page.items()).thenReturn(List.of(first));
         mockPages(page);
-
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
-        when(infoCamereConverter.createIniPecRequest(List.of("CF1"))).thenReturn(iniPecRequest);
-        when(infoCamereConverter.calculateFirstAttemptAfter(1)).thenReturn(Instant.parse("2026-01-01T10:10:00Z"));
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.just(response("polling-id")));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenReturn(Mono.error(persistenceError));
-
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequestScheduled());
-
-        assertSame(persistenceError, thrown);
-        verify(batchesRepository).putBatch(any(NationalRegistriesBatch.class));
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
+        when(infoCamereConverter.createIniPecRequest(List.of("CF1"))).thenReturn(new IniPecBatchRequest());
     }
 
-    @Test
-    void propagatesErrorWhenUpdatingRequestToWorkingFails() {
-        NationalRegistriesRequest first = request("c1", "CF1", Instant.parse("2026-01-01T10:00:00Z"));
-        NationalRegistriesRequest second = request("c2", "CF2", Instant.parse("2026-01-01T10:01:00Z"));
-        IllegalStateException updateError = new IllegalStateException("update working failed");
-        when(page.items()).thenReturn(List.of(first, second));
+    private List<NationalRegistriesRequest> prepareTwoRequests() {
+        List<NationalRegistriesRequest> requests = List.of(
+                request("c1", "CF1", "2026-01-01T10:00:00Z"),
+                request("c2", "CF2", "2026-01-01T10:01:00Z"));
+        when(page.items()).thenReturn(requests);
         mockPages(page);
-
-        IniPecBatchRequest iniPecRequest = new IniPecBatchRequest();
-        when(infoCamereConverter.createIniPecRequest(List.of("CF1", "CF2"))).thenReturn(iniPecRequest);
-        when(infoCamereConverter.calculateFirstAttemptAfter(2)).thenReturn(Instant.parse("2026-01-01T10:10:00Z"));
-        when(infoCamereService.callEService(eq(iniPecRequest), anyString())).thenReturn(Mono.just(response("polling-id")));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(eq("c1"), eq(first.getCreatedAt().toString()), anyString(), eq(GatewayDownstreamService.INIPEC)))
-                .thenReturn(Mono.error(updateError));
-
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequestScheduled());
-
-        assertSame(updateError, thrown);
-        verify(batchesRepository).putBatch(any(NationalRegistriesBatch.class));
-        verify(requestsRepository).updateStatusToWorking(eq("c1"), eq(first.getCreatedAt().toString()), anyString(), eq(GatewayDownstreamService.INIPEC));
-        verify(requestsRepository, never()).updateStatusToWorking(eq("c2"), anyString(), anyString(), eq(GatewayDownstreamService.INIPEC));
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
-    }
-
-    @Test
-    void propagatesErrorWhenReadingRequestsFails() {
-        IllegalStateException repositoryError = new IllegalStateException("query failed");
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, RequestStatusEnum.NOT_WORKED, QUERY_LIMIT))
-                .thenReturn(SdkPublisher.adapt(Flux.error(repositoryError)));
-
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequestScheduled());
-
-        assertSame(repositoryError, thrown);
-        verifyNoInteractions(infoCamereConverter, infoCamereService, batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
+        when(infoCamereConverter.createIniPecRequest(List.of("CF1", "CF2")))
+                .thenReturn(new IniPecBatchRequest());
+        return requests;
     }
 
     @SafeVarargs
-    private void mockPages(Page<NationalRegistriesRequest>... pages) {
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INIPEC, RequestStatusEnum.NOT_WORKED, QUERY_LIMIT))
+    private final void mockPages(Page<NationalRegistriesRequest>... pages) {
+        when(requestsRepository.getRequestsByRegistryStatus(REGISTRY, RequestStatusEnum.NOT_WORKED, QUERY_LIMIT))
                 .thenReturn(SdkPublisher.adapt(Flux.fromArray(pages)));
     }
 
@@ -416,11 +305,11 @@ class IniPecBatchRequestJobTest {
                 new byte[0], StandardCharsets.UTF_8, InfoCamereClient.class);
     }
 
-    private static NationalRegistriesRequest request(String correlationId, String taxId, Instant createdAt) {
+    private static NationalRegistriesRequest request(String id, String taxId, String createdAt) {
         NationalRegistriesRequest request = new NationalRegistriesRequest();
-        request.setCorrelationId(correlationId);
+        request.setCorrelationId(id);
         request.setTaxId(taxId);
-        request.setCreatedAt(createdAt);
+        request.setCreatedAt(Instant.parse(createdAt));
         return request;
     }
 }

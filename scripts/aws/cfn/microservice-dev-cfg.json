@@ -58,12 +58,14 @@
     "PnNationalRegistriesPollingDelay": "30000",
     "PnNationalRegistriesPollingLockAtMost": "30000",
     "PnNationalRegistriesPollingLockAtLeast": "1000",
+    "PnNationalRegistriesInadBatchRequestMaxRetry": "3",
     "PnNationalRegistriesInadPollingFirstAttemptDelaySecondsPerCf": "0.085",
     "PnNationalRegistriesInadPollingFirstAttemptFixedDelaySeconds": "60",
     "PnNationalRegistriesInadPollingErrorRetryAfter": "60",
     "PnNationalRegistriesInadPollingInProgressRetryAfter": "60",
     "PnNationalRegistriesInadBatchPollingInProgressMaxRetry": "24",
     "PnNationalRegistriesInadBatchPollingMaxRetry": "3",
+    "PnNationalRegistriesInadRequestRetryAfter": "60",
     "PnNationalRegistriesQueryLimit": "1000",
     "MinTasksNumber": "2",
     "MaxTasksNumber": "4",
@@ -78,7 +80,7 @@
     "AddressCompositionMode": "MINIMAL",
     "IniPecReadTimeoutMillis": "15000",
     "EnablePfPecFallbackFlow": "false",
-    "EnableInadMassiveApi": "false",
+    "EnableInadMassiveApi": "true",
     "CpuArchitecture": "ARM",
     "EnableOldInipecFlow": "false"
   }
