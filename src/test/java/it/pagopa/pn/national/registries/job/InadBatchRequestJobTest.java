@@ -2,30 +2,33 @@ package it.pagopa.pn.national.registries.job;
 
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.national.registries.client.inad.InadClient;
-import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
-import org.springframework.http.HttpHeaders;
 import it.pagopa.pn.national.registries.config.NationalRegistriesConfig;
-import it.pagopa.pn.national.registries.constant.BatchesStatusEnum;
 import it.pagopa.pn.national.registries.constant.RequestStatusEnum;
-import it.pagopa.pn.national.registries.entity.NationalRegistriesBatch;
 import it.pagopa.pn.national.registries.entity.NationalRegistriesRequest;
+import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.RequestListDigitalAddress;
 import it.pagopa.pn.national.registries.generated.openapi.msclient.inad.v1.dto.ResponseRequestListDigitalAddress;
 import it.pagopa.pn.national.registries.model.gateway.GatewayDownstreamService;
-import it.pagopa.pn.national.registries.repository.NationalRegistriesBatchesRepository;
 import it.pagopa.pn.national.registries.repository.NationalRegistriesRequestsRepository;
+import it.pagopa.pn.national.registries.service.BatchRequestService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import software.amazon.awssdk.core.async.SdkPublisher;
 import software.amazon.awssdk.enhanced.dynamodb.model.Page;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,585 +38,371 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class InadBatchRequestJobTest {
 
-    @Mock
-    private NationalRegistriesRequestsRepository requestsRepository;
-    @Mock
-    private NationalRegistriesBatchesRepository batchesRepository;
-    @Mock
-    private InadClient inadClient;
-    @Mock
-    private Page<NationalRegistriesRequest> page;
+    private static final int QUERY_LIMIT = 2;
+    private static final int MAX_BATCH_SIZE = 3;
+    private static final int MAX_RETRY = 3;
+    private static final int RETRY_AFTER = 60;
+    private static final GatewayDownstreamService REGISTRY = GatewayDownstreamService.INAD;
+
+    @Mock private NationalRegistriesRequestsRepository requestsRepository;
+    @Mock private InadClient inadClient;
+    @Mock private BatchRequestService batchRequestService;
+    @Mock private Page<NationalRegistriesRequest> page;
 
     private InadBatchRequestJob job;
 
     @BeforeEach
     void setUp() {
         NationalRegistriesConfig.Inad inad = new NationalRegistriesConfig.Inad();
-        inad.setMaxBatchRequestSize(3);
+        inad.setMaxBatchRequestSize(MAX_BATCH_SIZE);
         inad.setOldestRequestMaxWaitingSeconds(60);
         inad.setPollingFirstAttemptDelaySecondsPerCf(1D);
         inad.setPollingFirstAttemptFixedDelaySeconds(10);
-
+        inad.setBatchRequestMaxRetry(MAX_RETRY);
+        inad.setRequestRetryAfter(RETRY_AFTER);
         NationalRegistriesConfig config = new NationalRegistriesConfig();
         config.setInad(inad);
-        config.setQueryLimit(2);
-        config.setTtl(3600);
-        job = new InadBatchRequestJob(requestsRepository, batchesRepository, inadClient, config);
+        config.setQueryLimit(QUERY_LIMIT);
+        job = new InadBatchRequestJob(requestsRepository, inadClient, config, batchRequestService);
     }
 
     @Test
-    void aggregatesRequestsAcrossPagesUntilBatchSizeIsReached() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.parse("2026-10-16T09:00:00Z"));
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.parse("2026-10-16T09:01:00Z"));
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.parse("2026-10-16T09:02:00Z"));
+    @SuppressWarnings("unchecked")
+    void aggregatesRequestsAcrossPagesAndDelegatesPersistence() {
+        List<NationalRegistriesRequest> requests = threeRequests();
         Page<NationalRegistriesRequest> secondPage = mock(Page.class);
-        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
-        providerResponse.setId("polling-id");
-
-        when(page.items()).thenReturn(List.of(first));
-        when(secondPage.items()).thenReturn(List.of(second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page, secondPage)));
+        when(page.items()).thenReturn(List.of(requests.get(0)));
+        when(secondPage.items()).thenReturn(requests.subList(1, 3));
+        mockPages(page, secondPage);
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.just(providerResponse));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
-                .thenReturn(Mono.just(first));
+                .thenReturn(Mono.just(response("polling-id")));
+        mockSuccessfulPersistence();
 
         job.batchRequest();
 
-        ArgumentCaptor<RequestListDigitalAddress> requestCaptor = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
-        verify(inadClient).callMassiveEService(requestCaptor.capture());
-        assertEquals(List.of("RSSMRA80A01H501U", "VRDLGI80A01H501K", "BNCLRA80A01H501M"), requestCaptor.getValue().getCodiciFiscali());
-        assertNotNull(requestCaptor.getValue().getPraticalReference());
-
-        ArgumentCaptor<NationalRegistriesBatch> batchCaptor = ArgumentCaptor.forClass(NationalRegistriesBatch.class);
-        verify(batchesRepository).putBatch(batchCaptor.capture());
-        NationalRegistriesBatch batch = batchCaptor.getValue();
-        assertEquals(requestCaptor.getValue().getPraticalReference(), batch.getBatchId());
-        assertEquals(batch.getBatchId(), batch.getPracticalReferenceValue());
-        assertEquals("polling-id", batch.getPollingId());
-        assertEquals(GatewayDownstreamService.INAD.name(), batch.getRegistry());
-        assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
-        assertEquals(3, batch.getBatchSize());
-        assertEquals(0, batch.getErrorRetryCount());
-        assertEquals(0, batch.getInProgressRetryCount());
-        assertNotNull(batch.getAttemptAfter());
-        assertNotNull(batch.getCreatedAt());
-        assertEquals(batch.getCreatedAt(), batch.getUpdatedAt());
-        verify(requestsRepository, times(3)).updateStatusToWorking(
-                anyString(), anyString(), eq(batch.getBatchId()), eq(GatewayDownstreamService.INAD));
-        verify(requestsRepository).getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2);
+        ArgumentCaptor<RequestListDigitalAddress> payload = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
+        verify(inadClient).callMassiveEService(payload.capture());
+        assertEquals(requests.stream().map(NationalRegistriesRequest::getTaxId).toList(),
+                payload.getValue().getCodiciFiscali());
+        String batchId = payload.getValue().getPraticalReference();
+        assertNotNull(batchId);
+        assertTrue(batchId.endsWith("#0"));
+        ArgumentCaptor<Instant> now = ArgumentCaptor.forClass(Instant.class);
+        ArgumentCaptor<Instant> attempt = ArgumentCaptor.forClass(Instant.class);
+        verify(batchRequestService).persistBatch(eq(batchId), eq("polling-id"), eq(requests),
+                now.capture(), eq(REGISTRY), attempt.capture());
+        assertEquals(now.getValue().plusSeconds(13).truncatedTo(ChronoUnit.SECONDS), attempt.getValue());
+        verify(requestsRepository).getRequestsByRegistryStatus(REGISTRY, RequestStatusEnum.NOT_WORKED, QUERY_LIMIT);
     }
 
     @Test
-    void sendsIncompleteBatchWhenOldestRequestHasReachedMaxWaitingTime() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now().minusSeconds(60));
-        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
-        providerResponse.setId("polling-id");
-
-        when(page.items()).thenReturn(List.of(first));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED,2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
+    void sendsIncompleteBatchWhenOldestRequestHasWaitedLongEnough() {
+        NationalRegistriesRequest old = request("old", "CF1", Instant.now().minusSeconds(120));
+        when(page.items()).thenReturn(List.of(old));
+        mockPages(page);
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.just(providerResponse));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
-                .thenReturn(Mono.just(first));
+                .thenReturn(Mono.just(response("polling-id")));
+        mockSuccessfulPersistence();
 
         job.batchRequest();
 
-        verify(inadClient).callMassiveEService(any(RequestListDigitalAddress.class));
-        verify(batchesRepository).putBatch(any(NationalRegistriesBatch.class));
-        verify(requestsRepository).updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD));
+        verify(batchRequestService).persistBatch(anyString(), eq("polling-id"), eq(List.of(old)),
+                any(Instant.class), eq(REGISTRY), any(Instant.class));
     }
 
     @Test
-    void leavesIncompleteRecentRequestsAvailableAfterAllPagesAreRead() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
+    void leavesRecentIncompleteBatchUnprocessed() {
+        when(page.items()).thenReturn(List.of(request("recent", "CF1", Instant.now())));
+        mockPages(page);
+        job.batchRequest();
+        verifyNoInteractions(inadClient, batchRequestService);
+    }
 
-        when(page.items()).thenReturn(List.of(first));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
+    @Test
+    void doesNotSendIncompleteBatchJustBelowWaitingThreshold() {
+        when(page.items()).thenReturn(List.of(request("recent", "CF1", Instant.now().minusSeconds(30))));
+        mockPages(page);
+        job.batchRequest();
+        verifyNoInteractions(inadClient, batchRequestService);
+    }
+
+    @Test
+    void sendsIncompleteBatchWhenFirstRequestIsOld() {
+        NationalRegistriesRequest old = request("old", "CF1", Instant.now().minusSeconds(120));
+        NationalRegistriesRequest recent = request("recent", "CF2", Instant.now());
+        when(page.items()).thenReturn(List.of(old, recent));
+        mockPages(page);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.just(response("polling-id")));
+        mockSuccessfulPersistence();
 
         job.batchRequest();
 
-        verifyNoInteractions(inadClient, batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), anyInt());
+        verify(batchRequestService).persistBatch(anyString(), eq("polling-id"), eq(List.of(old, recent)),
+                any(Instant.class), eq(REGISTRY), any(Instant.class));
     }
 
     @Test
-    void propagatesProviderErrorWithoutPersistingTheBatchOrChangingRequests() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
+    @SuppressWarnings("unchecked")
+    void sendsEachCompleteBatchAcrossPages() {
+        List<NationalRegistriesRequest> requests = sixRequests();
+        Page<NationalRegistriesRequest> page2 = mock(Page.class);
+        Page<NationalRegistriesRequest> page3 = mock(Page.class);
+        when(page.items()).thenReturn(requests.subList(0, 2));
+        when(page2.items()).thenReturn(requests.subList(2, 4));
+        when(page3.items()).thenReturn(requests.subList(4, 6));
+        mockPages(page, page2, page3);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.just(response("polling-id")));
+        mockSuccessfulPersistence();
+
+        job.batchRequest();
+
+        ArgumentCaptor<RequestListDigitalAddress> payload = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
+        verify(inadClient, times(2)).callMassiveEService(payload.capture());
+        assertEquals(requests.subList(0, 3).stream().map(NationalRegistriesRequest::getTaxId).toList(),
+                payload.getAllValues().get(0).getCodiciFiscali());
+        assertEquals(requests.subList(3, 6).stream().map(NationalRegistriesRequest::getTaxId).toList(),
+                payload.getAllValues().get(1).getCodiciFiscali());
+        assertTrue(payload.getAllValues().get(0).getPraticalReference().endsWith("#0"));
+        assertTrue(payload.getAllValues().get(1).getPraticalReference().endsWith("#1"));
+        verify(batchRequestService, times(2)).persistBatch(anyString(), eq("polling-id"), anyList(),
+                any(Instant.class), eq(REGISTRY), any(Instant.class));
+    }
+
+    @Test
+    void skipsRecentTrailingIncompleteBatch() {
+        List<NationalRegistriesRequest> requests = fourRequests();
+        when(page.items()).thenReturn(requests);
+        mockPages(page);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.just(response("polling-id")));
+        mockSuccessfulPersistence();
+
+        job.batchRequest();
+
+        verify(inadClient, times(1)).callMassiveEService(any(RequestListDigitalAddress.class));
+        verify(batchRequestService).persistBatch(anyString(), eq("polling-id"), eq(requests.subList(0, 3)),
+                any(Instant.class), eq(REGISTRY), any(Instant.class));
+    }
+
+    @Test
+    void sendsOldTrailingIncompleteBatch() {
+        List<NationalRegistriesRequest> requests = fourRequests();
+        NationalRegistriesRequest last = requests.get(3);
+        last.setCreatedAt(Instant.now().minusSeconds(120));
+        when(page.items()).thenReturn(requests);
+        mockPages(page);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.just(response("polling-id")));
+        mockSuccessfulPersistence();
+
+        job.batchRequest();
+
+        verify(inadClient, times(2)).callMassiveEService(any(RequestListDigitalAddress.class));
+        verify(batchRequestService).persistBatch(anyString(), eq("polling-id"), eq(List.of(last)),
+                any(Instant.class), eq(REGISTRY), any(Instant.class));
+    }
+
+    @Test
+    void noPagesDoesNothing() {
+        mockPages();
+        job.batchRequest();
+        verifyNoInteractions(inadClient, batchRequestService);
+    }
+
+    @Test
+    void emptyPageDoesNothing() {
+        when(page.items()).thenReturn(List.of());
+        mockPages(page);
+        job.batchRequest();
+        verifyNoInteractions(inadClient, batchRequestService);
+    }
+
+    @Test
+    void badRequestDelegatesHandlingAndSkipsPersistence() {
+        List<NationalRegistriesRequest> requests = threeRequests();
+        mockFullBatch(requests);
+        PnNationalRegistriesException providerError = providerException(400);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(providerError));
+        mockSuccessfulErrorHandling(providerError, requests);
+
+        assertDoesNotThrow(job::batchRequest);
+
+        verify(batchRequestService).handleBatchError(providerError, requests, REGISTRY, MAX_RETRY, RETRY_AFTER);
+        verify(batchRequestService, never()).persistBatch(anyString(), anyString(), anyList(), any(), any(), any());
+    }
+
+    @Test
+    void mixedValidAndInvalidTaxIdsBadRequestDelegatesEntireBatch() {
+        List<NationalRegistriesRequest> requests = List.of(
+                request("valid", "RSSMRA80A01H501U", Instant.parse("2026-10-16T09:00:00Z")),
+                request("invalid", "rssmra80a01h501u", Instant.parse("2026-10-16T09:01:00Z")),
+                request("valid2", "VRDLGI80A01H501K", Instant.parse("2026-10-16T09:02:00Z")));
+        mockFullBatch(requests);
+        PnNationalRegistriesException providerError = providerException(400);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(providerError));
+        mockSuccessfulErrorHandling(providerError, requests);
+
+        job.batchRequest();
+
+        ArgumentCaptor<RequestListDigitalAddress> payload = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
+        verify(inadClient).callMassiveEService(payload.capture());
+        assertEquals(List.of("RSSMRA80A01H501U", "rssmra80a01h501u", "VRDLGI80A01H501K"),
+                payload.getValue().getCodiciFiscali());
+        verify(batchRequestService).handleBatchError(providerError, requests, REGISTRY, MAX_RETRY, RETRY_AFTER);
+    }
+
+    @Test
+    void nonBadRequestDelegatesRetryHandling() {
+        List<NationalRegistriesRequest> requests = threeRequests();
+        mockFullBatch(requests);
+        PnNationalRegistriesException providerError = providerException(500);
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(providerError));
+        mockSuccessfulErrorHandling(providerError, requests);
+
+        assertDoesNotThrow(job::batchRequest);
+
+        verify(batchRequestService).handleBatchError(providerError, requests, REGISTRY, MAX_RETRY, RETRY_AFTER);
+        verify(batchRequestService, never()).persistBatch(anyString(), anyString(), anyList(), any(), any(), any());
+    }
+
+    @Test
+    void propagatesFailureOfErrorHandler() {
+        List<NationalRegistriesRequest> requests = threeRequests();
+        mockFullBatch(requests);
+        PnNationalRegistriesException providerError = providerException(400);
+        IllegalStateException updateError = new IllegalStateException("update failed");
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
+                .thenReturn(Mono.error(providerError));
+        when(batchRequestService.handleBatchError(same(providerError), eq(requests), eq(REGISTRY),
+                eq(MAX_RETRY), eq(RETRY_AFTER))).thenReturn(Mono.error(updateError));
+
+        assertSame(updateError, assertThrows(IllegalStateException.class, job::batchRequest));
+        verify(batchRequestService, never()).persistBatch(anyString(), anyString(), anyList(), any(), any(), any());
+    }
+
+    @Test
+    void propagatesGenericProviderError() {
+        mockFullBatch(threeRequests());
         IllegalStateException providerError = new IllegalStateException("INAD unavailable");
-
-        when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
                 .thenReturn(Mono.error(providerError));
 
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequest());
-
-        assertSame(providerError, thrown);
-        verifyNoInteractions(batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
+        assertSame(providerError, assertThrows(IllegalStateException.class, job::batchRequest));
+        verifyNoInteractions(batchRequestService);
     }
 
     @Test
-    void propagatesRepositoryErrorWithoutCallingProvider() {
-        IllegalStateException repositoryError = new IllegalStateException("dynamo query failed");
-
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
+    void propagatesRepositoryReadError() {
+        IllegalStateException repositoryError = new IllegalStateException("query failed");
+        when(requestsRepository.getRequestsByRegistryStatus(REGISTRY, RequestStatusEnum.NOT_WORKED, QUERY_LIMIT))
                 .thenReturn(SdkPublisher.adapt(Flux.error(repositoryError)));
 
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequest());
-
-        assertSame(repositoryError, thrown);
-        verifyNoInteractions(inadClient, batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
+        assertSame(repositoryError, assertThrows(IllegalStateException.class, job::batchRequest));
+        verifyNoInteractions(inadClient, batchRequestService);
     }
 
     @Test
-    void sendsEachCompleteBatchAndReadsRemainingPages() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
-        NationalRegistriesRequest fourth = request("fourth", "NCLMRA80A01H501N", Instant.now());
-        NationalRegistriesRequest fifth = request("fifth", "VRDGLI80A01H501P", Instant.now());
-        NationalRegistriesRequest sixth = request("sixth", "BNCGLI80A01H501Q", Instant.now());
-        Page<NationalRegistriesRequest> secondPage = mock(Page.class);
-        Page<NationalRegistriesRequest> thirdPage = mock(Page.class);
-        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
-        providerResponse.setId("polling-id");
+    void emptyProviderResponseDoesNotPersist() {
+        mockFullBatch(threeRequests());
+        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.empty());
 
-        when(page.items()).thenReturn(List.of(first, second));
-        when(secondPage.items()).thenReturn(List.of(third, fourth));
-        when(thirdPage.items()).thenReturn(List.of(fifth, sixth));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page, secondPage, thirdPage)));
+        assertDoesNotThrow(job::batchRequest);
+        verifyNoInteractions(batchRequestService);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    @ValueSource(strings = {"   "})
+    void missingPollingIdPropagatesError(String pollingId) {
+        mockFullBatch(threeRequests());
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.just(providerResponse));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
-                .thenReturn(Mono.just(first));
+                .thenReturn(Mono.just(response(pollingId)));
 
-        job.batchRequest();
-
-        ArgumentCaptor<RequestListDigitalAddress> requestCaptor = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
-        verify(inadClient, times(2)).callMassiveEService(requestCaptor.capture());
-        assertEquals(List.of("RSSMRA80A01H501U", "VRDLGI80A01H501K", "BNCLRA80A01H501M"), requestCaptor.getAllValues().get(0).getCodiciFiscali());
-        assertEquals(List.of("NCLMRA80A01H501N", "VRDGLI80A01H501P", "BNCGLI80A01H501Q"), requestCaptor.getAllValues().get(1).getCodiciFiscali());
-        verify(batchesRepository, times(2)).putBatch(any(NationalRegistriesBatch.class));
-        verify(requestsRepository, times(6)).updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD));
-        verify(thirdPage).items();
+        PnInternalException error = assertThrows(PnInternalException.class, job::batchRequest);
+        assertTrue(error.getProblem().getDetail().contains("INAD returned no polling identifier for batch"));
+        verifyNoInteractions(batchRequestService);
     }
 
     @Test
-    void sendsOnlyCompleteBatchWhenTrailingIncompleteBatchIsRecent() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
-        NationalRegistriesRequest fourth = request("fourth", "NCLMRA80A01H501N", Instant.now());
-        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
-        providerResponse.setId("polling-id");
-
-        when(page.items()).thenReturn(List.of(first, second, third, fourth));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
+    void persistenceFailurePropagatesWithoutErrorHandling() {
+        mockFullBatch(threeRequests());
         when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.just(providerResponse));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
-                .thenReturn(Mono.just(first));
-
-        job.batchRequest();
-
-        ArgumentCaptor<RequestListDigitalAddress> requestCaptor = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
-        verify(inadClient).callMassiveEService(requestCaptor.capture());
-        assertEquals(List.of("RSSMRA80A01H501U", "VRDLGI80A01H501K", "BNCLRA80A01H501M"), requestCaptor.getValue().getCodiciFiscali());
-        verify(batchesRepository).putBatch(any(NationalRegistriesBatch.class));
-        verify(requestsRepository, times(3)).updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD));
-        verify(requestsRepository, never()).updateStatusToWorking(eq("fourth"), anyString(), anyString(), eq(GatewayDownstreamService.INAD));
-    }
-
-    @Test
-    void sendsTrailingIncompleteBatchWhenItsOldestRequestHasReachedMaxWaitingTime() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
-        NationalRegistriesRequest fourth = request("fourth", "NCLMRA80A01H501N", Instant.now().minusSeconds(120));
-        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
-        providerResponse.setId("polling-id");
-
-        when(page.items()).thenReturn(List.of(first, second, third, fourth));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.just(providerResponse));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
-                .thenReturn(Mono.just(first));
-
-        job.batchRequest();
-
-        ArgumentCaptor<RequestListDigitalAddress> requestCaptor = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
-        verify(inadClient, times(2)).callMassiveEService(requestCaptor.capture());
-        assertEquals(List.of("RSSMRA80A01H501U", "VRDLGI80A01H501K", "BNCLRA80A01H501M"), requestCaptor.getAllValues().get(0).getCodiciFiscali());
-        assertEquals(List.of("NCLMRA80A01H501N"), requestCaptor.getAllValues().get(1).getCodiciFiscali());
-        verify(batchesRepository, times(2)).putBatch(any(NationalRegistriesBatch.class));
-        verify(requestsRepository, times(4)).updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD));
-    }
-
-    @Test
-    void doesNothingWhenThereAreNoRequestsToProcess() {
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.empty()));
-
-        job.batchRequest();
-
-        verifyNoInteractions(inadClient, batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
-    }
-
-    @Test
-    void doesNothingWhenPageHasNoItems() {
-        when(page.items()).thenReturn(List.of());
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-
-        job.batchRequest();
-
-        verifyNoInteractions(inadClient, batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
-    }
-
-    @Test
-    void doesNotSendIncompleteBatchWhenOldestRequestIsJustBelowMaxWaitingTime() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now().minusSeconds(50));
-
-        when(page.items()).thenReturn(List.of(first));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-
-        job.batchRequest();
-
-        verifyNoInteractions(inadClient, batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-    }
-
-    @Test
-    void sendsIncompleteBatchWhenOnlyTheFirstRequestIsOldEnough() {
-        NationalRegistriesRequest oldest = request("oldest", "RSSMRA80A01H501U", Instant.now().minusSeconds(120));
-        NationalRegistriesRequest recent = request("recent", "VRDLGI80A01H501K", Instant.now());
-        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
-        providerResponse.setId("polling-id");
-
-        when(page.items()).thenReturn(List.of(oldest, recent));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.just(providerResponse));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
-                .thenReturn(Mono.just(oldest));
-
-        job.batchRequest();
-
-        ArgumentCaptor<RequestListDigitalAddress> requestCaptor = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
-        verify(inadClient).callMassiveEService(requestCaptor.capture());
-        assertEquals(List.of("RSSMRA80A01H501U", "VRDLGI80A01H501K"), requestCaptor.getValue().getCodiciFiscali());
-        verify(batchesRepository).putBatch(any(NationalRegistriesBatch.class));
-        verify(requestsRepository, times(2)).updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD));
-    }
-
-    @Test
-    void batchIdIsUsedAsPracticalReferenceAndPersistedBatchIsConsistent() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.parse("2026-10-16T09:00:00Z"));
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.parse("2026-10-16T09:01:00Z"));
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.parse("2026-10-16T09:02:00Z"));
-        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
-        providerResponse.setId("polling-id");
-
-        when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.just(providerResponse));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
-                .thenReturn(Mono.just(first));
-
-        Instant before = Instant.now();
-        job.batchRequest();
-        Instant after = Instant.now();
-
-        ArgumentCaptor<RequestListDigitalAddress> requestCaptor = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
-        verify(inadClient).callMassiveEService(requestCaptor.capture());
-        ArgumentCaptor<NationalRegistriesBatch> batchCaptor = ArgumentCaptor.forClass(NationalRegistriesBatch.class);
-        verify(batchesRepository).putBatch(batchCaptor.capture());
-        NationalRegistriesBatch batch = batchCaptor.getValue();
-
-        assertNotNull(batch.getBatchId());
-        assertEquals(batch.getBatchId(), requestCaptor.getValue().getPraticalReference());
-        assertEquals(batch.getBatchId(), batch.getPracticalReferenceValue());
-        assertEquals(List.of("RSSMRA80A01H501U", "VRDLGI80A01H501K", "BNCLRA80A01H501M"), requestCaptor.getValue().getCodiciFiscali());
-        assertEquals("polling-id", batch.getPollingId());
-        assertEquals(GatewayDownstreamService.INAD.name(), batch.getRegistry());
-        assertEquals(BatchesStatusEnum.REQUEST_SENT, batch.getStatus());
-        assertEquals(3, batch.getBatchSize());
-        assertEquals(0, batch.getErrorRetryCount());
-        assertEquals(0, batch.getInProgressRetryCount());
-        assertNotNull(batch.getCreatedAt());
-        assertEquals(batch.getCreatedAt(), batch.getUpdatedAt());
-
-        // delay primo polling = 1.0 s per CF * 3 CF + 10 s fisso = 13 s (troncato al secondo)
-        Instant attemptAfter = Instant.parse(batch.getAttemptAfter());
-        assertFalse(attemptAfter.isBefore(before.plusSeconds(13).minusSeconds(1)));
-        assertFalse(attemptAfter.isAfter(after.plusSeconds(13)));
-
-        verify(requestsRepository).updateStatusToWorking("first", first.getCreatedAt().toString(), batch.getBatchId(), GatewayDownstreamService.INAD);
-        verify(requestsRepository).updateStatusToWorking("second", second.getCreatedAt().toString(), batch.getBatchId(), GatewayDownstreamService.INAD);
-        verify(requestsRepository).updateStatusToWorking("third", third.getCreatedAt().toString(), batch.getBatchId(), GatewayDownstreamService.INAD);
-    }
-
-    @Test
-    void marksAllRequestsOfTheBatchAsErrorWhenProviderReturnsBadRequest() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.parse("2026-10-16T09:00:00Z"));
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.parse("2026-10-16T09:01:00Z"));
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.parse("2026-10-16T09:02:00Z"));
-
-        when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.error(providerException(400)));
-        when(requestsRepository.updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INAD), any()))
-                .thenReturn(Mono.just(first));
-
-        job.batchRequest();
-
-        verify(requestsRepository).updateStatusToError("first", first.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
-        verify(requestsRepository).updateStatusToError("second", second.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
-        verify(requestsRepository).updateStatusToError("third", third.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
-        verifyNoInteractions(batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-    }
-
-    /**
-     * N21 - rende esplicito il comportamento di un batch misto: se il provider rifiuta l'intero batch per un CF problematico,
-     * anche le richieste formalmente valide dello stesso invio vengono riportate nello stato di errore e nessun batch viene persistito.
-     */
-    @Test
-    void mixedValidAndInvalidTaxIds_providerBadRequest_shouldMarkEveryRequestAsError() {
-        NationalRegistriesRequest validPf = request("valid-pf", "RSSMRA80A01H501U", Instant.parse("2026-10-16T09:00:00Z"));
-        NationalRegistriesRequest invalidLowercase = request("invalid-lowercase", "rssmra80a01h501u", Instant.parse("2026-10-16T09:01:00Z"));
-        NationalRegistriesRequest validSecond = request("valid-second", "VRDLGI80A01H501K", Instant.parse("2026-10-16T09:02:00Z"));
-
-        when(page.items()).thenReturn(List.of(validPf, invalidLowercase, validSecond));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.error(providerException(400)));
-        when(requestsRepository.updateStatusToError(anyString(), anyString(), eq(GatewayDownstreamService.INAD), any())).thenReturn(Mono.just(validPf));
-
-        job.batchRequest();
-
-        ArgumentCaptor<RequestListDigitalAddress> requestCaptor = ArgumentCaptor.forClass(RequestListDigitalAddress.class);
-        verify(inadClient).callMassiveEService(requestCaptor.capture());
-        assertEquals(List.of("RSSMRA80A01H501U", "rssmra80a01h501u", "VRDLGI80A01H501K"), requestCaptor.getValue().getCodiciFiscali());
-        verify(requestsRepository).updateStatusToError("valid-pf", validPf.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
-        verify(requestsRepository).updateStatusToError("invalid-lowercase", invalidLowercase.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
-        verify(requestsRepository).updateStatusToError("valid-second", validSecond.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
-        verifyNoInteractions(batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-    }
-
-
-    @Test
-    void propagatesErrorWhenMarkingBadRequestAsErrorFails() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.parse("2026-10-16T09:00:00Z"));
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.parse("2026-10-16T09:01:00Z"));
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.parse("2026-10-16T09:02:00Z"));
-        IllegalStateException updateError = new IllegalStateException("update error failed");
-
-        when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.error(providerException(400)));
-        when(requestsRepository.updateStatusToError("first", first.getCreatedAt().toString(), GatewayDownstreamService.INAD, null))
-                .thenReturn(Mono.error(updateError));
-
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequest());
-
-        assertSame(updateError, thrown);
-        verify(requestsRepository).updateStatusToError("first", first.getCreatedAt().toString(), GatewayDownstreamService.INAD, null);
-        verify(requestsRepository, never()).updateStatusToError(eq("second"), anyString(), eq(GatewayDownstreamService.INAD), any());
-        verify(requestsRepository, never()).updateStatusToError(eq("third"), anyString(), eq(GatewayDownstreamService.INAD), any());
-        verifyNoInteractions(batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-    }
-
-    @Test
-    void propagatesNonBadRequestProviderErrorWithoutChangingRequests() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
-        PnNationalRegistriesException providerError = providerException(500);
-
-        when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.error(providerError));
-
-        PnNationalRegistriesException thrown = assertThrows(PnNationalRegistriesException.class, () -> job.batchRequest());
-
-        assertSame(providerError, thrown);
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verifyNoInteractions(batchesRepository);
-    }
-
-    @Test
-    void completesWithoutPersistingWhenProviderReturnsEmptyMono() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
-
-        when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.empty());
-
-        assertDoesNotThrow(() -> job.batchRequest());
-
-        verify(inadClient).callMassiveEService(any(RequestListDigitalAddress.class));
-        verifyNoInteractions(batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
-    }
-
-    @Test
-    void failsWithoutPersistingWhenProviderReturnsNoPollingId() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
-
-        when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.just(new ResponseRequestListDigitalAddress()));
-
-        PnInternalException thrown = assertThrows(PnInternalException.class, () -> job.batchRequest());
-
-        assertTrue(thrown.getProblem().getDetail().contains("INAD returned no polling identifier for batch"));
-        verifyNoInteractions(batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-        verify(requestsRepository, never()).updateStatusToError(anyString(), anyString(), any(), any());
-    }
-
-    @Test
-    void failsWithoutPersistingWhenProviderReturnsBlankPollingId() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
-        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
-        providerResponse.setId("  ");
-
-        when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.just(providerResponse));
-
-        PnInternalException thrown = assertThrows(PnInternalException.class, () -> job.batchRequest());
-
-        assertTrue(thrown.getProblem().getDetail().contains("INAD returned no polling identifier for batch"));
-        verifyNoInteractions(batchesRepository);
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
-    }
-
-    @Test
-    void propagatesErrorWhenBatchCannotBePersisted() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
-        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
-        providerResponse.setId("polling-id");
+                .thenReturn(Mono.just(response("polling-id")));
         IllegalStateException persistenceError = new IllegalStateException("dynamo down");
-
-        when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class))).thenReturn(Mono.just(providerResponse));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
+        when(batchRequestService.persistBatch(anyString(), eq("polling-id"), anyList(),
+                any(Instant.class), eq(REGISTRY), any(Instant.class)))
                 .thenReturn(Mono.error(persistenceError));
 
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequest());
-
-        assertSame(persistenceError, thrown);
-        verify(batchesRepository).putBatch(any(NationalRegistriesBatch.class));
-        verify(requestsRepository, never()).updateStatusToWorking(anyString(), anyString(), anyString(), any());
+        assertSame(persistenceError, assertThrows(IllegalStateException.class, job::batchRequest));
+        verify(batchRequestService, never()).handleBatchError(any(), anyList(), any(), anyInt(), anyInt());
     }
 
-    @Test
-    void propagatesErrorWhenRequestCannotBeMarkedAsWorking() {
-        NationalRegistriesRequest first = request("first", "RSSMRA80A01H501U", Instant.now());
-        NationalRegistriesRequest second = request("second", "VRDLGI80A01H501K", Instant.now());
-        NationalRegistriesRequest third = request("third", "BNCLRA80A01H501M", Instant.now());
-        ResponseRequestListDigitalAddress providerResponse = new ResponseRequestListDigitalAddress();
-        providerResponse.setId("polling-id");
-        IllegalStateException updateError = new IllegalStateException("request update failed");
-
-        when(page.items()).thenReturn(List.of(first, second, third));
-        when(requestsRepository.getRequestsByRegistryStatus(GatewayDownstreamService.INAD, RequestStatusEnum.NOT_WORKED, 2))
-                .thenReturn(SdkPublisher.adapt(Flux.just(page)));
-        when(inadClient.callMassiveEService(any(RequestListDigitalAddress.class)))
-                .thenReturn(Mono.just(providerResponse));
-        when(batchesRepository.putBatch(any(NationalRegistriesBatch.class)))
-                .thenAnswer(invocation -> Mono.just(invocation.getArgument(0)));
-        when(requestsRepository.updateStatusToWorking(anyString(), anyString(), anyString(), eq(GatewayDownstreamService.INAD)))
-                .thenAnswer(invocation -> {
-                    String correlationId = invocation.getArgument(0);
-                    if ("first".equals(correlationId)) {
-                        return Mono.error(updateError);
-                    }
-                    return Mono.just(first);
-                });
-
-        IllegalStateException thrown = assertThrows(IllegalStateException.class, () -> job.batchRequest());
-
-        assertSame(updateError, thrown);
-        verify(batchesRepository).putBatch(any(NationalRegistriesBatch.class));
-        verify(requestsRepository).updateStatusToWorking(
-                eq("first"),
-                eq(first.getCreatedAt().toString()),
-                anyString(),
-                eq(GatewayDownstreamService.INAD)
-        );
+    private void mockSuccessfulPersistence() {
+        when(batchRequestService.persistBatch(anyString(), anyString(), anyList(),
+                any(Instant.class), eq(REGISTRY), any(Instant.class))).thenReturn(Mono.empty());
     }
 
-    private PnNationalRegistriesException providerException(int status) {
+    private void mockSuccessfulErrorHandling(PnNationalRegistriesException error,
+                                             List<NationalRegistriesRequest> requests) {
+        when(batchRequestService.handleBatchError(same(error), eq(requests), eq(REGISTRY),
+                eq(MAX_RETRY), eq(RETRY_AFTER))).thenReturn(Mono.empty());
+    }
+
+    private void mockFullBatch(List<NationalRegistriesRequest> requests) {
+        when(page.items()).thenReturn(requests);
+        mockPages(page);
+    }
+
+    @SafeVarargs
+    private final void mockPages(Page<NationalRegistriesRequest>... pages) {
+        when(requestsRepository.getRequestsByRegistryStatus(REGISTRY, RequestStatusEnum.NOT_WORKED, QUERY_LIMIT))
+                .thenReturn(SdkPublisher.adapt(Flux.fromArray(pages)));
+    }
+
+    private static ResponseRequestListDigitalAddress response(String pollingId) {
+        ResponseRequestListDigitalAddress response = new ResponseRequestListDigitalAddress();
+        response.setId(pollingId);
+        return response;
+    }
+
+    private static PnNationalRegistriesException providerException(int status) {
         return new PnNationalRegistriesException("provider error", status, "status", new HttpHeaders(),
-                new byte[0], java.nio.charset.StandardCharsets.UTF_8, Object.class);
+                new byte[0], StandardCharsets.UTF_8, Object.class);
     }
 
-    private NationalRegistriesRequest request(String correlationId, String taxId, Instant createdAt) {
+    private static List<NationalRegistriesRequest> threeRequests() {
+        return List.of(
+                request("first", "CF1", Instant.parse("2026-10-16T09:00:00Z")),
+                request("second", "CF2", Instant.parse("2026-10-16T09:01:00Z")),
+                request("third", "CF3", Instant.parse("2026-10-16T09:02:00Z")));
+    }
+
+    private static List<NationalRegistriesRequest> fourRequests() {
+        return List.of(
+                request("first", "CF1", Instant.now()),
+                request("second", "CF2", Instant.now()),
+                request("third", "CF3", Instant.now()),
+                request("fourth", "CF4", Instant.now()));
+    }
+
+    private static List<NationalRegistriesRequest> sixRequests() {
+        return List.of(
+                request("first", "CF1", Instant.now()),
+                request("second", "CF2", Instant.now()),
+                request("third", "CF3", Instant.now()),
+                request("fourth", "CF4", Instant.now()),
+                request("fifth", "CF5", Instant.now()),
+                request("sixth", "CF6", Instant.now()));
+    }
+
+    private static NationalRegistriesRequest request(String id, String taxId, Instant createdAt) {
         NationalRegistriesRequest request = new NationalRegistriesRequest();
-        request.setCorrelationId(correlationId);
+        request.setCorrelationId(id);
         request.setTaxId(taxId);
         request.setCreatedAt(createdAt);
         return request;
