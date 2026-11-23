@@ -1,17 +1,15 @@
 package it.pagopa.pn.national.registries.config.infocamere;
 
 import it.pagopa.pn.national.registries.config.CustomRetryConfig;
-import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.*;
+import it.pagopa.pn.national.registries.generated.openapi.msclient.infocamere.v1.api.SedeApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mock;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
-import org.springframework.test.context.junit.jupiter.SpringExtension;
 import org.springframework.web.reactive.function.client.*;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
@@ -29,8 +27,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-@ExtendWith(SpringExtension.class)
-class InfocamereClientConfigTest {
+class SedeLegaleClientConfigTest {
     private static final String BASE_PATH = "basePath";
 
     @Mock
@@ -40,7 +37,7 @@ class InfocamereClientConfigTest {
     @Mock
     private CustomRetryConfig customRetryConfig;
 
-    private InfocamereClientConfig infocamereClientConfig;
+    private SedeLegaleClientConfig sedeLegaleClientConfig;
 
     @BeforeEach
     void setUp() {
@@ -50,32 +47,12 @@ class InfocamereClientConfigTest {
         when(webClientBuilder.filters(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.filter(any())).thenReturn(webClientBuilder);
         when(webClientBuilder.clientConnector(any())).thenReturn(webClientBuilder);
-        infocamereClientConfig = new InfocamereClientConfig(customRetryConfig, webClientBuilder);
-    }
-    /**
-     * Method under test: {@link InfocamereClientConfig#authenticationApi(String)}
-     */
-    @Test
-    void testAuthenticationApi() {
-        AuthenticationApi authenticationApi = infocamereClientConfig.authenticationApi(BASE_PATH);
-        assertEquals(BASE_PATH, authenticationApi.getApiClient().getBasePath());
-    }
-
-    @Test
-    void testLegalRepresentationApi() {
-        LegalRepresentationApi legalRepresentationApi = infocamereClientConfig.legalRepresentationApi(BASE_PATH);
-        assertEquals(BASE_PATH, legalRepresentationApi.getApiClient().getBasePath());
-    }
-
-    @Test
-    void testLegalRepresentativeApi() {
-        LegalRepresentativeApi legalRepresentativeApi = infocamereClientConfig.legalRepresentativeApi(BASE_PATH);
-        assertEquals(BASE_PATH, legalRepresentativeApi.getApiClient().getBasePath());
+        sedeLegaleClientConfig = new SedeLegaleClientConfig(customRetryConfig, webClientBuilder);
     }
 
     @Test
     void testSedeApi() {
-        SedeApi sedeApi = infocamereClientConfig.sedeApi(BASE_PATH);
+        SedeApi sedeApi = sedeLegaleClientConfig.sedeApi(BASE_PATH);
         assertEquals(BASE_PATH, sedeApi.getApiClient().getBasePath());
     }
 
@@ -134,7 +111,7 @@ class InfocamereClientConfigTest {
                 .thenReturn(Mono.error(exception));
 
         // Act
-        ExchangeFilterFunction filterFunction = infocamereClientConfig.buildRetryExchangeFilterFunction();
+        ExchangeFilterFunction filterFunction = sedeLegaleClientConfig.buildRetryExchangeFilterFunction();
 
         // Assert
         StepVerifier.create(filterFunction.filter(clientRequest, exchangeFunction))
@@ -168,7 +145,7 @@ class InfocamereClientConfigTest {
                 .thenReturn(Mono.error(exception));
 
         // Act
-        ExchangeFilterFunction filterFunction = infocamereClientConfig.buildRetryExchangeFilterFunction();
+        ExchangeFilterFunction filterFunction = sedeLegaleClientConfig.buildRetryExchangeFilterFunction();
 
         // Assert
         StepVerifier.create(filterFunction.filter(clientRequest, exchangeFunction))

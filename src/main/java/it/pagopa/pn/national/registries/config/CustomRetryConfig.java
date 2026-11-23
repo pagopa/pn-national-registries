@@ -80,4 +80,17 @@ public class CustomRetryConfig {
                 throwable instanceof WebClientResponseException.GatewayTimeout ||
                 throwable instanceof WebClientResponseException.BadGateway ||
                 throwable instanceof WebClientResponseException.ServiceUnavailable;
+
+    public static final Predicate<Throwable> infocamereRetryCondition =
+            throwable -> throwable instanceof TimeoutException ||
+                throwable instanceof SocketException ||
+                throwable instanceof SocketTimeoutException ||
+                throwable instanceof SSLHandshakeException ||
+                throwable instanceof UnknownHostException ||
+                throwable instanceof WebClientRequestException ||
+                throwable instanceof WebClientResponseException.TooManyRequests ||
+                throwable instanceof WebClientResponseException.GatewayTimeout ||
+                throwable instanceof WebClientResponseException.BadGateway ||
+                throwable instanceof WebClientResponseException.InternalServerError ||
+                throwable instanceof WebClientResponseException.ServiceUnavailable;
 }
