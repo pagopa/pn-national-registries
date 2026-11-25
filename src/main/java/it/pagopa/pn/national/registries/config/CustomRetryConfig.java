@@ -53,7 +53,7 @@ public class CustomRetryConfig {
                                     boolean retryable = retryCondition.test(throwable);
                                     if(retryable) {
                                         String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
-                                                .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
+                                                .map(MaskTaxIdInPathUtils.maskTaxIdInPath())
                                                 .orElse("Unknown error");
                                         log.warn("Exception {} caught by retry: {}", throwable.getClass().getName(), maskedErrorMessage);
                                     }
@@ -62,7 +62,7 @@ public class CustomRetryConfig {
                                 .onRetryExhaustedThrow((retryBackoffSpec, retrySignal) -> {
                                     Throwable lastExceptionInRetry = retrySignal.failure();
                                     String maskedErrorMessage = Optional.ofNullable(lastExceptionInRetry.getMessage())
-                                            .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
+                                            .map(MaskTaxIdInPathUtils.maskTaxIdInPath())
                                             .orElse("Unknown error");
                                     log.warn("Retries exhausted {}, with last Exception {}: {}", retrySignal.totalRetries(), lastExceptionInRetry.getClass().getName(), maskedErrorMessage);
                                     return lastExceptionInRetry;

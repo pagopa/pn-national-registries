@@ -4,7 +4,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import it.pagopa.pn.commons.exceptions.PnInternalException;
 import it.pagopa.pn.commons.log.PnLogger;
-import it.pagopa.pn.commons.pnclients.CommonBaseClient;
 import it.pagopa.pn.national.registries.cache.AccessTokenExpiringMap;
 import it.pagopa.pn.national.registries.constant.InipecScopeEnum;
 import it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesException;
@@ -197,18 +196,17 @@ public class InfoCamereClient {
     private @NotNull Consumer<Throwable> handleErrorCall() {
         return throwable -> {
             String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
-                    .map(MaskTaxIdInPathUtils::maskTaxIdInPath)
+                    .map(MaskTaxIdInPathUtils.maskTaxIdInPath())
                     .orElse("Unknown error");
             if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                 log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
-                String exceptionMessage = MaskTaxIdInPathUtils.maskTaxIdInPath(CommonBaseClient.elabExceptionMessage(e));
-                log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, exceptionMessage, throwable);
+                log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, e.getMessage(), throwable, MaskTaxIdInPathUtils.maskTaxIdInPath());
                 throw new PnNationalRegistriesException(maskedErrorMessage, e.getStatusCode().value(),
                         e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                         Charset.defaultCharset(), InfocamereResponseKO.class);
             } else {
                 log.debug("Unhandled exception during call to InfoCamere", throwable);
-                log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, maskedErrorMessage, throwable);
+                log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, throwable.getMessage(), throwable, MaskTaxIdInPathUtils.maskTaxIdInPath());
             }
         };
     }

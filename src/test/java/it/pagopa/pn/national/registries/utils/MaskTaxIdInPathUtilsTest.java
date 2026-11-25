@@ -14,7 +14,7 @@ class MaskTaxIdInPathUtilsTest {
             "/listaLegaleRappresentante/TESTCF?,/listaLegaleRappresentante/***?"
     })
     void testMaskTaxIdInPath(String message, String expected) {
-        String actual = MaskTaxIdInPathUtils.maskTaxIdInPath(message);
+        String actual = MaskTaxIdInPathUtils.maskTaxIdInPath().apply(message);
         assertEquals(expected, actual);
     }
 }
