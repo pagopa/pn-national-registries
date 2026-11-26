@@ -5,9 +5,9 @@ import java.util.function.Function;
 public class MaskTaxIdInPathUtils {
 
     public static Function<String, String> maskTaxIdInPath() {
-        return message -> message.replaceFirst("/extract/.*\\?", "/extract/***?")
-                .replaceFirst("/sede/.*\\?", "/sede/***?")
-                .replaceFirst("/listaLegaleRappresentante/.*\\?", "/listaLegaleRappresentante/***?");
+        return message -> message.replaceFirst("/extract/[^?\\s]*", "/extract/***")
+                .replaceFirst("/sede/[^?\\s]*", "/sede/***")
+                .replaceFirst("/listaLegaleRappresentante/[^?\\s]*", "/listaLegaleRappresentante/***");
     }
 
 }

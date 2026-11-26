@@ -26,7 +26,6 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
-import java.util.Optional;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.PROCESS_SERVICE_INAD_ADDRESS;
 import static it.pagopa.pn.national.registries.exceptions.PnNationalRegistriesExceptionCodes.ERROR_CODE_UNAUTHORIZED;
@@ -70,12 +69,9 @@ public class InadClient {
         apiEstrazioniPuntualiApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
         return apiEstrazioniPuntualiApi.recuperoDomicilioDigitale(taxId, practicalReference)
                 .doOnError(throwable -> {
-                    String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
-                            .map(MaskTaxIdInPathUtils.maskTaxIdInPath())
-                            .orElse("Unknown error");
                     log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage(), throwable, MaskTaxIdInPathUtils.maskTaxIdInPath());
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
-                        throw new PnNationalRegistriesException(maskedErrorMessage, ex.getStatusCode().value(),
+                        throw new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
                                 Charset.defaultCharset(), InadResponseKO.class);
                     }
@@ -106,7 +102,7 @@ public class InadClient {
         apiEstrazioniMultipleApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
         return apiEstrazioniMultipleApi.verificaStatoRichiestaElencoDomiciliDigitali(pollingId)
                 .onErrorResume(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage(), throwable, MaskTaxIdInPathUtils.maskTaxIdInPath());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage(), throwable);
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
                         return Mono.error(new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),
@@ -120,7 +116,7 @@ public class InadClient {
         apiEstrazioniMultipleApi.getApiClient().setBearerToken(tokenEntry.getTokenValue());
         return apiEstrazioniMultipleApi.recuperoElencoDomiciliDigitali(pollingId)
                 .onErrorResume(throwable -> {
-                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage(), throwable, MaskTaxIdInPathUtils.maskTaxIdInPath());
+                    log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INAD, throwable.getMessage(), throwable);
                     if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException ex) {
                         return Mono.error(new PnNationalRegistriesException(ex.getMessage(), ex.getStatusCode().value(),
                                 ex.getStatusText(), ex.getHeaders(), ex.getResponseBodyAsByteArray(),

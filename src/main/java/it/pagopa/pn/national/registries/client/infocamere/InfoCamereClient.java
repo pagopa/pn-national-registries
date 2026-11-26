@@ -28,7 +28,6 @@ import reactor.core.publisher.Mono;
 import reactor.util.retry.Retry;
 
 import java.nio.charset.Charset;
-import java.util.Optional;
 import java.util.function.Consumer;
 
 import static it.pagopa.pn.national.registries.constant.ProcessStatus.*;
@@ -195,13 +194,10 @@ public class InfoCamereClient {
 
     private @NotNull Consumer<Throwable> handleErrorCall() {
         return throwable -> {
-            String maskedErrorMessage = Optional.ofNullable(throwable.getMessage())
-                    .map(MaskTaxIdInPathUtils.maskTaxIdInPath())
-                    .orElse("Unknown error");
             if (!shouldRetry(throwable) && throwable instanceof WebClientResponseException e) {
                 log.info(TRAKING_ID + ": {}", e.getHeaders().getFirst(TRAKING_ID));
                 log.logInvokationResultDownstreamFailed(PnLogger.EXTERNAL_SERVICES.INFO_CAMERE, e.getMessage(), throwable, MaskTaxIdInPathUtils.maskTaxIdInPath());
-                throw new PnNationalRegistriesException(maskedErrorMessage, e.getStatusCode().value(),
+                throw new PnNationalRegistriesException(e.getMessage(), e.getStatusCode().value(),
                         e.getStatusText(), e.getHeaders(), e.getResponseBodyAsByteArray(),
                         Charset.defaultCharset(), InfocamereResponseKO.class);
             } else {

@@ -11,7 +11,8 @@ class MaskTaxIdInPathUtilsTest {
     @CsvSource({
             "/extract/12345?,/extract/***?",
             "/sede/12345?,/sede/***?",
-            "/listaLegaleRappresentante/TESTCF?,/listaLegaleRappresentante/***?"
+            "/listaLegaleRappresentante/TESTCF?,/listaLegaleRappresentante/***?",
+            "/extract/DDDDDD,/extract/***"
     })
     void testMaskTaxIdInPath(String message, String expected) {
         String actual = MaskTaxIdInPathUtils.maskTaxIdInPath().apply(message);
