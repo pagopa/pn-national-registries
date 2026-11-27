@@ -2,49 +2,53 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: Some storage with input and output
 
 Parameters:
+  # Deployment and nested CloudFormation stacks
   ProjectName:
     Type: String
-    Description: Nome dell'ambiente destinazione
+    Description: 'Deployment prefix used to name resources'
+
+  Version:
+    Type: String
+    Description: 'Source revision identifier for tracking the deployed version.'
 
   # Unused but required by CD pipeline
   MicroserviceNumber:
     Type: Number
-    Description: An unique number that identify the microservice inside the ECS cluster.
+    Description: 'Microservice identifier required by the deployment pipeline but not used by storage resources.'
 
-  # Unused but required by CD pipeline
+  # Required by CD pipeline and used by the nested log group and queue stacks
   TemplateBucketBaseUrl:
     Type: String
-    Description: URL da cui caricare i frammenti di template di infrastruttura
-  
-  Version:
+    Description: 'Base URL of the S3 bucket hosting the nested CloudFormation templates.'
+
+  # Log retention, forwarding and queue alarms
+  EnableDownstreamSubscriptionFilter:
     Type: String
-    Description: 'keep track of used projects commitIds'
+    Default: false
+    Description: 'Whether to enable the CloudWatch Logs subscription that forwards logs to Kinesis.'
+    AllowedValues:
+      - true
+      - false
 
   LogsKinesisSourceStreamArn:
     Type: String
-    Description: 'Where to send Logs'
+    Description: 'ARN of the Kinesis stream that receives logs when the downstream subscription is enabled.'
 
   LogRetention:
     Type: Number
     Default: 14
+    Description: 'Number of days CloudWatch Logs retains events in the microservice log group.'
 
   AlarmSNSTopicName:
     Type: String
-
-  EnableDownstreamSubscriptionFilter:
-    Type: String
-    Default: false
-    Description: Enable downstream subscription filter
-    AllowedValues:
-      - true
-      - false
+    Description: 'Name of the SNS topic notified by the SQS queue alarms.'
 
 Resources:
   ###      KEY PAIR PER CREARE JWT NECESSARIO PER ACCEDERE AI SERVIZI M2M DI PDND    ###
   ###   La chiave viene impiegata per firmare il client assertion che serve          ###
   ###   per richedere a PDND il JWT da utilizzare per invocare i servizi M2M di PDND ###
   ######################################################################################
-  PnBatchRequestEncryptKey:
+  BatchRequestEncryptKey:
     Type: 'AWS::KMS::Key'
     DeletionPolicy: Retain
     UpdateReplacePolicy: Retain
@@ -252,13 +256,13 @@ Resources:
         Enabled: true
       BillingMode: "PAY_PER_REQUEST"
       SSESpecification:
-        KMSMasterKeyId: !Ref PnBatchRequestEncryptKey
+        KMSMasterKeyId: !Ref BatchRequestEncryptKey
         SSEEnabled: true
         SSEType: KMS
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true           
 
-  PnNationalRegistriesRequestsTable:
+  RequestsTable:
     Type: AWS::DynamoDB::Table
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
@@ -304,7 +308,7 @@ Resources:
         Enabled: true
       BillingMode: "PAY_PER_REQUEST"
       SSESpecification:
-        KMSMasterKeyId: !Ref PnBatchRequestEncryptKey
+        KMSMasterKeyId: !Ref BatchRequestEncryptKey
         SSEEnabled: true
         SSEType: KMS
       PointInTimeRecoverySpecification:
@@ -357,7 +361,7 @@ Resources:
       PointInTimeRecoverySpecification:
         PointInTimeRecoveryEnabled: true
 
-  PnNationalRegistriesBatchesTable:
+  BatchesTable:
     Type: AWS::DynamoDB::Table
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
@@ -395,7 +399,7 @@ Resources:
       StreamSpecification:
         StreamViewType: NEW_AND_OLD_IMAGES
 
-  PnNationalRegistriesLogGroup:
+  LogGroup:
     Type: AWS::CloudFormation::Stack
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain 
@@ -407,7 +411,7 @@ Resources:
         LogsKinesisSourceStreamArn: !Ref LogsKinesisSourceStreamArn
         LogEnableDownstreamSubscriptionFilter: !Ref EnableDownstreamSubscriptionFilter
 
-  PnNationalRegistriesCertificateDLQ:
+  CertificateDLQ:
     Type: AWS::CloudFormation::Stack
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain    
@@ -422,7 +426,7 @@ Resources:
 
   # Coda per interna per memorizzare richieste al gateway
   # NB: usati i valori di default per: DelaySeconds, DeadLetterQueueName, MessageRetentionPeriod, MaxReceiveCount, DeadLetterMessageRetentionPeriod,
-  PnNationalRegistryGatewayInputsQueue:
+  GatewayInputsQueue:
     Type: AWS::CloudFormation::Stack
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
@@ -435,7 +439,7 @@ Resources:
         MaxReceiveCount: 10
         DelaySeconds: 1
 
-  PnNationalRegistriesPollingQueue:
+  PollingQueue:
     Type: AWS::CloudFormation::Stack
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
@@ -452,7 +456,7 @@ Resources:
         DelaySeconds: 1
         VisibilityTimeout: 300
 
-  PnNationalRegistriesGatewayResponsesQueue:
+  GatewayResponsesQueue:
     Type: AWS::CloudFormation::Stack
     UpdateReplacePolicy: Retain
     DeletionPolicy: Retain
@@ -466,9 +470,9 @@ Resources:
 
 #Necessario a causa di bug script deploy
 Outputs:
-  PnBatchRequestEncryptKeyARN:
-    Description: PnBatchRequestEncryptKeyARN
-    Value: !Sub '${PnBatchRequestEncryptKey.Arn}'
+  BatchRequestEncryptKeyARN:
+    Description: BatchRequestEncryptKeyARN
+    Value: !Sub '${BatchRequestEncryptKey.Arn}'
   # AnprPDNDSessionTokenSigningKeyARN:
   #   Description: AnprPDNDSessionTokenSigningKeyARN
   #   Value: !Sub '${AnprPDNDSessionTokenSigningKey.Arn}'
@@ -489,6 +493,7 @@ Outputs:
   #   Value: !Sub '${InfoCamereSigningKey.Arn}'
   # InfoCamereSigningKeyId:
   #   Value: !Ref InfoCamereSigningKey
+
   CounterTableArn:
     Description: ARN Dynamo Name used by application to access the key-value store of CounterTable
     Value: !Sub '${CounterTable.Arn}'
@@ -504,55 +509,55 @@ Outputs:
   ShedLockTableName:
     Description: Name of the ShedLockTable
     Value: !Ref ShedLockTable
-  PnNationalRegistriesRequestsTableArn:
-    Description: ARM Dynamo Name used by application to access the key-value store of PnNationalRegistriesRequestsTable
-    Value: !Sub '${PnNationalRegistriesRequestsTable.Arn}'
-  PnNationalRegistriesRequestsTableName:
-    Description: Name of the PnNationalRegistriesRequestsTable
-    Value: !Ref PnNationalRegistriesRequestsTable
-  PnNationalRegistriesRequestsTableStreamArn:
-    Value: !GetAtt PnNationalRegistriesRequestsTable.StreamArn
+  RequestsTableArn:
+    Description: ARM Dynamo Name used by application to access the key-value store of RequestsTable
+    Value: !Sub '${RequestsTable.Arn}'
+  RequestsTableName:
+    Description: Name of the RequestsTable
+    Value: !Ref RequestsTable
+  RequestsTableStreamArn:
+    Value: !GetAtt RequestsTable.StreamArn
+
   # NationalRegistriesBatches Table
-  PnNationalRegistriesBatchesTableArn:
-    Value: !Sub '${PnNationalRegistriesBatchesTable.Arn}'
-  PnNationalRegistriesBatchesTableName:
-    Value: !Ref PnNationalRegistriesBatchesTable
-  PnNationalRegistriesBatchesTableStreamArn:
-    Value: !GetAtt PnNationalRegistriesBatchesTable.StreamArn
+  BatchesTableArn:
+    Value: !Sub '${BatchesTable.Arn}'
+  BatchesTableName:
+    Value: !Ref BatchesTable
+  BatchesTableStreamArn:
+    Value: !GetAtt BatchesTable.StreamArn
 
   # Log group exports
-  EcsLogGroup:
-    Value: !GetAtt PnNationalRegistriesLogGroup.Outputs.LogGroupName
-
+  LogGroup:
+    Value: !GetAtt LogGroup.Outputs.LogGroupName
 
   # National Registries Certificate renewal alarm DLQ
-  PnNationalRegistriesCertificateDLQName:
-    Value: !GetAtt PnNationalRegistriesCertificateDLQ.Outputs.QueueName
-  PnNationalRegistriesCertificateDLQURL:
-    Value: !GetAtt PnNationalRegistriesCertificateDLQ.Outputs.QueueURL
-  PnNationalRegistriesCertificateDLQARN:
-    Value: !GetAtt PnNationalRegistriesCertificateDLQ.Outputs.QueueARN
-  PnNationalRegistriesCertificateDLQAlarmARN:
-    Value: !GetAtt PnNationalRegistriesCertificateDLQ.Outputs.SqsDLQAlarmArn
+  CertificateDLQName:
+    Value: !GetAtt CertificateDLQ.Outputs.QueueName
+  CertificateDLQURL:
+    Value: !GetAtt CertificateDLQ.Outputs.QueueURL
+  CertificateDLQARN:
+    Value: !GetAtt CertificateDLQ.Outputs.QueueARN
+  CertificateDLQAlarmARN:
+    Value: !GetAtt CertificateDLQ.Outputs.SqsDLQAlarmArn
 
   # PnNationalRegistryGatewayInputs Queue
-  NationalRegistryGatewayInputsQueueName:
-    Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.QueueName
-  NationalRegistryGatewayInputsQueueARN:
-    Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.QueueARN
-  NationalRegistryGatewayInputsDLQName:
-    Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueName
-  PnNationalRegistryGatewayInputsDLQURL:
-    Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueURL
-  NationalRegistryGatewayInputsDLQARN:
-    Value: !GetAtt PnNationalRegistryGatewayInputsQueue.Outputs.DeadLetterQueueARN
+  GatewayInputsQueueName:
+    Value: !GetAtt GatewayInputsQueue.Outputs.QueueName
+  GatewayInputsQueueARN:
+    Value: !GetAtt GatewayInputsQueue.Outputs.QueueARN
+  GatewayInputsDLQName:
+    Value: !GetAtt GatewayInputsQueue.Outputs.DeadLetterQueueName
+  GatewayInputsDLQURL:
+    Value: !GetAtt GatewayInputsQueue.Outputs.DeadLetterQueueURL
+  GatewayInputsDLQARN:
+    Value: !GetAtt GatewayInputsQueue.Outputs.DeadLetterQueueARN
 
   # PnNationalRegistriesPolling Queue
-  NationalRegistriesPollingQueueName:
-    Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueName
-  NationalRegistriesPollingQueueARN:
-    Value: !GetAtt PnNationalRegistriesPollingQueue.Outputs.QueueARN
-  NationalRegistriesGatewayResponsesQueueName:
-    Value: !GetAtt PnNationalRegistriesGatewayResponsesQueue.Outputs.QueueName
-  NationalRegistriesGatewayResponsesQueueARN:
-    Value: !GetAtt PnNationalRegistriesGatewayResponsesQueue.Outputs.QueueARN
+  PollingQueueName:
+    Value: !GetAtt PollingQueue.Outputs.QueueName
+  PollingQueueARN:
+    Value: !GetAtt PollingQueue.Outputs.QueueARN
+  ResponsesQueueName:
+    Value: !GetAtt GatewayResponsesQueue.Outputs.QueueName
+  ResponsesQueueARN:
+    Value: !GetAtt GatewayResponsesQueue.Outputs.QueueARN

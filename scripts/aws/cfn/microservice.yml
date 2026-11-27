@@ -5,532 +5,38 @@ Transform:
   - UpdateDeploymentTransform
 
 Parameters:
-  NationalRegistriesPipeWindowSize:
-    Type: Number
-    Default: 30
-    Description: window size of national registries pipe (sqs to sqs)
-
-  NationalRegistriesPipeBatchSize:
-    Type: Number
-    Default: 2
-    Description: events batch size of national registries pipe (sqs to sqs)
-
-  NationalRegistryGatewayOutputsQueueName:
-    Type: String
-    Description: 'The name of the queue'
-
-  NationalRegistryGatewayOutputsQueueARN:
-    Type: String
-    Description: 'Identify the resource that the policy applies to.'
-
-  NationalRegistriesGatewayResponsesQueueARN:
-    Type: String
-    Description: 'Identify the resource that the policy applies to.'
-
-  NationalRegistriesGatewayResponsesQueueName:
-    Type: String
-    Description: 'The name of the queue of gateway Response'
-
+  # Deployment and ECS task configuration
   ProjectName:
     Type: String
-    Description: 'Usually pn can be pnXYZ where XYZ are the feature number, useful to create
-      experimental environments without crash official development environment'
-  
-  AlarmSNSTopicArn:
-    Type: String
-    Description: ARN of alarm topic
+    Description: 'Deployment prefix used to name resources'
 
-  LogsKinesisSourceStreamArn:
+  EnvironmentType:
     Type: String
-    Description: 'Kinesis stream that receive logs'
+    Description: 'Environment identifier passed to the service'
 
-  ContainerImageUri:
+  Version:
     Type: String
-    Description: 'Exact container image URI with full repository and image digest'
-
-  MicroserviceNumber:
-    Type: Number
-    Description: 'Disambiguation useful for load balancer rules'
+    Description: 'Source revision identifier for tracking the deployed version.'
 
   TemplateBucketBaseUrl:
     Type: String
-    Description: 'The S3 bucket from which to fetch the templates used by this stack.'
+    Description: 'Base URL of the S3 bucket hosting the nested CloudFormation templates.'
 
   ECSClusterName:
     Type: String
-    Description: 'The name of the ECS cluster where the microservice is going to be deployed'
+    Description: 'Name of the ECS cluster that runs the microservice.'
 
-  SubnetsIds:
+  ContainerImageUri:
     Type: String
-    Description: 'subnets ids comma separated list. Where to deploy the microservice'
+    Description: 'Full URI of the container image, including its repository and digest.'
 
-  VpcEgressSubnetsIds:
+  CpuArchitecture:
     Type: String
-    Description: subnets where to install PN-CORE
-
-  VpcId:
-    Type: String
-    Description: 'VpcId where the microservice is going to be deployed'
-
-  SelcpgApiDnsName:
-    Type: String
-    Description: 'The DNS name used for SELC-PG rest API'
-
-  AlbSecurityGroup:
-    Type: String
-    Description: "Application load balancer security group"
-
-  EcsDefaultSecurityGroup:
-    Type: String
-    Description: 'Default security group required by infrastructure'
-
-  ApplicationLoadBalancerListenerArn:
-    Type: String
-    Description: 'Load balancer listener where HTTP endpoints is going to be registered'
-
-  ApplicationLoadBalancerDomain:
-    Type: String
-    Description: 'Base URL of the load balancer where the service is going to be reachable'
-
-  NetworkLoadBalancerLink:
-    Type: String
-    Description: 'network load balancer link for API-GW'
-  
-  Version:
-    Type: String
-    Description: 'keep track of used projects commitIds'
-
-  CustomRetryMaxAttempts:
-    Default: 3
-    Type: Number
-    Description: 'Max number of retry attempts for clients with custom retry behaviour'
-
-  IPASecret:
-    Type: String
-    Description: 'IPA SecretName'
-
-  IPABaseURL:
-    Type: String
-    Description: 'IPA Base URL'
-
-  CodecMemorySize:
-    Type: String
-    Description: 'Memory size reserved to buffer (ex. of accepted values 4MB / 4000000)'
-
-  PDNDBaseURL:
-    Type: String
-    Description: 'PDND Base URL'
-
-  ANPRBaseURL:
-    Type: String
-    Description: 'ANPR Base URL'
-
-  AdELegalBaseURL:
-    Type: String
-    Description: 'Agenzia Entrate Legale Rappresentante Base URL'
-
-  AdECheckCfBaseURL:
-    Type: String
-    Description: 'Agenzia Entrate Check CF Base URL'
-
-  INADBaseURL:
-    Type: String
-    Description: 'INAD Base URL'
-
-  InfoCamereBaseURL:
-    Type: String
-    Description: 'InfoCamere Base URL'
-
-  InfoCamereClientId:
-    Type: String
-    Description: 'InfoCamere Client ID'
-
-  # Parametro obbligatorio (Nome del parametro)
-  AdESSL:
-    Type: String
-    Description: 'AdE cert parameterName'
-
-  AdELegalTrustSecret:
-    Type: String
-    Description: 'SSL trusted cert AdE SecretName'
-
-  AdELegalNameId:
-    Type: String
-    Description: 'AdE Legal NameID'
-
-  AdECheckCfTrustSecret:
-    Type: String
-    Description: 'SSL trusted cert CheckCF SecretName'
-
-  AdESSLSecret:
-    Type: String
-
-  AnprTrustSecret:
-    Type: String
-    Description: 'SSL trusted cert ANPR SecretName'
-
-  # Parametro obbligatorio (ARN del secret)
-  PDNDANPRSecret:
-    Type: String
-    Description: 'PDND ANPR Client assertion claims'
-
-  # Parametro obbligatorio (ARN del secret)
-  PDNDAdECheckCfSecret:
-    Type: String
-    Description: 'PDND CheckCf Client assertion claims'
-
-  # Parametro obbligatorio (ARN del secret)
-  PDNDInadSecret:
-    Type: String
-    Description: 'PDND INAD Client assertion claims'
-
-  # Parametro obbligatorio (Nome del parametro su parameterStore)
-  InfoCamereAuth:
-    Type: String
-    Description: 'InfoCamere auth cert parameter name'
-
-  SecretAndSSMPrefix:
-    Type: String
-    Default: pn-national-registries
-    Description: 'Secret and Parameter name prefix'
-
-  PnBatchRequestEncryptKeyARN:
-    Type: String
-    Description: 'ARN Key DynamoDB batchRequest table'
-
-  CounterTableArn:
-    Type: String
-    Description: 'ARN of DynamoDB table containing eservice counter information'
-
-  BatchRequestTableArn:
-    Type: String
-    Description: 'ARN of DynamoDB table BatchRequest'
-
-  BatchPollingTableArn:
-    Type: String
-    Description: 'ARN of DynamoDB table BatchPolling'
-
-  ShedLockTableName:
-    Type: String
-    Description: 'Name of DynamoDB table used for implementing distributed locks'
-
-  ShedLockTableArn:
-    Type: String
-    Description: 'ARN of DynamoDB table ShedLock'
-
-  PnNationalRegistriesRequestsTableArn:
-    Type: String
-    Description: 'ARN of DynamoDB table Requests'
-
-  PnNationalRegistriesRequestsTableName:
-    Type: String
-    Description: 'Name of DynamoDB table Requests'
-
-  PnNationalRegistriesRequestsTableStreamArn:
-    Type: String
-    Description: 'ARN of DynamoDB Stream for Requests table (StreamViewType NEW_AND_OLD_IMAGES)'
-
-  PnNationalRegistriesBatchesTableArn:
-    Type: String
-    Description: 'ARN of DynamoDB table NationalRegistriesBatches'
-
-  PnNationalRegistriesBatchesTableName:
-    Type: String
-    Description: Name of DynamoDB table used for storing information related to NationalRegistriesBatches
-
-  PnNationalRegistriesBatchesTableStreamArn:
-    Type: String
-    Description: 'ARN of DynamoDB Stream for Batches table (StreamViewType NEW_AND_OLD_IMAGES)'
-
-  PnCxIdValidationEnabled:
-    Type: String
+    Default: 'ARM'
+    Description: 'CPU architecture of the Fargate tasks (ARM or AMD).'
     AllowedValues:
-      - true
-      - false
-    Description: 'Validazione del pn-national-registries cx id'
-
-  PnNationalRegistriesQueryLimit:
-    Type: Number
-    Description: 'Query limit for National Registries Tables'
-    Default: 1000
-
-  PnNationalRegistriesTtl:
-    Type: Number
-    Description: 'batch TTL'
-    Default: 1209600
-
-  PnNationalRegistriesInipecBatchRequestDelay:
-    Type: Number
-    Description: 'IniPEC batch request delay'
-    Default: 5000
-
-  PnNationalRegistriesInipecBatchRequestLockAtMost:
-    Type: Number
-    Description: 'IniPEC batch request lock at most'
-    Default: 27000
-
-  PnNationalRegistriesInipecBatchRequestLockAtLeast:
-    Type: Number
-    Description: 'IniPEC batch request lock at least'
-    Default: 22000
-
-  PnNationalRegistriesInipecBatchRequestRecoveryDelay:
-    Type: Number
-    Description: 'IniPEC batch request recovery delay'
-    Default: 30000
-
-  PnNationalRegistriesInipecBatchRequestRecoveryLockAtMost:
-    Type: Number
-    Description: 'IniPEC batch request recovery lock at most'
-    Default: 30000
-
-  PnNationalRegistriesInipecBatchRequestRecoveryLockAtLeast:
-    Type: Number
-    Description: 'IniPEC batch request recovery lock at least'
-    Default: 1000
-
-  PnNationalRegistriesInipecBatchRequestRecoveryAfter:
-    Type: Number
-    Description: 'IniPEC batch request recovery after'
-    Default: 3600
-
-  PnNationalRegistriesInipecBatchRequestMaxRetry:
-    Type: Number
-    Description: 'IniPEC batch request max retry'
-    Default: 3
-
-  PnNationalRegistriesInipecBatchPollingDelay:
-    Type: Number
-    Description: 'IniPEC batch polling delay'
-    Default: 30000
-
-  PnNationalRegistriesInipecBatchPollingLockAtMost:
-    Type: Number
-    Description: 'IniPEC batch polling lock at most'
-    Default: 30000
-
-  PnNationalRegistriesInipecBatchPollingLockAtLeast:
-    Type: Number
-    Description: 'IniPEC batch polling lock at least'
-    Default: 1000
-
-  PnNationalRegistriesInipecBatchPollingRecoveryDelay:
-    Type: Number
-    Description: 'IniPEC batch polling recovery delay'
-    Default: 30000
-
-  PnNationalRegistriesInipecBatchPollingRecoveryLockAtMost:
-    Type: Number
-    Description: 'IniPEC batch polling recovery lock at most'
-    Default: 30000
-
-  PnNationalRegistriesInipecBatchPollingRecoveryLockAtLeast:
-    Type: Number
-    Description: 'IniPEC batch polling recovery lock at least'
-    Default: 1000
-
-  PnNationalRegistriesInipecBatchPollingRecoveryAfter:
-    Type: Number
-    Description: 'IniPEC batch polling recovery after'
-    Default: 3600
-
-  PnNationalRegistriesInipecBatchPollingMaxRetry:
-    Type: Number
-    Description: 'IniPEC batch polling max retry'
-    Default: 3
-
-  PnNationalRegistriesInipecBatchPollingInProgressMaxRetry:
-    Type: Number
-    Description: 'IniPEC batch polling in progress max retry'
-    Default: 24
-
-  PnNationalRegistriesInipecMaxBatchRequestSize:
-    Type: Number
-    Description: 'IniPEC batch request max size'
-    Default: 100
-
-  PnNationalRegistriesInipecBatchSqsRecoveryDelay:
-    Type: Number
-    Description: 'IniPEC batch SQS recovery delay'
-    Default: 30000
-
-  PnNationalRegistriesInipecBatchSqsRecoveryLockAtMost:
-    Type: Number
-    Description: 'IniPEC batch SQS recovery lock at most'
-    Default: 30000
-
-  PnNationalRegistriesInipecBatchSqsRecoveryLockAtLeast:
-    Type: Number
-    Description: 'IniPEC batch SQS recovery lock at least'
-    Default: 1000
-
-  EcsLogGroup:
-    Type: String
-    Description: ECS log group name
-
-  PnNationalRegistriesInipecPollingFirstAttemptDelaySecondsPerCf:
-    Type: Number
-    Description: 'IniPEC polling per-CF delay in seconds for the first attempt'
-    Default: 0.085
-
-  PnNationalRegistriesInipecPollingFirstAttemptFixedDelaySeconds:
-    Type: Number
-    Description: 'IniPEC polling fixed delay in seconds for the first attempt'
-    Default: 300
-
-  PnNationalRegistriesInipecPollingErrorRetryAfter:
-    Type: Number
-    Description: 'IniPEC polling retry-after delay in seconds'
-    Default: 3600
-
-  PnNationalRegistriesInipecPollingInProgressRetryAfter:
-    Type: Number
-    Description: 'IniPEC polling in-progress retry-after delay in seconds'
-    Default: 3600
-
-  PnNationalRegistriesInadRequestRetryAfter:
-    Type: Number
-    Description: 'Inad request retry-after delay in seconds'
-    Default: 3600
-
-  PnNationalRegistriesInadMaxBatchRequestSize:
-    Type: Number
-    Description: 'INAD maximum batch request size'
-    Default: 1000
-
-  PnNationalRegistriesInadOldestRequestMaxWaitingSeconds:
-    Type: Number
-    Description: 'INAD oldest request maximum waiting time in seconds'
-    Default: 300
-
-  PnNationalRegistriesInadBatchRequestDelay:
-    Type: Number
-    Description: 'INAD batch request delay'
-    Default: 5000
-
-  PnNationalRegistriesInadBatchRequestLockAtMost:
-    Type: Number
-    Description: 'INAD batch request lock at most'
-    Default: 27000
-
-  PnNationalRegistriesInadBatchRequestLockAtLeast:
-    Type: Number
-    Description: 'INAD batch request lock at least'
-    Default: 22000
-
-  PnNationalRegistriesInadBatchRequestMaxRetry:
-    Type: Number
-    Description: 'Inad batch request max retry'
-    Default: 3
-
-  PnNationalRegistriesPollingDelay:
-    Type: Number
-    Description: 'INAD batch polling delay'
-    Default: 30000
-
-  PnNationalRegistriesPollingLockAtMost:
-    Type: Number
-    Description: 'INAD batch polling lock at most'
-    Default: 30000
-
-  PnNationalRegistriesPollingLockAtLeast:
-    Type: Number
-    Description: 'INAD batch polling lock at least'
-    Default: 1000
-
-  PnNationalRegistriesInadPollingFirstAttemptDelaySecondsPerCf:
-    Type: Number
-    Description: 'INAD polling per-CF delay in seconds for the first attempt'
-    Default: 0.085
-
-  PnNationalRegistriesInadPollingFirstAttemptFixedDelaySeconds:
-    Type: Number
-    Description: 'INAD polling fixed delay in seconds for the first attempt'
-    Default: 300
-
-  PnNationalRegistriesInadPollingErrorRetryAfter:
-    Type: Number
-    Description: 'INAD polling retry-after delay in seconds'
-    Default: 3600
-
-  PnNationalRegistriesInadPollingInProgressRetryAfter:
-    Type: Number
-    Description: 'INAD polling in-progress retry-after delay in seconds'
-    Default: 3600
-
-  PnNationalRegistriesInipecRequestRetryAfter:
-    Type: Number
-    Description: 'INIPEC request retry-after delay in seconds'
-    Default: 3600
-
-  PnNationalRegistriesInadBatchPollingInProgressMaxRetry:
-    Type: Number
-    Description: 'INAD batch polling in-progress maximum retry count'
-    Default: 24
-
-  PnNationalRegistriesInadBatchPollingMaxRetry:
-    Type: Number
-    Description: 'INAD batch polling maximum retry count'
-    Default: 3
-
-  # Heath Check parameters
-  HealthCheckInterval:
-    Description: Seconds between two health check
-    Type: Number
-    Default: 60
-
-  HealthCheckTimeout:
-    Description: health check timeout seconds
-    Type: Number
-    Default: 15
-
-  HealthyThresholdCount:
-    Description: |
-      The number of consecutive health checks successes required before considering 
-      an unhealthy target healthy.
-    Type: Number
-    Default: 5
-
-  UnhealthyThresholdCount:
-    Description: |
-      The number of consecutive health check failures required before considering a target unhealthy.
-    Type: Number
-    Default: 2
-
-  HealthCheckPath:
-    Type: String
-    Default: '/actuator/health'
-
-  # Logging parameters
-  WireTapLogActivation:
-    Type: String
-    Default: false
-    Description: Activation of wire logs
-    AllowedValues:
-      - true
-      - false
-
-  PnCronAnalyzer:
-    Type: String
-    Default: '-'
-    Description: Cron for which you send the metric to CloudWatch
-
-  MetricFormatType:
-    Type: String
-    Description: 'Metric format type'
-    Default: 'EMF'
-
-  # EFS parameters
-  FargateEFSFileSystemID:
-    Type: String
-    Description: "EFS Filesystem"
-
-  MountEfs:
-    Type: String
-    Default: false
-    AllowedValues:
-      - "true"
-      - "false"
+      - 'ARM'
+      - 'AMD'
 
   # Instance parameters
   # 256 (.25 vCPU) - Available memory values: 0.5GB, 1GB, 2GB
@@ -541,7 +47,7 @@ Parameters:
   CpuValue:
     Type: Number
     Default: 1024
-    Description: Fargate virtual CPU quantity 1024 equals one vCPU
+    Description: 'CPU units reserved for each Fargate task (1024 units equal one vCPU).'
 
   # 0.5GB, 1GB, 2GB - Available cpu values: 256 (.25 vCPU)
   # 1GB, 2GB, 3GB, 4GB - Available cpu values: 512 (.5 vCPU)
@@ -551,152 +57,657 @@ Parameters:
   MemoryAmount:
     Type: String
     Default: 2GB
-    Description: memory amount reserved to the task pod.
+    Description: 'Memory reserved for each Fargate task; must be compatible with the selected CPU allocation.'
     AllowedValues: [ 2GB, 4GB, 6GB, 8GB ]
-
-  # Autoscaling parameters
-  AutoscalingCheckPeriod:
-    Default: 60
-    Type: Number
-    Description: minimum autoscaling number of tasks\
-
-  AutoscalingDataPointN:
-    Default: 1
-    Type: Number
-    Description: activate when N datapoint on M
-
-  AutoscalingDataPointM:
-    Default: 1
-    Type: Number
-    Description: activate when N datapoint on M
-
-  AutoscalingThreshold:
-    Default: 70
-    Type: String
-
-  MinTasksNumber:
-    Default: 1
-    Type: Number
-    Description: minimum autoscaling number of tasks
-
-  MaxTasksNumber:
-    Default: 6
-    Type: Number
-    Description: maximum autoscaling number of tasks 
-
-  LogAlarmStrategy:
-    Type: String
-    Default: 'FATAL'
-
-  # Certificate renewal
-  InfocamereFQDN:
-    Type: String
-    Description: infocamere.client.<codice-ambiente>.notifichedigitali.it
-
-  CertificateRenewalEmail:
-    Type: String
-    Default: 'alarm@notifichedigitali.it' # aggiornare
-
-  InfoCamereSigningKeyAlias:
-    Type: String
-    Default: pn-national-registries-infocamere-signing-key-alias
-
-  AdeFQDN:
-    Type: String
-    Description: ade-api.client.<codice-ambiente>.notifichedigitali.it
-
-  PnNationalRegistriesCertificateDLQARN:
-    Type: String
-
-  PnNationalRegistriesCertificateDLQURL:  
-    Type: String
-
-  EnvironmentType:
-    Type: String
-    Description: environment name
-
-  NationalRegistryGatewayInputsQueueName:
-    Type: String
-    Description: 'Name for NationalRegistryGatewayInputs'
-
-  NationalRegistryGatewayInputsQueueARN:
-    Type: String
-    Description: 'ARN for NationalRegistryGatewayInputs'
-
-  NationalRegistryGatewayInputsDLQName:
-    Type: String
-    Description: 'Queue name for NationalRegistryGatewayInputsDLQ'
-
-  NationalRegistryGatewayInputsDLQARN:
-    Type: String
-    Description: 'DLQ ARN for NationalRegistryGatewayInputs'
-
-  NationalRegistriesPollingQueueName:
-    Type: String
-    Description: 'Name for NationalRegistriesPolling'
-
-  NationalRegistriesPollingQueueARN:
-    Type: String
-    Description: 'ARN for NationalRegistriesPolling'
-
-  AddressCompositionMode:
-    Type: String
-    Description: "Mode for address and addressDetail, it can be OLD, FULL, OLD_MINIMAL, MINIMAL"
-    Default: "OLD"
-
-  IniPecConnectionTimeoutMillis:
-    Type: Number
-    Description: 'ConnectionTimeout in millis for InfoCamere PEC api'
-    Default: 3000 # pn-commons default value
-
-  IniPecReadTimeoutMillis:
-    Type: Number
-    Description: 'ReadTimeout in millis for InfoCamere PEC api'
-    Default: 8000 # pn-commons default value
-    
-  IniPecMaxRetryAttempts:
-    Type: Number
-    Description: 'Max retry attempts for InfoCamere PEC api'
-    Default: 3 # pn-commons default value
-    
-  IniPecRetryOnTimeout:
-    Type: String
-    Description: 'Whether retry on timeout errors for InfoCamere PEC api'
-    Default: false
-
-  EnablePfPecFallbackFlow:
-    Type: String
-    Description: 'Enable INIPEC fallback when no PEC address is found in INAD. If disabled, only INAD is used.'
-    AllowedValues:
-      - true
-      - false
-
-  EnableInadMassiveApi:
-    Type: String
-    Description: 'Enable INAD massive API. If disabled, only sync APIs are used.'
-    AllowedValues:
-      - true
-      - false
-
-  EnableOldInipecFlow:
-    Type: String
-    Description: 'Enable INIPEC old workflow. If disabled, the new workflow is used.'
-    AllowedValues:
-      - true
-      - false
-
-  CpuArchitecture:
-    Type: String
-    Default: 'ARM'
-    Description: CPU architecture for the Fargate tasks
-    AllowedValues:
-      - 'ARM'
-      - 'AMD'
 
   JavaToolOptions:
     Type: String
     Default: ''
-    Description: Java tool options for the Fargate tasks
+    Description: 'JVM options passed to the application container through JAVA_TOOL_OPTIONS.'
+
+  MountEfs:
+    Type: String
+    Default: false
+    AllowedValues:
+      - true
+      - false
+    Description: 'Whether to mount the configured EFS file system in the Fargate tasks.'
+
+  FargateEFSFileSystemID:
+    Type: String
+    Description: 'ID of the EFS file system to mount when MountEfs is enabled.'
+
+  # Networking, load balancing and API Gateway
+  VpcId:
+    Type: String
+    Description: 'ID of the VPC hosting the microservice.'
+
+  SubnetsIds:
+    Type: String
+    Description: 'Comma-separated subnet IDs supplied for deployment; this template places ECS tasks using VpcEgressSubnetsIds.'
+
+  VpcEgressSubnetsIds:
+    Type: String
+    Description: 'Comma-separated IDs of the VPC egress subnets where the ECS tasks are deployed.'
+
+  AlbSecurityGroup:
+    Type: String
+    Description: 'ID of the security group associated with the Application Load Balancer.'
+
+  EcsDefaultSecurityGroup:
+    Type: String
+    Description: 'ID of the default security group used by the ECS service.'
+
+  ApplicationLoadBalancerListenerArn:
+    Type: String
+    Description: 'ARN of the ALB listener on which the microservice routing rule is registered.'
+
+  ApplicationLoadBalancerDomain:
+    Type: String
+    Description: 'ALB domain used by the private API Gateway integration to reach the service.'
+
+  MicroserviceNumber:
+    Type: Number
+    Description: 'Priority assigned to the microservice routing rule on the ALB listener.'
+
+  NetworkLoadBalancerLink:
+    Type: String
+    Description: 'VPC link used by API Gateway to reach the private load balancer.'
+
+  SelcpgApiDnsName:
+    Type: String
+    Description: 'DNS name exposed for the SELC-PG REST API.'
+
+  # ALB health checks
+  HealthCheckPath:
+    Type: String
+    Default: '/actuator/health'
+    Description: 'HTTP path probed by the ALB to check the health of each ECS target.'
+
+  HealthCheckInterval:
+    Description: 'Interval between ALB health checks, in seconds.'
+    Type: Number
+    Default: 60
+
+  HealthCheckTimeout:
+    Description: 'Time allowed for a health check response before the probe fails, in seconds.'
+    Type: Number
+    Default: 15
+
+  HealthyThresholdCount:
+    Description: 'Consecutive successful health checks required to mark a target healthy again.'
+    Type: Number
+    Default: 5
+
+  UnhealthyThresholdCount:
+    Description: 'Consecutive failed health checks required to mark a target unhealthy.'
+    Type: Number
+    Default: 2
+
+  # ECS autoscaling
+  MinTasksNumber:
+    Default: 1
+    Type: Number
+    Description: 'Minimum number of ECS tasks maintained by autoscaling.'
+
+  MaxTasksNumber:
+    Default: 6
+    Type: Number
+    Description: 'Maximum number of ECS tasks allowed by autoscaling.'
+
+  AutoscalingCheckPeriod:
+    Default: 60
+    Type: Number
+    Description: 'Period of each autoscaling metric datapoint, in seconds.'
+
+  AutoscalingThreshold:
+    Default: 70
+    Type: String
+    Description: 'Threshold for the metric used by the REST API autoscaling policy.'
+
+  AutoscalingDataPointM:
+    Default: 1
+    Type: Number
+    Description: 'Number of metric datapoints evaluated by the autoscaling alarm.'
+
+  AutoscalingDataPointN:
+    Default: 1
+    Type: Number
+    Description: 'Number of breaching datapoints required to trigger the autoscaling alarm.'
+
+  # Logging, metrics and alarms
+  EcsLogGroup:
+    Type: String
+    Description: 'Name of the CloudWatch Logs group that receives ECS container logs.'
+
+  LogsKinesisSourceStreamArn:
+    Type: String
+    Description: 'ARN of the Kinesis stream that receives CloudWatch logs from API Gateway.'
+
+  LogAlarmStrategy:
+    Type: String
+    Default: 'FATAL'
+    Description: 'Log alarm strategy passed to the ECS deployment template.'
+
+  AlarmSNSTopicArn:
+    Type: String
+    Description: 'ARN of the SNS topic that receives CloudWatch alarm notifications.'
+
+  WireTapLogActivation:
+    Type: String
+    Default: false
+    Description: 'Whether to enable wire-level logging for HTTP clients.'
+    AllowedValues:
+      - true
+      - false
+
+  CronAnalyzer:
+    Type: String
+    Default: '-'
+    Description: 'Cron expression that schedules publication of analyzer metrics to CloudWatch.'
+
+  MetricFormatType:
+    Type: String
+    Description: 'Format used to emit application metrics, such as Embedded Metric Format (EMF).'
+    Default: 'EMF'
+
+  # Shared application settings and PDND
+  EnableCxIdValidation:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+    Description: 'Whether to validate the caller ID (cx-id) on incoming requests.'
+
+  CustomRetryMaxAttempts:
+    Default: 3
+    Type: Number
+    Description: 'Maximum retry attempts for clients that use the custom retry policy.'
+
+  CodecMemorySize:
+    Type: String
+    Description: 'Maximum data buffered in memory by Spring HTTP codecs, for example 4MB or 4000000 bytes.'
+
+  PdndBaseUrl:
+    Type: String
+    Description: 'Base URL of the PDND service used to obtain access tokens for registry APIs.'
+
+  SecretAndSSMPrefix:
+    Type: String
+    Default: pn-national-registries
+    Description: 'Name prefix used to scope access to Secrets Manager secrets and SSM parameters.'
+
+  # INAD - API access, batch submission and polling
+  InadBaseUrl:
+    Type: String
+    Description: 'Base URL of the INAD API for digital domicile lookups.'
+
+  InadPdndSecret:
+    Type: String
+    Description: 'ARN of the Secrets Manager secret containing the PDND client assertion claims for INAD.'
+
+  EnableInadMassiveApi:
+    Type: String
+    Description: 'Whether to use the INAD bulk API; when disabled, INAD lookups use only synchronous APIs.'
+    AllowedValues:
+      - true
+      - false
+
+  EnablePfPecFallbackFlow:
+    Type: String
+    Description: 'Whether to query INIPEC when INAD returns no PEC address for a natural person.'
+    AllowedValues:
+      - true
+      - false
+
+  InadMaxBatchSize:
+    Type: Number
+    Description: 'Maximum number of requests that can be included in an INAD batch submission.'
+    Default: 1000
+
+  InadRequestOldestMaxWaitingSeconds:
+    Type: Number
+    Description: 'Age in seconds at which the oldest queued request can trigger submission of a partially filled INAD batch.'
+    Default: 300
+
+  InadRequestBatchJobDelay:
+    Type: Number
+    Description: 'Delay between executions of the INAD batch submission job, in milliseconds.'
+    Default: 5000
+
+  InadRequestBatchJobLockAtMost:
+    Type: Number
+    Description: 'Maximum duration of the distributed lock for INAD batch submission, in milliseconds.'
+    Default: 27000
+
+  InadRequestBatchJobLockAtLeast:
+    Type: Number
+    Description: 'Minimum duration of the distributed lock for INAD batch submission, in milliseconds.'
+    Default: 22000
+
+  InadRequestMaxRetry:
+    Type: Number
+    Description: 'Maximum retries for a failed INAD batch submission.'
+    Default: 3
+
+  InadRequestRetryAfter:
+    Type: Number
+    Description: 'Delay before retrying a failed INAD batch submission, in seconds.'
+    Default: 3600
+
+  InadPollingDelay:
+    Type: Number
+    Description: 'Configured interval for INAD batch result polling, in milliseconds.'
+    Default: 30000
+
+  InadPollingLockAtMost:
+    Type: Number
+    Description: 'Maximum duration of the distributed lock for INAD batch polling, in milliseconds.'
+    Default: 30000
+
+  InadPollingLockAtLeast:
+    Type: Number
+    Description: 'Minimum duration of the distributed lock for INAD batch polling, in milliseconds.'
+    Default: 1000
+
+  InadPollingFirstAttemptFixedDelaySeconds:
+    Type: Number
+    Description: 'Fixed delay before the first INAD polling attempt, in seconds, before adding the per-tax-code delay.'
+    Default: 300
+
+  InadPollingFirstAttemptDelaySecondsPerCf:
+    Type: Number
+    Description: 'Additional first-poll delay in seconds per tax code in the INAD batch.'
+    Default: 0.085
+
+  InadPollingErrorMaxRetry:
+    Type: Number
+    Description: 'Maximum INAD polling retries after a polling error.'
+    Default: 3
+
+  InadPollingErrorRetryAfter:
+    Type: Number
+    Description: 'Delay before retrying INAD polling after an error, in seconds.'
+    Default: 3600
+
+  InadPollingInProgressMaxRetry:
+    Type: Number
+    Description: 'Maximum INAD polling retries while the batch is still being processed.'
+    Default: 24
+
+  InadPollingInProgressRetryAfter:
+    Type: Number
+    Description: 'Delay before polling an INAD batch that is still being processed, in seconds.'
+    Default: 3600
+
+  # INIPEC / InfoCamere - API access, batch submission, polling and recovery
+  InfoCamereBaseUrl:
+    Type: String
+    Description: 'Base URL of the InfoCamere API used for INIPEC lookups.'
+
+  InfoCamereClientId:
+    Type: String
+    Description: 'Client identifier used to authenticate requests to the InfoCamere API.'
+
+  InfoCamereCertPath:
+    Type: String
+    Description: 'Name of the SSM parameter that stores the InfoCamere client authentication certificate.'
+
+  InfoCamereFqdn:
+    Type: String
+    Description: 'Client FQDN used when generating the InfoCamere certificate.'
+
+  InfoCamereSigningKeyAlias:
+    Type: String
+    Default: pn-national-registries-infocamere-signing-key-alias
+    Description: 'Base KMS signing key alias; the renewal job appends -next for the replacement key.'
+
+  IniPecConnectionTimeoutMillis:
+    Type: Number
+    Description: 'Connection timeout for the InfoCamere PEC API client, in milliseconds.'
+    Default: 3000 # pn-commons default value
+
+  InfoCamereReadTimeoutMillis:
+    Type: Number
+    Description: 'Read timeout for the InfoCamere PEC API client, in milliseconds.'
+    Default: 8000 # pn-commons default value
+
+
+  IniPecMaxRetryAttempts:
+    Type: Number
+    Description: 'Maximum retries for HTTP calls to the InfoCamere PEC API.'
+    Default: 3 # pn-commons default value
+
+
+  IniPecRetryOnTimeout:
+    Type: String
+    Description: 'Whether the InfoCamere PEC API client retries timed-out calls.'
+    Default: false
+
+  EnableOldInipecFlow:
+    Type: String
+    Description: 'Whether to use the legacy INIPEC workflow instead of the new workflow.'
+    AllowedValues:
+      - true
+      - false
+
+  InipecMaxBatchSize:
+    Type: Number
+    Description: 'Maximum number of requests that can be included in an INIPEC batch submission.'
+    Default: 100
+
+  InipecRequestBatchJobDelay:
+    Type: Number
+    Description: 'Delay between executions of the INIPEC batch submission job, in milliseconds.'
+    Default: 5000
+
+  InipecRequestBatchJobLockAtMost:
+    Type: Number
+    Description: 'Maximum duration of the distributed lock for INIPEC batch submission, in milliseconds.'
+    Default: 27000
+
+  InipecRequestBatchJobLockAtLeast:
+    Type: Number
+    Description: 'Minimum duration of the distributed lock for INIPEC batch submission, in milliseconds.'
+    Default: 22000
+
+  InipecRequestMaxRetry:
+    Type: Number
+    Description: 'Maximum retries for a failed INIPEC batch submission.'
+    Default: 3
+
+  InipecRequestRetryAfter:
+    Type: Number
+    Description: 'Delay before retrying a failed INIPEC batch submission, in seconds.'
+    Default: 3600
+
+  InipecRequestRecoveryAfter:
+    Type: Number
+    Description: 'Age at which unfinished INIPEC batch requests become eligible for recovery, in seconds.'
+    Default: 3600
+
+  InipecRequestRecoveryDelay:
+    Type: Number
+    Description: 'Delay between runs of the INIPEC batch request recovery job, in milliseconds.'
+    Default: 30000
+
+  InipecRequestRecoveryLockAtMost:
+    Type: Number
+    Description: 'Maximum duration of the distributed lock for INIPEC request recovery, in milliseconds.'
+    Default: 30000
+
+  InipecRequestRecoveryLockAtLeast:
+    Type: Number
+    Description: 'Minimum duration of the distributed lock for INIPEC request recovery, in milliseconds.'
+    Default: 1000
+
+  InipecPollingDelay:
+    Type: Number
+    Description: 'Delay between executions of the INIPEC batch result polling job, in milliseconds.'
+    Default: 30000
+
+  InipecPollingLockAtMost:
+    Type: Number
+    Description: 'Maximum duration of the distributed lock for INIPEC batch polling, in milliseconds.'
+    Default: 30000
+
+  InipecPollingLockAtLeast:
+    Type: Number
+    Description: 'Minimum duration of the distributed lock for INIPEC batch polling, in milliseconds.'
+    Default: 1000
+
+  InipecPollingFirstAttemptFixedDelaySeconds:
+    Type: Number
+    Description: 'Fixed delay before the first INIPEC polling attempt, in seconds, before adding the per-tax-code delay.'
+    Default: 300
+
+  InipecPollingFirstAttemptDelaySecondsPerCf:
+    Type: Number
+    Description: 'Additional first-poll delay in seconds per tax code in the INIPEC batch.'
+    Default: 0.085
+
+  InipecPollingErrorMaxRetry:
+    Type: Number
+    Description: 'Maximum INIPEC polling retries after a polling error.'
+    Default: 3
+
+  InipecPollingErrorRetryAfter:
+    Type: Number
+    Description: 'Delay before retrying INIPEC polling after an error, in seconds.'
+    Default: 3600
+
+  InipecPollingInProgressMaxRetry:
+    Type: Number
+    Description: 'Maximum INIPEC polling retries while the batch is still being processed.'
+    Default: 24
+
+  InipecPollingInProgressRetryAfter:
+    Type: Number
+    Description: 'Delay before polling an INIPEC batch that is still being processed, in seconds.'
+    Default: 3600
+
+  InipecPollingRecoveryAfter:
+    Type: Number
+    Description: 'Age at which stalled INIPEC polling records become eligible for recovery, in seconds.'
+    Default: 3600
+
+  InipecPollingRecoveryDelay:
+    Type: Number
+    Description: 'Delay between runs of the INIPEC polling recovery job, in milliseconds.'
+    Default: 30000
+
+  InipecPollingRecoveryLockAtMost:
+    Type: Number
+    Description: 'Maximum duration of the distributed lock for INIPEC polling recovery, in milliseconds.'
+    Default: 30000
+
+  InipecPollingRecoveryLockAtLeast:
+    Type: Number
+    Description: 'Minimum duration of the distributed lock for INIPEC polling recovery, in milliseconds.'
+    Default: 1000
+
+  InipecSqsRecoveryDelay:
+    Type: Number
+    Description: 'Delay between runs of the job that recovers INIPEC results not yet sent to SQS, in milliseconds.'
+    Default: 30000
+
+  InipecSqsRecoveryLockAtMost:
+    Type: Number
+    Description: 'Maximum duration of the distributed lock for INIPEC SQS delivery recovery, in milliseconds.'
+    Default: 30000
+
+  InipecSqsRecoveryLockAtLeast:
+    Type: Number
+    Description: 'Minimum duration of the distributed lock for INIPEC SQS delivery recovery, in milliseconds.'
+    Default: 1000
+
+  # ANPR - API access and address composition
+  AnprBaseUrl:
+    Type: String
+    Description: 'Base URL of the ANPR API for residence address lookups.'
+
+  AnprPdndSecret:
+    Type: String
+    Description: 'ARN of the Secrets Manager secret containing the PDND client assertion claims for ANPR.'
+
+  AnprTrustSecret:
+    Type: String
+    Description: 'Name of the Secrets Manager secret containing the trusted TLS certificate for ANPR.'
+
+  AnprAddressCompositionMode:
+    Type: String
+    Description: 'Controls how ANPR populates the address and addressDetail fields (OLD, FULL, OLD_MINIMAL or MINIMAL).'
+    Default: "OLD"
+
+  # Agenzia delle Entrate - legal representative and tax code verification
+  AdeLegalBaseUrl:
+    Type: String
+    Description: 'Base URL of the Agenzia delle Entrate legal representative lookup API.'
+
+  AdeLegalNameId:
+    Type: String
+    Description: 'NameID used when authenticating to the legal representative API.'
+
+  AdeLegalTrustSecret:
+    Type: String
+    Description: 'Name of the Secrets Manager secret containing the trusted TLS certificate for the legal representative API.'
+
+  AdeCheckCfBaseUrl:
+    Type: String
+    Description: 'Base URL of the Agenzia delle Entrate tax code verification API.'
+
+  AdeCheckCfPdndSecret:
+    Type: String
+    Description: 'ARN of the Secrets Manager secret containing the PDND client assertion claims for tax code verification.'
+
+  AdeCheckCfTrustSecret:
+    Type: String
+    Description: 'Name of the Secrets Manager secret containing the trusted TLS certificate for the tax code verification API.'
+
+  AdeSslCertPath:
+    Type: String
+    Description: 'Name of the SSM parameter for the Agenzia delle Entrate client authentication certificate.'
+
+  AdeSslSecret:
+    Type: String
+    Description: 'Base Secrets Manager secret name; the renewal job appends -next to store the replacement private key.'
+
+  AdeFqdn:
+    Type: String
+    Description: 'Client FQDN used when generating the Agenzia delle Entrate certificate.'
+
+  # IPA - API access
+  IpaBaseUrl:
+    Type: String
+    Description: 'Base URL of the IPA API for public administration directory lookups.'
+
+  IpaSecret:
+    Type: String
+    Description: 'Name of the Secrets Manager secret containing the credentials used to access the IPA API.'
+
+  # Shared certificate renewal
+  CertificateRenewalEmail:
+    Type: String
+    Default: 'alarm@notifichedigitali.it' # aggiornare
+    Description: 'Email address passed to the certificate generation jobs for InfoCamere and Agenzia delle Entrate.'
+
+  CertificateDLQARN:
+    Type: String
+    Description: 'ARN of the SQS dead-letter queue for failed certificate renewal event deliveries.'
+
+  CertificateDLQURL:
+    Type: String
+    Description: 'URL of the certificate renewal dead-letter queue, used by its queue policy.'
+
+  # DynamoDB tables, streams and encryption
+  BatchRequestTtl:
+    Type: Number
+    Description: 'TTL in seconds for persisted batch request data.'
+    Default: 1209600
+
+  QueryLimit:
+    Type: Number
+    Description: 'Maximum number of items evaluated by a DynamoDB query on the National Registries tables.'
+    Default: 1000
+
+  CounterTableArn:
+    Type: String
+    Description: 'ARN of the DynamoDB table that stores e-service counters.'
+
+  BatchRequestTableArn:
+    Type: String
+    Description: 'ARN of the DynamoDB table that stores legacy batch request records.'
+
+  BatchPollingTableArn:
+    Type: String
+    Description: 'ARN of the DynamoDB table that tracks legacy batch polling.'
+
+  BatchRequestEncryptKeyARN:
+    Type: String
+    Description: 'ARN of the KMS key used to encrypt and decrypt batch request data.'
+
+  ShedLockTableName:
+    Type: String
+    Description: 'Name of the DynamoDB table used by ShedLock to coordinate scheduled jobs across ECS tasks.'
+
+  ShedLockTableArn:
+    Type: String
+    Description: 'ARN of the DynamoDB table used by ShedLock, for IAM permissions.'
+
+  RequestsTableName:
+    Type: String
+    Description: 'Name of the DynamoDB table that stores individual registry requests and their statuses.'
+
+  RequestsTableArn:
+    Type: String
+    Description: 'ARN of the registry requests table, for IAM permissions.'
+
+  RequestsTableStreamArn:
+    Type: String
+    Description: 'ARN of the registry requests DynamoDB stream, which includes old and new item images.'
+
+  BatchesTableName:
+    Type: String
+    Description: 'Name of the DynamoDB table that stores registry batches and their processing statuses.'
+
+  BatchesTableArn:
+    Type: String
+    Description: 'ARN of the registry batches table, for IAM permissions.'
+
+  BatchesTableStreamArn:
+    Type: String
+    Description: 'ARN of the registry batches DynamoDB stream, which includes old and new item images.'
+
+  # SQS queues and EventBridge Pipe
+  GatewayInputsQueueName:
+    Type: String
+    Description: 'Name of the SQS queue polled by the service for incoming registry requests.'
+
+  GatewayInputsQueueARN:
+    Type: String
+    Description: 'ARN of the incoming registry requests queue'
+
+  GatewayInputsDLQName:
+    Type: String
+    Description: 'Name of the SQS dead-letter queue for registry requests that could not be processed.'
+
+  GatewayInputsDLQARN:
+    Type: String
+    Description: 'ARN of the incoming requests dead-letter queue, also targeted by EventBridge.'
+
+  GatewayOutputsQueueName:
+    Type: String
+    Description: 'Name of the SQS queue where the service publishes gateway output messages.'
+
+  GatewayOutputsQueueARN:
+    Type: String
+    Description: 'ARN of the gateway output queue'
+
+  PollingQueueName:
+    Type: String
+    Description: 'Name of the SQS queue consumed by the service for batch polling messages.'
+
+  PollingQueueARN:
+    Type: String
+    Description: 'ARN of the batch polling queue used as an EventBridge Scheduler target.'
+
+  GatewayResponsesQueueName:
+    Type: String
+    Description: 'Name of the SQS queue where the service publishes responses for the EventBridge Pipe.'
+
+  GatewayResponsesQueueARN:
+    Type: String
+    Description: 'ARN of the SQS response queue that feeds the EventBridge Pipe.'
+
+  PipeBatchSize:
+    Type: Number
+    Default: 2
+    Description: 'Maximum number of SQS messages read per batch by the pipe that forwards responses to the core event bus.'
+
+  PipeWindowSize:
+    Type: Number
+    Default: 30
+    Description: 'Maximum time the response pipe waits to collect a batch of SQS messages, in seconds.'
 
 Resources:
 
@@ -726,93 +737,121 @@ Resources:
         MountEfs: !Ref MountEfs
         WireTapLogActivation: !Ref WireTapLogActivation
         ContainerImageURI: !Sub '${ContainerImageUri}'
+
+        # Infrastructure - runtime and health checks
         ContainerEnvEntry1: !Sub 'AWS_REGIONCODE=${AWS::Region}'
-        ContainerEnvEntry2: !Sub 'PN_NATIONALREGISTRIES_PDNDBASEURL=${PDNDBaseURL}'
-        ContainerEnvEntry3: !Sub 'PN_NATIONAL_REGISTRY_ANPR_BASE_URL=${ANPRBaseURL}'
-        ContainerEnvEntry4: !Sub 'PN_NATIONAL_REGISTRY_ANPR_PDND_CLIENT_SECRET=${PDNDANPRSecret}'
-        ContainerEnvEntry5: !Sub 'PN_NATIONAL_REGISTRY_ADE_AUTH=${AdESSL}'
-        ContainerEnvEntry6: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_BASE_URL=${AdELegalBaseURL}'
-        ContainerEnvEntry7: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_NAME_ID=${AdELegalNameId}'
-        ContainerEnvEntry8: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_BASE_URL=${AdECheckCfBaseURL}'
-        ContainerEnvEntry9: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_PDND_CLIENT_SECRET=${PDNDAdECheckCfSecret}'
-        ContainerEnvEntry10: !Sub 'PN_NATIONALREGISTRIES_INADBASEURL=${INADBaseURL}'
-        ContainerEnvEntry11: !Sub 'PN_NATIONAL_REGISTRY_INAD_PDND_CLIENT_SECRET=${PDNDInadSecret}'
-        ContainerEnvEntry12: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_BASE_URL=${InfoCamereBaseURL}'
-        ContainerEnvEntry13: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_CLIENT_ID=${InfoCamereClientId}'
-        ContainerEnvEntry14: !Sub 'PN_NATIONAL_REGISTRY_INFOCAMERE_AUTH=${InfoCamereAuth}'
-        ContainerEnvEntry15: !Sub 'PN_NATIONALREGISTRIES_TOPIC_OUTPUTQUEUENAME=${NationalRegistryGatewayOutputsQueueName}'
-        ContainerEnvEntry16: !Sub 'PN_NATIONALREGISTRIES_VALCXIDENABLED=${PnCxIdValidationEnabled}'
-        ContainerEnvEntry17: !Sub 'PN_NATIONAL_REGISTRY_IPA_BASE_URL=${IPABaseURL}'
-        ContainerEnvEntry18: !Sub 'PN_NATIONAL_REGISTRY_IPA_SECRET=${IPASecret}'
-        ContainerEnvEntry19: !Sub 'PN_NATIONALREGISTRIES_TTL=${PnNationalRegistriesTtl}'
-        ContainerEnvEntry20: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTDELAY=${PnNationalRegistriesInipecBatchRequestDelay}'
-        ContainerEnvEntry21: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchRequestRecoveryDelay}'
-        ContainerEnvEntry22: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTRECOVERYAFTER=${PnNationalRegistriesInipecBatchRequestRecoveryAfter}'
-        ContainerEnvEntry23: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTMAXRETRY=${PnNationalRegistriesInipecBatchRequestMaxRetry}'
-        ContainerEnvEntry24: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_DELAY=${PnNationalRegistriesInipecBatchPollingDelay}'
-        ContainerEnvEntry25: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchPollingRecoveryDelay}'
-        ContainerEnvEntry26: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_AFTER=${PnNationalRegistriesInipecBatchPollingRecoveryAfter}'
-        ContainerEnvEntry27: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInipecBatchPollingMaxRetry}'
-        ContainerEnvEntry28: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_DELAY=${PnNationalRegistriesInipecBatchSqsRecoveryDelay}'
-        ContainerEnvEntry29: !Sub 'PN_NATIONAL_REGISTRY_ADE_CHECK_CF_TRUST_SECRET=${AdECheckCfTrustSecret}'
-        ContainerEnvEntry30: !Sub 'PN_NATIONAL_REGISTRY_ADE_LEGAL_TRUST_SECRET=${AdELegalTrustSecret}'
-        ContainerEnvEntry31: !Sub 'PN_NATIONAL_REGISTRY_ANPR_TRUST_SECRET=${AnprTrustSecret}'
-        ContainerEnvEntry32: !Sub 'PN_NATIONAL_REGISTRY_ENVIRONMENT_TYPE=${EnvironmentType}'
-        ContainerEnvEntry33: !Sub 'METRIC_FORMAT_TYPE=${MetricFormatType}'
-        ContainerEnvEntry34: !Sub 'PN_NATIONALREGISTRIES_TOPIC_INPUTQUEUENAME=${NationalRegistryGatewayInputsQueueName}'
-        ContainerEnvEntry35: !Sub 'PN_NATIONALREGISTRIES_TOPIC_INPUTDLQQUEUENAME=${NationalRegistryGatewayInputsDLQName}'
-        ContainerEnvEntry36: !Sub 'PN_NATIONAL_REGISTRY_HEALTH_CHECK_PATH=${HealthCheckPath}'
-        ContainerEnvEntry37: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHPOLLINGINPROGRESSMAXRETRY=${PnNationalRegistriesInipecBatchPollingInProgressMaxRetry}'
-        ContainerEnvEntry38: !Sub 'PN_NATIONALREGISTRIES_INIPEC_MAXBATCHREQUESTSIZE=${PnNationalRegistriesInipecMaxBatchRequestSize}'
-        ContainerEnvEntry39: !Sub 'PN_NATIONAL_REGISTRY_CUSTOM_RETRY_MAX_ATTEMPTS=${CustomRetryMaxAttempts}'
-        ContainerEnvEntry40: !Sub 'PN_CRON_ANALYZER=${PnCronAnalyzer}'
-        ContainerEnvEntry41: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
-        ContainerEnvEntry42: !Sub 'SPRING_CODEC_MAXINMEMORYSIZE=${CodecMemorySize}'
-        ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_ENABLEPFPECFALLBACKFLOW=${EnablePfPecFallbackFlow}'
-        ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_QUERYLIMIT=${PnNationalRegistriesQueryLimit}'
-        ContainerEnvEntry45: !Sub 'PN_NATIONALREGISTRIES_DAO_SHEDLOCKTABLENAME=${ShedLockTableName}'
-        ContainerEnvEntry46: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTLOCKATMOST=${PnNationalRegistriesInipecBatchRequestLockAtMost}'
-        ContainerEnvEntry47: !Sub 'PN_NATIONALREGISTRIES_INIPEC_BATCHREQUESTLOCKATLEAST=${PnNationalRegistriesInipecBatchRequestLockAtLeast}'
-        ContainerEnvEntry48: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchPollingLockAtMost}'
-        ContainerEnvEntry49: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchPollingLockAtLeast}'
-        ContainerEnvEntry50: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchRequestRecoveryLockAtMost}'
-        ContainerEnvEntry51: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_REQUEST_RECOVERY_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchRequestRecoveryLockAtLeast}'
-        ContainerEnvEntry52: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchPollingRecoveryLockAtMost}'
-        ContainerEnvEntry53: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_POLLING_RECOVERY_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchPollingRecoveryLockAtLeast}'
-        ContainerEnvEntry54: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_LOCK_AT_MOST=${PnNationalRegistriesInipecBatchSqsRecoveryLockAtMost}'
-        ContainerEnvEntry55: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_BATCH_SQS_RECOVERY_LOCK_AT_LEAST=${PnNationalRegistriesInipecBatchSqsRecoveryLockAtLeast}'
-        ContainerEnvEntry56: !Sub 'PN_NATIONALREGISTRIES_ADDRESSCOMPOSITIONMODE=${AddressCompositionMode}'
-        ContainerEnvEntry57: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_CONNECTION_TIMEOUT_MILLIS=${IniPecConnectionTimeoutMillis}'
-        ContainerEnvEntry58: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_READ_TIMEOUT_MILLIS=${IniPecReadTimeoutMillis}'
-        ContainerEnvEntry59: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_MAX_RETRY_ATTEMPTS=${IniPecMaxRetryAttempts}'
-        ContainerEnvEntry60: !Sub 'PN_NATIONAL_REGISTRY_INIPEC_RETRY_ON_TIMEOUT=${IniPecRetryOnTimeout}'
-        ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${PnNationalRegistriesInipecPollingFirstAttemptDelaySecondsPerCf}'
-        ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${PnNationalRegistriesInipecPollingFirstAttemptFixedDelaySeconds}'
-        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGERRORRETRYAFTER=${PnNationalRegistriesInipecPollingErrorRetryAfter}'
-        ContainerEnvEntry64: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGINPROGRESSRETRYAFTER=${PnNationalRegistriesInipecPollingInProgressRetryAfter}'
-        ContainerEnvEntry65: !Sub 'PN_NATIONALREGISTRIES_INAD_MAXBATCHREQUESTSIZE=${PnNationalRegistriesInadMaxBatchRequestSize}'
-        ContainerEnvEntry66: !Sub 'PN_NATIONALREGISTRIES_INAD_OLDESTREQUESTMAXWAITINGSECONDS=${PnNationalRegistriesInadOldestRequestMaxWaitingSeconds}'
-        ContainerEnvEntry67: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTDELAY=${PnNationalRegistriesInadBatchRequestDelay}'
-        ContainerEnvEntry68: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTLOCKATMOST=${PnNationalRegistriesInadBatchRequestLockAtMost}'
-        ContainerEnvEntry69: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTLOCKATLEAST=${PnNationalRegistriesInadBatchRequestLockAtLeast}'
-        ContainerEnvEntry70: !Sub 'PN_NATIONALREGISTRIES_POLLINGDELAY=${PnNationalRegistriesPollingDelay}'
-        ContainerEnvEntry71: !Sub 'PN_NATIONALREGISTRIES_POLLINGLOCKATMOST=${PnNationalRegistriesPollingLockAtMost}'
-        ContainerEnvEntry72: !Sub 'PN_NATIONALREGISTRIES_POLLINGLOCKATLEAST=${PnNationalRegistriesPollingLockAtLeast}'
-        ContainerEnvEntry73: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${PnNationalRegistriesInadPollingFirstAttemptDelaySecondsPerCf}'
-        ContainerEnvEntry74: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${PnNationalRegistriesInadPollingFirstAttemptFixedDelaySeconds}'
-        ContainerEnvEntry75: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGERRORRETRYAFTER=${PnNationalRegistriesInadPollingErrorRetryAfter}'
-        ContainerEnvEntry76: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGINPROGRESSRETRYAFTER=${PnNationalRegistriesInadPollingInProgressRetryAfter}'
-        ContainerEnvEntry77: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGINPROGRESSMAXRETRY=${PnNationalRegistriesInadBatchPollingInProgressMaxRetry}'
-        ContainerEnvEntry78: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHPOLLINGMAXRETRY=${PnNationalRegistriesInadBatchPollingMaxRetry}'
-        ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_TOPIC_POLLINGQUEUENAME=${NationalRegistriesPollingQueueName}'
-        ContainerEnvEntry80: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${PnNationalRegistriesRequestsTableName}'
-        ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${PnNationalRegistriesBatchesTableName}'
-        ContainerEnvEntry82: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADMASSIVEAPI=${EnableInadMassiveApi}'
-        ContainerEnvEntry83: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRETRYAFTER=${PnNationalRegistriesInipecRequestRetryAfter}'
-        ContainerEnvEntry84: !Sub 'PN_NATIONALREGISTRIES_ENABLEOLDINIPECFLOW=${EnableOldInipecFlow}'
-        ContainerEnvEntry85: !Sub 'PN_NATIONALREGISTRIES_TOPIC_GATEWAYRESPONSEQUEUENAME=${NationalRegistriesGatewayResponsesQueueName}'
-        ContainerEnvEntry86: !Sub 'PN_NATIONALREGISTRIES_INAD_BATCHREQUESTMAXRETRY=${PnNationalRegistriesInadBatchRequestMaxRetry}'
-        ContainerEnvEntry87: !Sub 'PN_NATIONALREGISTRIES_INAD_REQUESTRETRYAFTER=${PnNationalRegistriesInadRequestRetryAfter}'
+        ContainerEnvEntry2: !Sub 'PN_NATIONALREGISTRIES_ENVIRONMENTTYPE=${EnvironmentType}'
+        ContainerEnvEntry3: !Sub 'PN_NATIONALREGISTRIES_HEALTHCHECKPATH=${HealthCheckPath}'
+
+        # Infrastructure - logging, metrics and HTTP codecs
+        ContainerEnvEntry4: !Sub 'WIRE_TAP_LOG=${WireTapLogActivation}'
+        ContainerEnvEntry5: !Sub 'METRIC_FORMAT_TYPE=${MetricFormatType}'
+        ContainerEnvEntry6: !Sub 'PN_CRON_ANALYZER=${CronAnalyzer}'
+        ContainerEnvEntry7: !Sub 'SPRING_CODEC_MAXINMEMORYSIZE=${CodecMemorySize}'
+
+        # Infrastructure - DynamoDB tables
+        ContainerEnvEntry8: !Sub 'PN_NATIONALREGISTRIES_DAO_SHEDLOCKTABLENAME=${ShedLockTableName}'
+        ContainerEnvEntry9: !Sub 'PN_NATIONALREGISTRIES_DAO_REQUESTSTABLENAME=${RequestsTableName}'
+        ContainerEnvEntry10: !Sub 'PN_NATIONALREGISTRIES_DAO_BATCHESTABLENAME=${BatchesTableName}'
+
+        # Infrastructure - SQS queues
+        ContainerEnvEntry11: !Sub 'PN_NATIONALREGISTRIES_TOPIC_INPUTQUEUENAME=${GatewayInputsQueueName}'
+        ContainerEnvEntry12: !Sub 'PN_NATIONALREGISTRIES_TOPIC_INPUTDLQQUEUENAME=${GatewayInputsDLQName}'
+        ContainerEnvEntry13: !Sub 'PN_NATIONALREGISTRIES_TOPIC_OUTPUTQUEUENAME=${GatewayOutputsQueueName}'
+        ContainerEnvEntry14: !Sub 'PN_NATIONALREGISTRIES_TOPIC_POLLINGQUEUENAME=${PollingQueueName}'
+        ContainerEnvEntry15: !Sub 'PN_NATIONALREGISTRIES_TOPIC_GATEWAYRESPONSEQUEUENAME=${GatewayResponsesQueueName}'
+
+        # Feature flags
+        ContainerEnvEntry16: !Sub 'PN_NATIONALREGISTRIES_ENABLEPFPECFALLBACKFLOW=${EnablePfPecFallbackFlow}'
+        ContainerEnvEntry17: !Sub 'PN_NATIONALREGISTRIES_ENABLEINADMASSIVEAPI=${EnableInadMassiveApi}'
+        ContainerEnvEntry18: !Sub 'PN_NATIONALREGISTRIES_ENABLEOLDINIPECFLOW=${EnableOldInipecFlow}'
+        ContainerEnvEntry19: !Sub 'PN_NATIONALREGISTRIES_ENABLECXIDVALIDATION=${EnableCxIdValidation}'
+
+        # PDND
+        ContainerEnvEntry20: !Sub 'PN_NATIONALREGISTRIES_PDND_BASEURL=${PdndBaseUrl}'
+
+        # ANPR
+        ContainerEnvEntry21: !Sub 'PN_NATIONALREGISTRIES_ANPR_BASEURL=${AnprBaseUrl}'
+        ContainerEnvEntry22: !Sub 'PN_NATIONALREGISTRIES_ANPR_TRUSTSECRET=${AnprTrustSecret}'
+        ContainerEnvEntry23: !Sub 'PN_NATIONALREGISTRIES_ANPR_PDNDCLIENTSECRET=${AnprPdndSecret}'
+        ContainerEnvEntry24: !Sub 'PN_NATIONALREGISTRIES_ANPR_ADDRESSCOMPOSITIONMODE=${AnprAddressCompositionMode}'
+
+        # Agenzia delle Entrate
+        ContainerEnvEntry25: !Sub 'PN_NATIONALREGISTRIES_ADE_AUTH=${AdeSslCertPath}'
+        ContainerEnvEntry26: !Sub 'PN_NATIONALREGISTRIES_ADE_LEGALBASEURL=${AdeLegalBaseUrl}'
+        ContainerEnvEntry27: !Sub 'PN_NATIONALREGISTRIES_ADE_LEGALTRUSTSECRET=${AdeLegalTrustSecret}'
+        ContainerEnvEntry28: !Sub 'PN_NATIONALREGISTRIES_ADE_LEGALNAMEID=${AdeLegalNameId}'
+        ContainerEnvEntry29: !Sub 'PN_NATIONALREGISTRIES_ADE_CHECKCFBASEURL=${AdeCheckCfBaseUrl}'
+        ContainerEnvEntry30: !Sub 'PN_NATIONALREGISTRIES_ADE_CHECKCFTRUSTSECRET=${AdeCheckCfTrustSecret}'
+        ContainerEnvEntry31: !Sub 'PN_NATIONALREGISTRIES_ADE_CHECKCFPDNDCLIENTSECRET=${AdeCheckCfPdndSecret}'
+
+        # INAD - API access
+        ContainerEnvEntry32: !Sub 'PN_NATIONALREGISTRIES_INAD_BASEURL=${InadBaseUrl}'
+        ContainerEnvEntry33: !Sub 'PN_NATIONALREGISTRIES_INAD_PDNDCLIENTSECRET=${InadPdndSecret}'
+
+        # IPA
+        ContainerEnvEntry34: !Sub 'PN_NATIONALREGISTRIES_IPA_BASEURL=${IpaBaseUrl}'
+        ContainerEnvEntry35: !Sub 'PN_NATIONALREGISTRIES_IPA_SECRET=${IpaSecret}'
+
+        # INIPEC / InfoCamere - API access
+        ContainerEnvEntry36: !Sub 'PN_NATIONALREGISTRIES_INFOCAMERE_BASEURL=${InfoCamereBaseUrl}'
+        ContainerEnvEntry37: !Sub 'PN_NATIONALREGISTRIES_INFOCAMERE_CLIENTID=${InfoCamereClientId}'
+        ContainerEnvEntry38: !Sub 'PN_NATIONALREGISTRIES_INFOCAMERE_CERTPATH=${InfoCamereCertPath}'
+        ContainerEnvEntry39: !Sub 'PN_NATIONALREGISTRIES_INFOCAMERE_READTIMEOUTMILLIS=${InfoCamereReadTimeoutMillis}'
+        ContainerEnvEntry40: !Sub 'PN_NATIONALREGISTRIES_INFOCAMERE_CONNECTIONTIMEOUTMILLIS=${IniPecConnectionTimeoutMillis}'
+        ContainerEnvEntry41: !Sub 'PN_NATIONALREGISTRIES_INFOCAMERE_MAXRETRYATTEMPTS=${IniPecMaxRetryAttempts}'
+        ContainerEnvEntry42: !Sub 'PN_NATIONALREGISTRIES_INFOCAMERE_RETRYONTIMEOUT=${IniPecRetryOnTimeout}'
+
+        # Shared retry and batch settings
+        ContainerEnvEntry43: !Sub 'PN_NATIONALREGISTRIES_CUSTOMRETRYMAXATTEMPTS=${CustomRetryMaxAttempts}'
+        ContainerEnvEntry44: !Sub 'PN_NATIONALREGISTRIES_BATCHREQUESTTTL=${BatchRequestTtl}'
+        ContainerEnvEntry45: !Sub 'PN_NATIONALREGISTRIES_QUERYLIMIT=${QueryLimit}'
+
+        # INIPEC - batch submission, polling and recovery
+        ContainerEnvEntry46: !Sub 'PN_NATIONALREGISTRIES_INIPEC_MAXBATCHSIZE=${InipecMaxBatchSize}'
+        ContainerEnvEntry47: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTMAXRETRY=${InipecRequestMaxRetry}'
+        ContainerEnvEntry48: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRETRYAFTER=${InipecRequestRetryAfter}'
+        ContainerEnvEntry49: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTBATCHJOBDELAY=${InipecRequestBatchJobDelay}'
+        ContainerEnvEntry50: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTBATCHJOBLOCKATMOST=${InipecRequestBatchJobLockAtMost}'
+        ContainerEnvEntry51: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTBATCHJOBLOCKATLEAST=${InipecRequestBatchJobLockAtLeast}'
+        ContainerEnvEntry52: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRECOVERYDELAY=${InipecRequestRecoveryDelay}'
+        ContainerEnvEntry53: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRECOVERYLOCKATMOST=${InipecRequestRecoveryLockAtMost}'
+        ContainerEnvEntry54: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRECOVERYLOCKATLEAST=${InipecRequestRecoveryLockAtLeast}'
+        ContainerEnvEntry55: !Sub 'PN_NATIONALREGISTRIES_INIPEC_REQUESTRECOVERYAFTER=${InipecRequestRecoveryAfter}'
+        ContainerEnvEntry56: !Sub 'PN_NATIONALREGISTRIES_INIPEC_SQSRECOVERYDELAY=${InipecSqsRecoveryDelay}'
+        ContainerEnvEntry57: !Sub 'PN_NATIONALREGISTRIES_INIPEC_SQSRECOVERYLOCKATMOST=${InipecSqsRecoveryLockAtMost}'
+        ContainerEnvEntry58: !Sub 'PN_NATIONALREGISTRIES_INIPEC_SQSRECOVERYLOCKATLEAST=${InipecSqsRecoveryLockAtLeast}'
+        ContainerEnvEntry59: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGERRORMAXRETRY=${InipecPollingErrorMaxRetry}'
+        ContainerEnvEntry60: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGINPROGRESSMAXRETRY=${InipecPollingInProgressMaxRetry}'
+        ContainerEnvEntry61: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGERRORRETRYAFTER=${InipecPollingErrorRetryAfter}'
+        ContainerEnvEntry62: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGINPROGRESSRETRYAFTER=${InipecPollingInProgressRetryAfter}'
+        ContainerEnvEntry63: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${InipecPollingFirstAttemptDelaySecondsPerCf}'
+        ContainerEnvEntry64: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${InipecPollingFirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry65: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGDELAY=${InipecPollingDelay}'
+        ContainerEnvEntry66: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGLOCKATMOST=${InipecPollingLockAtMost}'
+        ContainerEnvEntry67: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGLOCKATLEAST=${InipecPollingLockAtLeast}'
+        ContainerEnvEntry68: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGRECOVERYDELAY=${InipecPollingRecoveryDelay}'
+        ContainerEnvEntry69: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGRECOVERYLOCKATMOST=${InipecPollingRecoveryLockAtMost}'
+        ContainerEnvEntry70: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGRECOVERYLOCKATLEAST=${InipecPollingRecoveryLockAtLeast}'
+        ContainerEnvEntry71: !Sub 'PN_NATIONALREGISTRIES_INIPEC_POLLINGRECOVERYAFTER=${InipecPollingRecoveryAfter}'
+
+        # INAD - batch submission and polling
+        ContainerEnvEntry72: !Sub 'PN_NATIONALREGISTRIES_INAD_MAXBATCHSIZE=${InadMaxBatchSize}'
+        ContainerEnvEntry73: !Sub 'PN_NATIONALREGISTRIES_INAD_REQUESTMAXRETRY=${InadRequestMaxRetry}'
+        ContainerEnvEntry74: !Sub 'PN_NATIONALREGISTRIES_INAD_REQUESTRETRYAFTER=${InadRequestRetryAfter}'
+        ContainerEnvEntry75: !Sub 'PN_NATIONALREGISTRIES_INAD_REQUESTBATCHJOBDELAY=${InadRequestBatchJobDelay}'
+        ContainerEnvEntry76: !Sub 'PN_NATIONALREGISTRIES_INAD_REQUESTBATCHJOBLOCKATMOST=${InadRequestBatchJobLockAtMost}'
+        ContainerEnvEntry77: !Sub 'PN_NATIONALREGISTRIES_INAD_REQUESTBATCHJOBLOCKATLEAST=${InadRequestBatchJobLockAtLeast}'
+        ContainerEnvEntry78: !Sub 'PN_NATIONALREGISTRIES_INAD_REQUESTOLDESTMAXWAITINGSECONDS=${InadRequestOldestMaxWaitingSeconds}'
+        ContainerEnvEntry79: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGERRORMAXRETRY=${InadPollingErrorMaxRetry}'
+        ContainerEnvEntry80: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGINPROGRESSMAXRETRY=${InadPollingInProgressMaxRetry}'
+        ContainerEnvEntry81: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGERRORRETRYAFTER=${InadPollingErrorRetryAfter}'
+        ContainerEnvEntry82: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGINPROGRESSRETRYAFTER=${InadPollingInProgressRetryAfter}'
+        ContainerEnvEntry83: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTDELAYSECONDSPERCF=${InadPollingFirstAttemptDelaySecondsPerCf}'
+        ContainerEnvEntry84: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGFIRSTATTEMPTFIXEDDELAYSECONDS=${InadPollingFirstAttemptFixedDelaySeconds}'
+        ContainerEnvEntry85: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGDELAY=${InadPollingDelay}'
+        ContainerEnvEntry86: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGLOCKATMOST=${InadPollingLockAtMost}'
+        ContainerEnvEntry87: !Sub 'PN_NATIONALREGISTRIES_INAD_POLLINGLOCKATLEAST=${InadPollingLockAtLeast}'
 
         # MicroServiceSecretAndSSMPrefix: !Sub '${SecretAndSSMPrefix}'
         MappedPaths: '/national-registries-private/*'
@@ -822,14 +861,14 @@ Resources:
         AlbSecurityGroup: !Ref AlbSecurityGroup
         EcsDefaultSecurityGroup: !Ref EcsDefaultSecurityGroup
         LoadBalancerListenerArn: !Ref ApplicationLoadBalancerListenerArn
-        LoadbalancerRulePriority: !Ref MicroserviceNumber
-        TaskRoleManagedPolicyArn: !Ref NationalRegistryMicroserviceTaskManagedPolicy
+        LoadBalancerRulePriority: !Ref MicroserviceNumber
+        TaskRoleManagedPolicyArn: !Ref MicroserviceTaskManagedPolicy
         EcsLogGroup: !Ref EcsLogGroup
         LogAlarmStrategyV1: !Ref LogAlarmStrategy
         JavaToolOptions: !Ref JavaToolOptions
         CpuArchitecture: !Ref CpuArchitecture
 
-  NationalRegistryMicroserviceTaskManagedPolicy:
+  MicroserviceTaskManagedPolicy:
     Type: AWS::IAM::ManagedPolicy
     Properties:
       PolicyDocument:
@@ -850,7 +889,7 @@ Resources:
               - kms:Encrypt
               - kms:Decrypt
             Resource:
-              - !Ref PnBatchRequestEncryptKeyARN
+              - !Ref BatchRequestEncryptKeyARN
           - Effect: Allow
             Action:
               - dynamodb:GetItem
@@ -863,12 +902,12 @@ Resources:
               - !Ref BatchRequestTableArn
               - !Ref BatchPollingTableArn
               - !Ref ShedLockTableArn
-              - !Ref PnNationalRegistriesRequestsTableArn
-              - !Ref PnNationalRegistriesBatchesTableArn
+              - !Ref RequestsTableArn
+              - !Ref BatchesTableArn
               - !Sub '${BatchRequestTableArn}/index/*'
               - !Sub '${BatchPollingTableArn}/index/*'
-              - !Sub '${PnNationalRegistriesRequestsTableArn}/index/*'
-              - !Sub '${PnNationalRegistriesBatchesTableArn}/index/*'
+              - !Sub '${RequestsTableArn}/index/*'
+              - !Sub '${BatchesTableArn}/index/*'
 
           - Effect: Allow
             Action:
@@ -879,11 +918,11 @@ Resources:
               - sqs:GetQueueAttributes
               - sqs:ReceiveMessage
             Resource:
-              - !Ref NationalRegistryGatewayOutputsQueueARN
-              - !Ref NationalRegistryGatewayInputsQueueARN
-              - !Ref NationalRegistryGatewayInputsDLQARN
-              - !Ref NationalRegistriesPollingQueueARN
-              - !Ref NationalRegistriesGatewayResponsesQueueARN
+              - !Ref GatewayOutputsQueueARN
+              - !Ref GatewayInputsQueueARN
+              - !Ref GatewayInputsDLQARN
+              - !Ref PollingQueueARN
+              - !Ref GatewayResponsesQueueARN
           - Effect: Allow
             Action:
               - ssm:GetParameter
@@ -892,7 +931,7 @@ Resources:
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/MapTaxIdWhiteList'
               - !Sub 'arn:aws:ssm:${AWS::Region}:${AWS::AccountId}:parameter/${SecretAndSSMPrefix}/*'
 
-  PnNationalRegistriesRequestErrorPipeRole:
+  RequestErrorPipeRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub '${ProjectName}-national-registries-request-error-pipe-role'
@@ -923,17 +962,17 @@ Resources:
                   - dynamodb:GetShardIterator
                   - dynamodb:ListStreams
                 Resource:
-                  - !Ref PnNationalRegistriesRequestsTableStreamArn
+                  - !Ref RequestsTableStreamArn
               - Sid: SendToNationalRegistryGatewayInputsDlq
                 Effect: Allow
                 Action:
                   - sqs:SendMessage
                 Resource:
-                  - !Ref NationalRegistryGatewayInputsDLQARN
+                  - !Ref GatewayInputsDLQARN
               - Effect: Allow
                 Action:
                   - kms:Decrypt
-                Resource: !Ref PnBatchRequestEncryptKeyARN
+                Resource: !Ref BatchRequestEncryptKeyARN
 
   NationalRegistriesToEventBusPipe:
     Type: AWS::Pipes::Pipe
@@ -941,11 +980,11 @@ Resources:
       Name: !Sub ${ProjectName}-national-registries-to-event-bus-pipe
       Description: 'Pipe from National Registries Queue to core event bus'
       RoleArn: !GetAtt NationalRegistriesToEventBusPipeRole.Arn
-      Source: !Ref NationalRegistriesGatewayResponsesQueueARN
+      Source: !Ref GatewayResponsesQueueARN
       SourceParameters:
         SqsQueueParameters:
-          BatchSize: !Ref NationalRegistriesPipeBatchSize
-          MaximumBatchingWindowInSeconds: !Ref NationalRegistriesPipeWindowSize
+          BatchSize: !Ref PipeBatchSize
+          MaximumBatchingWindowInSeconds: !Ref PipeWindowSize
       Target: !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/${ProjectName}-CoreEventBus
       TargetParameters:
         EventBridgeEventBusParameters:
@@ -984,7 +1023,7 @@ Resources:
                   - 'sqs:ReceiveMessage'
                   - 'sqs:DeleteMessage'
                   - 'sqs:GetQueueAttributes'
-                Resource: !Ref NationalRegistriesGatewayResponsesQueueARN
+                Resource: !Ref GatewayResponsesQueueARN
         - PolicyName: !Sub ${ProjectName}-National-registries-target-policy
           PolicyDocument:
             Version: 2012-10-17
@@ -995,12 +1034,12 @@ Resources:
                 Resource:
                   - !Sub arn:aws:events:${AWS::Region}:${AWS::AccountId}:event-bus/${ProjectName}-CoreEventBus
 
-  PnNationalRegistriesRequestErrorPipe:
+  RequestErrorPipe:
     Type: AWS::Pipes::Pipe
     Properties:
       Name: pn-national-registries-request-error-pipe
-      RoleArn: !GetAtt PnNationalRegistriesRequestErrorPipeRole.Arn
-      Source: !Ref PnNationalRegistriesRequestsTableStreamArn
+      RoleArn: !GetAtt RequestErrorPipeRole.Arn
+      Source: !Ref RequestsTableStreamArn
       SourceParameters:
         DynamoDBStreamParameters:
           StartingPosition: TRIM_HORIZON
@@ -1038,7 +1077,7 @@ Resources:
                     }
                   }
                 }
-      Target: !Ref NationalRegistryGatewayInputsDLQARN
+      Target: !Ref GatewayInputsDLQARN
       TargetParameters:
         InputTemplate: >-
           {
@@ -1047,10 +1086,10 @@ Resources:
             "recipientType": "<$.dynamodb.NewImage.recipientType.S>",
             "domicileType": "<$.dynamodb.NewImage.domicileType.S>",
             "referenceRequestDate": "<$.dynamodb.NewImage.referenceRequestDate.S>",
-            "pnNationalRegistriesCxId": "<$.dynamodb.NewImage.clientId.S>"
+            "CxId": "<$.dynamodb.NewImage.clientId.S>"
           }
 
-  PnNationalRegistriesPollingPipeRole:
+  PollingPipeRole:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub '${ProjectName}-national-registries-polling-pipe'
@@ -1081,20 +1120,20 @@ Resources:
                   - dynamodb:GetShardIterator
                   - dynamodb:ListStreams
                 Resource:
-                  - !Ref PnNationalRegistriesBatchesTableStreamArn
+                  - !Ref BatchesTableStreamArn
               - Sid: SendToNationalRegistryPollingQueue
                 Effect: Allow
                 Action:
                   - sqs:SendMessage
                 Resource:
-                  - !Ref NationalRegistriesPollingQueueARN
+                  - !Ref PollingQueueARN
 
-  PnNationalRegistriesPollingPipe:
+  PollingPipe:
     Type: AWS::Pipes::Pipe
     Properties:
       Name: pn-national-registries-polling-pipe
-      RoleArn: !GetAtt PnNationalRegistriesPollingPipeRole.Arn
-      Source: !Ref PnNationalRegistriesBatchesTableStreamArn
+      RoleArn: !GetAtt PollingPipeRole.Arn
+      Source: !Ref BatchesTableStreamArn
       SourceParameters:
         DynamoDBStreamParameters:
           StartingPosition: TRIM_HORIZON
@@ -1121,7 +1160,7 @@ Resources:
                     }
                   }
                 }
-      Target: !Ref NationalRegistriesPollingQueueARN
+      Target: !Ref PollingQueueARN
       TargetParameters:
         SqsQueueParameters:
           MessageGroupId: $.dynamodb.NewImage.batchId.S
@@ -1135,12 +1174,12 @@ Resources:
             "inProgressRetryCount": <$.dynamodb.NewImage.inProgressRetryCount.N>
           }
 
-  PnNationalRegistriesCompletedRequestPipe:
+  CompletedRequestPipe:
     Type: AWS::Pipes::Pipe
     Properties:
       Name: pn-national-registries-completed-request-pipe
-      RoleArn: !GetAtt PnNationalRegistriesCompletedRequestPipeRole.Arn
-      Source: !Ref PnNationalRegistriesRequestsTableStreamArn
+      RoleArn: !GetAtt CompletedRequestPipeRole.Arn
+      Source: !Ref RequestsTableStreamArn
 
       SourceParameters:
         DynamoDBStreamParameters:
@@ -1195,12 +1234,12 @@ Resources:
                   }
                 }
 
-      Target: !Ref NationalRegistriesGatewayResponsesQueueARN
+      Target: !Ref GatewayResponsesQueueARN
       TargetParameters:
         InputTemplate: >
           <$.dynamodb.NewImage.resultPayload.S>
 
-  PnNationalRegistriesCompletedRequestPipeRole:
+  CompletedRequestPipeRole:
     Type: AWS::IAM::Role
     Properties:
       AssumeRolePolicyDocument:
@@ -1230,19 +1269,18 @@ Resources:
                   - dynamodb:GetShardIterator
                   - dynamodb:ListStreams
                 Resource:
-                  - !Ref PnNationalRegistriesRequestsTableStreamArn
-
+                  - !Ref RequestsTableStreamArn
               - Effect: Allow
                 Action:
                   - sqs:SendMessage
                 Resource:
-                  - !Ref NationalRegistriesGatewayResponsesQueueARN
+                  - !Ref GatewayResponsesQueueARN
               - Effect: Allow
                 Action:
                   - kms:Decrypt
-                Resource: !Ref PnBatchRequestEncryptKeyARN
+                Resource: !Ref BatchRequestEncryptKeyARN
 
-  NationalRegistryApiGateway:
+  ApiGateway:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-expose-service.yaml"
@@ -1257,14 +1295,14 @@ Resources:
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
         CloudwatchLogKinesisStreamArn: !Ref LogsKinesisSourceStreamArn
 
-  NationalRegistryApiWaf:
+  ApiWaf:
     Type: AWS::CloudFormation::Stack
     Properties:
       TemplateURL: !Sub "${TemplateBucketBaseUrl}/fragments/api-gw-waf-acl.yaml"
       Parameters:
         WAFName: !Sub '${ProjectName}-national-registries-pnpg'
         IntendedUsage: PNPG
-        APIGatewayARNs: !GetAtt NationalRegistryApiGateway.Outputs.APIGatewayARN
+        APIGatewayARNs: !GetAtt ApiGateway.Outputs.APIGatewayARN
         AlarmSNSTopicArn: !Ref AlarmSNSTopicArn
 
   CertificateRenewalManagedPolicy:
@@ -1326,7 +1364,7 @@ Resources:
               - sqs:ReceiveMessage
               - sqs:SendMessage
             Resource:
-              - !Ref PnNationalRegistriesCertificateDLQARN
+              - !Ref CertificateDLQARN
                   
   CertificateRenewalCodeBuildServiceRole:
     Type: AWS::IAM::Role
@@ -1395,13 +1433,13 @@ Resources:
             Value: !Ref CertificateRenewalEmail
           - Name: FQDN
             Type: PLAINTEXT
-            Value: !Ref InfocamereFQDN
+            Value: !Ref InfoCamereFqdn
           - Name: KEY_ALIAS
             Type: PLAINTEXT
             Value: !Sub ${InfoCamereSigningKeyAlias}-next
           - Name: PARAM_NAME
             Type: PLAINTEXT
-            Value: !Sub ${InfoCamereAuth}-next
+            Value: !Sub ${InfoCamereCertPath}-next
 
   InfocamereCertRenewalCodebuildAlarms:
     Type: AWS::CloudFormation::Stack
@@ -1455,13 +1493,13 @@ Resources:
             Value: !Ref CertificateRenewalEmail
           - Name: FQDN
             Type: PLAINTEXT
-            Value: !Ref AdeFQDN
+            Value: !Ref AdeFqdn
           - Name: SECRET_ID
             Type: PLAINTEXT
-            Value: !Sub ${AdESSLSecret}-next
+            Value: !Sub ${AdeSslSecret}-next
           - Name: PARAM_NAME
             Type: PLAINTEXT
-            Value: !Sub ${AdESSL}-next
+            Value: !Sub ${AdeSslCertPath}-next
 
   AdeCertRenewalCodebuildAlarms:
     Type: AWS::CloudFormation::Stack
@@ -1505,7 +1543,7 @@ Resources:
                   - sqs:SendMessage
                 Effect: Allow
                 Resource:
-                  - !Ref PnNationalRegistriesCertificateDLQARN                  
+                  - !Ref CertificateDLQARN
                   
   InfocamereScheduledRule:
     Type: AWS::Events::Rule
@@ -1516,7 +1554,7 @@ Resources:
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
         - Id: "CertRenewalAlarm"
-          Arn: !Ref PnNationalRegistriesCertificateDLQARN
+          Arn: !Ref CertificateDLQARN
         - Id: "CertRenewalRunner"
           RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
           Arn: 
@@ -1533,7 +1571,7 @@ Resources:
       RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
       Targets: 
         - Id: "CertRenewalAlarm"
-          Arn: !Ref PnNationalRegistriesCertificateDLQARN
+          Arn: !Ref CertificateDLQARN
         - Id: "CertRenewalRunner"
           RoleArn: !GetAtt "CertificateRenewalCodeBuildRole.Arn"
           Arn: 
@@ -1541,11 +1579,11 @@ Resources:
               - "AdeCertRenewalCodebuildProject"
               - "Arn"
 
-  NationalRegistriesCertDLQQueuePolicy:
+  CertDLQQueuePolicy:
     Type: AWS::SQS::QueuePolicy
     Properties:
       Queues:
-        - !Ref "PnNationalRegistriesCertificateDLQURL"
+        - !Ref "CertificateDLQURL"
       PolicyDocument:
         Statement:
           - Sid: "SendEventsToDLQ"
@@ -1556,4 +1594,4 @@ Resources:
             Action: 
               - "SQS:SendMessage"
             Resource:
-              - !Ref "PnNationalRegistriesCertificateDLQARN"
+              - !Ref "CertificateDLQARN"
