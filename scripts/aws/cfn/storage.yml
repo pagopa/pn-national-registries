@@ -497,6 +497,9 @@ Outputs:
   CounterTableArn:
     Description: ARN Dynamo Name used by application to access the key-value store of CounterTable
     Value: !Sub '${CounterTable.Arn}'
+  CounterTableName:
+    Description: Name of the DynamoDB table that stores e-service counters.
+    Value: !Ref CounterTable
   BatchRequestTableArn:
     Description: ARM Dynamo Name used by application to access the key-value store of BatchRequestTable
     Value: !Sub '${BatchRequestTable.Arn}'
