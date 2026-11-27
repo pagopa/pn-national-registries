@@ -21,6 +21,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -137,4 +138,80 @@ class CustomRetryConfigTest {
         Predicate<Throwable> condition = CustomRetryConfig.defaultRetryCondition;
         assertFalse(condition.test(exception), "Expected not to retry on " + exceptionName);
     }
+
+    @Test
+    void shouldRetryAfterTransientException() {
+        // Given
+        String errorMessage =
+                "Error calling /extract/RSSMRA80A01H501U?source=test";
+
+        RuntimeException exception = new RuntimeException(errorMessage);
+
+        AtomicInteger attempts = new AtomicInteger();
+
+        ExchangeFunction exchangeFunction = mock(ExchangeFunction.class);
+
+        ClientRequest request = ClientRequest
+                .create(HttpMethod.GET, URI.create("http://localhost/test"))
+                .build();
+
+        ClientResponse successResponse = ClientResponse
+                .create(HttpStatus.OK)
+                .build();
+
+        when(exchangeFunction.exchange(any(ClientRequest.class)))
+                .thenReturn(Mono.defer(() -> {
+                    if (attempts.getAndIncrement() == 0) {
+                        return Mono.error(exception);
+                    }
+                    return Mono.just(successResponse);
+                }));
+
+        ExchangeFilterFunction filter = customRetryConfig.buildRetryExchangeFilterFunction(
+                throwable -> throwable instanceof RuntimeException,
+                1
+        );
+
+        // When & Then
+        StepVerifier.create(filter.filter(request, exchangeFunction))
+                .expectNextMatches(response ->
+                        response.statusCode().equals(HttpStatus.OK))
+                .verifyComplete();
+
+        // exchange() viene invocato una sola volta
+        verify(exchangeFunction, times(1))
+                .exchange(any(ClientRequest.class));
+    }
+
+    @Test
+    void shouldThrowLastExceptionWhenRetriesAreExhausted() {
+        // Given
+        String errorMessage = "Error calling /sede/RSSMRA80A01H501U?source=test";
+
+        RuntimeException exception = new RuntimeException(errorMessage);
+
+        ExchangeFunction exchangeFunction = mock(ExchangeFunction.class);
+        ClientRequest request = ClientRequest
+                .create(HttpMethod.GET, URI.create("http://localhost/test"))
+                .build();
+
+        when(exchangeFunction.exchange(any(ClientRequest.class)))
+                .thenReturn(Mono.error(exception));
+
+        ExchangeFilterFunction filter = customRetryConfig.buildRetryExchangeFilterFunction(
+                throwable -> throwable instanceof RuntimeException,
+                3
+        );
+
+        // When & Then
+        StepVerifier.create(filter.filter(request, exchangeFunction))
+                .expectErrorMatches(throwable ->
+                        throwable == exception
+                                && throwable.getMessage().equals(errorMessage))
+                .verify();
+
+        verify(exchangeFunction, times(1))
+                .exchange(any(ClientRequest.class));
+    }
+
 }

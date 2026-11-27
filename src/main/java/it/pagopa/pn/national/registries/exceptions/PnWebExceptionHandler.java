@@ -53,9 +53,6 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
     private final ExceptionHelper exceptionHelper;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static final String LOG_EX = "Error -> statusCode: {}, message: {}, uri: {}";
-    private static final int STATUS_OVER_500 = 500;
-
     public PnWebExceptionHandler(ExceptionHelper exceptionHelper) {
         this.exceptionHelper = exceptionHelper;
         objectMapper.findAndRegisterModules();
@@ -83,12 +80,6 @@ public class PnWebExceptionHandler implements ErrorWebExceptionHandler {
                 problem = createProblem(exception);
             } else {
                 problem = convertToNationalRegistriesProblem(exceptionHelper.handleException(throwable));
-            }
-
-            if (problem.getStatus() >= STATUS_OVER_500) {
-                log.error(LOG_EX, problem.getStatus(), throwable.getMessage(), serverWebExchange.getRequest().getURI());
-            } else {
-                log.warn(LOG_EX, problem.getStatus(), throwable.getMessage(), serverWebExchange.getRequest().getURI());
             }
 
             problem.setTraceId(MDC.get(MDCUtils.MDC_TRACE_ID_KEY));

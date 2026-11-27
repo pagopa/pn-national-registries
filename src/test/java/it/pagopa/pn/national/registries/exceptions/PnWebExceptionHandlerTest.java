@@ -20,8 +20,6 @@ import org.springframework.core.io.buffer.DataBufferFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.HttpHeadResponseDecorator;
-import org.springframework.http.server.reactive.ServerHttpRequest;
-import org.springframework.http.server.reactive.ServerHttpRequestDecorator;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.mock.http.server.reactive.MockServerHttpResponse;
 import org.springframework.test.context.ContextConfiguration;
@@ -33,7 +31,6 @@ import reactor.test.StepVerifier;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,8 +50,6 @@ class PnWebExceptionHandlerTest {
     @Mock
     ServerHttpResponse serverHttpResponse;
     @Mock
-    ServerHttpRequest serverHttpRequest;
-    @Mock
     DataBufferFactory dataBufferFactory;
     @Mock
     DataBuffer dataBuffer;
@@ -73,7 +68,6 @@ class PnWebExceptionHandlerTest {
         Throwable throwable = new Throwable();
         when(exceptionHelper.handleException(any())).thenReturn(problem);
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
@@ -86,11 +80,9 @@ class PnWebExceptionHandlerTest {
     @Test
     void testHandle2() {
         WebClientResponseException exception = mock(WebClientResponseException.class);
-        when(exception.getMessage()).thenReturn("bad request");
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         Problem problem = new Problem();
         problem.setStatus(400);
@@ -102,13 +94,11 @@ class PnWebExceptionHandlerTest {
     void testHandle3() {
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
         when(exception.getStatusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
-        when(exception.getMessage()).thenReturn("bad request");
         when(exception.getResponseBodyAsString()).thenReturn("{}");
         Class<?> ipaResponseKOClass = IpaResponseKO.class;
         doReturn(ipaResponseKOClass).when(exception).getClassName();
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
@@ -123,7 +113,6 @@ class PnWebExceptionHandlerTest {
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         Problem problem = new Problem();
         problem.setStatus(400);
@@ -137,11 +126,9 @@ class PnWebExceptionHandlerTest {
     void testHandle5() {
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
         when(exception.getStatusCode()).thenReturn(HttpStatus.UNAUTHORIZED);
-        when(exception.getMessage()).thenReturn("bad request");
         when(exceptionHelper.handleException(exception)).thenReturn(Problem.builder().status(400).build());
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
@@ -151,13 +138,11 @@ class PnWebExceptionHandlerTest {
     void testHandle6() {
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
         when(exception.getStatusCode()).thenReturn(HttpStatus.BAD_REQUEST);
-        when(exception.getMessage()).thenReturn("bad request");
         when(exception.getResponseBodyAsString()).thenReturn("{}");
         Class<?> inadResponseKOClass = InadResponseKO.class;
         doReturn(inadResponseKOClass).when(exception).getClassName();
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
@@ -167,13 +152,11 @@ class PnWebExceptionHandlerTest {
     void testHandle7() {
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
         when(exception.getStatusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
-        when(exception.getMessage()).thenReturn("bad request");
         when(exception.getResponseBodyAsString()).thenReturn("{}");
         Class<?> inadResponseKOClass = AnprResponseKO.class;
         doReturn(inadResponseKOClass).when(exception).getClassName();
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
@@ -185,7 +168,6 @@ class PnWebExceptionHandlerTest {
                 "{\"listaErrori\":[{\"code\":\"\"}]}".getBytes(), Charset.defaultCharset(), AnprResponseKO.class);
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
@@ -217,19 +199,11 @@ class PnWebExceptionHandlerTest {
         Problem problem = new Problem();
         problem.status(1);
         when(exceptionHelper.handleException(org.mockito.Mockito.any())).thenReturn(problem);
-        ServerHttpRequestDecorator serverHttpRequestDecorator = mock(ServerHttpRequestDecorator.class);
-        when(serverHttpRequestDecorator.getURI())
-                .thenReturn(Paths.get(System.getProperty("java.io.tmpdir"), "test.txt").toUri());
         DefaultServerWebExchange defaultServerWebExchange = mock(DefaultServerWebExchange.class);
-        when(defaultServerWebExchange.getRequest())
-                .thenReturn(new ServerHttpRequestDecorator(new ServerHttpRequestDecorator(new ServerHttpRequestDecorator(
-                        new ServerHttpRequestDecorator(new ServerHttpRequestDecorator(serverHttpRequestDecorator))))));
         when(defaultServerWebExchange.getResponse()).thenReturn(new MockServerHttpResponse());
         pnWebExceptionHandler.handle(defaultServerWebExchange, new Throwable());
         verify(exceptionHelper).handleException(org.mockito.Mockito.any());
-        verify(defaultServerWebExchange).getRequest();
         verify(defaultServerWebExchange, atLeast(1)).getResponse();
-        verify(serverHttpRequestDecorator).getURI();
     }
 
     /**
@@ -247,13 +221,7 @@ class PnWebExceptionHandlerTest {
         when(problem.getErrors()).thenReturn(problemErrorList);
         problem.status(1);
         when(exceptionHelper.handleException(org.mockito.Mockito.any())).thenReturn(problem);
-        ServerHttpRequestDecorator serverHttpRequestDecorator = mock(ServerHttpRequestDecorator.class);
-        when(serverHttpRequestDecorator.getURI())
-                .thenReturn(Paths.get(System.getProperty("java.io.tmpdir"), "test.txt").toUri());
         DefaultServerWebExchange defaultServerWebExchange = mock(DefaultServerWebExchange.class);
-        when(defaultServerWebExchange.getRequest())
-                .thenReturn(new ServerHttpRequestDecorator(new ServerHttpRequestDecorator(new ServerHttpRequestDecorator(
-                        new ServerHttpRequestDecorator(new ServerHttpRequestDecorator(serverHttpRequestDecorator))))));
         when(defaultServerWebExchange.getResponse()).thenReturn(new MockServerHttpResponse());
         pnWebExceptionHandler.handle(defaultServerWebExchange, new Throwable());
         verify(exceptionHelper).handleException(org.mockito.Mockito.any());
@@ -262,9 +230,7 @@ class PnWebExceptionHandlerTest {
         verify(problem).getDetail();
         verify(problem).getTitle();
         verify(problem).getErrors();
-        verify(defaultServerWebExchange).getRequest();
         verify(defaultServerWebExchange, atLeast(1)).getResponse();
-        verify(serverHttpRequestDecorator).getURI();
     }
 
     /**
@@ -280,13 +246,7 @@ class PnWebExceptionHandlerTest {
         when(problem.getErrors()).thenReturn(new ArrayList<>());
         problem.status(1);
         when(exceptionHelper.handleException(org.mockito.Mockito.any())).thenReturn(problem);
-        ServerHttpRequestDecorator serverHttpRequestDecorator = mock(ServerHttpRequestDecorator.class);
-        when(serverHttpRequestDecorator.getURI())
-                .thenReturn(Paths.get(System.getProperty("java.io.tmpdir"), "test.txt").toUri());
         DefaultServerWebExchange defaultServerWebExchange = mock(DefaultServerWebExchange.class);
-        when(defaultServerWebExchange.getRequest())
-                .thenReturn(new ServerHttpRequestDecorator(new ServerHttpRequestDecorator(new ServerHttpRequestDecorator(
-                        new ServerHttpRequestDecorator(new ServerHttpRequestDecorator(serverHttpRequestDecorator))))));
         when(defaultServerWebExchange.getResponse())
                 .thenReturn(new HttpHeadResponseDecorator(new MockServerHttpResponse()));
         pnWebExceptionHandler.handle(defaultServerWebExchange, new Throwable());
@@ -296,9 +256,7 @@ class PnWebExceptionHandlerTest {
         verify(problem).getDetail();
         verify(problem).getTitle();
         verify(problem).getErrors();
-        verify(defaultServerWebExchange).getRequest();
         verify(defaultServerWebExchange, atLeast(1)).getResponse();
-        verify(serverHttpRequestDecorator).getURI();
     }
 
     @Test
@@ -307,7 +265,6 @@ class PnWebExceptionHandlerTest {
                 "{\"title\":\"code\"}".getBytes(), Charset.defaultCharset(), PdndResponseKO.class);
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
@@ -319,7 +276,6 @@ class PnWebExceptionHandlerTest {
                 "{\"title\":\"code\",\"errors\":[]}".getBytes(), Charset.defaultCharset(), PdndResponseKO.class);
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
@@ -328,7 +284,6 @@ class PnWebExceptionHandlerTest {
     void testHandle16() {
         PnNationalRegistriesException exception = mock(PnNationalRegistriesException.class);
         when(exception.getStatusCode()).thenReturn(HttpStatus.INTERNAL_SERVER_ERROR);
-        when(exception.getMessage()).thenReturn("Internal Server Error");
         when(exception.getResponseBodyAsString()).thenReturn("{}");
         Class<?> adEResponseKOClass = AdEResponseKO.class;
         doReturn(adEResponseKOClass).when(exception).getClassName();
@@ -340,7 +295,6 @@ class PnWebExceptionHandlerTest {
         assertEquals("Dettaglio errore", adEResponseKO.getDetail());
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         StepVerifier.create(pnWebExceptionHandler.handle(serverWebExchange, exception)).expectComplete();
@@ -354,7 +308,6 @@ class PnWebExceptionHandlerTest {
         when(serverWebExchange.getResponse()).thenReturn(serverHttpResponse);
         when(serverHttpResponse.bufferFactory()).thenReturn(dataBufferFactory);
         when(serverHttpResponse.getHeaders()).thenReturn(new HttpHeaders());
-        when(serverWebExchange.getRequest()).thenReturn(serverHttpRequest);
         when(dataBufferFactory.wrap((byte[]) any())).thenReturn(dataBuffer);
         Problem problem = new Problem();
         problem.setStatus(500);
